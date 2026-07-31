@@ -1,0 +1,5 @@
+schema: spec-driven
+created: 2026-08-01
+goal: 设计面向多品类 Cocos 2D 游戏的轻量内核、可选能力模块和品类组合边界，不实现代码。
+skip_specs: true
+
