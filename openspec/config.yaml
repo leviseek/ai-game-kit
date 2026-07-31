@@ -9,24 +9,19 @@ schema: spec-driven
 #     We use conventional commits
 #     Domain: e-commerce platform
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+rules:
+  tasks:
+    - >-
+      在每个 change 的 tasks.md 末尾加入 ADR 检查任务：change 完成前检查本次工作是否产生新的架构决策；
+      如有，按 doc/decisions/ADR-NNN-<slug>.md 约定创建 ADR；如无，明确记录无需 ADR。
 
-# Per-operation guidance (optional)
-# Add advisory guidance for how apply and archive work should be conducted.
-# This is separate from artifact rules above.
-# Example:
-#   operations:
-#     apply:
-#       guidance:
-#         - Keep test summaries concise
-#     archive:
-#       guidance:
-#         - Summarize the archive outcome before finishing
+operations:
+  apply:
+    guidance:
+      - >-
+        在将 OpenSpec change 标记为完成前，审查 proposal、design、实现结果和 review 结论是否产生新的架构决策；
+        如有，先在 doc/decisions 下创建 ADR，再完成 change。
+  archive:
+    guidance:
+      - >-
+        归档前确认 ADR 检查已经执行；存在新架构决策但缺少 ADR 时不得归档。
