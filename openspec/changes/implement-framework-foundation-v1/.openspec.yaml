@@ -1,0 +1,6 @@
+schema: spec-driven
+created: 2026-08-01
+goal: 实现 Framework 最基础运行骨架：目录结构、Application 生命周期、AppRoot、Module
+  接口与初始化流程、Logger；排除所有上层能力。
+skip_specs: true
+
