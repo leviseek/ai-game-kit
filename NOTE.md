@@ -39,3 +39,10 @@ npm install -g @fission-ai/openspec@latest
 cd your-project
 openspec init
 ```
+
+## 自动维护 ADR
+```codex
+加一个规则：
+
+每次 OpenSpec change 完成后，检查是否产生新的架构决策，如果有则创建 ADR。
+```
