@@ -52,6 +52,7 @@ assets/
    ├─ application/
    │  ├─ Application.ts
    │  ├─ ApplicationContext.ts
+   │  ├─ ModuleLifecycleError.ts
    │  ├─ ModuleGraph.ts
    │  └─ ModuleRunner.ts
    ├─ diagnostics/
@@ -66,7 +67,7 @@ assets/
 目录职责进一步限定为：
 
 - `contracts/application`：放置 ApplicationContext interface、ApplicationState 和只读生命周期查询契约，不包含创建逻辑或可变实现。
-- `application`：放置 Application、ApplicationContext implementation、Context 创建 API、ModuleGraph 和 ModuleRunner；Composition Root 调用这里的创建 API，但实际装配仍由 AppRoot 显式完成。
+- `application`：放置 Application、ApplicationContext implementation、Context 创建 API、ModuleGraph、ModuleRunner 和模块生命周期运行时错误；Composition Root 调用这里的创建 API，但实际装配仍由 AppRoot 显式完成。
 - `adapters/cocos/application`：放置 Cocos Runtime 生命周期事件适配，不包含 Module 创建、Game 业务或 AppRoot 组合逻辑。
 - `diagnostics/logging`：实现 `contracts/logging`，不得反向依赖 Application 或 Cocos Adapter。
 
@@ -160,7 +161,7 @@ created → initializing → running ⇄ paused → stopping → disposed
 
 **未采用方案：** 不使用装饰器扫描、Cocos Component 作为 Module 基类或模块自行注册全局单例。
 
-**结果：** Module id、依赖和钩子在注册后视为不可变；生命周期错误统一包装为带 module id 与 phase 的 `ModuleLifecycleError`。
+**结果：** Module id、依赖和钩子在注册后视为不可变；`contracts/module` 只保留可擦除的类型契约，生命周期错误由 `application/ModuleLifecycleError` 统一包装并携带 module id 与 phase。
 
 ### 7. ApplicationContext 公开契约与实现分离
 

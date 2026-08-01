@@ -36,10 +36,12 @@
 
 - [x] 3.1 先编写 ApplicationContext 与 Module 契约类型测试：Context contract 只包含 Logger、ApplicationState 与只读生命周期查询；Module 覆盖稳定 id、只读 dependencies、完整同步/异步钩子，并只能通过 type-only import 依赖 `contracts/application`，禁止依赖 ApplicationContext 实现或 Cocos Component 基类。
   - RED：Module 契约目标测试得到 5 pass / 1 fail，唯一失败为 `contracts/module/Module.ts` 尚不存在；测试同时覆盖稳定只读 id、依赖 id 列表、可选同步/异步生命周期钩子、组合式接口和 ApplicationContext type-only import，并补充 `contracts/module` 专项架构扫描。
-- [x] 3.2 在 `contracts/application` 定义 ApplicationContext interface、ApplicationState 和只读生命周期查询契约，在 `contracts/module` 定义 Module、ModulePhase、ModuleRuntimeState 和 ModuleLifecycleError，使 3.1 通过；contracts 不得导入 `application`、diagnostics 或 adapters。
-  - GREEN：新增 ApplicationContext/ApplicationLifecycle/ApplicationState、Module/ModulePhase/ModuleRuntimeState 和保留 module id、phase、cause 的 ModuleLifecycleError，并通过根入口导出稳定 contract；目标测试 16 pass / 0 fail，完整 Foundation 测试 27 pass / 0 fail，Creator TypeScript strict 检查、架构扫描和新增 meta UUID 唯一性检查均通过。
-- [ ] 3.3 先编写 ModuleGraph 测试，覆盖空模块集合、单模块、依赖链、分支依赖和独立模块注册顺序稳定性。
-- [ ] 3.4 先编写 ModuleGraph 失败测试，覆盖空 id、重复 id、缺失依赖、自循环和多节点循环。
+- [x] 3.2 在 `contracts/application` 定义 ApplicationContext interface、ApplicationState 和只读生命周期查询契约，在 `contracts/module` 定义 Module、ModulePhase 和 ModuleRuntimeState，并在 `application` 定义 ModuleLifecycleError，使 3.1 通过；contracts 不得导入 `application`、diagnostics 或 adapters，且 `contracts/module` 不得产生运行时代码。
+  - GREEN：新增 ApplicationContext/ApplicationLifecycle/ApplicationState、Module/ModulePhase/ModuleRuntimeState，并把保留 module id、phase 和 cause 的 ModuleLifecycleError 归属 `application` 运行时编排层；`contracts/module` 的 TypeScript 输出可完全擦除，ModuleLifecycleError 通过根入口导出；目标契约与架构测试通过，Creator TypeScript strict 检查和 meta UUID 保留检查均通过。
+- [x] 3.3 先编写 ModuleGraph 测试，覆盖空模块集合、单模块、依赖链、分支依赖和独立模块注册顺序稳定性。
+  - RED：新增 ModuleGraph 稳定拓扑顺序测试，定义内部 `new ModuleGraph(modules).orderedModules` API；目标测试 0 pass / 5 fail，完整 Foundation 测试 27 pass / 5 fail，五项失败均为 `application/ModuleGraph.ts` 尚未实现，未提前创建生产代码。
+- [x] 3.4 先编写 ModuleGraph 失败测试，覆盖空 id、重复 id、缺失依赖、自循环和多节点循环。
+  - RED：新增 ModuleGraph 构造校验测试，覆盖空 id、重复 id、缺失依赖、自循环和多节点循环，且不锁定错误文案；目标测试 0 pass / 5 fail，完整 Foundation 测试 27 pass / 10 fail，其中新增五项失败均为 `application/ModuleGraph.ts` 尚未实现，未提前创建生产代码。
 - [ ] 3.5 实现一次性 ModuleGraph 校验与稳定拓扑排序，使 3.3、3.4 的测试通过，并保证校验失败前没有执行任何模块钩子。
 
 ## 4. ModuleRunner 初始化与回滚

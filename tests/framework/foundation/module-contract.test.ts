@@ -199,6 +199,17 @@ describe("Module contract", () => {
     expect(typeof metadataOnlyModule.dependencies[0]).toBe("string");
   });
 
+  test("erases contracts/module completely from runtime output", () => {
+    const runtimeFiles = readModuleContractSources().flatMap(
+      ({ file, source }) =>
+        runtimeImportScanner.transformSync(source).trim().length === 0
+          ? []
+          : [relative(moduleContractRoot, file).replaceAll("\\", "/")],
+    );
+
+    expect(runtimeFiles).toEqual([]);
+  });
+
   test("allows every lifecycle hook to be omitted", () => {
     expect(metadataOnlyModule.initialize).toBeUndefined();
     expect(metadataOnlyModule.start).toBeUndefined();
