@@ -20,11 +20,17 @@
 
 ## 2. Logger 基础能力
 
-- [ ] 2.1 先编写 Logger 契约测试，覆盖 debug/info/warn/error、timestamp、scope、message、浅层结构化 context 和可选 error。
-- [ ] 2.2 在 `contracts/logging` 定义最小 Logger 公共类型与 child logger 行为，通过根入口只导出稳定 contract，使 2.1 的测试通过且不依赖 Cocos、Application 或具体实现。
-- [ ] 2.3 先编写 child logger 测试，覆盖父子 scope、上下文合并、调用级字段覆盖和父 Logger 不可变。
-- [ ] 2.4 实现 Logger 上下文派生，使 2.3 的测试通过且不使用全局静态 Logger。
-- [ ] 2.5 在 `diagnostics/logging` 实现直接输出结构化记录的 ConsoleLogger，并在仓库级测试支持目录提供不参与 Cocos 构建的 MemoryLogger；验证可以按 level、scope 和浅层 context 断言，不得加入递归序列化、循环检测或敏感字段脱敏。
+- [x] 2.1 先编写 Logger 契约测试，覆盖 debug/info/warn/error、timestamp、scope、message、浅层结构化 context 和可选 error。
+  - RED：新增 Logger contract 测试后得到 4 pass / 1 fail，唯一失败为 `contracts/logging/Logger.ts` 尚不存在；测试同时定义 child scope/context 继承、父 Logger 不可变和 Error cause 保留约束。
+- [x] 2.2 在 `contracts/logging` 定义最小 Logger 公共类型与 child logger 行为，通过根入口只导出稳定 contract，使 2.1 的测试通过且不依赖 Cocos、Application 或具体实现。
+  - GREEN：新增 Logger、LogLevel、LogRecord、LogContext 最小契约，并通过根入口 type-only 导出；Logger 目标测试 5 pass / 0 fail，完整 Foundation 测试 14 pass / 0 fail，Creator TypeScript strict 检查 0 diagnostics。
+- [x] 2.3 先编写 child logger 测试，覆盖父子 scope、上下文合并、调用级字段覆盖和父 Logger 不可变。
+  - RED：新增 child logger 行为测试，固定父子 scope 点号组合、父级 < child < 调用级的浅层 context 覆盖顺序和父 Logger 不可变；目标测试 0 pass / 3 fail，完整 Foundation 测试 14 pass / 3 fail，失败均为 `diagnostics/logging/ScopedLogger.ts` 尚未实现。
+- [x] 2.4 实现 Logger 上下文派生，使 2.3 的测试通过且不使用全局静态 Logger。
+  - GREEN：新增内部 `createScopedLogger`，通过共享 record sink 和不可变 scope/context 快照实现点号 scope 派生及父级 < child < 调用级浅层合并；child 目标测试 3 pass / 0 fail，完整 Foundation 测试 17 pass / 0 fail，Creator TypeScript strict 检查 0 diagnostics，未引入全局静态 Logger。
+- [x] 2.5 在 `diagnostics/logging` 实现直接输出结构化记录的 ConsoleLogger，并在仓库级测试支持目录提供不参与 Cocos 构建的 MemoryLogger；验证可以按 level、scope 和浅层 context 断言，不得加入递归序列化、循环检测或敏感字段脱敏。
+  - RED：新增输出行为测试后得到 0 pass / 2 fail，分别证明 ConsoleLogger 和仓库级 MemoryLogger 尚不存在。
+  - GREEN：ConsoleLogger 按 level 把完整 LogRecord 直接交给对应 console 方法，MemoryLogger 通过只读 records 支持 level/scope/context 断言；目标测试 2 pass / 0 fail，完整 Foundation 测试 19 pass / 0 fail，Creator TypeScript strict 检查 0 diagnostics，未加入递归序列化、循环检测或敏感字段脱敏。
 
 ## 3. ApplicationContext、Module 契约与依赖图
 
