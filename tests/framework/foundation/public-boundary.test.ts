@@ -21,6 +21,7 @@ const projectRoot = resolve(import.meta.dir, "../../..");
 const assetsRoot = resolve(projectRoot, "assets");
 const frameworkRoot = resolve(assetsRoot, "framework");
 const frameworkPublicEntry = resolve(frameworkRoot, "index.ts");
+const moduleContractsRoot = resolve(frameworkRoot, "contracts/module");
 const gameRoot = resolve(assetsRoot, "game");
 const bootRoot = resolve(assetsRoot, "boot");
 const importScanner = new Bun.Transpiler({ loader: "ts" });
@@ -322,6 +323,27 @@ function validateFrameworkImport(
     }
   }
 
+  if (
+    isWithin(file, moduleContractsRoot) &&
+    targetLayer === "contracts" &&
+    target !== undefined
+  ) {
+    const targetFromFramework = normalizePath(relative(frameworkRoot, target));
+    const isAllowedModuleContract =
+      targetFromFramework === "contracts/module" ||
+      targetFromFramework.startsWith("contracts/module/") ||
+      targetFromFramework === "contracts/application" ||
+      targetFromFramework.startsWith("contracts/application/");
+
+    if (!isAllowedModuleContract) {
+      return createViolation(
+        file,
+        specifier,
+        "contracts/module can only depend on contracts/application and core",
+      );
+    }
+  }
+
   return undefined;
 }
 
@@ -429,6 +451,48 @@ describe("framework public boundary", () => {
     ];
 
     expect(fixtures).toEqual([[], [], [], [], []]);
+  });
+
+  test("allows contracts/module to depend on contracts/application and core", () => {
+    const source = `
+      import type { ApplicationContext } from "../application/ApplicationContext";
+      import type { LifecycleState } from "../../core/lifecycle/LifecycleState";
+    `;
+
+    expect(
+      analyzeFixture("assets/framework/contracts/module/Module.ts", source),
+    ).toEqual([]);
+  });
+
+  test("rejects forbidden contracts/module architecture dependencies", () => {
+    const source = `
+      import type { ApplicationContext } from "../../application/ApplicationContext";
+      import type { CocosAdapter } from "../../adapters/cocos/application/CocosAdapter";
+      import type { ConsoleLogger } from "../../diagnostics/logging/ConsoleLogger";
+      import type { Logger } from "../logging/Logger";
+      import { Component } from "cc";
+    `;
+
+    const violations = analyzeFixture(
+      "assets/framework/contracts/module/Module.ts",
+      source,
+    );
+
+    expect(
+      Object.fromEntries(
+        violations.map(({ specifier, reason }) => [specifier, reason]),
+      ),
+    ).toEqual({
+      "../../application/ApplicationContext":
+        "contracts cannot depend on application",
+      "../../adapters/cocos/application/CocosAdapter":
+        "contracts cannot depend on adapters/cocos",
+      "../../diagnostics/logging/ConsoleLogger":
+        "contracts cannot depend on diagnostics",
+      "../logging/Logger":
+        "contracts/module can only depend on contracts/application and core",
+      cc: "contracts cannot depend on Cocos",
+    });
   });
 
   test("rejects reverse, concrete, Cocos, boot and Game dependencies", () => {

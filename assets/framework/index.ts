@@ -4,3 +4,17 @@ export type {
   LogLevel,
   LogRecord,
 } from "./contracts/logging/Logger";
+
+export type {
+  ApplicationContext,
+  ApplicationLifecycle,
+  ApplicationState,
+} from "./contracts/application/ApplicationContext";
+
+export type {
+  Module,
+  ModulePhase,
+  ModuleRuntimeState,
+} from "./contracts/module/Module";
+
+export { ModuleLifecycleError } from "./contracts/module/ModuleLifecycleError";
