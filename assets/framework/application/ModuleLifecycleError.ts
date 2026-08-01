@@ -1,20 +1,25 @@
 import type { ModulePhase } from "../contracts/module/Module";
 
-export class ModuleLifecycleError extends Error {
+type ErrorConstructorWithCause = new (
+  message?: string,
+  options?: { readonly cause?: unknown },
+) => Error;
+
+const ErrorWithCause = Error as ErrorConstructorWithCause;
+
+export class ModuleLifecycleError extends ErrorWithCause {
   readonly moduleId: string;
   readonly phase: ModulePhase;
-  readonly cause: unknown;
 
   constructor(
     moduleId: string,
     phase: ModulePhase,
-    cause: unknown
+    cause: unknown,
   ) {
-    super(`Module lifecycle failed`);
+    super("Module lifecycle failed", { cause });
 
     this.name = "ModuleLifecycleError";
     this.moduleId = moduleId;
     this.phase = phase;
-    this.cause = cause;
   }
 }
