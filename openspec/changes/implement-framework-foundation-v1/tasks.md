@@ -47,12 +47,23 @@
 
 ## 4. ModuleRunner 初始化与回滚
 
-- [ ] 4.1 先编写 ModuleRunner 主路径测试，重点覆盖正序 initialize/start 和逆序 stop/dispose。
-- [ ] 4.2 实现 ModuleRunner 的阶段状态记录和主路径生命周期调用，使 4.1 的测试通过并阻止 initialize/start/stop/dispose 重复执行。
-- [ ] 4.3 先编写 initialize 失败测试，验证只逆序 dispose 已初始化模块，未初始化模块不执行清理。
-- [ ] 4.4 先编写 start 失败测试，验证逆序 stop 已启动模块，再逆序 dispose 已初始化模块。
-- [ ] 4.5 在 initialize/start/stop/dispose 测试通过后，补充低优先级 pause/resume 冒烟测试，只覆盖 pause 逆序、resume 正序和省略钩子的兼容性；失败组合延后。
-- [ ] 4.6 先编写清理失败测试，验证单个 stop/dispose 错误不会阻断剩余模块清理，且原始失败不会被回滚错误覆盖。
+- [x] 4.1 先编写 ModuleRunner 主路径测试，重点覆盖正序 initialize/start 和逆序 stop/dispose。
+  - RED：新增 ModuleRunner 主路径测试，定义内部 `new ModuleRunner(orderedModules, context)`、四阶段方法和 `getState(moduleId)` API；目标测试 0 pass / 3 fail，完整 Foundation 测试 40 pass / 3 fail，失败均为 `application/ModuleRunner.ts` 尚未实现，并覆盖重复阶段调用不得重复执行钩子。
+- [x] 4.2 实现 ModuleRunner 的阶段状态记录和主路径生命周期调用，使 4.1 的测试通过并阻止 initialize/start/stop/dispose 重复执行。
+  - GREEN：新增内部 `ModuleRunner`，按传入的已排序模块正序 initialize/start、逆序 stop/dispose，并以 `ModuleRuntimeState` 阻止四阶段重复执行；目标测试 3 pass / 0 fail，完整 Foundation 测试 43 pass / 0 fail，Creator TypeScript 5.8.2 strict 检查与 `git diff --check` 通过，`.meta` 由 Creator 3.8.8 AssetDB 生成，且未从 Framework 根入口导出。
+  - REVIEW：2026-08-02 用户审查通过；4.1、4.2 保持完成，未开始 4.3。
+- [x] 4.3 先编写 initialize 失败测试，验证只逆序 dispose 已初始化模块，未初始化模块不执行清理。
+  - RED：新增 initialize 失败回滚测试，验证失败前已初始化模块按逆序 dispose，失败模块与尚未初始化模块不清理且后续模块不再 initialize；目标测试 0 pass / 1 fail，完整 Foundation 测试 43 pass / 1 fail，失败精确指向 ModuleRunner 尚未执行 initialize 回滚。
+  - REVIEW：2026-08-02 用户审查通过；4.3 标记完成，未开始 4.4。
+- [x] 4.4 先编写 start 失败测试，验证逆序 stop 已启动模块，再逆序 dispose 已初始化模块。
+  - RED：新增 start 失败分阶段回滚测试，验证先逆序 stop 已启动模块，再逆序 dispose 全部已初始化模块；目标测试 0 pass / 1 fail，完整 Foundation 测试 43 pass / 2 fail，其中新增失败精确指向 ModuleRunner 尚未执行 start 回滚，另一失败为已接受的 4.3 RED。
+  - REVIEW：2026-08-02 用户审查通过；4.4 标记完成，未开始 4.5。
+- [x] 4.5 在 initialize/start/stop/dispose 测试通过后，补充低优先级 pause/resume 冒烟测试，只覆盖 pause 逆序、resume 正序和省略钩子的兼容性；失败组合延后。
+  - RED/GREEN：新增 pause 逆序、resume 正序和省略钩子兼容性测试；RED 为 0 pass / 3 fail，失败均因 pause/resume 尚不存在，最小实现后目标测试 3 pass / 0 fail，ModuleRunner 主路径与 pause/resume 合计 6 pass / 0 fail。完整 Foundation 测试 46 pass / 2 fail，仅保留已接受的 4.3、4.4 RED；Creator TypeScript 5.8.2 strict 检查与 `git diff --check` 通过，失败组合未实现。
+  - REVIEW：2026-08-02 用户审查通过；4.5 标记完成，未开始 4.6。
+- [x] 4.6 先编写清理失败测试，验证单个 stop/dispose 错误不会阻断剩余模块清理，且原始失败不会被回滚错误覆盖。
+  - RED：新增 4 个清理失败测试，覆盖 stop/dispose 单点失败后继续剩余清理，以及 initialize/start 原始失败不被回滚错误覆盖；目标测试 0 pass / 4 fail，完整 Foundation 测试 46 pass / 6 fail，其中新增 4 个失败精确指向清理中断与回滚尚未实现，另 2 个为已接受的 4.3、4.4 RED。
+  - REVIEW：2026-08-02 用户审查通过；4.6 标记完成，未开始 4.7。
 - [ ] 4.7 实现分阶段回滚、错误 cause 保留和清理错误聚合，使 initialize/start/stop/dispose 的失败测试通过，并保持 pause/resume 接口可调用。
 - [ ] 4.8 使用 MemoryLogger 验证每个模块阶段日志都包含 module id、phase、level 和结果字段，不依赖 application identity。
 
