@@ -118,7 +118,7 @@ export class ModuleRunner {
         continue;
       }
 
-      await module.pause?.(this.context);
+      await this.invokePhase(module, "pause");
       this.states.set(module.id, "paused");
     }
   }
@@ -129,7 +129,7 @@ export class ModuleRunner {
         continue;
       }
 
-      await module.resume?.(this.context);
+      await this.invokePhase(module, "resume");
       this.states.set(module.id, "started");
     }
   }
@@ -165,8 +165,30 @@ export class ModuleRunner {
     try {
       await module[phase]?.call(module, this.context);
     } catch (error) {
-      throw new ModuleLifecycleError(module.id, phase, error);
+      const lifecycleError = new ModuleLifecycleError(
+        module.id,
+        phase,
+        error,
+      );
+
+      this.context.logger.error(
+        "Module lifecycle failed",
+        {
+          moduleId: module.id,
+          phase,
+          result: "failure",
+        },
+        lifecycleError,
+      );
+
+      throw lifecycleError;
     }
+
+    this.context.logger.info("Module lifecycle completed", {
+      moduleId: module.id,
+      phase,
+      result: "success",
+    });
   }
 
   private async cleanup(

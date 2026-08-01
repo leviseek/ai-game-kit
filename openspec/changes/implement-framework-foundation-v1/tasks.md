@@ -67,7 +67,9 @@
 - [x] 4.7 实现分阶段回滚、错误 cause 保留和清理错误聚合，使 initialize/start/stop/dispose 的失败测试通过，并保持 pause/resume 接口可调用。
   - GREEN：ModuleRunner 在 initialize 失败时逆序 dispose 已初始化模块，在 start 失败时先逆序 stop 已启动模块、再逆序 dispose 已初始化模块；stop/dispose 会继续执行剩余清理并通过只读错误数组聚合 ModuleLifecycleError，同时以 cause 保留首要失败。目标测试 9 pass / 0 fail，完整 Foundation 测试 52 pass / 0 fail，Creator TypeScript 5.8.2 strict 检查与 `git diff --check` 通过，pause/resume 冒烟测试保持绿色。
   - REVIEW：2026-08-02 用户审查通过；4.7 标记完成，未开始 4.8。
-- [ ] 4.8 使用 MemoryLogger 验证每个模块阶段日志都包含 module id、phase、level 和结果字段，不依赖 application identity。
+- [x] 4.8 使用 MemoryLogger 验证每个模块阶段日志都包含 module id、phase、level 和结果字段，不依赖 application identity。
+  - RED/GREEN：新增 MemoryLogger 驱动的 ModuleRunner 日志测试；RED 为 0 pass / 2 fail，最小实现后目标测试 2 pass / 0 fail。initialize/start/pause/resume/stop/dispose 成功记录使用 info 与 `result: success`，失败记录使用 error 与 `result: failure` 并保留 ModuleLifecycleError cause；完整 Foundation 测试 54 pass / 0 fail，Creator TypeScript 5.8.2 strict 检查、架构边界与 `git diff --check` 通过，日志不包含 application identity。
+  - REVIEW：2026-08-02 用户审查通过；4.8 标记完成，未开始 5.1。
 
 ## 5. Application 生命周期与 ApplicationContext
 
