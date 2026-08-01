@@ -2,9 +2,10 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, test } from "bun:test";
 
-import type {
-  ApplicationContext,
-  Module,
+import {
+  ModuleLifecycleError,
+  type ApplicationContext,
+  type Module,
 } from "../../../assets/framework";
 import { MemoryLogger } from "../support/MemoryLogger";
 
@@ -27,6 +28,9 @@ interface ModuleRunnerExports {
 type LifecyclePhase = "initialize" | "start" | "stop" | "dispose";
 type LifecycleFailures = Partial<Record<LifecyclePhase, Error>>;
 type ErrorWithCause = Error & { readonly cause?: unknown };
+type ErrorWithCleanupErrors = Error & {
+  readonly errors?: readonly ModuleLifecycleError[];
+};
 
 const projectRoot = resolve(import.meta.dir, "../../..");
 const moduleRunnerFile = resolve(
@@ -100,6 +104,32 @@ function containsError(error: unknown, expected: Error): boolean {
   return false;
 }
 
+function expectCleanupErrors(
+  error: unknown,
+  expected: readonly {
+    readonly moduleId: string;
+    readonly phase: LifecyclePhase;
+    readonly cause: Error;
+  }[],
+): void {
+  expect(error).toBeInstanceOf(Error);
+
+  const errors = (error as ErrorWithCleanupErrors).errors;
+
+  expect(Array.isArray(errors)).toBe(true);
+  expect(Object.isFrozen(errors)).toBe(true);
+  expect(errors).toHaveLength(expected.length);
+
+  for (const [index, lifecycleError] of (errors ?? []).entries()) {
+    expect(lifecycleError).toBeInstanceOf(ModuleLifecycleError);
+    expect(lifecycleError.moduleId).toBe(expected[index]?.moduleId);
+    expect(lifecycleError.phase).toBe(expected[index]?.phase);
+    expect((lifecycleError as ErrorWithCause).cause).toBe(
+      expected[index]?.cause,
+    );
+  }
+}
+
 describe("ModuleRunner cleanup failures", () => {
   test("continues stopping remaining modules after one stop fails", async () => {
     const ModuleRunner = await loadModuleRunner();
@@ -125,6 +155,9 @@ describe("ModuleRunner cleanup failures", () => {
     const error = await captureRejection(() => runner.stop());
 
     expect(containsError(error, stopFailure)).toBe(true);
+    expectCleanupErrors(error, [
+      { moduleId: inventory.id, phase: "stop", cause: stopFailure },
+    ]);
     expect(calls).toEqual([
       "gameplay:stop",
       "inventory:stop",
@@ -155,6 +188,9 @@ describe("ModuleRunner cleanup failures", () => {
     const error = await captureRejection(() => runner.dispose());
 
     expect(containsError(error, disposeFailure)).toBe(true);
+    expectCleanupErrors(error, [
+      { moduleId: inventory.id, phase: "dispose", cause: disposeFailure },
+    ]);
     expect(calls).toEqual([
       "gameplay:dispose",
       "inventory:dispose",
@@ -193,6 +229,9 @@ describe("ModuleRunner cleanup failures", () => {
     const error = await captureRejection(() => runner.initialize());
 
     expect(containsError(error, initializeFailure)).toBe(true);
+    expectCleanupErrors(error, [
+      { moduleId: inventory.id, phase: "dispose", cause: disposeFailure },
+    ]);
     expect(calls).toEqual([
       "logging:initialize",
       "inventory:initialize",
@@ -207,7 +246,13 @@ describe("ModuleRunner cleanup failures", () => {
     const calls: string[] = [];
     const startFailure = new Error("gameplay start failed");
     const stopFailure = new Error("inventory stop failed");
-    const logging = createModule("logging", calls);
+    const disposeFailure = new Error("logging dispose failed");
+    const logging = createModule(
+      "logging",
+      calls,
+      [],
+      { dispose: disposeFailure },
+    );
     const inventory = createModule(
       "inventory",
       calls,
@@ -236,6 +281,10 @@ describe("ModuleRunner cleanup failures", () => {
     const error = await captureRejection(() => runner.start());
 
     expect(containsError(error, startFailure)).toBe(true);
+    expectCleanupErrors(error, [
+      { moduleId: inventory.id, phase: "stop", cause: stopFailure },
+      { moduleId: logging.id, phase: "dispose", cause: disposeFailure },
+    ]);
     expect(calls).toEqual([
       "logging:start",
       "inventory:start",

@@ -64,7 +64,9 @@
 - [x] 4.6 先编写清理失败测试，验证单个 stop/dispose 错误不会阻断剩余模块清理，且原始失败不会被回滚错误覆盖。
   - RED：新增 4 个清理失败测试，覆盖 stop/dispose 单点失败后继续剩余清理，以及 initialize/start 原始失败不被回滚错误覆盖；目标测试 0 pass / 4 fail，完整 Foundation 测试 46 pass / 6 fail，其中新增 4 个失败精确指向清理中断与回滚尚未实现，另 2 个为已接受的 4.3、4.4 RED。
   - REVIEW：2026-08-02 用户审查通过；4.6 标记完成，未开始 4.7。
-- [ ] 4.7 实现分阶段回滚、错误 cause 保留和清理错误聚合，使 initialize/start/stop/dispose 的失败测试通过，并保持 pause/resume 接口可调用。
+- [x] 4.7 实现分阶段回滚、错误 cause 保留和清理错误聚合，使 initialize/start/stop/dispose 的失败测试通过，并保持 pause/resume 接口可调用。
+  - GREEN：ModuleRunner 在 initialize 失败时逆序 dispose 已初始化模块，在 start 失败时先逆序 stop 已启动模块、再逆序 dispose 已初始化模块；stop/dispose 会继续执行剩余清理并通过只读错误数组聚合 ModuleLifecycleError，同时以 cause 保留首要失败。目标测试 9 pass / 0 fail，完整 Foundation 测试 52 pass / 0 fail，Creator TypeScript 5.8.2 strict 检查与 `git diff --check` 通过，pause/resume 冒烟测试保持绿色。
+  - REVIEW：2026-08-02 用户审查通过；4.7 标记完成，未开始 4.8。
 - [ ] 4.8 使用 MemoryLogger 验证每个模块阶段日志都包含 module id、phase、level 和结果字段，不依赖 application identity。
 
 ## 5. Application 生命周期与 ApplicationContext
