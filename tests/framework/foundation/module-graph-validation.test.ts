@@ -73,4 +73,22 @@ describe("ModuleGraph validation", () => {
 
     expect(() => new ModuleGraph([inventory, economy, analytics])).toThrow();
   });
+
+  test("does not invoke lifecycle hooks while rejecting an invalid graph", async () => {
+    const ModuleGraph = await loadModuleGraph();
+    const calls: string[] = [];
+    const invalidModule: Module = {
+      id: "inventory",
+      dependencies: ["missing"],
+      initialize: () => { calls.push("initialize"); },
+      start: () => { calls.push("start"); },
+      pause: () => { calls.push("pause"); },
+      resume: () => { calls.push("resume"); },
+      stop: () => { calls.push("stop"); },
+      dispose: () => { calls.push("dispose"); },
+    };
+
+    expect(() => new ModuleGraph([invalidModule])).toThrow();
+    expect(calls).toEqual([]);
+  });
 });

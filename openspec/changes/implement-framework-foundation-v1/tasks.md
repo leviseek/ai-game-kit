@@ -42,7 +42,8 @@
   - RED：新增 ModuleGraph 稳定拓扑顺序测试，定义内部 `new ModuleGraph(modules).orderedModules` API；目标测试 0 pass / 5 fail，完整 Foundation 测试 27 pass / 5 fail，五项失败均为 `application/ModuleGraph.ts` 尚未实现，未提前创建生产代码。
 - [x] 3.4 先编写 ModuleGraph 失败测试，覆盖空 id、重复 id、缺失依赖、自循环和多节点循环。
   - RED：新增 ModuleGraph 构造校验测试，覆盖空 id、重复 id、缺失依赖、自循环和多节点循环，且不锁定错误文案；目标测试 0 pass / 5 fail，完整 Foundation 测试 27 pass / 10 fail，其中新增五项失败均为 `application/ModuleGraph.ts` 尚未实现，未提前创建生产代码。
-- [ ] 3.5 实现一次性 ModuleGraph 校验与稳定拓扑排序，使 3.3、3.4 的测试通过，并保证校验失败前没有执行任何模块钩子。
+- [x] 3.5 实现一次性 ModuleGraph 校验与稳定拓扑排序，使 3.3、3.4 的测试通过，并保证校验失败前没有执行任何模块钩子。
+  - GREEN：新增内部 `ModuleGraph`，在构造阶段完成空 id、重复 id、缺失依赖和循环依赖校验，并按注册顺序执行稳定拓扑排序；校验失败不会调用任何模块生命周期钩子。ModuleGraph 目标测试 11 pass / 0 fail，完整 Foundation 测试 39 pass / 0 fail，Creator TypeScript strict 检查通过，新增脚本 `.meta` 由 Cocos Creator 3.8.8 自动生成，且未从 Framework 根入口导出。
 
 ## 4. ModuleRunner 初始化与回滚
 
