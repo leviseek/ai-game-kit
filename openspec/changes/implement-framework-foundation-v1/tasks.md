@@ -2,8 +2,9 @@
 
 - [x] 1.1 记录 Bun、Node 和可用测试运行器现状，确认 Bun 可直接执行 TypeScript 且无需新增依赖；建立可重复执行的 Bun foundation 测试命令，并用最小失败测试证明门禁生效。
   - 基线：Bun 1.3.13、Node.js v24.15.0；项目未安装 Vitest、Jest、tsx、ts-node 或独立 tsc，使用 `bun:test` 无需新增依赖或 lockfile。
-  - 命令：`bun run test:foundation`，仅扫描仓库级 `tests/framework/foundation`，不进入 Cocos `assets` 导入范围。
+  - 命令：完整 foundation 门禁为 `bun run test:foundation && bun run test:foundation:types`。`test:foundation` 仅扫描仓库级 `tests/framework/foundation` 的运行时单元测试，不进入 Cocos `assets` 导入范围；`test:foundation:types` 定位 Creator 3.8.8 内置 tsc，对全部 `assets/framework` 源码与 `tests/framework/foundation/contracts.typecheck.ts` 契约断言执行 `--strict --noEmit` 检查。
   - 门禁证据：受控失败断言得到 0 pass / 1 fail 与退出码 1；修正后得到 1 pass / 0 fail 与退出码 0。
+  - REVIEW（Phase Review 补强，2026-08-04）：此前 `module-contract.test.ts` 中的契约类型断言被 Bun 转译擦除、从未进入 TypeScript checker；新增 `test:foundation:types` 门禁使契约断言与全部 Framework 源码真正执行 strict 类型检查。根入口白名单门禁同时补强到 `public-boundary.test.ts`，锁定精确导出集合并拒绝 `export *` 与内部实现泄露。两个门禁均已通过突变测试证明能捕获违规。
 - [x] 1.2 按 design.md 建立 `core`、`contracts`、`application`、`diagnostics/logging` 和 `adapters/cocos/application` 目录，不创建 UI、resource、scene、ECS 或 game 业务目录。
   - 已建立 `core/errors`、`core/lifecycle`、`contracts/application`、`contracts/module`、`contracts/logging`、`application`、`diagnostics/logging` 和 `adapters/cocos/application`；空目录不加入 `.gitkeep` 等占位文件。
 - [x] 1.3 建立 `assets/framework/index.ts` 的最小公开入口和导入边界测试，先证明跨模块深层导入会被检查发现。
@@ -96,8 +97,8 @@
 
 ## 7. 范围审查与最终验证
 
-- [ ] 7.1 运行全部 Bun foundation 单元测试，确认 ModuleGraph、ModuleRunner、Application 和 Logger 零失败。
-- [ ] 7.2 运行项目类型检查和 `git diff --check`，记录结果并区分当前配置基线与本 change 引入的问题。
+- [ ] 7.1 运行完整 foundation 门禁 `bun run test:foundation && bun run test:foundation:types`，确认 ModuleGraph、ModuleRunner、Application 和 Logger 的运行时行为与契约类型均零失败。
+- [ ] 7.2 运行 `test:foundation:types` 与项目类型检查、`git diff --check`，记录结果并区分当前配置基线与本 change 引入的问题。
 - [ ] 7.3 运行 Cocos Creator 3.8.8 Web Desktop 构建/预览冒烟验证，确认 AppRoot 脚本已正确导入且无组件或序列化错误。
 - [ ] 7.4 扫描新增文件和 import，确认不存在 UI、FairyGUI、Resource、Asset Bundle、Scene、ECS、网络、战斗或游戏业务实现与占位接口，并重新执行内部依赖矩阵：core 不依赖 Cocos、contracts 不依赖具体实现、application/Framework 不依赖 Game、diagnostics/logging 只依赖 logging contract 和必要 core。
 - [ ] 7.5 审查公共导出白名单，确认只暴露稳定 ApplicationContext/Application/Module/Logger contracts、必要启动类型和允许捕获的错误；ModuleGraph、ModuleRunner、ApplicationContext 可变实现、MemoryLogger、Console 格式化细节和 Cocos Adapter 内部实现不得被根入口暴露。

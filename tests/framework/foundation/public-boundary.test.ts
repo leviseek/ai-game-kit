@@ -386,9 +386,84 @@ function analyzeFixture(file: string, source: string): readonly ImportViolation[
   return findImportViolations(resolve(projectRoot, file), source);
 }
 
+function extractRootExportNames(source: string): readonly string[] {
+  const names = new Set<string>();
+
+  for (const match of source.matchAll(
+    /\bexport\s+(?:type\s+)?\{([^}]*)\}\s*from\b/g,
+  )) {
+    const body = match[1];
+
+    if (body === undefined) {
+      continue;
+    }
+
+    for (const specifier of body.split(",")) {
+      const local = specifier.split(/\s+as\s+/)[0]?.trim();
+
+      if (local !== undefined && local.length > 0) {
+        names.add(local);
+      }
+    }
+  }
+
+  for (const match of source.matchAll(
+    /\bexport\s+(?:declare\s+)?(?:class|interface|type|const|function|enum)\s+([A-Za-z_$][A-Za-z0-9_$]*)/g,
+  )) {
+    const name = match[1];
+
+    if (name !== undefined) {
+      names.add(name);
+    }
+  }
+
+  return [...names].sort();
+}
+
 describe("framework public boundary", () => {
   test("provides a root public entry", () => {
     expect(existsSync(frameworkPublicEntry)).toBe(true);
+  });
+
+  test("exports exactly the stable public API whitelist", () => {
+    const source = readFileSync(frameworkPublicEntry, "utf8");
+
+    expect(source).not.toMatch(/\bexport\s+\*/);
+
+    const expectedRootExports = [
+      "ApplicationContext",
+      "ApplicationLifecycle",
+      "ApplicationState",
+      "LogContext",
+      "LogLevel",
+      "LogRecord",
+      "Logger",
+      "Module",
+      "ModuleLifecycleError",
+      "ModulePhase",
+      "ModuleRuntimeState",
+    ].sort();
+
+    expect(extractRootExportNames(source)).toEqual(expectedRootExports);
+  });
+
+  test("never leaks framework internals from the root entry", () => {
+    const source = readFileSync(frameworkPublicEntry, "utf8");
+    const exportedNames = extractRootExportNames(source);
+    const forbiddenInternals = [
+      "ModuleGraph",
+      "ModuleRunner",
+      "ScopedLogger",
+      "ConsoleLogger",
+      "MemoryLogger",
+      "createScopedLogger",
+      "LogRecordSink",
+      "CocosApplicationAdapter",
+    ];
+
+    for (const name of forbiddenInternals) {
+      expect(exportedNames).not.toContain(name);
+    }
   });
 
   test("allows external consumers to import only the root entry", () => {
