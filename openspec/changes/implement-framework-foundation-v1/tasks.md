@@ -74,14 +74,36 @@
 
 ## 5. Application 生命周期与 ApplicationContext
 
-- [ ] 5.1 先编写 Application 主状态测试，重点覆盖 `created -> initializing -> running -> stopping -> disposed`。
-- [ ] 5.2 先编写启动失败测试，覆盖 ModuleGraph 校验失败、initialize 失败和 start 失败均进入 `stopping -> disposed`。
-- [ ] 5.3 实现 Application 的 start、dispose 和只读 state，使 5.1、5.2 的主路径与失败测试通过。
-- [ ] 5.4 先编写 start/start、dispose/dispose、启动中 dispose 和 disposed/start 测试，覆盖主路径 single-flight 与非法终态操作。
-- [ ] 5.5 实现生命周期操作串行化和 single-flight，使 5.4 的测试通过且不依赖调用方加锁。
-- [ ] 5.6 在主路径稳定后实现 pause/resume，并补充 `running -> paused -> running`、重复 pause/resume 和省略 Module 钩子的低优先级冒烟测试；详细失败与并发矩阵延后。
-- [ ] 5.7 先编写 ApplicationContext implementation 边界测试，确认它实现 `contracts/application` 的公开 contract，只包含 logger 和 readonly lifecycle state，不包含 application identity、`get<T>()`、服务注册表、Application 实例或 Game 对象。
-- [ ] 5.8 在 `application` 实现 ApplicationContext 的内部实现和供 Composition Root 调用的创建 API，并为每个模块提供以 module id 为 scope 的 child logger；不得从根入口导出可变实现，使 5.7 和模块日志测试通过。
+- [x] 5.1 先编写 Application 主状态测试，重点覆盖 `created -> initializing -> running -> stopping -> disposed`。
+  - RED：新增 Application 生命周期测试（初始状态 created、全生命周期状态+调用顺序、空模块完整运行），目标测试 0 pass / 3 fail，失败统一指向根入口未导出 Application。
+  - GREEN：5.3 实现 Application 后目标测试通过。后续补充 pause/resume 钩子状态验证（先钩子后 setState）、context 透传+不修改验证。完整 Foundation 测试 64 pass / 0 fail。
+  - REVIEW：2026-08-04 用户审查通过；pause/resume 顺序修正、context passthrough 回归测试已到位。
+- [x] 5.2 先编写启动失败测试，覆盖 ModuleGraph 校验失败、initialize 失败和 start 失败均进入 `stopping -> disposed`。
+  - RED：新增启动失败测试（重复 id、缺失依赖、initialize 失败、start 失败），累计 7 项 Application 测试均 RED（根入口未导出）。
+  - GREEN：5.3 实现 Application 后目标测试通过。后续补充错误 cause 链 traceability 验证（collectMessages），不绑定具体 Error class。完整 Foundation 测试 64 pass / 0 fail。
+  - REVIEW：2026-08-04 用户审查通过；错误追溯验证保持 contract-level、不绑定 ModuleLifecycleError。
+- [x] 5.3 实现 Application 的 start、dispose 和只读 state，使 5.1、5.2 的主路径与失败测试通过。
+  - RED：5.1、5.2 共 7 项 Application 测试失败，根因为 Application 未实现/未导出。
+  - GREEN：新增 `application/Application.ts`（经根入口导出），六状态生命周期 + start/pause/resume/dispose + 只读 state。失败路径 `initializing → stopping → disposed` 经局部 runner 清理后重抛原始错误。Application 只持有 ApplicationContext contract、不修改 context（design #7）。三次审查修正：移除 context cast → pause/resume 顺序改为先钩子后 setState → catch 清理用局部 runner（防 stale）。完整 Foundation 测试 64 pass / 0 fail，Creator TypeScript strict 检查与 `git diff --check` 通过。
+  - REVIEW：2026-08-04 用户审查通过；5.3 标记完成，5.4 已完成。
+- [x] 5.4 先编写 start/start、dispose/dispose、启动中 dispose 和 disposed/start 测试，覆盖主路径 single-flight 与非法终态操作。
+  - RED：新增 Application 操作守卫测试（并发 start 单飞、running→start 拒绝、disposed→start 拒绝、启动中 dispose 串行化），累计 4 项 RED（5.3 无 guards/serialization 均不满足）。1 项 repeat dispose no-op 已 GREEN（5.3 finally 天然支持）。
+  - 完整 Foundation 测试 65 pass / 4 fail；ApplicationStateError 契约由测试内 `isApplicationStateError` guard 定义（name + currentState），类实现属 5.5。
+  - REVIEW：2026-08-04 用户审查通过；5.5 已完成。
+- [x] 5.5 实现生命周期操作串行化和 single-flight，使 5.4 的测试通过且不依赖调用方加锁。
+  - RED：5.4 的 4 项测试 RED（无串行化、无守卫、无单飞）。1 项 repeat dispose no-op 已 GREEN。
+  - GREEN：新增 `ApplicationStateError` 并导出；`Application.ts` 加入 enqueue 串行队列、inFlightStart/Dispose 单飞锁（带引用校验防 stale）、状态前置守卫（start 仅 created、pause 仅 running、resume 仅 paused）、no-op（已 paused/disposed/running）。start 失败回滚经独立的 stop→dispose 清理（各自容错，不阻断对方）；dispose 统一走 try/catch 收集 cleanup 错误并通过 `context.logger.error` 上报后抛首错（调用方可感知）。`.finally` → `.then`（ES2015 兼容）。完整 Foundation 测试 69 pass / 0 fail，Creator TypeScript strict 检查与 `git diff --check` 通过。
+  - REVIEW：2026-08-04 用户审查通过；5.6 已完成。
+- [x] 5.6 在主路径稳定后实现 pause/resume，并补充 `running -> paused -> running`、重复 pause/resume 和省略 Module 钩子的低优先级冒烟测试；详细失败与并发矩阵延后。
+  - RED：pause/resume 已在 5.3 实现（5.1 测试要求），本任务仅补充冒烟测试。新增测试均 GREEN（全覆盖 pause/resume 状态转换、no-op、非法状态抛 ApplicationStateError、省略钩子兼容、逆序/正序调用顺序）。完整 Foundation 测试 78 pass / 0 fail。
+  - REVIEW：2026-08-04 用户审查通过；5.7 已完成。
+- [x] 5.7 先编写 ApplicationContext implementation 边界测试，确认它实现 `contracts/application` 的公开 contract，只包含 logger 和 readonly lifecycle state，不包含 application identity、`get<T>()`、服务注册表、Application 实例或 Game 对象。
+  - RED：新增 ApplicationContext 实现边界测试（创建 API、契约合规、service locator 禁入、identity 禁入、state getter 无 setter、module id child logger、根入口不泄露），9 项均 RED（`application/ApplicationContext.ts` 尚未创建）。完整 Foundation 测试 78 pass / 9 fail。
+  - REVIEW：2026-08-04 用户审查通过；5.8 已完成。
+- [x] 5.8 在 `application` 实现 ApplicationContext 的内部实现和供 Composition Root 调用的创建 API，并为每个模块提供以 module id 为 scope 的 child logger；不得从根入口导出可变实现，使 5.7 和模块日志测试通过。
+  - RED：5.7 的 9 项测试 RED（`application/ApplicationContext.ts` 未创建）。
+  - GREEN：新增 `application/ApplicationContext.ts`，导出 `createApplicationContext(logger)` 返回 `InternalApplicationContext`（logger + getter state + 内部 _setState）。child logger 经 `context.logger.child(moduleId)` 获得独立 scope。未导出至根入口。完整 Foundation 测试 87 pass / 0 fail，Creator TypeScript strict 检查与 `git diff --check` 通过。
+  - REVIEW：2026-08-04 用户审查通过；未开始 5.9。
 - [ ] 5.9 验证空 Module 数组可以完整 start/dispose，并附带一次基础 pause/resume 冒烟，作为 AppRoot 默认启动基线。
 
 ## 6. Cocos Application Adapter 与 AppRoot 组合入口

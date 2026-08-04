@@ -1,4 +1,5 @@
 import type {
+  Application,
   ApplicationContext,
   ApplicationLifecycle,
   ApplicationState,
@@ -61,6 +62,22 @@ type _ApplicationStateIsClosedUnion = Expect<
     | "stopping"
     | "disposed"
   >
+>;
+type _ApplicationPublicShape = Expect<
+  Equal<
+    keyof Application,
+    "dispose" | "pause" | "resume" | "start" | "state"
+  >
+>;
+type _ApplicationStateIsReadonly = Expect<IsReadonlyKey<Application, "state">>;
+type _ApplicationStateIsLifecycleState = Expect<
+  Equal<Application["state"], ApplicationState>
+>;
+type _ApplicationOperationsReturnPromises = Expect<
+  Equal<Application["start"], () => Promise<void>> &
+    Equal<Application["pause"], () => Promise<void>> &
+    Equal<Application["resume"], () => Promise<void>> &
+    Equal<Application["dispose"], () => Promise<void>>
 >;
 type _ApplicationContextHasNoServiceLocator = Expect<
   NeverKey<ApplicationContext, "get" | "resolve" | "registry" | "container" | "provide">

@@ -17,4 +17,6 @@ export type {
   ModuleRuntimeState,
 } from "./contracts/module/Module";
 
+export { Application } from "./application/Application";
+export { ApplicationStateError } from "./application/ApplicationStateError";
 export { ModuleLifecycleError } from "./application/ModuleLifecycleError";

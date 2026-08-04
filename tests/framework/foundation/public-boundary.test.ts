@@ -431,9 +431,11 @@ describe("framework public boundary", () => {
     expect(source).not.toMatch(/\bexport\s+\*/);
 
     const expectedRootExports = [
+      "Application",
       "ApplicationContext",
       "ApplicationLifecycle",
       "ApplicationState",
+      "ApplicationStateError",
       "LogContext",
       "LogLevel",
       "LogRecord",
