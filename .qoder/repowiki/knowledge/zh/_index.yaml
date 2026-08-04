@@ -3,11 +3,11 @@ schema_version: 1
 locale: zh-CN
 branch: main
 nodes_managed: true
-exported_at: "2026-08-04T21:25:48Z"
+exported_at: "2026-08-04T21:38:13Z"
 modules:
     "":
-        dir_name: AI Game Kit 项目根目录
-        title: AI Game Kit 项目根目录
+        dir_name: AI Game Kit 项目根编排层
+        title: AI Game Kit 项目根编排层
         scope:
             - package.json
             - tsconfig.json
@@ -29,16 +29,20 @@ modules:
         source_files: []
         children: []
         depends_on: []
-        related_to: []
+        related_to:
+            - path: openspec
+            - path: tests
     openspec:
-        dir_name: OpenSpec 变更与规格管理
-        title: OpenSpec 变更与规格管理
+        dir_name: OpenSpec 规范驱动变更管理
+        title: OpenSpec 规范驱动变更管理
         scope:
             - openspec/
         source_files: []
         children: []
         depends_on: []
-        related_to: []
+        related_to:
+            - path: opencode_skills
+            - path: tests
     tests:
         dir_name: Foundation 框架测试套件
         title: Foundation 框架测试套件
@@ -47,4 +51,6 @@ modules:
         source_files: []
         children: []
         depends_on: []
-        related_to: []
+        related_to:
+            - path: opencode_skills
+            - path: openspec

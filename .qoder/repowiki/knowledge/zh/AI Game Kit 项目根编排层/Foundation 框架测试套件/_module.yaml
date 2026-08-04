@@ -5,4 +5,6 @@ scope:
     - tests/
 source_files: []
 depends_on: []
-related_to: []
+related_to:
+    - path: opencode_skills
+    - path: openspec
