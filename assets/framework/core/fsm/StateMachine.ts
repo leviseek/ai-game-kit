@@ -42,6 +42,7 @@ export function createStateMachine<State extends string, Event extends string>(
 
   let current: State = initial;
   let disposed = false;
+  let inTransition = false;
 
   function report(error: unknown): void {
     try {
@@ -53,6 +54,15 @@ export function createStateMachine<State extends string, Event extends string>(
 
   function send(event: Event): void {
     if (disposed) {
+      return;
+    }
+
+    if (inTransition) {
+      report(
+        new Error(
+          `StateMachine rejected reentrant event "${String(event)}" from state "${String(current)}"`,
+        ),
+      );
       return;
     }
 
@@ -73,27 +83,27 @@ export function createStateMachine<State extends string, Event extends string>(
 
     const to = eventTransitions[event];
 
-    const exitHook = hooks?.onExit?.[from];
-    if (exitHook !== undefined) {
-      try {
+    inTransition = true;
+
+    try {
+      const exitHook = hooks?.onExit?.[from];
+      if (exitHook !== undefined) {
         exitHook(from, event, to);
-      } catch (error) {
-        report(error);
-        return;
       }
-    }
 
-    current = to;
+      current = to;
 
-    const enterHook = hooks?.onEnter?.[to];
-    if (enterHook !== undefined) {
-      try {
+      const enterHook = hooks?.onEnter?.[to];
+      if (enterHook !== undefined) {
         enterHook(from, event, to);
-      } catch (error) {
-        current = from;
-        report(error);
-        return;
       }
+    } catch (error) {
+      if (current === to) {
+        current = from;
+      }
+      report(error);
+    } finally {
+      inTransition = false;
     }
   }
 
@@ -105,6 +115,12 @@ export function createStateMachine<State extends string, Event extends string>(
     current = initial;
   }
 
+  /**
+   * Disposal takes effect immediately: the machine stops accepting events.
+   * The returned handle only serves the uniform DisposeHandle shape and
+   * idempotent confirmation; unlike scheduler or event-channel handles it
+   * does not delay or repeat the disposal.
+   */
   function dispose(): DisposeHandle {
     if (disposed) {
       return NOOP_HANDLE;

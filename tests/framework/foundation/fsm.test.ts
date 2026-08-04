@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, spyOn, test } from "bun:test";
 
 import type { DisposeHandle } from "../../../assets/framework/core/scheduling/DisposeHandle";
 import {
@@ -427,6 +427,33 @@ describe("StateMachine dispose", () => {
 
     expect(order).toEqual([]);
   });
+
+  test("reset after dispose is a no-op", () => {
+    const order: string[] = [];
+    const machine = createStateMachine<DoorState, DoorEvent>({
+      initial: "closed",
+      transitions: DOOR_TRANSITIONS,
+      hooks: {
+        onEnter: {
+          open: () => {
+            order.push("enter:open");
+          },
+        },
+      },
+    });
+
+    machine.send("open");
+    expect(machine.state).toBe("open");
+    expect(order).toEqual(["enter:open"]);
+
+    machine.dispose();
+
+    expect(() => {
+      machine.reset();
+    }).not.toThrow();
+    expect(machine.state).toBe("open");
+    expect(order).toEqual(["enter:open"]);
+  });
 });
 
 describe("StateMachine contract shape", () => {
@@ -441,5 +468,75 @@ describe("StateMachine contract shape", () => {
     expect(typeof typed.reset).toBe("function");
     expect(typeof typed.dispose).toBe("function");
     expect(typeof typed.state).toBe("string");
+  });
+});
+
+describe("StateMachine error reporter isolation", () => {
+  test("a throwing error reporter is contained and does not break send", () => {
+    const errorSpy = spyOn(console, "error").mockImplementation(() => {});
+
+    try {
+      const machine = createStateMachine<DoorState, DoorEvent>({
+        initial: "closed",
+        transitions: DOOR_TRANSITIONS,
+        onTransitionError: () => {
+          throw new Error("reporter failed");
+        },
+      });
+
+      machine.send("close");
+      expect(machine.state).toBe("closed");
+
+      machine.send("open");
+      expect(machine.state).toBe("open");
+
+      expect(errorSpy).toHaveBeenCalled();
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+});
+
+describe("StateMachine unregistered source state", () => {
+  test("sending an event from a state without declared transitions reports failure and keeps state", () => {
+    const { failures, onTransitionError } = createFailures();
+    const machine = createStateMachine<"alpha" | "beta", "go">({
+      initial: "alpha",
+      transitions: {
+        beta: { go: "alpha" },
+      },
+      onTransitionError,
+    });
+
+    machine.send("go");
+
+    expect(machine.state).toBe("alpha");
+    expect(failures).toHaveLength(1);
+    expect(failures[0].error).toBeInstanceOf(Error);
+  });
+});
+
+describe("StateMachine reentrant send", () => {
+  test("a reentrant send from inside a hook is rejected without corrupting state", () => {
+    const { failures, onTransitionError } = createFailures();
+    let machine: StateMachine<DoorState, DoorEvent>;
+    machine = createStateMachine<DoorState, DoorEvent>({
+      initial: "closed",
+      transitions: DOOR_TRANSITIONS,
+      onTransitionError,
+      hooks: {
+        onEnter: {
+          open: () => {
+            machine.send("close");
+          },
+        },
+      },
+    });
+
+    machine.send("open");
+
+    expect(machine.state).toBe("open");
+    expect(failures).toHaveLength(1);
+    expect(failures[0].error.message).toContain("reentrant");
   });
 });
