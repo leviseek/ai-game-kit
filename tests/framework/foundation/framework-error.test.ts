@@ -111,3 +111,21 @@ describe("FrameworkError module and phase context", () => {
     expect(error.component).toBe("resource-loader");
   });
 });
+
+describe("FrameworkError subclass cause propagation", () => {
+  test("ApplicationStateError optionally carries a cause", () => {
+    const cause = new Error("state transition blocked");
+    const error = new ApplicationStateError("stopping", { cause });
+
+    expect((error as ErrorWithCause).cause).toBe(cause);
+    expect(error.currentState).toBe("stopping");
+    expect(error.name).toBe("ApplicationStateError");
+  });
+
+  test("ApplicationStateError remains compatible without a cause", () => {
+    const error = new ApplicationStateError("running");
+
+    expect((error as ErrorWithCause).cause).toBeUndefined();
+    expect(error.currentState).toBe("running");
+  });
+});

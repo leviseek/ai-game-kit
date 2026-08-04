@@ -3,6 +3,7 @@ import { pathToFileURL } from "node:url";
 import { describe, expect, test } from "bun:test";
 
 import {
+  FrameworkError,
   ModuleLifecycleError,
   type ApplicationContext,
   type Module,
@@ -155,6 +156,7 @@ describe("ModuleRunner cleanup failures", () => {
     const error = await captureRejection(() => runner.stop());
 
     expect(containsError(error, stopFailure)).toBe(true);
+    expect(error).toBeInstanceOf(FrameworkError);
     expectCleanupErrors(error, [
       { moduleId: inventory.id, phase: "stop", cause: stopFailure },
     ]);

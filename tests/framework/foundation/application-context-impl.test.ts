@@ -122,6 +122,15 @@ describe("ApplicationContext implementation", () => {
     expect(stateDescriptor?.writable).toBeUndefined();
   });
 
+  test("the factory returns the narrow contract without a state mutator", async () => {
+    const createApplicationContext = await loadFactory();
+    const context = createApplicationContext(new MemoryLogger());
+
+    const keys = collectKeys(context as object);
+
+    expect(keys).not.toContain("_setState");
+  });
+
   test("logger can produce a child scoped by module id", async () => {
     const createApplicationContext = await loadFactory();
     const logger = new MemoryLogger();

@@ -163,22 +163,24 @@ describe("ScopedEventChannel scope closure", () => {
     expect(scores).toEqual([]);
   });
 
-  test("disposed subscriptions release captured handler references", () => {
+  test("disposing a handle without re-emitting releases the captured references", () => {
     const channel = createScopedEventChannel<GameEvents>();
-    let captured: { readonly large: string } | undefined = {
-      large: "x".repeat(1024),
-    };
-    const weak = new WeakRef(captured);
+    const weak = (() => {
+      const captured: { readonly large: string } = {
+        large: "x".repeat(1024),
+      };
+      const ref = new WeakRef(captured);
+      const handle = channel.on("scoreChanged", () => {
+        // Closure-only reference: the object is reachable only via the handler closure
+        if (captured.large.length > 0) {
+          // no-op
+        }
+      });
+      handle.dispose();
+      return ref;
+    })();
 
-    channel.on("scoreChanged", () => {
-      void captured;
-    });
-    channel.emit("scoreChanged", { score: 1 });
-
-    captured = undefined;
-    channel.dispose();
-
-    // Pruning must release the handler closure; force GC to verify
+    // Disposal must remove the entry immediately; force GC to verify the closure is gone
     if (typeof Bun !== "undefined") {
       Bun.gc(true);
     }

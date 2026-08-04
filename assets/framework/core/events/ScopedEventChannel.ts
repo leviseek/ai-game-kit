@@ -56,6 +56,22 @@ export function createScopedEventChannel<Events extends EventMap>(
       return {
         dispose: () => {
           entry.cancelled = true;
+
+          const currentEntries = handlersByEvent.get(event as string);
+
+          if (currentEntries === undefined) {
+            return;
+          }
+
+          const index = currentEntries.indexOf(entry);
+
+          if (index !== -1) {
+            currentEntries.splice(index, 1);
+          }
+
+          if (currentEntries.length === 0) {
+            handlersByEvent.delete(event as string);
+          }
         },
       };
     },

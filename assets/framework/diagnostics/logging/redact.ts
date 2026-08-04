@@ -28,11 +28,11 @@ function redactValue(value: unknown, seen: Set<object>): unknown {
     return value;
   }
 
-  if (Array.isArray(value)) {
-    return value.map((item) => redactValue(item, seen));
-  }
-
-  if (!isPlainObject(value)) {
+  // Non-plain objects (Date, Map, class instances, Error) pass through
+  // untouched: they cannot be safely traversed, and their string forms are
+  // the caller's responsibility. Note this includes Map, which is technically
+  // iterable but intentionally left unfiltered for consistency.
+  if (!isPlainObject(value) && !Array.isArray(value)) {
     return value;
   }
 
@@ -41,7 +41,11 @@ function redactValue(value: unknown, seen: Set<object>): unknown {
   }
 
   seen.add(value);
-  const result = redactContext(value as LogContext, seen);
+
+  const result = Array.isArray(value)
+    ? value.map((item) => redactValue(item, seen))
+    : redactContext(value as LogContext, seen);
+
   seen.delete(value);
 
   return result;

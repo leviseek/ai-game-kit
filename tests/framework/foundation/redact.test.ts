@@ -152,6 +152,27 @@ describe("diagnostics redact sensitive fields", () => {
     expect(inner.self).toBe("[Circular]");
   });
 
+  test("guards against self-referencing arrays without throwing", () => {
+    const circular: unknown[] = [];
+    circular.push(circular);
+    const context = { steps: circular };
+    const result = redactContext(context);
+
+    expect(result.steps).toEqual(["[Circular]"]);
+  });
+
+  test("guards against circular references reached through arrays without throwing", () => {
+    const inner: Record<string, unknown> = { name: "loop" };
+    const steps: unknown[] = [inner];
+    inner.list = steps;
+    const context = { steps };
+    const result = redactContext(context);
+
+    expect(result.steps).toEqual([
+      { name: "loop", list: "[Circular]" },
+    ]);
+  });
+
   test("ScopedLogger applies an injected filter to every record shape", () => {
     const records: LogRecord[] = [];
     const logger = createScopedLogger(

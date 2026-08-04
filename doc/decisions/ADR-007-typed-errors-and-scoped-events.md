@@ -20,7 +20,9 @@ Foundation 已有结构化日志契约（`contracts/logging/Logger.ts`）、`Sco
 
 可恢复性采用**显式分类**（`FrameworkError.recoverable` + `isRecoverableError` 工具），不靠 `instanceof` 链或错误名猜测：同一底层异常在不同上下文可恢复性不同（资源缺失在加载时可重试、在存档损坏时不可恢复），显式声明比推断可靠。
 
-敏感字段过滤在诊断写入点收敛：`diagnostics/logging/redact.ts` 在 `LogRecord` 上下文写入前过滤已知敏感键，`ScopedLogger` 通过可注入过滤函数保持无全局状态，日志 sink 不感知过滤细节。
+`isRecoverableError` 只检查顶层错误的显式分类，不沿 `cause` 链解包：被普通包装错误（`new Error("wrapped", { cause })`）包裹的 FrameworkError 不会被识别，调用方需自行解包 `cause` 后判定。框架内所有错误（含 `ModuleCleanupError`）均继承 `FrameworkError`，保证 `isRecoverableError` 可对框架抛出的任何错误一致分类。
+
+敏感字段过滤在诊断写入点收敛：`diagnostics/logging/redact.ts` 在 `LogRecord` 上下文写入前过滤已知敏感键，`ScopedLogger` 通过可注入过滤函数保持无全局状态，日志 sink 不感知过滤细节。过滤边界：非纯对象（Date、Map、类实例、Error）原样透传，不展开过滤；含凭据的 Map 或 Error.message 由调用方负责脱敏。
 
 ### 2. 作用域事件通道，不引入全局事件总线
 
@@ -54,6 +56,7 @@ Foundation 已有结构化日志契约（`contracts/logging/Logger.ts`）、`Sco
 
 - 后续资源/存档/UI 错误应继承 `FrameworkError` 并显式声明可恢复性；新增错误不应绕过统一基类。
 - 跨模块业务事件仍禁止使用字符串全局事件 API；类型化事件一律经 `createScopedEventChannel` 的作用域通道。
+- `createApplicationContext` 返回收窄的只读 `ApplicationContext` 契约，不暴露状态变更方法；应用状态机由 `Application` 内部私有状态驱动，`ApplicationContext.state` 始终为只读视角。
 - 根入口新增导出一律平铺并同步 `expectedRootExports`；新平台能力走"独立窄契约 + 平铺"路径，不扩大 `Platform` 聚合。
 - 未来如需真正意义上的 `Platform` 命名空间分组或"追赶式"调度语义，应作为独立 change 引入并明确选项，不改变本 ADR 既定默认行为。
 - 敏感字段过滤采用"默认保守"：新敏感键按集中清单补齐。

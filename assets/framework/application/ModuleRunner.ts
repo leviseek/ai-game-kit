@@ -4,18 +4,12 @@ import type {
   ModulePhase,
   ModuleRuntimeState,
 } from "../contracts/module/Module";
+import { FrameworkError } from "../core/errors/FrameworkError";
 import { ModuleLifecycleError } from "./ModuleLifecycleError";
-
-type ErrorConstructorWithCause = new (
-  message?: string,
-  options?: { readonly cause?: unknown },
-) => Error;
 
 type CleanupPhase = "stop" | "dispose";
 
-const ErrorWithCause = Error as ErrorConstructorWithCause;
-
-class ModuleCleanupError extends ErrorWithCause {
+class ModuleCleanupError extends FrameworkError {
   readonly errors: readonly ModuleLifecycleError[];
 
   constructor(
