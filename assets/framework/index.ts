@@ -1,3 +1,7 @@
+/**
+ * 框架公开 API 白名单：仅 re-export 稳定契约类型与核心工厂/类，
+ * 是业务代码的推荐导入入口；内部实现经此隔离，不直接深层导入。
+ */
 export type {
   LogContext,
   Logger,

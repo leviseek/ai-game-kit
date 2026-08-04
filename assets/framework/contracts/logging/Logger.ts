@@ -11,6 +11,10 @@ export type LogRecord = Readonly<{
   error?: Error & { readonly cause?: unknown };
 }>;
 
+/**
+ * 结构化日志契约。LogRecord.scope 为点分作用域（如 "app:inventory"）；
+ * child 返回继承父 scope 与 context 的新 Logger。
+ */
 export interface Logger {
   debug(message: string, context?: LogContext): void;
   info(message: string, context?: LogContext): void;
