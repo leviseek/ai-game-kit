@@ -3,10 +3,13 @@ import { resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 
 const projectRoot = resolve(import.meta.dir, "..", "..");
-const typeCheckEntry = resolve(
-  projectRoot,
-  "tests/framework/foundation/contracts.typecheck.ts",
-);
+const typeCheckEntries = [
+  resolve(projectRoot, "tests/framework/foundation/contracts.typecheck.ts"),
+  resolve(
+    projectRoot,
+    "tests/framework/foundation/application-context-contract.typecheck.ts",
+  ),
+];
 const frameworkRoot = resolve(projectRoot, "assets/framework");
 
 function isExcluded(directoryPath: string): boolean {
@@ -67,7 +70,7 @@ const result = spawnSync(
     "--moduleResolution",
     "node",
     "--skipLibCheck",
-    typeCheckEntry,
+    ...typeCheckEntries,
     ...collectTypeScriptFiles(frameworkRoot),
   ],
   { cwd: projectRoot, encoding: "utf8" },

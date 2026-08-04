@@ -6,8 +6,8 @@
 
 ## 2. ApplicationContext 边界收口
 
-- [ ] 2.1 先编写契约测试：`ApplicationContext` 类型上无 token、服务解析或 `get<T>()`，仅含 Logger 与只读生命周期状态；确认 contracts 不依赖实现。
-- [ ] 2.2 若 2.1 暴露缺失，最小修正 contracts/application 定义；预期现状已满足，仅以测试锁定边界。
+- [x] 2.1 先编写契约测试：`ApplicationContext` 类型上无 token、服务解析或 `get<T>()`，仅含 Logger 与只读生命周期状态；确认 contracts 不依赖实现。
+- [x] 2.2 若 2.1 暴露缺失，最小修正 contracts/application 定义；预期现状已满足，仅以测试锁定边界。
 
 ## 3. 作用域事件通道
 
