@@ -103,8 +103,10 @@
 - [x] 5.8 在 `application` 实现 ApplicationContext 的内部实现和供 Composition Root 调用的创建 API，并为每个模块提供以 module id 为 scope 的 child logger；不得从根入口导出可变实现，使 5.7 和模块日志测试通过。
   - RED：5.7 的 9 项测试 RED（`application/ApplicationContext.ts` 未创建）。
   - GREEN：新增 `application/ApplicationContext.ts`，导出 `createApplicationContext(logger)` 返回 `InternalApplicationContext`（logger + getter state + 内部 _setState）。child logger 经 `context.logger.child(moduleId)` 获得独立 scope。未导出至根入口。完整 Foundation 测试 87 pass / 0 fail，Creator TypeScript strict 检查与 `git diff --check` 通过。
-  - REVIEW：2026-08-04 用户审查通过；未开始 5.9。
-- [ ] 5.9 验证空 Module 数组可以完整 start/dispose，并附带一次基础 pause/resume 冒烟，作为 AppRoot 默认启动基线。
+  - REVIEW：2026-08-04 用户审查通过；5.9 已完成。
+- [x] 5.9 验证空 Module 数组可以完整 start/dispose，并附带一次基础 pause/resume 冒烟，作为 AppRoot 默认启动基线。
+  - GREEN：新增空模块基线测试（完整 start→pause→resume→dispose、非 created 拒绝、created 直接 dispose），全部 GREEN。同时既有 lifecycle 测试已覆盖相同路径。完整 Foundation 测试 90 pass / 0 fail。
+  - REVIEW：2026-08-04 用户审查通过。
 
 ## 6. Cocos Application Adapter 与 AppRoot 组合入口
 
