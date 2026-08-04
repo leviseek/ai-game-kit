@@ -25,10 +25,10 @@
 - [x] 3.2 实现类型化框架错误、结构化日志契约和内存诊断适配器，使 3.1 的测试通过。（由 change `implement-diagnostics-and-events-v1` 1.2/1.3 完成：`core/errors/FrameworkError.ts` 提供基类与可恢复性分类，`ApplicationStateError`/`ModuleLifecycleError` 迁移为继承基类；结构化日志契约与 MemoryLogger 已在 Foundation 阶段就绪；`diagnostics/logging/redact.ts` 在写入点过滤敏感字段并接入 ScopedLogger。）
 - [x] 3.3 先编写作用域事件测试，覆盖类型化发布、订阅释放、单个处理器失败隔离和作用域关闭。（由 change `implement-diagnostics-and-events-v1` 3.1 完成：`scoped-event-channel.test.ts` 覆盖类型化发布/订阅、订阅释放、失败隔离与作用域关闭。）
 - [x] 3.4 实现作用域事件通道，使 3.3 的测试通过，并禁止字符串形式的全局业务事件 API。（由 change `implement-diagnostics-and-events-v1` 3.2/3.3 完成：`core/events/ScopedEventChannel.ts` 提供类型化发布/订阅、同步幂等 DisposeHandle、失败隔离与作用域关闭，无字符串全局事件 API；根入口导出 `ScopedEventChannel`/`createScopedEventChannel` 等稳定符号。）
-- [ ] 3.5 先编写有限状态机测试，覆盖允许转换、拒绝非法转换、进入/退出钩子和失败后状态一致性。
-- [ ] 3.6 实现无业务含义的纯 TypeScript 状态机，使 3.5 的测试通过。
-- [ ] 3.7 先编写对象池测试，覆盖创建、复用、容量、重复归还、reset 和 dispose。
-- [ ] 3.8 实现显式所有者对象池，使 3.7 的测试通过且不自动池化任意 Cocos Node。
+- [x] 3.5 先编写有限状态机测试，覆盖允许转换、拒绝非法转换、进入/退出钩子和失败后状态一致性。（由 change `implement-fsm-and-object-pool-v1` 1.1 完成：`fsm.test.ts` 覆盖合法转换、非法事件拒绝、未知事件不破坏状态、进入/退出钩子顺序、钩子失败回滚与状态一致、reset/dispose、自转换与重入拒绝，共 27 个测试。）
+- [x] 3.6 实现无业务含义的纯 TypeScript 状态机，使 3.5 的测试通过。（由 change `implement-fsm-and-object-pool-v1` 1.2 完成：`core/fsm/StateMachine.ts` 声明式转移表 + 轻量运行器，失败经 `onTransitionError` 回调隔离，返回同步幂等 `DisposeHandle`，`send` 转移期间禁止重入，不依赖 Cocos。）
+- [x] 3.7 先编写对象池测试，覆盖创建、复用、容量、重复归还、reset 和 dispose。（由 change `implement-fsm-and-object-pool-v1` 2.1 完成：`object-pool.test.ts` 覆盖借出复用、容量上限、溢出可观察、重复归还拒绝、reset 钩子与 reset 失败隔离、dispose 与重复释放幂等、不自动接管任意对象生命周期，共 25 个测试。）
+- [x] 3.8 实现显式所有者对象池，使 3.7 的测试通过且不自动池化任意 Cocos Node。（由 change `implement-fsm-and-object-pool-v1` 2.2 完成：`core/pooling/ObjectPool.ts` 空闲列表 + 借出身份集合，容量约束受管对象总数、池满创建临时对象并报告溢出、临时对象用完即弃，工厂/reset 失败经 `onPoolError` 隔离，不依赖 Cocos、不自动池化任意对象。验证：Foundation 测试 311 pass / 0 fail（40 文件，含 FSM/Pooling 52 个测试），`test:foundation:types` EXIT 0，根入口白名单同步至 35 项。）
 
 ## 4. 平台、时间与启动适配
 

@@ -10,7 +10,7 @@
 
 ## 3. 公开导出收口与集成验证
 
-- [ ] 3.1 在 `assets/framework/index.ts` 增补状态机与对象池稳定契约/工厂导出，并同步 `tests/framework/foundation/public-boundary.test.ts` 的 `expectedRootExports` 白名单断言。
-- [ ] 3.2 运行完整 `bun run test:foundation`，记录原有测试与新增 FSM/Pooling 测试通过数量与零失败结果。
-- [ ] 3.3 运行 `bun run test:foundation:types`、依赖边界检查和 `git diff --check`，确认结果干净。
-- [ ] 3.4 将父级 `create-game-framework-v1/tasks.md` 的 3.5–3.8 与实际证据同步，并在 tasks.md 中记录 ADR 检查结论（如产生新长期架构决策则创建 ADR，如无则明确记录无需 ADR）。
+- [x] 3.1 在 `assets/framework/index.ts` 增补状态机与对象池稳定契约/工厂导出，并同步 `tests/framework/foundation/public-boundary.test.ts` 的 `expectedRootExports` 白名单断言。
+- [x] 3.2 运行完整 `bun run test:foundation`，记录原有测试与新增 FSM/Pooling 测试通过数量与零失败结果。
+- [x] 3.3 运行 `bun run test:foundation:types`、依赖边界检查和 `git diff --check`，确认结果干净。
+- [x] 3.4 将父级 `create-game-framework-v1/tasks.md` 的 3.5–3.8 与实际证据同步，并在 tasks.md 中记录 ADR 检查结论（如产生新长期架构决策则创建 ADR，如无则明确记录无需 ADR）。父级 3.5–3.8 已标记完成并附实现证据（含 311 pass / 0 fail、types EXIT 0、白名单 35 项）。ADR 检查结论：本 Change 产生新的长期架构决策（状态机声明式转移表 + 钩子失败回滚策略；对象池显式所有者 + 容量约束受管对象总数 + 临时对象用完即弃的溢出可观察语义；工厂/reset 失败经错误回调隔离），已创建 `doc/decisions/ADR-008-fsm-and-object-pool.md`。
