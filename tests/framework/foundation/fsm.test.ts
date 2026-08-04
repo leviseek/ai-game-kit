@@ -540,3 +540,90 @@ describe("StateMachine reentrant send", () => {
     expect(failures[0].error.message).toContain("reentrant");
   });
 });
+
+describe("StateMachine self-transition", () => {
+  const SELF_TRANSITIONS: StateTransitionTable<DoorState, DoorEvent> = {
+    closed: { close: "closed" },
+    open: { close: "closed" },
+    locked: { unlock: "closed" },
+  };
+
+  test("self-transition runs exit and enter hooks of the same state in order", () => {
+    const order: string[] = [];
+    const machine = createStateMachine<DoorState, DoorEvent>({
+      initial: "closed",
+      transitions: SELF_TRANSITIONS,
+      hooks: {
+        onExit: {
+          closed: (from, event, to) => {
+            order.push(`exit:${from}`);
+            expect(to).toBe("closed");
+          },
+        },
+        onEnter: {
+          closed: (from, event, to) => {
+            order.push(`enter:${to}`);
+            expect(from).toBe("closed");
+          },
+        },
+      },
+    });
+
+    machine.send("close");
+
+    expect(machine.state).toBe("closed");
+    expect(order).toEqual(["exit:closed", "enter:closed"]);
+  });
+
+  test("a failing enter hook on a self-transition keeps the state unchanged", () => {
+    const { failures, onTransitionError } = createFailures();
+    const machine = createStateMachine<DoorState, DoorEvent>({
+      initial: "closed",
+      transitions: SELF_TRANSITIONS,
+      onTransitionError,
+      hooks: {
+        onEnter: {
+          closed: () => {
+            throw new Error("self enter failed");
+          },
+        },
+      },
+    });
+
+    machine.send("close");
+
+    expect(machine.state).toBe("closed");
+    expect(failures).toHaveLength(1);
+    expect(failures[0].error.message).toBe("self enter failed");
+  });
+
+  test("a failing exit hook on a self-transition does not run the enter hook", () => {
+    const { failures, onTransitionError } = createFailures();
+    const order: string[] = [];
+    const machine = createStateMachine<DoorState, DoorEvent>({
+      initial: "closed",
+      transitions: SELF_TRANSITIONS,
+      onTransitionError,
+      hooks: {
+        onExit: {
+          closed: () => {
+            order.push("exit:closed");
+            throw new Error("self exit failed");
+          },
+        },
+        onEnter: {
+          closed: () => {
+            order.push("enter:closed");
+          },
+        },
+      },
+    });
+
+    machine.send("close");
+
+    expect(order).toEqual(["exit:closed"]);
+    expect(failures).toHaveLength(1);
+    expect(failures[0].error.message).toBe("self exit failed");
+    expect(machine.state).toBe("closed");
+  });
+});

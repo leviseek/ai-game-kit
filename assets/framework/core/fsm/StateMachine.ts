@@ -84,6 +84,7 @@ export function createStateMachine<State extends string, Event extends string>(
     const to = eventTransitions[event];
 
     inTransition = true;
+    let switched = false;
 
     try {
       const exitHook = hooks?.onExit?.[from];
@@ -92,13 +93,14 @@ export function createStateMachine<State extends string, Event extends string>(
       }
 
       current = to;
+      switched = true;
 
       const enterHook = hooks?.onEnter?.[to];
       if (enterHook !== undefined) {
         enterHook(from, event, to);
       }
     } catch (error) {
-      if (current === to) {
+      if (switched) {
         current = from;
       }
       report(error);
