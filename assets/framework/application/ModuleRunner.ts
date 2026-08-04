@@ -23,6 +23,12 @@ class ModuleCleanupError extends FrameworkError {
   }
 }
 
+/**
+ * 模块生命周期执行器：启动/恢复按依赖顺序正序，暂停/停止/销毁逆序
+ * （后启动的模块先清理）。某阶段失败时按已进入的状态回滚对应模块；
+ * 清理错误逐个收集并聚合为 ModuleCleanupError（失败隔离，不因单个模块失败
+ * 中断其他模块的清理）。
+ */
 export class ModuleRunner {
   private readonly modules: readonly Module[];
   private readonly context: ApplicationContext;
@@ -59,6 +65,7 @@ export class ModuleRunner {
           "initialize",
           error,
         );
+        // 初始化失败只 dispose 已进入 initialized 的模块；尚未初始化的保持 registered。
         const cleanupErrors = await this.cleanup(
           "dispose",
           (state) => state === "initialized",
@@ -81,6 +88,7 @@ export class ModuleRunner {
         this.states.set(module.id, "started");
       } catch (error) {
         const primaryError = this.asLifecycleError(module, "start", error);
+        // 启动失败分两层回滚：先 stop 已 started 的模块，再 dispose 所有已注册的模块。
         const stopErrors = await this.cleanup(
           "stop",
           (state) => state === "started",
@@ -105,6 +113,7 @@ export class ModuleRunner {
   }
 
   async pause(): Promise<void> {
+    // 逆序：后启动的模块先暂停。
     for (let index = this.modules.length - 1; index >= 0; index -= 1) {
       const module = this.modules[index];
 
@@ -118,6 +127,7 @@ export class ModuleRunner {
   }
 
   async resume(): Promise<void> {
+    // 正序：与启动顺序一致恢复。
     for (const module of this.modules) {
       if (this.getState(module.id) !== "paused") {
         continue;
@@ -191,7 +201,8 @@ export class ModuleRunner {
     completedState: ModuleRuntimeState,
   ): Promise<ModuleLifecycleError[]> {
     const errors: ModuleLifecycleError[] = [];
-
+    // 通用清理：按谓词判定每个模块应从何状态清理到 completedState，避免硬编码状态集合。
+    // 逆序遍历保证后启动的模块先清理。
     for (let index = this.modules.length - 1; index >= 0; index -= 1) {
       const module = this.modules[index];
 

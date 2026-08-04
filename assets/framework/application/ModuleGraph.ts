@@ -1,5 +1,9 @@
 import type { Module } from "../contracts/module/Module";
 
+/**
+ * 模块依赖图：输入校验（空 id、重复 id、缺失依赖、循环依赖均抛错），
+ * 产出按依赖拓扑序排列的 orderedModules（冻结数组）。
+ */
 export class ModuleGraph {
   readonly orderedModules: readonly Module[];
 
@@ -67,6 +71,7 @@ export class ModuleGraph {
 
         if (remainingDependencies === 0) {
           readyModules.push(dependent);
+          // 多个模块同时就绪时按注册顺序排序，保证启动顺序确定、可复现。
           readyModules.sort(
             (left, right) =>
               (registrationIndex.get(left.id) ?? 0) -

@@ -7,12 +7,20 @@ import { ApplicationStateError } from "./ApplicationStateError";
 import { ModuleGraph } from "./ModuleGraph";
 import { ModuleRunner } from "./ModuleRunner";
 
+/**
+ * 应用生命周期编排器。状态机路径为 created -> initializing -> running
+ * <-> paused -> stopping -> disposed。所有公开操作经串行队列（enqueue）执行，
+ * 避免并发操作竞争状态；start/dispose 另有 inFlight 防重入，保证重复调用
+ * 返回同一进行中的操作。
+ */
 export class Application {
   private readonly modules: readonly Module[];
   private readonly context: ApplicationContext;
   private runner: ModuleRunner | undefined;
   private currentState: ApplicationState = "created";
   private queueTail: Promise<void> = Promise.resolve();
+  // start/dispose 用 inFlight 防重入（幂等返回同一操作）；pause/resume 只靠状态守卫，
+  // 因为它们在目标状态时本身就是幂等操作。
   private inFlightStart: Promise<void> | null = null;
   private inFlightDispose: Promise<void> | null = null;
 
@@ -47,6 +55,7 @@ export class Application {
         await runner.initialize();
         await runner.start();
       } catch (primaryError) {
+        // 启动失败后直接进入 disposed 终态：应用不可重试，必须重新创建实例。
         this.setState("stopping");
         await this.rollback(runner);
         this.setState("disposed");
@@ -131,6 +140,10 @@ export class Application {
     return operation;
   }
 
+  /**
+   * 启动失败回滚：只停止并释放已进入后续状态的模块。与 dispose() 不同，
+   * 回滚中的清理错误只记录（主错误已抛出，不能再掩盖它）；dispose() 则抛出第一个清理错误。
+   */
   private async rollback(runner: ModuleRunner | undefined): Promise<void> {
     const cleanupErrors: unknown[] = [];
 
@@ -160,6 +173,7 @@ export class Application {
   }
 
   private enqueue(task: () => Promise<void>): Promise<void> {
+    // then(task, task) 让后续任务在前序失败后仍继续执行（失败不中断队列）。
     const next = this.queueTail.then(task, task);
     this.queueTail = next;
     return next;
