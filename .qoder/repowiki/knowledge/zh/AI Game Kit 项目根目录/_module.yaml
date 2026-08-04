@@ -1,0 +1,12 @@
+schema_version: 1
+module_path: ""
+title: AI Game Kit 项目根目录
+scope:
+    - package.json
+    - tsconfig.json
+    - .gitignore
+    - NOTE.md
+    - opencode.json
+source_files: []
+depends_on: []
+related_to: []

@@ -1,0 +1,50 @@
+# 知识卡导出索引文件
+schema_version: 1
+locale: zh-CN
+branch: main
+nodes_managed: true
+exported_at: "2026-08-04T21:25:48Z"
+modules:
+    "":
+        dir_name: AI Game Kit 项目根目录
+        title: AI Game Kit 项目根目录
+        scope:
+            - package.json
+            - tsconfig.json
+            - .gitignore
+            - NOTE.md
+            - opencode.json
+        source_files: []
+        children:
+            - opencode_skills
+            - openspec
+            - tests
+        depends_on: []
+        related_to: []
+    opencode_skills:
+        dir_name: OpenCode 技能与命令插件配置
+        title: OpenCode 技能与命令插件配置
+        scope:
+            - .opencode/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []
+    openspec:
+        dir_name: OpenSpec 变更与规格管理
+        title: OpenSpec 变更与规格管理
+        scope:
+            - openspec/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []
+    tests:
+        dir_name: Foundation 框架测试套件
+        title: Foundation 框架测试套件
+        scope:
+            - tests/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []

@@ -1,0 +1,8 @@
+schema_version: 1
+module_path: opencode_skills
+title: OpenCode 技能与命令插件配置
+scope:
+    - .opencode/
+source_files: []
+depends_on: []
+related_to: []
