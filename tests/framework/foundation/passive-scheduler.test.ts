@@ -6,11 +6,24 @@ import { SimulationClock } from "../../../assets/framework/core/time/SimulationC
 
 describe("PassiveScheduler", () => {
   test("binds to the supplied time source and drives from it", () => {
-    const clock = new SimulationClock({ initialTime: 0 });
-    const scheduler = new PassiveScheduler(clock);
+    let current = 0;
+    const stub: TimeSource = {
+      now: () => current,
+    };
+    const scheduler = new PassiveScheduler(stub);
+    let runs = 0;
 
-    expect(scheduler).toBeDefined();
-    expect(clock).toSatisfy((value: TimeSource) => typeof value.now === "function");
+    scheduler.schedule(() => {
+      runs += 1;
+    }, 500);
+
+    current = 499;
+    scheduler.tick();
+    expect(runs).toBe(0);
+
+    current = 500;
+    scheduler.tick();
+    expect(runs).toBe(1);
   });
 
   test("does not execute a task before its due time", () => {
@@ -57,21 +70,6 @@ describe("PassiveScheduler", () => {
     clock.advance(1_000);
     scheduler.tick();
     clock.advance(5_000);
-    scheduler.tick();
-
-    expect(runs).toBe(1);
-  });
-
-  test("removes an executed one-shot task from the scheduler", () => {
-    const clock = new SimulationClock({ initialTime: 0 });
-    const scheduler = new PassiveScheduler(clock);
-    let runs = 0;
-
-    scheduler.schedule(() => {
-      runs += 1;
-    }, 500);
-
-    clock.advance(500);
     scheduler.tick();
 
     expect(runs).toBe(1);

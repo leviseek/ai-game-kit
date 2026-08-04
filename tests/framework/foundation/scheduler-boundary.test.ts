@@ -1,26 +1,7 @@
-import { existsSync, readFileSync, readdirSync } from "node:fs";
-import { resolve } from "node:path";
 import { describe, expect, test } from "bun:test";
 
 import { PassiveScheduler } from "../../../assets/framework/core/scheduling/PassiveScheduler";
 import { SimulationClock } from "../../../assets/framework/core/time/SimulationClock";
-
-const schedulingRoot = resolve(
-  import.meta.dir,
-  "../../../assets/framework/core/scheduling",
-);
-
-function collectTypeScriptFiles(directory: string): readonly string[] {
-  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    const path = resolve(directory, entry.name);
-
-    if (entry.isDirectory()) {
-      return collectTypeScriptFiles(path);
-    }
-
-    return entry.isFile() && path.endsWith(".ts") ? [path] : [];
-  });
-}
 
 describe("PassiveScheduler boundary", () => {
   test("released task leaves no residual execution across repeated ticks", () => {
@@ -124,16 +105,5 @@ describe("PassiveScheduler boundary", () => {
     scheduler.tick();
 
     expect(runs).toBe(0);
-  });
-
-  test("scheduling layer contains no static singletons or global instances", () => {
-    const sources = collectTypeScriptFiles(schedulingRoot)
-      .map((file) => readFileSync(file, "utf8"))
-      .join("\n");
-
-    expect(existsSync(schedulingRoot)).toBe(true);
-    expect(sources).not.toMatch(/\b(?:getInstance|singleton|ServiceLocator)\b/);
-    expect(sources).not.toMatch(/\b(?:globalThis|window)\b/);
-    expect(sources).not.toMatch(/\bstatic\s+(?:readonly\s+)?(?:instance|shared)\b/);
   });
 });

@@ -1,11 +1,11 @@
 import type { TimeSource } from "../../contracts/time/TimeSource";
 import type { DisposeHandle } from "./DisposeHandle";
 
-export interface PassiveSchedulerOptions {
+export interface ScheduleOptions {
   readonly repeat?: boolean;
 }
 
-export interface PassiveSchedulerConfig {
+export interface PassiveSchedulerOptions {
   readonly onTaskError?: (error: unknown) => void;
 }
 
@@ -20,22 +20,30 @@ interface ScheduledTask {
 export class PassiveScheduler {
   private readonly timeSource: TimeSource;
   private readonly onTaskError: (error: unknown) => void;
-  private readonly tasks: ScheduledTask[] = [];
+  private tasks: ScheduledTask[] = [];
   private disposed = false;
 
   constructor(
     timeSource: TimeSource,
-    config: PassiveSchedulerConfig = {},
+    options: PassiveSchedulerOptions = {},
   ) {
     this.timeSource = timeSource;
-    this.onTaskError = config.onTaskError ?? (() => {});
+    this.onTaskError = options.onTaskError ?? ((error) => console.error(error));
   }
 
   schedule(
     callback: () => void,
     delayMilliseconds: number,
-    options: PassiveSchedulerOptions = {},
+    options: ScheduleOptions = {},
   ): DisposeHandle {
+    if (this.disposed) {
+      throw new Error("PassiveScheduler cannot schedule after disposal");
+    }
+
+    if (!Number.isFinite(delayMilliseconds) || delayMilliseconds < 0) {
+      throw new Error("PassiveScheduler delay must be finite and non-negative");
+    }
+
     const task: ScheduledTask = {
       callback,
       interval: delayMilliseconds,
@@ -74,9 +82,15 @@ export class PassiveScheduler {
       }
     }
 
+    this.tasks = pendingTasks;
+
     dueTasks.sort((a, b) => a.dueAt - b.dueAt);
 
     for (const task of dueTasks) {
+      if (this.disposed) {
+        break;
+      }
+
       if (task.cancelled) {
         continue;
       }
@@ -89,12 +103,9 @@ export class PassiveScheduler {
 
       if (task.repeat) {
         task.dueAt = now + task.interval;
-        pendingTasks.push(task);
+        this.tasks.push(task);
       }
     }
-
-    this.tasks.length = 0;
-    this.tasks.push(...pendingTasks);
   }
 
   dispose(): void {
