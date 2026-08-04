@@ -18,6 +18,10 @@ import type {
   PlatformStorage,
 } from "../../../assets/framework/contracts/platform/Platform";
 import type { TimeSource } from "../../../assets/framework/contracts/time/TimeSource";
+import type {
+  ScopedEventChannel,
+} from "../../../assets/framework/core/events/ScopedEventChannel";
+import type { DisposeHandle } from "../../../assets/framework/core/scheduling/DisposeHandle";
 
 type Equal<Left, Right> =
   (<Value>() => Value extends Left ? 1 : 2) extends
@@ -196,4 +200,30 @@ type _DeviceInfoIsReadonly = Expect<
 type _TimeSourceShape = Expect<Equal<keyof TimeSource, "now">>;
 type _TimeSourceReturnsNumber = Expect<
   Equal<TimeSource["now"], () => number>
+>;
+
+type ScopedEvents = {
+  readonly scoreChanged: { readonly score: number };
+};
+
+type _ScopedEventChannelShape = Expect<
+  Equal<keyof ScopedEventChannel<ScopedEvents>, "dispose" | "emit" | "on">
+>;
+type _ScopedEventChannelOnReturnsDisposeHandle = Expect<
+  Equal<
+    ScopedEventChannel<ScopedEvents>["on"],
+    <EventName extends keyof ScopedEvents>(
+      event: EventName,
+      handler: (payload: ScopedEvents[EventName]) => void,
+    ) => DisposeHandle
+  >
+>;
+type _ScopedEventChannelEmitIsTyped = Expect<
+  Equal<
+    ScopedEventChannel<ScopedEvents>["emit"],
+    <EventName extends keyof ScopedEvents>(
+      event: EventName,
+      payload: ScopedEvents[EventName],
+    ) => void
+  >
 >;

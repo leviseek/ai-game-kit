@@ -105,6 +105,86 @@ describe("ScopedEventChannel scope closure", () => {
 
     expect(() => channel.emit("scoreChanged", { score: 1 })).not.toThrow();
   });
+
+  test("disposing the channel from a handler stops the same batch", () => {
+    const channel = createScopedEventChannel<GameEvents>();
+    const order: string[] = [];
+
+    channel.on("scoreChanged", () => {
+      order.push("first");
+      channel.dispose();
+    });
+    channel.on("scoreChanged", () => order.push("second"));
+
+    channel.emit("scoreChanged", { score: 1 });
+
+    expect(order).toEqual(["first"]);
+  });
+
+  test("dispose after dispose throws on further subscribe", () => {
+    const channel = createScopedEventChannel<GameEvents>();
+
+    channel.dispose();
+
+    expect(() =>
+      channel.on("scoreChanged", () => {}),
+    ).toThrow("cannot subscribe after disposal");
+  });
+
+  test("a subscription added during emit is not called in the current batch", () => {
+    const channel = createScopedEventChannel<GameEvents>();
+    const scores: number[] = [];
+
+    channel.on("scoreChanged", () => {
+      channel.on("scoreChanged", (payload) => scores.push(payload.score));
+    });
+
+    channel.emit("scoreChanged", { score: 1 });
+    channel.emit("scoreChanged", { score: 2 });
+
+    expect(scores).toEqual([2]);
+  });
+
+  test("a subscription disposed during emit is skipped later", () => {
+    const channel = createScopedEventChannel<GameEvents>();
+    const scores: number[] = [];
+    let handle: DisposeHandle | undefined;
+
+    channel.on("scoreChanged", () => {
+      handle?.dispose();
+    });
+    handle = channel.on("scoreChanged", (payload) =>
+      scores.push(payload.score),
+    );
+
+    channel.emit("scoreChanged", { score: 1 });
+    channel.emit("scoreChanged", { score: 2 });
+
+    expect(scores).toEqual([]);
+  });
+
+  test("disposed subscriptions release captured handler references", () => {
+    const channel = createScopedEventChannel<GameEvents>();
+    let captured: { readonly large: string } | undefined = {
+      large: "x".repeat(1024),
+    };
+    const weak = new WeakRef(captured);
+
+    channel.on("scoreChanged", () => {
+      void captured;
+    });
+    channel.emit("scoreChanged", { score: 1 });
+
+    captured = undefined;
+    channel.dispose();
+
+    // Pruning must release the handler closure; force GC to verify
+    if (typeof Bun !== "undefined") {
+      Bun.gc(true);
+    }
+
+    expect(weak.deref()).toBeUndefined();
+  });
 });
 
 describe("ScopedEventChannel boundary isolation", () => {

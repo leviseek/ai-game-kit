@@ -72,6 +72,10 @@ export function createScopedEventChannel<Events extends EventMap>(
       }
 
       for (const entry of [...entries]) {
+        if (disposed) {
+          return;
+        }
+
         if (entry.cancelled) {
           continue;
         }
@@ -79,9 +83,15 @@ export function createScopedEventChannel<Events extends EventMap>(
         try {
           entry.handler(payload);
         } catch (error) {
-          onHandlerError(error);
+          try {
+            onHandlerError(error);
+          } catch (reporterError) {
+            console.error(reporterError);
+          }
         }
       }
+
+      pruneEntries(event as string, entries);
     },
 
     dispose: () => {
@@ -89,4 +99,14 @@ export function createScopedEventChannel<Events extends EventMap>(
       handlersByEvent.clear();
     },
   };
+
+  function pruneEntries(event: string, entries: HandlerEntry[]): void {
+    const active = entries.filter((entry) => !entry.cancelled);
+
+    if (active.length === 0) {
+      handlersByEvent.delete(event);
+    } else if (active.length !== entries.length) {
+      handlersByEvent.set(event, active);
+    }
+  }
 }
