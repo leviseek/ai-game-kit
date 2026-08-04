@@ -16,15 +16,15 @@
 - [x] 2.4 实现 `created -> initializing -> running -> paused -> stopping -> disposed` 生命周期，使 2.3 的测试通过，并覆盖启动失败后的释放路径。
 - [x] 2.5 先编写模块启动与关闭测试，覆盖依赖顺序启动、逆序清理、必需模块失败回滚和清理错误隔离。
 - [x] 2.6 实现模块编排器，使 2.5 的失败与清理路径测试通过，不依赖组件 `onLoad` 的隐式顺序。
-- [ ] 2.7 重新定义后续服务注册能力的行为边界和测试：Foundation 的 `ApplicationContext` 仅提供 Logger 与只读生命周期状态，不提供类型化 token、服务解析或 `get<T>()`；如仍需服务注册表，必须通过独立 OpenSpec change 设计并验证。
+- [x] 2.7 重新定义后续服务注册能力的行为边界和测试：Foundation 的 `ApplicationContext` 仅提供 Logger 与只读生命周期状态，不提供类型化 token、服务解析或 `get<T>()`；如仍需服务注册表，必须通过独立 OpenSpec change 设计并验证。（由 change `implement-diagnostics-and-events-v1` 2.x 完成：`application-context-contract.typecheck.ts` 锁定 `ApplicationContext` 无 `get<T>()`/token/服务解析，`contracts.typecheck.ts` 校验形状且不依赖实现，Foundation 测试 254 pass / 0 fail。）
 - [ ] 2.8 实现后续服务注册能力（仅在独立 change 明确批准后）：不得将 `ApplicationContext` 退化为全局 Service Locator，业务代码不得直接依赖 Context；本总计划不把该能力视为 Foundation 已完成。
 
 ## 3. 诊断、事件与通用纯逻辑工具
 
-- [ ] 3.1 先编写诊断测试，覆盖模块/阶段上下文、嵌套 cause、可恢复性分类和敏感字段过滤。
-- [ ] 3.2 实现类型化框架错误、结构化日志契约和内存诊断适配器，使 3.1 的测试通过。
-- [ ] 3.3 先编写作用域事件测试，覆盖类型化发布、订阅释放、单个处理器失败隔离和作用域关闭。
-- [ ] 3.4 实现作用域事件通道，使 3.3 的测试通过，并禁止字符串形式的全局业务事件 API。
+- [x] 3.1 先编写诊断测试，覆盖模块/阶段上下文、嵌套 cause、可恢复性分类和敏感字段过滤。（由 change `implement-diagnostics-and-events-v1` 1.1 完成：`framework-error.test.ts`、`redact.test.ts` 覆盖嵌套 cause、可恢复性分类、模块/阶段上下文与敏感字段过滤。）
+- [x] 3.2 实现类型化框架错误、结构化日志契约和内存诊断适配器，使 3.1 的测试通过。（由 change `implement-diagnostics-and-events-v1` 1.2/1.3 完成：`core/errors/FrameworkError.ts` 提供基类与可恢复性分类，`ApplicationStateError`/`ModuleLifecycleError` 迁移为继承基类；结构化日志契约与 MemoryLogger 已在 Foundation 阶段就绪；`diagnostics/logging/redact.ts` 在写入点过滤敏感字段并接入 ScopedLogger。）
+- [x] 3.3 先编写作用域事件测试，覆盖类型化发布、订阅释放、单个处理器失败隔离和作用域关闭。（由 change `implement-diagnostics-and-events-v1` 3.1 完成：`scoped-event-channel.test.ts` 覆盖类型化发布/订阅、订阅释放、失败隔离与作用域关闭。）
+- [x] 3.4 实现作用域事件通道，使 3.3 的测试通过，并禁止字符串形式的全局业务事件 API。（由 change `implement-diagnostics-and-events-v1` 3.2/3.3 完成：`core/events/ScopedEventChannel.ts` 提供类型化发布/订阅、同步幂等 DisposeHandle、失败隔离与作用域关闭，无字符串全局事件 API；根入口导出 `ScopedEventChannel`/`createScopedEventChannel` 等稳定符号。）
 - [ ] 3.5 先编写有限状态机测试，覆盖允许转换、拒绝非法转换、进入/退出钩子和失败后状态一致性。
 - [ ] 3.6 实现无业务含义的纯 TypeScript 状态机，使 3.5 的测试通过。
 - [ ] 3.7 先编写对象池测试，覆盖创建、复用、容量、重复归还、reset 和 dispose。

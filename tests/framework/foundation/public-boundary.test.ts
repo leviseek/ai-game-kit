@@ -451,6 +451,15 @@ describe("framework public boundary", () => {
       "ApplicationLifecycle",
       "ApplicationState",
       "ApplicationStateError",
+      "ApplicationVisibility",
+      "ApplicationVisibilityState",
+      "createScopedEventChannel",
+      "DeviceInfo",
+      "DisposeHandle",
+      "EventMap",
+      "FrameworkError",
+      "FrameworkErrorOptions",
+      "isRecoverableError",
       "LogContext",
       "LogLevel",
       "LogRecord",
@@ -459,6 +468,10 @@ describe("framework public boundary", () => {
       "ModuleLifecycleError",
       "ModulePhase",
       "ModuleRuntimeState",
+      "PlatformStorage",
+      "ScopedEventChannel",
+      "ScopedEventChannelOptions",
+      "TimeSource",
     ].sort();
 
     expect(extractRootExportNames(source)).toEqual(expectedRootExports);

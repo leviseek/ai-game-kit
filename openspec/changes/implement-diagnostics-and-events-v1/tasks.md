@@ -17,8 +17,8 @@
 
 ## 4. 公开导出收口与集成验证
 
-- [ ] 4.1 在 `assets/framework/index.ts` 增补第 4 章稳定契约导出（Platform、TimeSource、DisposeHandle 等）与本 Change 错误/事件稳定符号，并同步 `tests/framework/foundation/public-boundary.test.ts` 的 `expectedRootExports` 断言。
-- [ ] 4.2 运行完整 `bun run test:foundation`，记录原有 Foundation 测试与新增诊断/事件测试通过数量与零失败结果。
-- [ ] 4.3 运行 `bun run test:foundation:types`、项目可用的 Framework 类型检查和 `git diff --check`，确认 `strict: false` 工具链基线与本 Change 结果。
-- [ ] 4.4 审查公开 API 与依赖边界，确认只导出稳定契约/工厂，不修改 ApplicationContext 行为、AppRoot 或 `startup.scene`。
-- [ ] 4.5 将父级 `create-game-framework-v1/tasks.md` 的 2.7、3.1–3.4 与实现证据同步；执行 ADR 检查，必要时创建 ADR。
+- [x] 4.1 在 `assets/framework/index.ts` 增补第 4 章稳定契约导出（Platform、TimeSource、DisposeHandle 等）与本 Change 错误/事件稳定符号，并同步 `tests/framework/foundation/public-boundary.test.ts` 的 `expectedRootExports` 断言。按平铺方案导出：平台 4 契约（ApplicationVisibility/ApplicationVisibilityState/PlatformStorage/DeviceInfo）+ TimeSource + DisposeHandle + 错误 3（FrameworkError/FrameworkErrorOptions/isRecoverableError）+ 事件 4（EventMap/ScopedEventChannel/ScopedEventChannelOptions/createScopedEventChannel），共 26 项白名单。
+- [x] 4.2 运行完整 `bun run test:foundation`，记录原有 Foundation 测试与新增诊断/事件测试通过数量与零失败结果。结果：254 pass / 0 fail（38 个文件，781 expect），覆盖原有 Foundation 测试与新增诊断/事件测试。
+- [x] 4.3 运行 `bun run test:foundation:types`、项目可用的 Framework 类型检查和 `git diff --check`，确认 `strict: false` 工具链基线与本 Change 结果。结果：types EXIT=0（Cocos Creator 内置 tsc，strict 模式检查 contracts.typecheck + framework 非 cocos 文件）；git diff --check 干净；项目 tsconfig 基线 strict: false。
+- [x] 4.4 审查公开 API 与依赖边界，确认只导出稳定契约/工厂，不修改 ApplicationContext 行为、AppRoot 或 `startup.scene`。结论：变更仅 index.ts 导出 + 白名单断言 + tasks.md；新增导出均在 root 允许依赖层，无内部泄漏，`assets/boot/startup.scene` 与 ApplicationContext/AppRoot 均未改动。
+- [x] 4.5 将父级 `create-game-framework-v1/tasks.md` 的 2.7、3.1–3.4 与实现证据同步；执行 ADR 检查，必要时创建 ADR。结果：父级 2.7、3.1–3.4 已标记完成并附实现证据；本 change 产生新的长期架构决策（统一类型化错误体系、作用域事件通道、根入口 Platform 平铺导出与指代澄清），已创建 `doc/decisions/ADR-007-typed-errors-and-scoped-events.md`。
