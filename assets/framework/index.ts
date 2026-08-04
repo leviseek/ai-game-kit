@@ -38,6 +38,18 @@ export type {
 } from "./core/events/ScopedEventChannel";
 export { createScopedEventChannel } from "./core/events/ScopedEventChannel";
 
+export type {
+  StateHook,
+  StateMachine,
+  StateMachineHooks,
+  StateMachineOptions,
+  StateTransitionTable,
+} from "./core/fsm/StateMachine";
+export { createStateMachine } from "./core/fsm/StateMachine";
+
+export type { ObjectPool, ObjectPoolOptions } from "./core/pooling/ObjectPool";
+export { createObjectPool } from "./core/pooling/ObjectPool";
+
 export { Application } from "./application/Application";
 export { ApplicationStateError } from "./application/ApplicationStateError";
 export { ModuleLifecycleError } from "./application/ModuleLifecycleError";
