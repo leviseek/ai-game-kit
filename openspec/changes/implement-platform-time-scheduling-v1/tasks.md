@@ -6,11 +6,11 @@
 
 ## 2. 三种时间语义
 
-- [ ] 2.1 先编写 `TimeSource` 和 wall clock 测试，覆盖时间戳读取与来源替换，不把 wall clock 当作耗时或模拟时间。
-- [ ] 2.2 先编写 monotonic clock 测试，覆盖连续读取单调不减、注入来源和系统 wall clock 回拨不影响 monotonic 语义。
-- [ ] 2.3 实现统一 `TimeSource` 契约、wall clock 和 monotonic clock，使 2.1、2.2 测试通过且保持纯 TypeScript。
-- [ ] 2.4 先编写 simulation clock 测试，覆盖初始时间、暂停/恢复、正倍率、无效倍率拒绝和显式 `advance`。
-- [ ] 2.5 实现 simulation clock，使暂停时不推进、倍率按规则缩放、手动推进精确且不读取系统 wall clock。
+- [x] 2.1 先编写 `TimeSource` 和 wall clock 测试，覆盖时间戳读取与来源替换，不把 wall clock 当作耗时或模拟时间。
+- [x] 2.2 先编写 monotonic clock 测试，覆盖连续读取单调不减、注入来源和系统 wall clock 回拨不影响 monotonic 语义。
+- [x] 2.3 实现统一 `TimeSource` 契约、wall clock 和 monotonic clock，使 2.1、2.2 测试通过且保持纯 TypeScript。
+- [x] 2.4 先编写 simulation clock 测试，覆盖初始时间、暂停/恢复、正倍率、无效倍率拒绝和显式 `advance`。
+- [x] 2.5 实现 simulation clock，使暂停时不推进、倍率按规则缩放、手动推进精确且不读取系统 wall clock。
 
 ## 3. 被动调度器与释放
 
