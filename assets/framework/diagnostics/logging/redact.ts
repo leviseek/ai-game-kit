@@ -28,10 +28,9 @@ function redactValue(value: unknown, seen: Set<object>): unknown {
     return value;
   }
 
-  // Non-plain objects (Date, Map, class instances, Error) pass through
-  // untouched: they cannot be safely traversed, and their string forms are
-  // the caller's responsibility. Note this includes Map, which is technically
-  // iterable but intentionally left unfiltered for consistency.
+  // 非普通对象（Date、Map、类实例、Error）原样透传：它们无法被安全遍历，
+  // 其字符串形式由调用方负责。注意这里包含 Map——虽然技术上可迭代，但
+  // 有意保持一致而不做过滤。
   if (!isPlainObject(value) && !Array.isArray(value)) {
     return value;
   }
