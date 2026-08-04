@@ -118,10 +118,9 @@ export function createStateMachine<State extends string, Event extends string>(
   }
 
   /**
-   * Disposal takes effect immediately: the machine stops accepting events.
-   * The returned handle only serves the uniform DisposeHandle shape and
-   * idempotent confirmation; unlike scheduler or event-channel handles it
-   * does not delay or repeat the disposal.
+   * 释放立即生效：状态机停止接收事件。返回的句柄只用于满足统一的
+   * DisposeHandle 形状与幂等确认；与调度器或事件通道的句柄不同，
+   * 它不会延迟或重复执行释放。
    */
   function dispose(): DisposeHandle {
     if (disposed) {

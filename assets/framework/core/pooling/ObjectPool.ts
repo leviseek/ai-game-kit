@@ -18,11 +18,10 @@ const NOOP_HANDLE: DisposeHandle = {
 };
 
 /**
- * Explicit-owner object pool. The pool only manages objects that were
- * explicitly acquired through it; releasing an arbitrary object is rejected.
- * The pool manages at most `capacity` regular objects; acquiring beyond that
- * creates a temporary object, reports the overflow through the error reporter
- * so the result stays observable, and drops the temporary object on return.
+ * 显式所有者对象池（explicit-owner）。只管理通过 `acquire` 显式借出的对象，
+ * 释放任意未借出的对象会被拒绝。对象池至多管理 `capacity` 个常规对象；
+ * 超出容量的获取会创建临时对象、经错误报告器上报溢出（overflow）以保证结果
+ * 可观测，临时对象在归还时被丢弃。
  */
 export function createObjectPool<T>(
   options: ObjectPoolOptions<T>,

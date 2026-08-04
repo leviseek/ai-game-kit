@@ -31,10 +31,9 @@ export class FrameworkError extends ErrorWithCause {
 }
 
 /**
- * Classifies an error as recoverable by its own explicit FrameworkError
- * classification. Only the top-level error is inspected: a wrapped
- * framework error (e.g. `new Error("wrapped", { cause: recoverableError })`)
- * is not unwrapped, so callers must unwrap `cause` themselves before judging.
+ * 按错误自身的显式 FrameworkError 分类判断其是否可恢复。只检查顶层错误：
+ * 被包装的框架错误（如 `new Error("wrapped", { cause: recoverableError })`）
+ * 不会被解包，因此调用方需自行解包 `cause` 后再判断。
  */
 export function isRecoverableError(error: unknown): boolean {
   return error instanceof FrameworkError && error.recoverable;
