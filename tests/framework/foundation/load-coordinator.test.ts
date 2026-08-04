@@ -134,7 +134,7 @@ describe("LoadCoordinator waiter cancellation", () => {
     expect(remaining.resource).toBe(value);
   });
 
-  test("a cancelled waiter does not consume the load result of later requests", async () => {
+  test("a cancelled waiter never receives the load result", async () => {
     const { loader, pending } = createControlledLoader();
     const coordinator = createLoadCoordinator({ loader });
 
@@ -147,6 +147,49 @@ describe("LoadCoordinator waiter cancellation", () => {
 
     expect(cancelled.state).toBe("cancelled");
     expect(cancelled.resource).toBeUndefined();
+  });
+});
+
+describe("LoadCoordinator loader synchronous failure", () => {
+  test("a loader that throws synchronously settles the entry as failed with cause and identity", async () => {
+    const key = assetKey("sync-boom.txt");
+    let calls = 0;
+    const coordinator = createLoadCoordinator({
+      loader: () => {
+        calls += 1;
+        throw new Error("sync boom");
+      },
+    });
+
+    const first = coordinator.load(key);
+    const second = coordinator.load(key);
+
+    expect(first.state).toBe("failed");
+    expect(second.state).toBe("failed");
+    expect(first.error).toBe(second.error);
+
+    const failure = first.error as ErrorWithCause;
+    expect(failure.message).toMatch(/sync-boom\.txt/);
+    expect(failure.message).toMatch(/common/);
+    expect((failure.cause as Error).message).toBe("sync boom");
+    expect(calls).toBe(1);
+  });
+});
+
+describe("LoadCoordinator late waiter after terminal state", () => {
+  test("waiters that join after success also observe the ready result", async () => {
+    const { loader, pending } = createControlledLoader();
+    const coordinator = createLoadCoordinator({ loader });
+
+    const first = coordinator.load(assetKey("a.png"));
+    const value = { id: "cached" };
+    pending[0].resolve(value);
+    await first.done;
+
+    const late = coordinator.load(assetKey("a.png"));
+
+    expect(late.state).toBe("ready");
+    expect(late.resource).toBe(value);
   });
 });
 

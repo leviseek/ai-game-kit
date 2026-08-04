@@ -15,7 +15,16 @@ export interface ResourceHandle<T = unknown> {
   readonly state: ResourceLoadState;
   readonly resource: T | undefined;
   readonly error: unknown;
+  /**
+   * Resolves with the handle itself once the load settles (ready or failed)
+   * or the handle is cancelled. It never rejects; inspect `state` and
+   * `error` instead of catching.
+   */
   readonly done: Promise<ResourceHandle<T>>;
+  /**
+   * Detaches this waiter from the shared load. Idempotent and only effective
+   * while the handle is still loading; other waiters are unaffected.
+   */
   cancel(): void;
 }
 
@@ -37,7 +46,7 @@ interface LoadEntry {
 }
 
 function serializeKey(key: ResourceKey): string {
-  return `${key.kind}:${key.bundle}:${key.path}`;
+  return JSON.stringify([key.kind, key.bundle, key.path]);
 }
 
 function createLoadFailure(key: ResourceKey, cause: unknown): unknown {
@@ -52,6 +61,11 @@ function createLoadFailure(key: ResourceKey, cause: unknown): unknown {
  * a single underlying load: the first request starts the load and every
  * waiter is settled from the shared result. Cancelling a waiter only detaches
  * it from that shared load and never disturbs other waiters.
+ *
+ * Terminal entries are cached for the lifetime of the coordinator instance.
+ * Eviction or invalidation (for reference-counted release or scene retry) is
+ * intentionally not built here; see design.md decision 2 for the hand-off to
+ * later phases.
  */
 export function createLoadCoordinator(
   options: LoadCoordinatorOptions,
@@ -97,6 +111,9 @@ export function createLoadCoordinator(
       }
 
       state = entry.state;
+      // Contract-boundary assertion: the caller-declared `T` must match what
+      // the loader actually produces; the coordinator cannot verify it (the
+      // same inherent trade-off as a typed `fetch<T>` wrapper).
       resource = entry.resource as T;
       error = entry.error;
       resolveDone?.(handle);
@@ -149,7 +166,15 @@ export function createLoadCoordinator(
       };
       entries.set(keyId, created);
 
-      options.loader(key).then(
+      let loadPromise: Promise<unknown>;
+      try {
+        loadPromise = options.loader(key);
+      } catch (error) {
+        settleEntry(created, "failed", undefined, createLoadFailure(key, error));
+        return createHandle<T>(key, created);
+      }
+
+      loadPromise.then(
         (value) => settleEntry(created, "ready", value, undefined),
         (reason: unknown) =>
           settleEntry(

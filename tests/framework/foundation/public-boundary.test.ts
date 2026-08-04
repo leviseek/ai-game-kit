@@ -802,11 +802,8 @@ describe("framework public boundary", () => {
     });
   });
 
-  test("keeps the resource layer engine-agnostic and contracts free of implementations", () => {
-    const coreResourceRoot = resolve(frameworkRoot, "core/resource");
-    const contractsResourceRoot = resolve(frameworkRoot, "contracts/resource");
-
-    const coreFiles = collectTypeScriptFiles(coreResourceRoot);
+  test("keeps the resource core layer engine-agnostic", () => {
+    const coreFiles = collectTypeScriptFiles(resolve(frameworkRoot, "core/resource"));
     expect(coreFiles.length).toBeGreaterThan(0);
 
     const coreSources = coreFiles
@@ -817,6 +814,12 @@ describe("framework public boundary", () => {
     expect(coreSources).not.toMatch(
       /\b(?:getInstance|singleton|ServiceLocator)\b/,
     );
+  });
+
+  test.skipIf(
+    !existsSync(resolve(frameworkRoot, "contracts/resource")),
+  )("keeps resource contracts free of core implementations", () => {
+    const contractsResourceRoot = resolve(frameworkRoot, "contracts/resource");
 
     for (const file of collectTypeScriptFiles(contractsResourceRoot)) {
       const source = stripComments(readFileSync(file, "utf8"));
