@@ -1,21 +1,23 @@
+> 状态同步说明：Foundation 实现已由归档 change `2026-08-04-implement-framework-foundation-v1` 完成。本总计划仅将有实际实现和验证证据的任务标记为完成；后续能力仍需独立实现 change。Foundation 门禁结果：`bun run test:foundation` 133 pass / 0 fail，`bun run test:foundation:types` 0 diagnostics。
+
 ## 1. 工程边界与验证基线
 
-- [ ] 1.1 在 `assets/framework` 下建立 `core`、`contracts`、`application`、`cocos-adapters`、`capabilities` 的目录和公开入口，并在 `assets/game` 下建立组合入口；确认没有修改 Cocos 生成目录和既有 UUID。
-- [ ] 1.2 为纯 TypeScript 代码建立 Bun 测试命令和测试目录，并用一个最小失败/通过测试证明命令可以稳定执行。
-- [ ] 1.3 建立 strict TypeScript 检查命令，确认项目代码不使用 `as any`、`@ts-ignore` 或放宽类型规则绕过错误。
-- [ ] 1.4 建立依赖边界检查，验证 `framework/core` 不导入 `cc`、`framework` 不导入 `game`、跨模块不深层导入内部实现。
-- [ ] 1.5 记录初始 Bun 测试、类型检查和 Cocos Web Desktop 构建基线，区分环境问题与后续改动引入的问题。
+- [x] 1.1 在 `assets/framework` 下建立 Foundation 所需的 `core`、`contracts`、`application`、`diagnostics`、`adapters/cocos/application` 目录和最小公开入口；确认没有修改 Cocos 生成目录和既有 UUID。UI、资源、场景和游戏业务目录不因规划而预建。
+- [x] 1.2 为纯 TypeScript 代码建立 Bun foundation 测试命令和测试目录，并用受控失败/通过测试证明命令可以稳定执行。
+- [x] 1.3 建立 foundation strict TypeScript 检查命令，确认新增代码不使用 `as any`、`@ts-ignore` 或放宽类型规则绕过错误；项目既有 `strict: false` 基线另行记录。
+- [x] 1.4 建立依赖边界检查，验证 `framework/core` 不导入 `cc`、`framework` 不导入 `game`、contracts 不依赖实现、跨模块不深层导入内部实现。
+- [x] 1.5 记录 Bun 测试、Foundation 类型检查和 Cocos Creator 3.8.8 Web Desktop 构建/导入基线，区分环境问题与后续改动引入的问题。
 
 ## 2. 应用内核与模块生命周期
 
-- [ ] 2.1 先编写模块依赖图测试，覆盖稳定拓扑顺序、缺失依赖、重复模块标识和循环依赖。
-- [ ] 2.2 实现最小模块描述、依赖图和排序逻辑，使 2.1 的测试通过且不依赖 Cocos。
-- [ ] 2.3 先编写应用状态机测试，覆盖合法转换、非法转换、重复暂停/恢复以及重复释放。
-- [ ] 2.4 实现 `created -> initializing -> running -> paused -> stopping -> disposed` 生命周期，使 2.3 的测试通过。
-- [ ] 2.5 先编写模块启动与关闭测试，覆盖依赖顺序启动、逆序清理、必需模块失败回滚和可选模块失败降级。
-- [ ] 2.6 实现模块编排器，使 2.5 的失败与清理路径测试通过，不依赖组件 `onLoad` 的隐式顺序。
-- [ ] 2.7 先编写类型化服务 token/注册表测试，覆盖注册、解析、重复注册、缺失服务和测试替身替换。
-- [ ] 2.8 实现最小 `ApplicationContext` 和服务注册表，使 2.7 的测试通过且不暴露全局静态访问入口。
+- [x] 2.1 先编写模块依赖图测试，覆盖稳定拓扑顺序、缺失依赖、重复模块标识和循环依赖。
+- [x] 2.2 实现最小模块描述、依赖图和稳定拓扑排序，使 2.1 的测试通过且不依赖 Cocos。
+- [x] 2.3 先编写应用状态机测试，覆盖合法转换、非法转换、重复暂停/恢复以及重复释放。
+- [x] 2.4 实现 `created -> initializing -> running -> paused -> stopping -> disposed` 生命周期，使 2.3 的测试通过，并覆盖启动失败后的释放路径。
+- [x] 2.5 先编写模块启动与关闭测试，覆盖依赖顺序启动、逆序清理、必需模块失败回滚和清理错误隔离。
+- [x] 2.6 实现模块编排器，使 2.5 的失败与清理路径测试通过，不依赖组件 `onLoad` 的隐式顺序。
+- [ ] 2.7 重新定义后续服务注册能力的行为边界和测试：Foundation 的 `ApplicationContext` 仅提供 Logger 与只读生命周期状态，不提供类型化 token、服务解析或 `get<T>()`；如仍需服务注册表，必须通过独立 OpenSpec change 设计并验证。
+- [ ] 2.8 实现后续服务注册能力（仅在独立 change 明确批准后）：不得将 `ApplicationContext` 退化为全局 Service Locator，业务代码不得直接依赖 Context；本总计划不把该能力视为 Foundation 已完成。
 
 ## 3. 诊断、事件与通用纯逻辑工具
 
@@ -33,9 +35,9 @@
 - [ ] 4.1 定义最小平台契约和内存测试适配器，只包含应用前后台、存储、设备信息和时钟等已有替换需求。
 - [ ] 4.2 先编写时间测试，区分 wall、monotonic、simulation 三种时钟，并覆盖暂停、倍率和可控推进。
 - [ ] 4.3 实现时钟与作用域调度器，使 4.2 的测试通过，且调度任务在作用域释放后不再执行。
-- [ ] 4.4 实现 Cocos 应用前后台适配器，将引擎事件转换为应用生命周期调用并覆盖重复事件场景。
-- [ ] 4.5 在 `startup.scene` 中通过 Cocos Creator 接入唯一 `AppRoot`，由组合根显式创建应用和模块，不手工编辑 scene/meta 序列化内容。
-- [ ] 4.6 增加启动冒烟验证，证明空应用能够初始化、运行、暂停、恢复、停止和逆序释放，且场景中不存在重复常驻根。
+- [x] 4.4 实现 Cocos 应用前后台适配器，将引擎事件转换为应用生命周期调用，并覆盖重复绑定、解绑和重复前后台事件的基础场景。
+- [x] 4.5 在 `startup.scene` 中通过 Cocos Creator 接入唯一 `AppRoot`，由组合根显式创建应用和模块，不手工编辑 scene/meta 序列化内容。
+- [ ] 4.6 完成 Cocos Creator 3.8.8 Web Desktop Preview 运行期启动冒烟验证，证明空应用能够初始化、运行、暂停、恢复、停止和逆序释放，且场景中不存在重复常驻根。脚本编译、场景挂载和资源导入已验证；编辑器 Preview 点击验证仍待完成。
 
 ## 5. 资源与场景流转
 
@@ -84,3 +86,4 @@
 - [ ] 9.5 使用 Cocos Profiler 对五类组合夹具执行基础性能检查，只对有数据证明的热点保留池化或缓存。
 - [ ] 9.6 更新框架使用与扩展说明，记录依赖规则、模块组合、资源所有权、错误处理以及新增平台/玩法能力需要创建独立 OpenSpec change 的流程。
 - [ ] 9.7 执行最终代码审查，确认 v1 没有实现联网、热更新、ECS 或五类具体玩法，并记录剩余风险和后续 change 候选。
+- [ ] 9.8 执行 ADR 检查：确认本次总计划同步和后续实现是否产生新的架构决策；如有，按 `doc/decisions/ADR-NNN-<slug>.md` 创建 ADR；如无，明确记录无需新增 ADR。
