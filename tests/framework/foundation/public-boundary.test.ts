@@ -9,6 +9,7 @@ type FrameworkLayer =
   | "application"
   | "diagnostics"
   | "adapters/cocos"
+  | "adapters/memory"
   | "unknown";
 
 interface ImportViolation {
@@ -30,11 +31,12 @@ const allowedFrameworkDependencies: Readonly<
   Record<FrameworkLayer, readonly FrameworkLayer[]>
 > = {
   root: ["core", "contracts", "application", "diagnostics"],
-  core: ["core"],
+  core: ["core", "contracts"],
   contracts: ["core", "contracts"],
   application: ["core", "contracts", "application"],
   diagnostics: ["core", "contracts", "diagnostics"],
   "adapters/cocos": ["core", "contracts", "application", "adapters/cocos"],
+  "adapters/memory": ["core", "contracts", "adapters/memory"],
   unknown: [],
 };
 
@@ -238,6 +240,10 @@ function getFrameworkLayer(path: string): FrameworkLayer | undefined {
 
   if (pathFromFramework.startsWith("adapters/cocos/")) {
     return "adapters/cocos";
+  }
+
+  if (pathFromFramework.startsWith("adapters/memory/")) {
+    return "adapters/memory";
   }
 
   return "unknown";
@@ -549,6 +555,57 @@ describe("framework public boundary", () => {
     expect(fixtures).toEqual([[], [], [], [], [], []]);
   });
 
+  test("allows core implementations to depend on contracts for time", () => {
+    const source = `
+      import type { TimeSource } from "../../contracts/time/TimeSource";
+    `;
+
+    expect(
+      analyzeFixture("assets/framework/core/time/WallClock.ts", source),
+    ).toEqual([]);
+  });
+
+  test("allows memory adapters to depend on core and contracts only", () => {
+    const source = `
+      import type { PlatformContract } from "../../contracts/platform/Platform";
+      import type { TimeSource } from "../../contracts/time/TimeSource";
+      import type { SimulationClock } from "../../core/time/SimulationClock";
+    `;
+
+    expect(
+      analyzeFixture("assets/framework/adapters/memory/MemoryPlatform.ts", source),
+    ).toEqual([]);
+  });
+
+  test("rejects runtime, reverse and cross-adapter dependencies from memory adapters", () => {
+    const source = `
+      import { game } from "cc";
+      import type { ApplicationContext } from "../../contracts/application/ApplicationContext";
+      import type { Application } from "../../application/Application";
+      import { ConsoleLogger } from "../../diagnostics/logging/ConsoleLogger";
+      import { CocosApplicationAdapter } from "../../adapters/cocos/application/CocosApplicationAdapter";
+      import type { Battle } from "../../../game/Battle";
+    `;
+
+    expect(
+      Object.fromEntries(
+        analyzeFixture(
+          "assets/framework/adapters/memory/MemoryPlatform.ts",
+          source,
+        ).map(({ specifier, reason }) => [specifier, reason]),
+      ),
+    ).toEqual({
+      cc: "adapters/memory cannot depend on Cocos",
+      "../../application/Application":
+        "adapters/memory cannot depend on application",
+      "../../diagnostics/logging/ConsoleLogger":
+        "adapters/memory cannot depend on diagnostics",
+      "../../adapters/cocos/application/CocosApplicationAdapter":
+        "adapters/memory cannot depend on adapters/cocos",
+      "../../../game/Battle": "Framework cannot depend on Game",
+    });
+  });
+
   test("allows contracts/module to depend on contracts/application and core", () => {
     const source = `
       import type { ApplicationContext } from "../application/ApplicationContext";
@@ -683,5 +740,26 @@ describe("framework public boundary", () => {
 
   test("keeps all current asset imports within architecture boundaries", () => {
     expect(findProjectImportViolations()).toEqual([]);
+  });
+
+  test("keeps platform, time and scheduling layers free of service locators and global singletons", () => {
+    const newLayerRoots = [
+      resolve(frameworkRoot, "contracts/platform"),
+      resolve(frameworkRoot, "contracts/time"),
+      resolve(frameworkRoot, "core/time"),
+      resolve(frameworkRoot, "core/scheduling"),
+      resolve(frameworkRoot, "adapters/memory"),
+    ];
+
+    const sources = newLayerRoots
+      .flatMap((root) => collectTypeScriptFiles(root))
+      .map((file) => readFileSync(file, "utf8"))
+      .join("\n");
+
+    expect(sources).not.toMatch(/\b(?:getInstance|singleton|ServiceLocator)\b/);
+    expect(sources).not.toMatch(/\b(?:globalThis|window)\b/);
+    expect(sources).not.toMatch(
+      /\bstatic\s+(?:readonly\s+)?(?:instance|shared)\b/,
+    );
   });
 });
