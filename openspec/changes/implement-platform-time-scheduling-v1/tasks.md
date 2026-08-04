@@ -14,11 +14,11 @@
 
 ## 3. 被动调度器与释放
 
-- [ ] 3.1 先编写 `DisposeHandle` 测试，覆盖任务取消、调度器释放、重复释放幂等和到期但未驱动任务的取消。
-- [ ] 3.2 先编写被动调度器测试，覆盖绑定时钟、延迟任务、一次性任务、重复任务、暂停时不执行和无 tick 时不执行。
-- [ ] 3.3 实现同步幂等 `DisposeHandle` 和绑定 `TimeSource` 的被动调度器，使 3.1、3.2 测试通过，不使用 Cocos `schedule`/`director`、全局计时器或 ApplicationContext。
-- [ ] 3.4 补充调度失败隔离测试，验证单个任务回调失败不会阻断同批其他到期任务，并通过现有诊断边界保留错误信息。
-- [ ] 3.5 补充调度器边界测试，验证任务释放、调度器释放和所有者清理后没有残留执行；确认无静态单例和无所有者任务。
+- [x] 3.1 先编写 `DisposeHandle` 测试，覆盖任务取消、调度器释放、重复释放幂等和到期但未驱动任务的取消。（红测试已编写于 `tests/framework/foundation/dispose-handle.test.ts`，引用 `core/scheduling` 待 3.3 实现，当前预期失败。）
+- [x] 3.2 先编写被动调度器测试，覆盖绑定时钟、延迟任务、一次性任务、重复任务、暂停时不执行和无 tick 时不执行。（红测试已编写于 `tests/framework/foundation/passive-scheduler.test.ts`，复用 `core/scheduling` API，待 3.3 实现，当前预期失败。）
+- [x] 3.3 实现同步幂等 `DisposeHandle` 和绑定 `TimeSource` 的被动调度器，使 3.1、3.2 测试通过，不使用 Cocos `schedule`/`director`、全局计时器或 ApplicationContext。（新增 `core/scheduling/DisposeHandle.ts` 与 `core/scheduling/PassiveScheduler.ts`，22 个调度/释放测试转绿，Foundation 套件 197 pass / 0 fail。）
+- [x] 3.4 补充调度失败隔离测试，验证单个任务回调失败不会阻断同批其他到期任务，并通过现有诊断边界保留错误信息。（新增 `tests/framework/foundation/scheduler-failure-isolation.test.ts`，`PassiveScheduler` 新增可选 `onTaskError` 报告器并隔离回调异常，6 个测试通过。）
+- [x] 3.5 补充调度器边界测试，验证任务释放、调度器释放和所有者清理后没有残留执行；确认无静态单例和无所有者任务。（新增 `tests/framework/foundation/scheduler-boundary.test.ts`，覆盖释放后无残留、实例独立、无静态单例与源码级全局状态检查，6 个测试通过。）
 
 ## 4. 集成验证与交付
 
