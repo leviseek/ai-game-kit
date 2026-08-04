@@ -16,14 +16,13 @@ export interface ResourceHandle<T = unknown> {
   readonly resource: T | undefined;
   readonly error: unknown;
   /**
-   * Resolves with the handle itself once the load settles (ready or failed)
-   * or the handle is cancelled. It never rejects; inspect `state` and
-   * `error` instead of catching.
+   * 加载落定（ready/failed）或 handle 被取消后，以 handle 自身 resolve。
+   * 从不 reject；读取 `state` 与 `error` 判断结果，不要使用 try/catch。
    */
   readonly done: Promise<ResourceHandle<T>>;
   /**
-   * Detaches this waiter from the shared load. Idempotent and only effective
-   * while the handle is still loading; other waiters are unaffected.
+   * 将该等待者从共享加载中分离（detach）。幂等（idempotent），仅在 handle
+   * 仍处于 loading 时生效；不影响其他等待者。
    */
   cancel(): void;
 }
@@ -57,15 +56,13 @@ function createLoadFailure(key: ResourceKey, cause: unknown): unknown {
 }
 
 /**
- * Engine-agnostic load coordinator. Requests for the same resource key share
- * a single underlying load: the first request starts the load and every
- * waiter is settled from the shared result. Cancelling a waiter only detaches
- * it from that shared load and never disturbs other waiters.
+ * 引擎无关的加载协调器。同一资源键的请求共享一次底层加载：首个请求触发加载，
+ * 所有等待者从共享结果中落定。取消某个等待者只会把它从共享加载中分离，
+ * 绝不干扰其他等待者。
  *
- * Terminal entries are cached for the lifetime of the coordinator instance.
- * Eviction or invalidation (for reference-counted release or scene retry) is
- * intentionally not built here; see design.md decision 2 for the hand-off to
- * later phases.
+ * 终态 entry（ready/failed）在协调器实例生命周期内缓存；为引用计数释放或场景重试
+ * 提供的驱逐（eviction）与失效（invalidation）有意不在此实现，交接给后续阶段，
+ * 参见 design.md 决策 2。
  */
 export function createLoadCoordinator(
   options: LoadCoordinatorOptions,
@@ -111,9 +108,8 @@ export function createLoadCoordinator(
       }
 
       state = entry.state;
-      // Contract-boundary assertion: the caller-declared `T` must match what
-      // the loader actually produces; the coordinator cannot verify it (the
-      // same inherent trade-off as a typed `fetch<T>` wrapper).
+      // 契约边界断言：调用方声明的 `T` 必须与 loader 实际产出一致，协调器无法验证
+      // （与类型化 `fetch<T>` 包装相同的固有权衡）。
       resource = entry.resource as T;
       error = entry.error;
       resolveDone?.(handle);
