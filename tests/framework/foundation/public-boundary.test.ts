@@ -764,6 +764,66 @@ describe("framework public boundary", () => {
     expect(findProjectImportViolations()).toEqual([]);
   });
 
+  test("locks the resource layer dependency boundary", () => {
+    const allowed = [
+      analyzeFixture(
+        "assets/framework/core/resource/LoadCoordinator.ts",
+        'import { FrameworkError } from "../errors/FrameworkError";',
+      ),
+    ];
+
+    expect(allowed).toEqual([[]]);
+
+    const violations = analyzeFixture(
+      "assets/framework/core/resource/LoadCoordinator.ts",
+      `
+        import { assetManager } from "cc";
+        import type { Application } from "../../application/Application";
+        import { ConsoleLogger } from "../../diagnostics/logging/ConsoleLogger";
+        import { CocosApplicationAdapter } from "../../adapters/cocos/application/CocosApplicationAdapter";
+        import type { Battle } from "../../../game/Battle";
+        import type { Framework } from "../../index";
+      `,
+    );
+
+    expect(
+      Object.fromEntries(
+        violations.map(({ specifier, reason }) => [specifier, reason]),
+      ),
+    ).toEqual({
+      cc: "core cannot depend on Cocos",
+      "../../application/Application": "core cannot depend on application",
+      "../../diagnostics/logging/ConsoleLogger":
+        "core cannot depend on diagnostics",
+      "../../adapters/cocos/application/CocosApplicationAdapter":
+        "core cannot depend on adapters/cocos",
+      "../../../game/Battle": "Framework cannot depend on Game",
+      "../../index": "Framework internals cannot import the root barrel",
+    });
+  });
+
+  test("keeps the resource layer engine-agnostic and contracts free of implementations", () => {
+    const coreResourceRoot = resolve(frameworkRoot, "core/resource");
+    const contractsResourceRoot = resolve(frameworkRoot, "contracts/resource");
+
+    const coreFiles = collectTypeScriptFiles(coreResourceRoot);
+    expect(coreFiles.length).toBeGreaterThan(0);
+
+    const coreSources = coreFiles
+      .map((file) => stripComments(readFileSync(file, "utf8")))
+      .join("\n");
+
+    expect(coreSources).not.toMatch(/from\s*["']cc(?:["']|\/)/);
+    expect(coreSources).not.toMatch(
+      /\b(?:getInstance|singleton|ServiceLocator)\b/,
+    );
+
+    for (const file of collectTypeScriptFiles(contractsResourceRoot)) {
+      const source = stripComments(readFileSync(file, "utf8"));
+      expect(source).not.toMatch(/from\s*["'][^"']*core\/resource/);
+    }
+  });
+
   test("keeps platform, time and scheduling layers free of service locators and global singletons", () => {
     const newLayerRoots = [
       resolve(frameworkRoot, "contracts/platform"),
