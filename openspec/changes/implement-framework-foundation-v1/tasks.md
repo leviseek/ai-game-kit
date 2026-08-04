@@ -121,10 +121,26 @@
 
 ## 7. 范围审查与最终验证
 
-- [ ] 7.1 运行完整 foundation 门禁 `bun run test:foundation && bun run test:foundation:types`，确认 ModuleGraph、ModuleRunner、Application 和 Logger 的运行时行为与契约类型均零失败。
-- [ ] 7.2 运行 `test:foundation:types` 与项目类型检查、`git diff --check`，记录结果并区分当前配置基线与本 change 引入的问题。
-- [ ] 7.3 运行 Cocos Creator 3.8.8 Web Desktop 构建/预览冒烟验证，确认 AppRoot 脚本已正确导入且无组件或序列化错误。
-- [ ] 7.4 扫描新增文件和 import，确认不存在 UI、FairyGUI、Resource、Asset Bundle、Scene、ECS、网络、战斗或游戏业务实现与占位接口，并重新执行内部依赖矩阵：core 不依赖 Cocos、contracts 不依赖具体实现、application/Framework 不依赖 Game、diagnostics/logging 只依赖 logging contract 和必要 core。
-- [ ] 7.5 审查公共导出白名单，确认只暴露稳定 ApplicationContext/Application/Module/Logger contracts、必要启动类型和允许捕获的错误；ModuleGraph、ModuleRunner、ApplicationContext 可变实现、MemoryLogger、Console 格式化细节和 Cocos Adapter 内部实现不得被根入口暴露。
-- [ ] 7.6 审查全局状态和生命周期，确认没有静态 Application/Logger 单例、重复持久节点、未清理模块，以及 AppRoot 直接监听平台事件、Adapter 未解绑或 AppRoot/Adapter 重复处理生命周期的问题。
-- [ ] 7.7 整理实现文件、测试证据、Cocos 冒烟结果和剩余风险，等待代码 review，不自动开始后续 Framework 能力。
+- [x] 7.1 运行完整 foundation 门禁 `bun run test:foundation && bun run test:foundation:types`，确认 ModuleGraph、ModuleRunner、Application 和 Logger 的运行时行为与契约类型均零失败。
+  - GREEN：`bun run test:foundation` 133 pass / 0 fail（556 expect，25 文件）；`bun run test:foundation:types` 0 diagnostics、退出码 0。纯验证任务，无代码修改。
+- [x] 7.2 运行 `test:foundation:types` 与项目类型检查、`git diff --check`，记录结果并区分当前配置基线与本 change 引入的问题。
+  - `test:foundation:types` 0 diagnostics；`git diff --check` clean（工作区无未提交改动）。
+  - 全项目 `tsc --project tsconfig.json --noEmit`：`assets/framework` 0 错误；`tests/` 全部错误均为既有基线（bun:test/node 类型缺失、ES2015 下 import.meta/动态导入/require 受限），与 Task 1.6 记录一致，本 change 未引入新问题。
+- [x] 7.3 运行 Cocos Creator 3.8.8 Web Desktop 构建/预览冒烟验证，确认 AppRoot 脚本已正确导入且无组件或序列化错误。
+  - Creator 3.8.8 加载项目成功（`asset-db is ready!`），脚本编译无错误；`startup.scene` 含 AppRoot 节点与唯一组件，压缩 UUID `fa179zIYl5AH5WyFFEuwP2V` 匹配 `AppRoot.ts.meta`。
+  - `temp/programming` 编译产物确认 AppRoot/ConsoleLogger/CocosApplicationAdapter/ApplicationContext 全部正确编译且 import 解析成功；无组件缺失或序列化错误。
+  - 仅有的 `cocos-service` `msg not exist` 为 Creator 3.8.8 扩展基线问题，与 Framework 无关；Web Desktop 预览运行期行为待用户在编辑器中点击 Preview 人工确认。
+- [x] 7.4 扫描新增文件和 import，确认不存在 UI、FairyGUI、Resource、Asset Bundle、Scene、ECS、网络、战斗或游戏业务实现与占位接口，并重新执行内部依赖矩阵：core 不依赖 Cocos、contracts 不依赖具体实现、application/Framework 不依赖 Game、diagnostics/logging 只依赖 logging contract 和必要 core。
+  - 禁止系统关键词扫描（framework + boot 全部 .ts）与目录检查（`assets/game` 不存在、`core/` 仅空目录 + meta）均无违规。
+  - 全量 import 扫描与 `public-boundary.test.ts` 13 pass / 0 fail 共同验证依赖矩阵：core 无 Cocos、contracts 仅同层、application 无 Game/diagnostics、diagnostics 仅 logging contract、adapter 唯一允许 cc、Framework 无 Game/boot、无根 barrel 反向导入。
+- [x] 7.5 审查公共导出白名单，确认只暴露稳定 ApplicationContext/Application/Module/Logger contracts、必要启动类型和允许捕获的错误；ModuleGraph、ModuleRunner、ApplicationContext 可变实现、MemoryLogger、Console 格式化细节和 Cocos Adapter 内部实现不得被根入口暴露。
+  - 根入口精确导出 13 项白名单（LogContext/Logger/LogLevel/LogRecord、ApplicationContext/ApplicationLifecycle/ApplicationState、Module/ModulePhase/ModuleRuntimeState、Application、ApplicationStateError、ModuleLifecycleError），无 `export *`。
+  - `public-boundary.test.ts` L438-478 精确比对导出集合并拒绝 9 项内部实现泄露；ModuleGraph、ModuleRunner、createApplicationContext/InternalApplicationContext、ConsoleLogger/ScopedLogger/MemoryLogger、CocosApplicationAdapter 均未暴露。
+- [x] 7.6 审查全局状态和生命周期，确认没有静态 Application/Logger 单例、重复持久节点、未清理模块，以及 AppRoot 直接监听平台事件、Adapter 未解绑或 AppRoot/Adapter 重复处理生命周期的问题。
+  - framework 全目录扫描无 `static`/`globalThis`/`window.`/`singleton`/`getInstance`；场景仅 1 个 AppRoot 节点。
+  - AppRoot 无 EVENT_HIDE/EVENT_SHOW/game.on/game.off（approot-composition 测试断言）；`onDestroy` 源码顺序 unbind 先于 dispose。
+  - Adapter `bound` flag 防重复绑定，unbind 与 bind 对称；`cocos-adapter.test.ts` 覆盖重复绑定、解绑、pause/resume 拒绝不崩溃。
+  - 重复 onDestroy、onDestroy 在 start 前调用均安全（幂等 + 可选链）；ModuleRunner dispose 将 initialized/started/paused/stopped 全部转 disposed，无未清理模块。
+- [x] 7.7 整理实现文件、测试证据、Cocos 冒烟结果和剩余风险，等待代码 review，不自动开始后续 Framework 能力。
+  - 已汇总实现文件清单（framework 13 个源码 + boot AppRoot/scene + 25 个测试文件）、门禁证据（133 pass / 0 fail + types 0 诊断）、Cocos 冒烟结果和剩余风险（预览人工确认、pause/resume 失败矩阵延后、strict:false 基线）。
+  - Phase 7 全部任务完成，等待代码 review，不自动开始后续 Framework 能力。
