@@ -22,8 +22,8 @@
 
 ## 4. 集成验证与交付
 
-- [ ] 4.1 运行完整 `bun run test:foundation`，记录原有 Foundation 测试与新增平台/时间/调度测试的通过数量和零失败结果。
-- [ ] 4.2 运行 `bun run test:foundation:types`、项目可用的 Framework 类型检查和 `git diff --check`，记录既有 `strict: false` 工具链基线与本 Change 结果。
-- [ ] 4.3 审查公开 API 和依赖边界，确认只导出稳定契约/工厂，不导出调度内部结构，也不修改 ApplicationContext、AppRoot 或 `startup.scene`。
-- [ ] 4.4 将父级 `create-game-framework-v1/tasks.md` 的 `4.1–4.3` 与实现证据同步，区分纯 TypeScript 验证和尚未实现的真实平台适配。
-- [ ] 4.5 执行 ADR 检查：确认本次工作是否产生新的架构决策；如有，按 `doc/decisions/ADR-NNN-<slug>.md` 创建 ADR；如无，明确记录无需新增 ADR。
+- [x] 4.1 运行完整 `bun run test:foundation`，记录原有 Foundation 测试与新增平台/时间/调度测试的通过数量和零失败结果。（实测 217 pass / 0 fail，699 expect；其中新增平台/时间/调度相关 42 个测试。）
+- [x] 4.2 运行 `bun run test:foundation:types`、项目可用的 Framework 类型检查和 `git diff --check`，记录既有 `strict: false` 工具链基线与本 Change 结果。（`test:foundation:types` 通过 0 diagnostics；`tsconfig.json` 明确 `strict: false` 为 Cocos 工具链基线，本 Change 未放宽类型规则；`git diff --check` 无输出。）
+- [x] 4.3 审查公开 API 和依赖边界，确认只导出稳定契约/工厂，不导出调度内部结构，也不修改 ApplicationContext、AppRoot 或 `startup.scene`。（`index.ts` 未改动，仅导出 Logger/ApplicationContext/Module 契约与 Application 工厂；`core/scheduling` 未从根入口导出；ApplicationContext、AppRoot、`startup.scene` 在本 Change 提交范围内无任何改动；public-boundary 架构白名单测试通过。）
+- [x] 4.4 将父级 `create-game-framework-v1/tasks.md` 的 `4.1–4.3` 与实现证据同步，区分纯 TypeScript 验证和尚未实现的真实平台适配。（父级 4.1–4.3 已勾选并标注由本 Change 完成；门禁基线更新为 217 pass / 0 fail；真实平台 SDK 与 Cocos 时间适配仍属后续独立 Change，未实现。）
+- [x] 4.5 执行 ADR 检查：确认本次工作是否产生新的架构决策；如有，按 `doc/decisions/ADR-NNN-<slug>.md` 创建 ADR；如无，明确记录无需新增 ADR。（新增 `doc/decisions/ADR-006-repeating-task-scheduling.md`，记录 repeat 任务"丢弃 missed、不追赶"语义决策；其余设计与 design.md 一致，无需额外 ADR。）

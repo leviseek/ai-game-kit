@@ -1,4 +1,4 @@
-> 状态同步说明：Foundation 实现已由归档 change `2026-08-04-implement-framework-foundation-v1` 完成。本总计划仅将有实际实现和验证证据的任务标记为完成；后续能力仍需独立实现 change。Foundation 门禁结果：`bun run test:foundation` 133 pass / 0 fail，`bun run test:foundation:types` 0 diagnostics。
+> 状态同步说明：Foundation 实现已由归档 change `2026-08-04-implement-framework-foundation-v1` 完成。本总计划仅将有实际实现和验证证据的任务标记为完成；后续能力仍需独立实现 change。Foundation 门禁结果：`bun run test:foundation` 217 pass / 0 fail（含平台/时间/调度新增 42 个测试），`bun run test:foundation:types` 0 diagnostics。
 
 ## 1. 工程边界与验证基线
 
@@ -32,9 +32,9 @@
 
 ## 4. 平台、时间与启动适配
 
-- [ ] 4.1 定义最小平台契约和内存测试适配器，只包含应用前后台、存储、设备信息和时钟等已有替换需求。
-- [ ] 4.2 先编写时间测试，区分 wall、monotonic、simulation 三种时钟，并覆盖暂停、倍率和可控推进。
-- [ ] 4.3 实现时钟与作用域调度器，使 4.2 的测试通过，且调度任务在作用域释放后不再执行。
+- [x] 4.1 定义最小平台契约和内存测试适配器，只包含应用前后台、存储、设备信息和时钟等已有替换需求。（由 change `implement-platform-time-scheduling-v1` 1.x 完成：`contracts/platform/Platform.ts`、`adapters/memory/MemoryPlatform.ts`，纯 TypeScript 测试覆盖，不预建真实平台 SDK。）
+- [x] 4.2 先编写时间测试，区分 wall、monotonic、simulation 三种时钟，并覆盖暂停、倍率和可控推进。（由 change `implement-platform-time-scheduling-v1` 2.x 完成：`contracts/time/TimeSource.ts` 及 `core/time/{Wall,Monotonic,Simulation}Clock.ts`。）
+- [x] 4.3 实现时钟与作用域调度器，使 4.2 的测试通过，且调度任务在作用域释放后不再执行。（由 change `implement-platform-time-scheduling-v1` 3.x 完成：`core/scheduling/DisposeHandle.ts`、`PassiveScheduler.ts`，同步幂等释放句柄，调度器释放取消全部未执行任务；本 Change 采用 DisposeHandle 表达"作用域释放"，未建立通用 Scope。）
 - [x] 4.4 实现 Cocos 应用前后台适配器，将引擎事件转换为应用生命周期调用，并覆盖重复绑定、解绑和重复前后台事件的基础场景。
 - [x] 4.5 在 `startup.scene` 中通过 Cocos Creator 接入唯一 `AppRoot`，由组合根显式创建应用和模块，不手工编辑 scene/meta 序列化内容。
 - [x] 4.6 完成 Cocos Creator 3.8.8 Web Desktop Preview 运行期启动冒烟验证，证明空应用能够初始化、运行、暂停、恢复、停止和逆序释放，且场景中不存在重复常驻根。脚本编译、场景挂载、资源导入和编辑器 Preview 运行期验证均已通过；2026-08-04 用户人工审核通过。
