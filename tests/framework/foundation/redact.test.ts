@@ -64,7 +64,23 @@ describe("diagnostics redact sensitive fields", () => {
     expect(result.context.userId).toBe(7);
   });
 
-  test("redacts sensitive fields in error context as well", () => {
+  test("leaves the error instance untouched in a redacted record", () => {
+    const error = new Error("save failed");
+    const record: LogRecord = {
+      level: "error",
+      message: "save failed",
+      timestamp: 1,
+      scope: "app.inventory",
+      context: { secret: "s" },
+      error,
+    };
+    const result = redactRecord(record);
+
+    expect(result.error).toBe(error);
+    expect(result.context.secret).toBe("[REDACTED]");
+  });
+
+  test("redacts sensitive keys inside a nested error context object", () => {
     const errorContext = {
       moduleId: "inventory",
       phase: "start",
@@ -80,6 +96,60 @@ describe("diagnostics redact sensitive fields", () => {
     expect((result.credentials as { password: unknown }).password).toBe(
       "[REDACTED]",
     );
+  });
+
+  test("redacts delimiter-variant sensitive keys", () => {
+    const context = { api_key: "a", API_KEY: "b", "api-key": "c" };
+    const result = redactContext(context);
+
+    expect(result.api_key).toBe("[REDACTED]");
+    expect(result.API_KEY).toBe("[REDACTED]");
+    expect(result["api-key"]).toBe("[REDACTED]");
+  });
+
+  test("does not redact keys that merely contain a sensitive word", () => {
+    const context = { promptTokens: 42, tokenCount: 3, passwordPolicy: "x" };
+    const result = redactContext(context);
+
+    expect(result.promptTokens).toBe(42);
+    expect(result.tokenCount).toBe(3);
+    expect(result.passwordPolicy).toBe("x");
+  });
+
+  test("redacts sensitive keys inside arrays", () => {
+    const context = {
+      steps: [{ token: "t-1" }, { ok: true, secret: "s" }],
+    };
+    const result = redactContext(context);
+
+    const steps = result.steps as Array<{
+      readonly token?: unknown;
+      readonly ok?: unknown;
+      readonly secret?: unknown;
+    }>;
+    expect(steps[0]?.token).toBe("[REDACTED]");
+    expect(steps[1]?.ok).toBe(true);
+    expect(steps[1]?.secret).toBe("[REDACTED]");
+  });
+
+  test("preserves non-plain objects instead of flattening them", () => {
+    const timestamp = new Date("2024-01-01T00:00:00Z");
+    const context = { at: timestamp, note: "kept" };
+    const result = redactContext(context);
+
+    expect(result.at).toBe(timestamp);
+    expect(result.note).toBe("kept");
+  });
+
+  test("guards against circular references without throwing", () => {
+    const circular: Record<string, unknown> = { name: "loop" };
+    circular.self = circular;
+    const context = { inner: circular };
+    const result = redactContext(context);
+
+    const inner = result.inner as Record<string, unknown>;
+    expect(inner.name).toBe("loop");
+    expect(inner.self).toBe("[Circular]");
   });
 
   test("ScopedLogger applies an injected filter to every record shape", () => {

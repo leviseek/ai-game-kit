@@ -40,9 +40,11 @@ Foundation 已有结构化日志契约（`contracts/logging/Logger.ts`、`diagno
 
 ### 3. 敏感字段过滤在诊断写入点收敛
 
-提供 `redact(record)` 或等价过滤工具，在 `LogRecord` 上下文与错误上下文写入前过滤已知敏感键（如 `token`、`secret`、`password`、`apiKey`）。过滤规则集中定义，日志 sink 不感知过滤细节。`ScopedLogger` 通过可注入的过滤函数保持纯 TypeScript 与无全局状态。
+提供 `redact(record)` 或等价过滤工具，在 `LogRecord` 上下文与错误上下文写入前过滤已知敏感键（如 `token`、`secret`、`password`、`apiKey`）。过滤规则集中定义，日志 sink 不感知过滤细节。`ScopedLogger` 通过可注入的过滤函数保持纯 TypeScript 与无全局状态；生产默认 `ConsoleLogger` 启用过滤，可显式覆盖。
 
-**理由：** 过滤收敛在单一写入点可避免每个业务调用方重复处理；与既有 `ScopedLogger` 的 sink 注入风格一致。
+**过滤边界：** 过滤作用于 `LogRecord.context` 及其嵌套对象/数组；`LogRecord.error` 的 Error 实例保持原样透传（Error 实例不参与结构化 context，无法安全遍历）。敏感键采用"结尾锚定"匹配（`token`、`secret`、`password` 结尾，`apiKey` 允许 `_`/`-` 分隔），避免误伤 `tokenCount` 等含敏感词的诊断字段；嵌套仅对纯对象递归，Date/Map/类实例原样保留，循环引用以占位符收敛。
+
+**理由：** 过滤收敛在单一写入点可避免每个业务调用方重复处理；与既有 `ScopedLogger` 的 sink 注入风格一致；明确匹配与递归边界避免误报、漏报与爆栈。
 
 ### 4. 作用域事件通道采用最小发布/订阅模型
 

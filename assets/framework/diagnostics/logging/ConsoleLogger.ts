@@ -3,7 +3,11 @@ import type {
   Logger,
   LogRecord,
 } from "../../contracts/logging/Logger";
-import { createScopedLogger } from "./ScopedLogger";
+import {
+  createScopedLogger,
+  type LogRecordFilter,
+} from "./ScopedLogger";
+import { redactRecord } from "./redact";
 
 interface ConsoleOutput {
   debug(record: LogRecord): void;
@@ -19,11 +23,13 @@ export class ConsoleLogger implements Logger {
     output: ConsoleOutput = console,
     scope = "",
     context: LogContext = {},
+    filter: LogRecordFilter = redactRecord,
   ) {
     this.delegate = createScopedLogger(
       (record) => output[record.level](record),
       scope,
       context,
+      filter,
     );
   }
 

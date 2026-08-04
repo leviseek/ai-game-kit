@@ -120,6 +120,26 @@ describe("Logger outputs", () => {
     });
   });
 
+  test("ConsoleLogger redacts sensitive context by default", async () => {
+    const ConsoleLogger = await loadConsoleLogger();
+    const calls: Array<{ readonly record: LogRecord }> = [];
+    const output: ConsoleOutput = {
+      debug: (record) => calls.push({ record }),
+      info: (record) => calls.push({ record }),
+      warn: (record) => calls.push({ record }),
+      error: (record) => calls.push({ record }),
+    };
+    const logger = new ConsoleLogger(output, "application");
+
+    logger.info("login ok", { userId: 7, token: "secret-token" });
+
+    expect(calls[0]?.record).toMatchObject({
+      level: "info",
+      message: "login ok",
+      context: { userId: 7, token: "[REDACTED]" },
+    });
+  });
+
   test("MemoryLogger retains records for level, scope and context assertions", async () => {
     const MemoryLogger = await loadMemoryLogger();
     const logger = new MemoryLogger("application", { source: "test" });

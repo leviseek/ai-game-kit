@@ -4,6 +4,8 @@ import {
   FrameworkError,
   isRecoverableError,
 } from "../../../assets/framework/core/errors/FrameworkError";
+import { ModuleLifecycleError } from "../../../assets/framework/application/ModuleLifecycleError";
+import { ApplicationStateError } from "../../../assets/framework/application/ApplicationStateError";
 
 type ErrorWithCause = Error & { readonly cause?: unknown };
 
@@ -67,6 +69,26 @@ describe("FrameworkError recoverability classification", () => {
       false,
     );
     expect(isRecoverableError(new Error("plain error"))).toBe(false);
+  });
+
+  test("isRecoverableError classifies migrated subclasses by explicit flag", () => {
+    expect(
+      isRecoverableError(
+        new ModuleLifecycleError("inventory", "start", new Error("retry")),
+      ),
+    ).toBe(false);
+  });
+});
+
+describe("FrameworkError subclass name preservation", () => {
+  test("migrated subclasses keep their own error name", () => {
+    expect(new ApplicationStateError("running").name).toBe(
+      "ApplicationStateError",
+    );
+    expect(
+      new ModuleLifecycleError("inventory", "start", new Error("boom")).name,
+    ).toBe("ModuleLifecycleError");
+    expect(new FrameworkError("generic").name).toBe("FrameworkError");
   });
 });
 
