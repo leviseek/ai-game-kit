@@ -13,6 +13,10 @@ export interface MemoryPlatformOptions {
   readonly now?: () => number;
 }
 
+/**
+ * 内存平台适配器：供测试与非 Cocos 环境使用的 ApplicationVisibility、
+ * PlatformStorage、DeviceInfo 与 TimeSource 实现。
+ */
 export class MemoryPlatform
   implements ApplicationVisibility, PlatformStorage, DeviceInfo
 {
@@ -56,6 +60,7 @@ export class MemoryPlatform
     this.currentVisibility = state;
     const listenerErrors: unknown[] = [];
 
+    // 一个监听器抛错不中断其他监听器；错误聚合后抛出第一个。
     for (const listener of [...this.visibilityListeners]) {
       try {
         listener(state);

@@ -16,6 +16,10 @@ interface ConsoleOutput {
   error(record: LogRecord): void;
 }
 
+/**
+ * 默认日志实现：每条记录先经 redactRecord 脱敏（敏感字段替换为占位符），
+ * 再按级别输出到指定 output（默认 console）。
+ */
 export class ConsoleLogger implements Logger {
   private readonly delegate: Logger;
 

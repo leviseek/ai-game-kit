@@ -21,6 +21,11 @@ function joinScopes(parentScope: string, childScope: string): string {
   return `${parentScope}.${childScope}`;
 }
 
+/**
+ * 创建作用域日志器。scope 为点分前缀，父 scope 为空串时直接用子 scope；
+ * child 返回继承父 scope 与 baseContext、并沿用 filter 的新日志器；
+ * filter 作用于每一条写入记录（默认透传）。
+ */
 export function createScopedLogger(
   sink: LogRecordSink,
   scope = "",
