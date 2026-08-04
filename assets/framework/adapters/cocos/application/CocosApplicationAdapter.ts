@@ -9,6 +9,7 @@ interface CocosGameInstance {
 export class CocosApplicationAdapter {
   private readonly app: Application;
   private readonly gameInstance: CocosGameInstance;
+  private bound = false;
 
   constructor(app: Application, gameInstance: CocosGameInstance = game) {
     this.app = app;
@@ -16,13 +17,23 @@ export class CocosApplicationAdapter {
   }
 
   bind(): void {
+    if (this.bound) {
+      return;
+    }
+
     this.gameInstance.on(Game.EVENT_HIDE, this.onHide, this);
     this.gameInstance.on(Game.EVENT_SHOW, this.onShow, this);
+    this.bound = true;
   }
 
   unbind(): void {
+    if (!this.bound) {
+      return;
+    }
+
     this.gameInstance.off(Game.EVENT_HIDE, this.onHide, this);
     this.gameInstance.off(Game.EVENT_SHOW, this.onShow, this);
+    this.bound = false;
   }
 
   private onHide = (): void => {

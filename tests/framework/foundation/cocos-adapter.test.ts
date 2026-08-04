@@ -262,4 +262,58 @@ describe("CocosApplicationAdapter", () => {
       })(),
     ).resolves.toBeUndefined();
   });
+
+  test("double bind does not register duplicate listeners", async () => {
+    const CocosAdapter = await loadAdapter();
+
+    const onCalls: Array<[string, () => void, unknown]> = [];
+
+    const mockGame: CocosGameLike = {
+      on(event, callback, target) {
+        onCalls.push([event, callback, target]);
+      },
+      off() {},
+    };
+
+    const pauseCalls: string[] = [];
+    const resumeCalls: string[] = [];
+    const app = createMockApp(pauseCalls, resumeCalls);
+
+    const adapter = new CocosAdapter(app, mockGame);
+    adapter.bind();
+    adapter.bind();
+
+    expect(onCalls).toHaveLength(2);
+    expect(onCalls[0]?.[0]).toBe("game_hide");
+    expect(onCalls[1]?.[0]).toBe("game_show");
+  });
+
+  test("unbind then rebind restores listener registration", async () => {
+    const CocosAdapter = await loadAdapter();
+
+    const onCalls: Array<[string, () => void, unknown]> = [];
+
+    const mockGame: CocosGameLike = {
+      on(event, callback, target) {
+        onCalls.push([event, callback, target]);
+      },
+      off() {},
+    };
+
+    const pauseCalls: string[] = [];
+    const resumeCalls: string[] = [];
+    const app = createMockApp(pauseCalls, resumeCalls);
+
+    const adapter = new CocosAdapter(app, mockGame);
+    adapter.bind();
+    adapter.unbind();
+
+    expect(onCalls).toHaveLength(2);
+
+    adapter.bind();
+
+    expect(onCalls).toHaveLength(4);
+    expect(onCalls[2]?.[0]).toBe("game_hide");
+    expect(onCalls[3]?.[0]).toBe("game_show");
+  });
 });
