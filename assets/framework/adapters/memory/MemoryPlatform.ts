@@ -54,9 +54,18 @@ export class MemoryPlatform
     }
 
     this.currentVisibility = state;
+    const listenerErrors: unknown[] = [];
 
     for (const listener of [...this.visibilityListeners]) {
-      listener(state);
+      try {
+        listener(state);
+      } catch (error) {
+        listenerErrors.push(error);
+      }
+    }
+
+    if (listenerErrors.length > 0) {
+      throw listenerErrors[0];
     }
   }
 

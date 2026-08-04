@@ -28,6 +28,31 @@ describe("MemoryPlatform", () => {
     expect(seen).toEqual(["background", "foreground"]);
   });
 
+  test("updates its own state when visibility changes", () => {
+    const platform = new MemoryPlatform();
+
+    platform.setVisibility("background");
+    expect(platform.state).toBe("background");
+
+    platform.setVisibility("foreground");
+    expect(platform.state).toBe("foreground");
+  });
+
+  test("does not notify listeners when visibility is set to the same state", () => {
+    const platform = new MemoryPlatform();
+    const seen: ApplicationVisibilityState[] = [];
+
+    platform.onVisibilityChange((state) => {
+      seen.push(state);
+    });
+
+    platform.setVisibility("foreground");
+    platform.setVisibility("background");
+    platform.setVisibility("background");
+
+    expect(seen).toEqual(["background"]);
+  });
+
   test("does not notify a listener after its handle is disposed", () => {
     const platform = new MemoryPlatform();
     const seen: ApplicationVisibilityState[] = [];
@@ -41,6 +66,37 @@ describe("MemoryPlatform", () => {
     expect(seen).toEqual([]);
   });
 
+  test("ignores repeated disposal of a visibility listener", () => {
+    const platform = new MemoryPlatform();
+    const seen: ApplicationVisibilityState[] = [];
+    const unsubscribe = platform.onVisibilityChange((state) => {
+      seen.push(state);
+    });
+
+    unsubscribe();
+    unsubscribe();
+    platform.setVisibility("background");
+
+    expect(seen).toEqual([]);
+  });
+
+  test("isolates a failing listener so other listeners still run", () => {
+    const platform = new MemoryPlatform();
+    const seen: ApplicationVisibilityState[] = [];
+
+    platform.onVisibilityChange(() => {
+      throw new Error("listener failed");
+    });
+    platform.onVisibilityChange((state) => {
+      seen.push(state);
+    });
+
+    expect(() => platform.setVisibility("background")).toThrow(
+      "listener failed",
+    );
+    expect(seen).toEqual(["background"]);
+  });
+
   test("stores and reads string values through the storage contract", async () => {
     const platform = new MemoryPlatform();
 
@@ -51,6 +107,16 @@ describe("MemoryPlatform", () => {
 
     await platform.delete("player.name");
     expect(await platform.get("player.name")).toBeNull();
+  });
+
+  test("loads initial storage entries without sharing them with the caller", async () => {
+    const initialEntries = { "config.theme": "dark" };
+    const platform = new MemoryPlatform({ initialEntries });
+
+    expect(await platform.get("config.theme")).toBe("dark");
+
+    initialEntries["config.theme"] = "light";
+    expect(await platform.get("config.theme")).toBe("dark");
   });
 
   test("exposes default device information", () => {

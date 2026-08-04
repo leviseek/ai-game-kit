@@ -2,7 +2,7 @@
 
 - [x] 1.1 先编写平台契约类型测试，覆盖应用可见性、最小异步键值存储、设备信息和可替换时间来源；确认契约不依赖 `cc`、ApplicationContext 或 Game。
 - [x] 1.2 实现窄平台契约和内存测试适配器，支持前后台状态、读写/删除键值、设备信息和注入时钟来源；不预建真实平台 SDK 或完整存档能力。
-- [x] 1.3 扩展 Foundation 架构测试和公开入口白名单，确认新契约不引入 Service Locator、全局静态平台实例或 Framework 对 Game/Cocos 核心的反向依赖。
+- [x] 1.3 扩展 Foundation 架构依赖白名单，确认新契约不引入 Service Locator、全局静态平台实例或 Framework 对 Game/Cocos 核心的反向依赖；公开 API 导出面按 4.3 收口。
 
 ## 2. 三种时间语义
 

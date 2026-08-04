@@ -567,7 +567,7 @@ describe("framework public boundary", () => {
 
   test("allows memory adapters to depend on core and contracts only", () => {
     const source = `
-      import type { PlatformContract } from "../../contracts/platform/Platform";
+      import type { PlatformStorage } from "../../contracts/platform/Platform";
       import type { TimeSource } from "../../contracts/time/TimeSource";
       import type { SimulationClock } from "../../core/time/SimulationClock";
     `;
@@ -753,7 +753,7 @@ describe("framework public boundary", () => {
 
     const sources = newLayerRoots
       .flatMap((root) => collectTypeScriptFiles(root))
-      .map((file) => readFileSync(file, "utf8"))
+      .map((file) => stripComments(readFileSync(file, "utf8")))
       .join("\n");
 
     expect(sources).not.toMatch(/\b(?:getInstance|singleton|ServiceLocator)\b/);

@@ -11,6 +11,13 @@ import type {
   ModulePhase,
   ModuleRuntimeState,
 } from "../../../assets/framework";
+import type {
+  ApplicationVisibility,
+  ApplicationVisibilityState,
+  DeviceInfo,
+  PlatformStorage,
+} from "../../../assets/framework/contracts/platform/Platform";
+import type { TimeSource } from "../../../assets/framework/contracts/time/TimeSource";
 
 type Equal<Left, Right> =
   (<Value>() => Value extends Left ? 1 : 2) extends
@@ -156,4 +163,37 @@ type _LogRecordShape = Expect<
       error?: Error & { readonly cause?: unknown };
     }>
   >
+>;
+
+type _PlatformShape = Expect<
+  Equal<
+    keyof ApplicationVisibility,
+    "state" | "onVisibilityChange" | "setVisibility"
+  >
+>;
+type _ApplicationVisibilityStateIsClosedUnion = Expect<
+  Equal<ApplicationVisibilityState, "foreground" | "background">
+>;
+type _ApplicationVisibilityStateIsReadonly = Expect<
+  IsReadonlyKey<ApplicationVisibility, "state">
+>;
+type _PlatformStorageShape = Expect<
+  Equal<keyof PlatformStorage, "delete" | "get" | "set">
+>;
+type _PlatformStorageReturnsPromises = Expect<
+  Equal<PlatformStorage["get"], (key: string) => Promise<string | null>> &
+    Equal<PlatformStorage["set"], (key: string, value: string) => Promise<void>> &
+    Equal<PlatformStorage["delete"], (key: string) => Promise<void>>
+>;
+type _DeviceInfoShape = Expect<
+  Equal<keyof DeviceInfo, "language" | "model" | "platform">
+>;
+type _DeviceInfoIsReadonly = Expect<
+  IsReadonlyKey<DeviceInfo, "platform"> &
+    IsReadonlyKey<DeviceInfo, "model"> &
+    IsReadonlyKey<DeviceInfo, "language">
+>;
+type _TimeSourceShape = Expect<Equal<keyof TimeSource, "now">>;
+type _TimeSourceReturnsNumber = Expect<
+  Equal<TimeSource["now"], () => number>
 >;
