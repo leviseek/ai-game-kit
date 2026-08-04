@@ -354,6 +354,15 @@ function findImportViolations(file: string, source: string): readonly ImportViol
     const target = resolveImportTarget(file, specifier);
 
     if (sourceLayer === undefined) {
+      if (isWithin(file, bootRoot)) {
+        if (target !== undefined && isWithin(target, gameRoot)) {
+          return [
+            createViolation(file, specifier, "boot cannot depend on Game"),
+          ];
+        }
+        return [];
+      }
+
       if (
         target !== undefined &&
         isWithin(target, frameworkRoot) &&
@@ -525,9 +534,19 @@ describe("framework public boundary", () => {
           import type { Application } from "../../../application/Application";
         `,
       ),
+      analyzeFixture(
+        "assets/boot/AppRoot.ts",
+        `
+          import { _decorator, Component, game } from "cc";
+          import { Application } from "../framework";
+          import { createApplicationContext } from "../framework/application/ApplicationContext";
+          import { ConsoleLogger } from "../framework/diagnostics/logging/ConsoleLogger";
+          import { CocosApplicationAdapter } from "../framework/adapters/cocos/application/CocosApplicationAdapter";
+        `,
+      ),
     ];
 
-    expect(fixtures).toEqual([[], [], [], [], []]);
+    expect(fixtures).toEqual([[], [], [], [], [], []]);
   });
 
   test("allows contracts/module to depend on contracts/application and core", () => {
@@ -612,6 +631,21 @@ describe("framework public boundary", () => {
       "diagnostics cannot depend on application",
       "Framework cannot depend on boot",
       "Framework internals cannot import the root barrel",
+    ]);
+  });
+
+  test("rejects boot depending on Game", () => {
+    const source = `
+      import type { Battle } from "../game/Battle";
+      import { InventoryService } from "../game/inventory/InventoryService";
+    `;
+
+    const violations = analyzeFixture("assets/boot/AppRoot.ts", source);
+
+    expect(violations).toHaveLength(2);
+    expect(violations.map(({ reason }) => reason)).toEqual([
+      "boot cannot depend on Game",
+      "boot cannot depend on Game",
     ]);
   });
 

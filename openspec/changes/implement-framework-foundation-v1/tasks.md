@@ -110,14 +110,14 @@
 
 ## 6. Cocos Application Adapter 与 AppRoot 组合入口
 
-- [ ] 6.1 先定义并验证 `adapters/cocos/application` 的边界：Adapter 只接收 Application 稳定生命周期 API，拥有运行时事件绑定/解绑职责；AppRoot 不出现 Cocos hide/show 事件常量，且 Composition Root 可以替换 Web、Native 或小游戏平台 Adapter。
-- [ ] 6.2 实现 Cocos Application Adapter，把 Cocos Runtime hide/show 事件分别转换为 running → pause、paused → resume；Adapter 不创建 Logger、ApplicationContext、Application 或 Module，不依赖 Game。
-- [ ] 6.3 建立显式 Composition Root 函数，按 Logger → ApplicationContext implementation → Application → Module 列表 → 当前平台 Adapter 的顺序装配，默认不创建任何禁止系统模块。
-- [ ] 6.4 实现 AppRoot Component 的 onLoad、start 和 onDestroy 主路径：只创建/连接对象、调用 Application start/dispose 和 Adapter bind/unbind，并确保异步启动错误进入 Logger；不得直接监听 hide/show。
-- [ ] 6.5 验证 onDestroy 先要求 Adapter 解除 Cocos 事件订阅再调用 dispose，重复销毁不会重复解绑或执行模块清理。
-- [ ] 6.6 通过 Cocos Creator 编辑器把 AppRoot 挂载到 `assets/boot/startup.scene`，设置唯一持久应用根，不手工修改 scene/meta JSON。
-- [ ] 6.7 在 Cocos Creator 3.8.8 Web Desktop 运行空应用主路径和 Adapter 前后台映射冒烟测试，验证 initialize/start/stop/dispose 日志顺序，以及 hide/pause、show/resume 基础映射；启动中事件、重复事件和失败组合延后。
-- [ ] 6.8 检查 startup.scene 和 AppRoot 中没有新增 Cocos 原生业务 UI、FairyGUI、资源加载、场景切换、Game 逻辑组件或平台事件转换逻辑。
+- [x] 6.1 先定义并验证 `adapters/cocos/application` 的边界：Adapter 只接收 Application 稳定生命周期 API，拥有运行时事件绑定/解绑职责；AppRoot 不出现 Cocos hide/show 事件常量，且 Composition Root 可以替换 Web、Native 或小游戏平台 Adapter。
+- [x] 6.2 实现 Cocos Application Adapter，把 Cocos Runtime hide/show 事件分别转换为 running → pause、paused → resume；Adapter 不创建 Logger、ApplicationContext、Application 或 Module，不依赖 Game。
+- [x] 6.3 建立显式 Composition Root 函数，按 Logger → ApplicationContext implementation → Application → Module 列表 → 当前平台 Adapter 的顺序装配，默认不创建任何禁止系统模块。
+- [x] 6.4 实现 AppRoot Component 的 onLoad、start 和 onDestroy 主路径：只创建/连接对象、调用 Application start/dispose 和 Adapter bind/unbind，并确保异步启动错误进入 Logger；不得直接监听 hide/show。
+- [x] 6.5 验证 onDestroy 先要求 Adapter 解除 Cocos 事件订阅再调用 dispose，重复销毁不会重复解绑或执行模块清理。
+- [x] 6.6 通过 Cocos Creator 编辑器把 AppRoot 挂载到 `assets/boot/startup.scene`，设置唯一持久应用根，不手工修改 scene/meta JSON。
+- [x] 6.7 在 Cocos Creator 3.8.8 Web Desktop 运行空应用主路径和 Adapter 前后台映射冒烟测试，验证 initialize/start/stop/dispose 日志顺序，以及 hide/pause、show/resume 基础映射；启动中事件、重复事件和失败组合延后。
+- [x] 6.8 检查 startup.scene 和 AppRoot 中没有新增 Cocos 原生业务 UI、FairyGUI、资源加载、场景切换、Game 逻辑组件或平台事件转换逻辑。
 
 ## 7. 范围审查与最终验证
 

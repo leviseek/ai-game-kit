@@ -9,11 +9,19 @@ const typeCheckEntry = resolve(
 );
 const frameworkRoot = resolve(projectRoot, "assets/framework");
 
+function isExcluded(directoryPath: string): boolean {
+  const normalized = directoryPath.replaceAll("\\", "/");
+  return normalized.includes("/adapters/cocos") || normalized.includes("\\adapters\\cocos");
+}
+
 function collectTypeScriptFiles(directory: string): readonly string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const path = resolve(directory, entry.name);
 
     if (entry.isDirectory()) {
+      if (isExcluded(path)) {
+        return [];
+      }
       return collectTypeScriptFiles(path);
     }
 
