@@ -19,8 +19,12 @@
 
 ## 4. 最小 Bundle 划分
 
-- [ ] 4.1 通过 Cocos Creator 建立最小 `common`、`ui`、`audio` 和游戏内容 Bundle，确认 `resources` 只保留启动所需资源。
-- [ ] 4.2 记录 Bundle 目录、资源归属与启动资源清单，验证脚本编译、资源导入与编辑器加载通过。
+- [x] 4.1 通过 Cocos Creator 建立最小 `common`、`ui`、`audio` 和游戏内容 Bundle，确认 `resources` 只保留启动所需资源。
+- [x] 4.2 记录 Bundle 目录、资源归属与启动资源清单，验证脚本编译、资源导入与编辑器加载通过。
+  - Bundle 目录：`assets/common`、`assets/ui`、`assets/audio`、`assets/game-content` 均由编辑器标记 `isBundle: true`（含对应目录 `.meta`）；`assets/resources` 保持为空目录，仅作启动资源；`assets/boot` 暂未标记为 Bundle，不在本 Change 范围。
+  - 资源归属：每个新 Bundle 内为最小占位资源 `placeholder.json`（+ 编辑器生成的 `.meta`），具体内容由后续能力填充。
+  - 启动资源清单：`resources/` 为空，无任何非启动资源。
+  - 验证：Cocos Creator 3.8.8 asset-db 日志（`temp/asset-db/log/2026-8-4 15-52.log`，2026-8-5 07:51–07:54）完成 4 个目录与占位资源的导入及 `isBundle` reimport，无 error/warning；packer-driver 07:44 脚本编译产物生成，编辑器加载无报错。
 
 ## 5. SceneFlow 编排
 
