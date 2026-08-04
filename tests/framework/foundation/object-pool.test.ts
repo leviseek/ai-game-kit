@@ -154,6 +154,49 @@ describe("ObjectPool overflow observability", () => {
     expect(factoryCalls()).toBe(1);
     expect(failures).toHaveLength(0);
   });
+
+  test("a temporary overflow object is dropped on return while a managed object is reused", () => {
+    const { failures, onPoolError } = createFailures();
+    const { pool, factoryCalls } = createTokenPool({
+      capacity: 1,
+      onPoolError,
+    });
+
+    const managed = pool.acquire();
+    const temp = pool.acquire();
+
+    expect(failures).toHaveLength(1);
+
+    pool.release(managed);
+    pool.release(temp);
+
+    expect(failures).toHaveLength(1);
+    expect(factoryCalls()).toBe(2);
+
+    const reused = pool.acquire();
+
+    expect(reused).toBe(managed);
+    expect(factoryCalls()).toBe(2);
+  });
+});
+
+describe("ObjectPool zero capacity", () => {
+  test("every acquire with zero capacity creates a temporary object and reports overflow", () => {
+    const { failures, onPoolError } = createFailures();
+    const { pool, factoryCalls } = createTokenPool({
+      capacity: 0,
+      onPoolError,
+    });
+
+    const a = pool.acquire();
+    const b = pool.acquire();
+
+    expect(a).not.toBe(b);
+    expect(typeof a.id).toBe("number");
+    expect(typeof b.id).toBe("number");
+    expect(factoryCalls()).toBe(2);
+    expect(failures).toHaveLength(2);
+  });
 });
 
 describe("ObjectPool double return", () => {
@@ -310,6 +353,22 @@ describe("ObjectPool dispose", () => {
     expect(() => pool.release(token)).not.toThrow();
   });
 
+  test("release after dispose does not run the reset hook", () => {
+    const resetCalls: number[] = [];
+    const { pool } = createTokenPool({
+      capacity: 2,
+      reset: (token) => {
+        resetCalls.push(token.id);
+      },
+    });
+
+    const token = pool.acquire();
+    pool.dispose();
+
+    expect(() => pool.release(token)).not.toThrow();
+    expect(resetCalls).toEqual([]);
+  });
+
   test("repeated disposal is idempotent and runs no reset hooks", () => {
     const resetCalls: number[] = [];
     const { pool } = createTokenPool({
@@ -379,5 +438,47 @@ describe("ObjectPool error reporter isolation", () => {
     } finally {
       errorSpy.mockRestore();
     }
+  });
+});
+
+describe("ObjectPool factory failure isolation", () => {
+  test("a failing factory is reported and rethrown from acquire", () => {
+    const { failures, onPoolError } = createFailures();
+    let calls = 0;
+    const pool = createObjectPool<Token>({
+      capacity: 2,
+      factory: () => {
+        calls += 1;
+        throw new Error("factory failed");
+      },
+      onPoolError,
+    });
+
+    expect(() => pool.acquire()).toThrow("factory failed");
+    expect(calls).toBe(1);
+    expect(failures).toHaveLength(1);
+    expect(failures[0].error.message).toBe("factory failed");
+  });
+
+  test("a failed factory does not corrupt the pool for later acquires", () => {
+    const { failures, onPoolError } = createFailures();
+    let calls = 0;
+    const pool = createObjectPool<Token>({
+      capacity: 2,
+      factory: () => {
+        calls += 1;
+        if (calls === 1) {
+          throw new Error("factory failed once");
+        }
+        return { id: calls, dirty: false };
+      },
+      onPoolError,
+    });
+
+    expect(() => pool.acquire()).toThrow("factory failed once");
+    expect(failures).toHaveLength(1);
+
+    const token = pool.acquire();
+    expect(typeof token.id).toBe("number");
   });
 });

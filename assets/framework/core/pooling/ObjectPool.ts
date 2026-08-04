@@ -20,9 +20,9 @@ const NOOP_HANDLE: DisposeHandle = {
 /**
  * Explicit-owner object pool. The pool only manages objects that were
  * explicitly acquired through it; releasing an arbitrary object is rejected.
- * The free list is bounded by `capacity`; acquiring beyond capacity creates a
- * temporary object and reports the overflow through the error reporter so the
- * result stays observable.
+ * The pool manages at most `capacity` regular objects; acquiring beyond that
+ * creates a temporary object, reports the overflow through the error reporter
+ * so the result stays observable, and drops the temporary object on return.
  */
 export function createObjectPool<T>(
   options: ObjectPoolOptions<T>,
@@ -44,6 +44,15 @@ export function createObjectPool<T>(
     }
   }
 
+  function create(): T {
+    try {
+      return factory();
+    } catch (error) {
+      report(error);
+      throw error;
+    }
+  }
+
   function acquire(): T {
     if (disposed) {
       throw new Error("ObjectPool cannot acquire after it was disposed");
@@ -57,13 +66,13 @@ export function createObjectPool<T>(
     }
 
     if (managed < capacity) {
-      const created = factory();
+      const created = create();
       managed += 1;
       borrowed.set(created, false);
       return created;
     }
 
-    const overflow = factory();
+    const overflow = create();
     borrowed.set(overflow, true);
     report(
       new Error(
@@ -102,12 +111,6 @@ export function createObjectPool<T>(
     }
 
     if (isTemporary) {
-      return;
-    }
-
-    if (free.length >= capacity) {
-      managed -= 1;
-      report(new Error(`ObjectPool rejected return beyond capacity ${capacity}`));
       return;
     }
 
