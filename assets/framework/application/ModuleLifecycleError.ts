@@ -1,25 +1,21 @@
 import type { ModulePhase } from "../contracts/module/Module";
+import { FrameworkError } from "../core/errors/FrameworkError";
 
-type ErrorConstructorWithCause = new (
-  message?: string,
-  options?: { readonly cause?: unknown },
-) => Error;
-
-const ErrorWithCause = Error as ErrorConstructorWithCause;
-
-export class ModuleLifecycleError extends ErrorWithCause {
-  readonly moduleId: string;
-  readonly phase: ModulePhase;
+export class ModuleLifecycleError extends FrameworkError {
+  declare readonly moduleId: string;
+  declare readonly phase: ModulePhase;
 
   constructor(
     moduleId: string,
     phase: ModulePhase,
     cause: unknown,
   ) {
-    super("Module lifecycle failed", { cause });
+    super("Module lifecycle failed", {
+      cause,
+      moduleId,
+      phase,
+    });
 
     this.name = "ModuleLifecycleError";
-    this.moduleId = moduleId;
-    this.phase = phase;
   }
 }

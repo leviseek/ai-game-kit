@@ -1,8 +1,8 @@
 ## 1. 类型化错误与诊断
 
-- [ ] 1.1 先编写类型化错误测试，覆盖嵌套 cause、可恢复性分类、模块/阶段上下文和敏感字段过滤（诊断记录与错误上下文均过滤）。
-- [ ] 1.2 实现 `core/errors` 下的 `FrameworkError` 基类与可恢复性分类，并将 `ApplicationStateError`、`ModuleLifecycleError` 迁移为继承基类且保持构造签名与字段兼容，使 1.1 通过。
-- [ ] 1.3 在诊断写入点实现敏感字段过滤工具并接入 `ScopedLogger`（可注入过滤函数），确认过滤收敛且不改变既有日志记录形状。
+- [x] 1.1 先编写类型化错误测试，覆盖嵌套 cause、可恢复性分类、模块/阶段上下文和敏感字段过滤（诊断记录与错误上下文均过滤）。
+- [x] 1.2 实现 `core/errors` 下的 `FrameworkError` 基类与可恢复性分类，并将 `ApplicationStateError`、`ModuleLifecycleError` 迁移为继承基类且保持构造签名与字段兼容，使 1.1 通过。
+- [x] 1.3 在诊断写入点实现敏感字段过滤工具并接入 `ScopedLogger`（可注入过滤函数），确认过滤收敛且不改变既有日志记录形状。
 
 ## 2. ApplicationContext 边界收口
 

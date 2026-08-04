@@ -7,6 +7,8 @@ import type {
 
 export type LogRecordSink = (record: LogRecord) => void;
 
+export type LogRecordFilter = (record: LogRecord) => LogRecord;
+
 function joinScopes(parentScope: string, childScope: string): string {
   if (parentScope.length === 0) {
     return childScope;
@@ -23,6 +25,7 @@ export function createScopedLogger(
   sink: LogRecordSink,
   scope = "",
   context: LogContext = {},
+  filter: LogRecordFilter = (record) => record,
 ): Logger {
   const baseContext = { ...context };
 
@@ -32,14 +35,14 @@ export function createScopedLogger(
     callContext: LogContext = {},
     error?: Error,
   ): void => {
-    sink({
+    sink(filter({
       level,
       message,
       timestamp: Date.now(),
       scope,
       context: { ...baseContext, ...callContext },
       error,
-    });
+    }));
   };
 
   return {
@@ -53,6 +56,7 @@ export function createScopedLogger(
         sink,
         joinScopes(scope, childScope),
         { ...baseContext, ...childContext },
+        filter,
       ),
   };
 }
