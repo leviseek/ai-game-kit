@@ -93,4 +93,49 @@ describe("SimulationClock", () => {
 
     expect(clock.now()).toBe(200);
   });
+
+  test("rejects negative advance and keeps the current time unchanged", () => {
+    const clock = new SimulationClock({ initialTime: 100 });
+
+    expect(() => clock.advance(-1)).toThrow();
+    expect(clock.now()).toBe(100);
+  });
+
+  test("rejects an invalid timeScale passed to the constructor", () => {
+    expect(() => new SimulationClock({ timeScale: 0 })).toThrow();
+    expect(() => new SimulationClock({ timeScale: -1 })).toThrow();
+    expect(() => new SimulationClock({ timeScale: Number.NaN })).toThrow();
+    expect(
+      () => new SimulationClock({ timeScale: Number.POSITIVE_INFINITY }),
+    ).toThrow();
+  });
+
+  test("stays paused after repeated pause calls", () => {
+    const clock = new SimulationClock({ initialTime: 0 });
+
+    clock.pause();
+    clock.pause();
+    clock.advance(1_000);
+
+    expect(clock.now()).toBe(0);
+  });
+
+  test("stays running after repeated resume calls", () => {
+    const clock = new SimulationClock({ initialTime: 0 });
+
+    clock.pause();
+    clock.resume();
+    clock.resume();
+    clock.advance(100);
+
+    expect(clock.now()).toBe(100);
+  });
+
+  test("exposes only the documented simulation API surface", () => {
+    const clock = new SimulationClock();
+
+    expect("elapsed" in clock).toBe(false);
+    expect("deltaTime" in clock).toBe(false);
+    expect("reset" in clock).toBe(false);
+  });
 });

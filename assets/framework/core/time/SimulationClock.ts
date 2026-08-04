@@ -49,6 +49,10 @@ export class SimulationClock implements TimeSource {
   }
 
   advance(milliseconds: number): void {
+    if (milliseconds < 0) {
+      throw new Error("SimulationClock advance must not be negative");
+    }
+
     if (this.paused) {
       return;
     }
