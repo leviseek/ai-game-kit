@@ -196,6 +196,33 @@ describe("CocosResourceProvider", () => {
     expect(failure.message).toMatch(/ui/);
   });
 
+  test("concurrent loads of different resources in the same bundle each trigger a bundle load, relying on engine merge semantics", async () => {
+    const { createCocosResourceProvider } = await loadFactory();
+    const cocos = createCocosMock();
+    const provider = createCocosResourceProvider({ assetManager: cocos.manager });
+
+    const a = provider.load("common", "a.png");
+    const b = provider.load("common", "b.png");
+
+    // 协调器按资源键去重，不按 Bundle 去重；同 Bundle 并发由引擎 loadBundle 合并
+    expect(cocos.state.bundleLoads).toEqual(["common", "common"]);
+
+    cocos.resolveBundle("common");
+    cocos.resolveBundle("common");
+    expect(cocos.state.assetLoads).toEqual([
+      { bundle: "common", path: "a.png" },
+      { bundle: "common", path: "b.png" },
+    ]);
+
+    cocos.resolveAsset({ id: "a" });
+    cocos.resolveAsset({ id: "b" });
+    await a.done;
+    await b.done;
+
+    expect(a.state).toBe("ready");
+    expect(b.state).toBe("ready");
+  });
+
   test("unloadBundle releases all assets and removes the bundle when no longer owned", async () => {
     const { createCocosResourceProvider } = await loadFactory();
     const cocos = createCocosMock();

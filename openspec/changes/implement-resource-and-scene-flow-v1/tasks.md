@@ -29,7 +29,7 @@
   - 新增 `assets/framework/adapters/cocos/resource/CocosResourceProvider.ts`：把 bundle 加载映射到 `assetManager.loadBundle` + `bundle.load`（回调转 Promise，原样传递引擎错误），卸载映射到 `bundle.releaseAll` + `assetManager.removeBundle`（从未加载的 Bundle 幂等跳过），通过 `createResourceProvider` 组装为 IResourceProvider；`assetManager` 可注入 mock，命名空间导入规避测试 mock 冲突。
   - 新增 `tests/framework/foundation/cocos-resource-provider.test.ts`（5 个测试）：bundle+资源加载链路、bundle 加载失败保留 cause 与资源标识、资源加载失败保留标识、无持有后 releaseAll+removeBundle、未加载 Bundle 卸载为 no-op。
   - 审查加固（ai-sensei）：Cocos 卸载顺序测试锁定 `releaseAll` 先于 `removeBundle`（共享事件序列断言）；契约 dispose 注释明确"不使 Provider 失效、不清缓存终态"；简化异步卸载失败隔离的空 if；清理 bundleKeys 空 Set 残留。
-  - 已知行为（供 5.x）：同 Bundle 多资源并发会多次调用 `loadBundle`，依赖 Cocos 引擎内部合并语义，框架层未锁定；默认 `cc.assetManager` 路径由 6.2 冒烟兜底。
+  - 已知行为：同 Bundle 多资源并发会多次调用 `loadBundle`，依赖 Cocos 引擎内部合并语义（已由测试锁定）；默认 `cc.assetManager` 路径由 6.2 冒烟兜底。
   - 验证：`bun run test:foundation` 354 pass / 0 fail（44 文件），`bun run test:foundation:types` 0 diagnostics。
   - **5.x 必须项**：SceneFlow 重试/场景切换会命中"卸载后同 key 重载返回缓存终态"，5.1 测试需显式锁定 `invalidate`（或 provider 重建）后重载返回新资源。
 - [x] 3.4 根入口白名单导出稳定契约与工厂，实现细节保持内部。
