@@ -66,7 +66,7 @@
 
 - [x] 6.1 实现 Cocos 场景适配器，将 `SceneFlow` 的激活与释放映射到 `cc.director.loadScene`，不修改 `startup.scene` 序列化内容。
   - 新增 `assets/framework/adapters/cocos/scene/CocosSceneAdapter.ts`：`createCocosSceneAdapter` 提供 `activateScene(sceneId)` 接缝，把 `SceneFlow` 的激活映射到 `cc.director.loadScene`（`director` 可注入 mock，缺省 `cc.director`）；`loadScene` 返回 false（场景无法启动）或 `onLaunched` 携带错误时 reject，成功启动后 resolve。只做薄映射，场景资源所有权与释放仍由 `SceneFlow` 通过资源提供者管理。
-  - 新增 `tests/framework/foundation/cocos-scene-adapter.test.ts`（4 个测试）：激活映射到 `loadScene` 并在启动成功后 resolve、`onLaunched` 错误原样 reject、`loadScene` 拒绝启动时同步 reject（含场景标识）、缺省 `cc.director` 兜底。`mock.module("cc")` 注入 director 规避引擎依赖。
+  - 新增 `tests/framework/foundation/cocos-scene-adapter.test.ts`（4 个测试）：激活映射到 `loadScene` 并在启动成功后 resolve、`onLaunched` 错误原样 reject、`loadScene` 拒绝启动时调用返回后立即 reject（含场景标识）、缺省 `cc.director` 兜底（因 bun 的 `mock.module("cc")` 全局共享且首个注册生效，缺省路径改用源码断言锁定 `options.director ?? cc.director`）。`mock.module("cc")` 注入 director 规避引擎依赖。
   - `public-boundary.test.ts` 的 `forbiddenInternals` 加入 `createCocosSceneAdapter`，锁死该适配器工厂不作为根入口导出。
   - 验证：`bun run test:foundation` 380 pass / 0 fail（46 文件），`bun run test:foundation:types` 0 diagnostics。
 - [ ] 6.2 完成 Cocos Creator 3.8.8 Web Desktop 场景切换冒烟验证，覆盖预加载、成功切换、失败保留与资源释放；失败路径通过加载不存在的 Bundle 或场景标识构造。

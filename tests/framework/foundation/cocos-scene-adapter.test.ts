@@ -1,7 +1,11 @@
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, mock, test } from "bun:test";
 
+// 注意：bun 在同一进程运行所有测试文件，mock.module("cc") 全局共享且首个注册
+// 生效、后续同路径注册被忽略。因此本文件不依赖全局 cc 缺省值做行为断言；
+// 缺省 director 路径改用源码断言锁定（与 approot-composition 的源码断言一致）。
 mock.module("cc", () => ({
   director: {},
 }));
@@ -123,11 +127,17 @@ describe("CocosSceneAdapter", () => {
     await expect(activating).rejects.toThrow(/missing-scene/);
   });
 
-  test("uses the engine default director when none is injected", async () => {
+  test("defaults to cc.director when no director is injected", async () => {
     const { createCocosSceneAdapter } = await loadFactory();
 
     const adapter = createCocosSceneAdapter();
 
     expect(typeof adapter.activateScene).toBe("function");
+
+    // bun 的 mock.module("cc") 全局共享且首个注册生效，无法在全量运行下可靠地
+    // 观察缺省 cc.director 路径；改用源码断言锁定"未注入时读取引擎默认实例"。
+    const source = readFileSync(adapterFile, "utf8");
+    expect(source).toMatch(/cc\.director/);
+    expect(source).toMatch(/options\.director\s*\?\?/);
   });
 });

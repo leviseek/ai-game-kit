@@ -35,6 +35,9 @@ export function createCocosSceneAdapter(
   return {
     activateScene: (sceneId: string) =>
       new Promise<void>((resolve, reject) => {
+        // 依赖引擎保证 loadScene 返回 true 时 onLaunched 必被回调（场景加载完成
+        // 或失败）；故返回 true 但回调永不触发的悬挂无需额外超时兜底，与
+        // CocosResourceProvider loader 的无超时行为保持一致。
         const started = director.loadScene(sceneId, (error) => {
           if (error) {
             reject(error);
