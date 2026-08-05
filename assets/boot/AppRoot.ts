@@ -3,6 +3,7 @@ import {
   Application,
   createSceneFlow,
   type IResourceProvider,
+  type Logger,
   type Module,
   type SceneFlow,
   type SceneResources,
@@ -32,6 +33,8 @@ export interface AppAssembly {
   readonly resourceProvider: IResourceProvider;
   /** UI 根宿主：封装 FairyGUI GRoot 获取与运行时初始化时机。 */
   readonly uiRoot: CocosUiRoot;
+  /** 组合根日志：供 UI 根初始化失败上报等场景使用。 */
+  readonly logger: Logger;
 }
 
 export function assembleApp(): AppAssembly {
@@ -61,10 +64,10 @@ export function assembleApp(): AppAssembly {
   });
 
   // UI 根宿主经 Adapter 工厂接入：fgui 类型不进入组合根，初始化时机由
-  // AppRoot.start 在引擎 ready 后触发（GRoot 未就绪时抛错可延迟重试）。
+  // AppRoot.start 在引擎 ready 后触发。
   const uiRoot = createCocosUiRoot();
 
-  return { app, adapter, sceneFlow, resourceProvider, uiRoot };
+  return { app, adapter, sceneFlow, resourceProvider, uiRoot, logger };
 }
 
 @ccclass("AppRoot")
@@ -74,14 +77,17 @@ export class AppRoot extends Component {
   private sceneFlow?: SceneFlow;
   private resourceProvider?: IResourceProvider;
   private uiRoot?: CocosUiRoot;
+  private logger?: Logger;
 
   onLoad(): void {
-    const { app, adapter, sceneFlow, resourceProvider, uiRoot } = assembleApp();
+    const { app, adapter, sceneFlow, resourceProvider, uiRoot, logger } =
+      assembleApp();
     this.app = app;
     this.adapter = adapter;
     this.sceneFlow = sceneFlow;
     this.resourceProvider = resourceProvider;
     this.uiRoot = uiRoot;
+    this.logger = logger;
     game.addPersistRootNode(this.node);
   }
 
@@ -94,8 +100,8 @@ export class AppRoot extends Component {
   }
 
   /**
-   * 引擎 ready 后初始化 UI 根宿主。GRoot 未就绪时 init 抛错；此处上报并
-   * 保留未初始化状态，运行期由后续重试/冒烟路径接管（task 2.2 契约）。
+   * 引擎 ready 后初始化 UI 根宿主。GRoot 未就绪时 init 抛错，此处仅上报
+   * 且保持未初始化；当前不自动重试，init 幂等可由后续显式调用再次触发。
    */
   private initializeUiRoot(): void {
     if (this.uiRoot === undefined) {
@@ -104,8 +110,12 @@ export class AppRoot extends Component {
     try {
       this.uiRoot.init();
     } catch (error) {
-      // GRoot 尚未就绪：上报而不静默吞掉，保持未初始化以便引擎 ready 后重试
-      console.error("[ui] FairyGUI UI root initialization failed", error);
+      // GRoot 尚未就绪：上报而不静默吞掉，保持未初始化
+      this.logger?.error(
+        "[ui] FairyGUI UI root initialization failed",
+        undefined,
+        error instanceof Error ? error : undefined,
+      );
     }
   }
 

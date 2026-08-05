@@ -5,15 +5,20 @@ import { describe, expect, mock, test } from "bun:test";
 
 // 实现文件 import "fairygui-cc"，测试不加载真实运行时，只注入 GRoot 接缝。
 // bun 的 mock.module 全局共享且首个注册生效，与 cocos-adapter 对 "cc" 的处理一致。
+// mock 忠实模拟真实语义：GRoot.inst 未 create 时抛错，GRoot.create 返回实例。
 mock.module("fairygui-cc", () => ({
-  GRoot: {},
+  GRoot: {
+    get inst(): never {
+      throw new Error("Call GRoot.create first!");
+    },
+    create(): GRootLike {
+      return { name: "GRoot" };
+    },
+  },
 }));
 
 interface GRootLike {
   readonly name: string;
-  addChild(child: unknown): void;
-  removeChild(child: unknown): void;
-  dispose(): void;
 }
 
 interface CocosUiRootOptions {
@@ -61,12 +66,7 @@ interface GRootSeam {
 
 function createGRootSeam(): GRootSeam {
   let calls = 0;
-  const root: GRootLike = {
-    name: "GRoot",
-    addChild: () => {},
-    removeChild: () => {},
-    dispose: () => {},
-  };
+  const root: GRootLike = { name: "GRoot" };
 
   return {
     root,
@@ -148,6 +148,18 @@ describe("CocosUiRoot", () => {
 
     expect(uiRoot.initialized).toBe(true);
     expect(uiRoot.root).toBe(seam.root);
+  });
+
+  test("a seam that returns undefined counts as not ready and reports failure", async () => {
+    const { createCocosUiRoot } = await loadFactory();
+
+    const uiRoot = createCocosUiRoot({
+      getRoot: () => undefined,
+    });
+
+    expect(() => uiRoot.init()).toThrow(/GRoot is not available/);
+    expect(uiRoot.initialized).toBe(false);
+    expect(uiRoot.root).toBeUndefined();
   });
 
   test("defaults to the engine GRoot singleton when no seam is injected", async () => {

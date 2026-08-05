@@ -522,6 +522,7 @@ describe("framework public boundary", () => {
       "CocosApplicationAdapter",
       "createCocosResourceProvider",
       "createCocosSceneAdapter",
+      "createCocosUiRoot",
     ];
 
     for (const name of forbiddenInternals) {

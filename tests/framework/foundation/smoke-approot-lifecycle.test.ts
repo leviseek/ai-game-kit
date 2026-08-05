@@ -22,9 +22,16 @@ mock.module("cc", () => ({
 }));
 
 // AppRoot 经 createCocosUiRoot 工厂间接依赖 fairygui-cc；测试不加载真实运行时，
-// 与 cocos-ui-root.test.ts 保持一致地注入空 GRoot 桩。
+// mock 忠实模拟真实语义：GRoot.inst 未 create 时抛错，GRoot.create 返回实例。
 mock.module("fairygui-cc", () => ({
-  GRoot: {},
+  GRoot: {
+    get inst(): never {
+      throw new Error("Call GRoot.create first!");
+    },
+    create() {
+      return { name: "GRoot" };
+    },
+  },
 }));
 
 interface ApplicationLike {

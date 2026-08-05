@@ -1,11 +1,9 @@
 import { GRoot } from "fairygui-cc";
 
-// 结构化的 GRoot 接缝：只依赖 UI 根宿主用到的能力，便于测试注入 mock
+// 结构化的 GRoot 接缝：当前宿主仅消费根引用本身，成员按需最小化，
+// task 3 页面适配器需要容器能力时再向后兼容地扩展
 export interface GRootLike {
   readonly name: string;
-  addChild(child: unknown): void;
-  removeChild(child: unknown): void;
-  dispose(): void;
 }
 
 export interface CocosUiRootOptions {
@@ -56,8 +54,14 @@ export function createCocosUiRoot(
       if (initialized) {
         return;
       }
-      // 获取失败（GRoot 未就绪）时抛错上报而不静默吞掉，且不置 initialized
-      root = getRoot();
+      // 获取失败（GRoot 未就绪）时抛错上报而不静默吞掉，且不置 initialized；
+      // getRoot 返回 undefined 同样视为未就绪，避免 initialized=true 而 root=undefined
+      // 的不一致状态
+      const next = getRoot();
+      if (next === undefined) {
+        throw new Error("GRoot is not available yet");
+      }
+      root = next;
       initialized = true;
     },
   };
