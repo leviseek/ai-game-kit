@@ -29,7 +29,11 @@ export interface IResourceProvider {
    */
   preload<T = unknown>(bundle: string, path: string): ResourceHandle<T>;
 
-  /** 查询某 Bundle 当前是否已无任何作用域持有（可卸载）。 */
+  /**
+   * 查询某 Bundle 当前是否已无任何作用域持有（可卸载）。
+   * true 仅表示无框架侧持有，引擎侧卸载是否已完成需以具体适配器的观察为准
+   * （如 Cocos 适配器下 `assetManager.getBundle(name) === null`）。
+   */
   canUnload(bundle: string): boolean;
 
   /**

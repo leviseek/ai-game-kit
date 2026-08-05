@@ -154,6 +154,12 @@ export function createResourceScopeRegistry(
 
     return {
       retain(handle) {
+        // release 后作用域已不可用：忽略后续 retain，避免复活已释放作用域
+        // 造成引用永不回落的泄漏
+        if (released) {
+          return;
+        }
+
         const keyId = serializeKey(handle.key);
 
         if (held.has(keyId)) {

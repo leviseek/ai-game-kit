@@ -49,7 +49,11 @@ export interface SceneFlow {
     sceneId: string,
     resources: SceneResources,
   ): Promise<SceneSwitchResult>;
-  /** 释放流转作用域：取消未完成的预加载/切换，幂等。 */
+  /**
+   * 释放流转作用域与当前激活场景作用域：取消未完成的预加载/切换并释放
+   * 已激活场景持有的资源，幂等。注意若在切换激活已提交后释放，引擎场景
+   * 仍会被加载但不归 SceneFlow 管理。
+   */
   dispose(): DisposeHandle;
 }
 
@@ -308,6 +312,13 @@ export function createSceneFlow(options: SceneFlowOptions): SceneFlow {
         }
         finished = true;
         cancelPreload = undefined;
+
+        // dispose 后不再记录预加载结果：流转作用域立即被释放，记录只会是
+        // 指向已释放资源的无效句柄
+        if (disposed) {
+          resolve();
+          return;
+        }
 
         // 预加载完成的资源保留在流转作用域中供后续 switchTo 复用。无论成败都
         // 记录，是否真正可复用由 switchTo 判定（全部 ready 才复用，含失败的

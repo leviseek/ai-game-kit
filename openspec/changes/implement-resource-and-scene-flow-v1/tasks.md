@@ -104,4 +104,8 @@
   - 判断依据（对齐 ADR-006 背景逻辑）：契约面 + 行为预期——未来 UI/音频/存档重构若不知终态缓存、invalidate、失败保留、preload 复用语义，可能无感改变行为。
   - 仅 tasks 记录、不成 ADR 的项：AppRoot 持久根持有 SceneFlow（ADR-001 装配细节）、单向冒烟约定与已知限制、根入口白名单具体导出项、内存适配器、适配器 forbiddenInternals。
   - 审查：ai-sensei 复核决策清单后确认需创建 ADR-009，并审查通过（含 3 处轻微修正：补全 preloadDone->idle 转移、限定 invalidate 于非复用路径、协调器缓存措辞对齐）。
+  - 归档前终审（ai-sensei，gpt-5.6-sol high）结论：**具备归档条件**，无阻塞项；后续修复与测试加固已在本 change 收尾提交中落地（见 7.3 前修订）。
+    - 修复项：`ResourceScope.retain` release 后防护（避免已释放作用域被复活引泄漏）+ 契约注释；`AppRoot.onDestroy` 追加 `resourceProvider.dispose()`（避免 scopes Set 无界增长）；`SceneFlow.dispose` 注释补"同时释放当前激活场景作用域"与 transitioning 竞态说明；`AppRoot` 的 `IResourceProvider` 改根入口导入（对齐 7.1 收口）；`IResourceProvider.canUnload` 契约注释补"true 仅表示无框架侧持有，引擎侧卸载以适配器观察为准"。
+    - 测试加固：transitioning 中途 dispose 竞态（激活迟到 resolve 不拉回 active）；preload 重复被跳过 / 空 paths / failed 态 preload / active 态自切换 4 个组合用例；release 后 retain no-op 用例。
+    - 语义记录：ADR-009 决策 4 补"单 FSM 下 preload 与 switchTo 互斥"取舍；失败路径进度收敛到 1 的语义由 spec 场景覆盖（spec 只要求"失败后收敛到终态"，progress=1 与终态一致）。
 - [ ] 7.3 归档时同步总计划 `create-game-framework-v1` 第 5 节任务的完成状态与证据。

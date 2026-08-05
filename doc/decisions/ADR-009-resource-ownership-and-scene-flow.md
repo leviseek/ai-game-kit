@@ -59,6 +59,7 @@ Cocos Asset Bundle 适配器（`adapters/cocos/resource/CocosResourceProvider.ts
 - **重试重新走流程**：重试重新执行预加载与切换，上一次失败期间创建的预加载资源随流转作用域释放，不残留半激活状态。
 - **切换中拒绝重复请求**：`preloading`/`transitioning` 期间重复 `switchTo` 被拒绝并返回原因。
 - **每次切换（非复用路径）/预加载先 `invalidate` 再 `load`**：命中决策 1 的失效语义，保证重试与切换走新的底层加载；命中 preload 复用分支时跳过 invalidate 与重新加载。
+- **单 FSM 下 preload 与 switchTo 互斥**：`preloading`/`transitioning` 期间重复 `switchTo` 被拒绝、进行中 preload 期间再次 `preload` 被跳过（`SceneFlow` 以单一 FSM 状态表达流转，不区分"后台预加载"与"前台切换"）。"后台预加载的同时发起切换"在本决策下不可行，如未来需要真正后台化须为 preload 引入独立状态。
 - **preload 结果跨 switchTo 复用**：预加载完成的资源保留在流转作用域；`switchTo` 命中同场景（`sceneId` + `bundle`/`paths` 一致且全部 `ready`）时跳过 invalidate/重新加载，直接激活并转移所有权。该行为修复"预加载结果被丢弃 + 卸载 → 重载抖动"缺陷，是 `switchTo` 的默认行为契约。
 
 Cocos 场景适配器只做 `cc.director.loadScene` 薄映射，场景资源所有权与释放仍由 `SceneFlow` 通过资源提供者管理。

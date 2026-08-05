@@ -429,6 +429,49 @@ describe("SceneFlow releasable scope", () => {
     expect(provider.canUnload("ui")).toBe(true);
   });
 
+  test("disposing during transitioning still resolves and does not leave a dangling activation", async () => {
+    const { loader, pending } = createControlledLoader();
+    const activated: string[] = [];
+    let resolveActivation: (() => void) | undefined;
+    const provider = createResourceProvider({ loader, unloadBundle: () => {} });
+    const flow = createSceneFlow({
+      provider,
+      activateScene: (sceneId: string) =>
+        new Promise<void>((resolve) => {
+          activated.push(sceneId);
+          resolveActivation = resolve;
+        }),
+    });
+
+    const switching = flow.switchTo("scene-b", {
+      bundle: "ui",
+      paths: ["b.png"],
+    });
+    // 完成资源加载，进入 transitioning（激活已提交但未 resolve）
+    pending[0].resolve({ id: "b" });
+    await new Promise<void>((r) => setTimeout(r, 0));
+
+    expect(flow.state).toBe("transitioning");
+
+    flow.dispose();
+    const result = await switching;
+
+    // 切换被取消：resolve 为失败，不产生成功上报；引擎侧激活可能已发生但不归
+    // SceneFlow 管理（契约已在 dispose 注释中声明）
+    expect(result.ok).toBe(false);
+    expect(result.reason).toBeTruthy();
+    expect(activated).toHaveLength(1);
+
+    // 激活回调迟到地 resolve，不得把已释放的 flow 拉回 active：FSM 已 dispose
+    // 停止接收事件，状态冻结在 transitioning
+    resolveActivation?.();
+    await new Promise<void>((r) => setTimeout(r, 0));
+    expect(flow.state).toBe("transitioning");
+    expect(provider.canUnload("ui")).toBe(true);
+
+    flow.dispose();
+  });
+
   test("disposing the flow releases resources left by a completed preload", async () => {
     const { loader, pending } = createControlledLoader();
     const unloaded: string[] = [];
@@ -514,5 +557,117 @@ describe("SceneFlow edge cases", () => {
     expect(result.error).toBeTruthy();
     expect(provider.canUnload("common")).toBe(false);
     expect(unloaded).not.toContain("common");
+  });
+
+  test("a second preload while one is in flight is skipped", async () => {
+    const { loader, calls, pending } = createControlledLoader();
+    const provider = createResourceProvider({ loader, unloadBundle: () => {} });
+    const flow = createSceneFlow({
+      provider,
+      activateScene: async () => {},
+    });
+
+    const first = flow.preload("scene-b", {
+      bundle: "ui",
+      paths: ["b.png"],
+    });
+    const second = flow.preload("scene-c", {
+      bundle: "common",
+      paths: ["c.png"],
+    });
+
+    // 进行中的 preload 期间，第二次 preload 被跳过：不产生新的底层加载
+    expect(calls).toHaveLength(1);
+
+    pending[0].resolve({ id: "b" });
+    await first;
+    await second;
+
+    expect(flow.state).toBe("idle");
+    expect(calls).toHaveLength(1);
+  });
+
+  test("preload with an empty path list completes and stays idle without activating", async () => {
+    const { loader, calls } = createControlledLoader();
+    const activated: string[] = [];
+    const provider = createResourceProvider({ loader, unloadBundle: () => {} });
+    const flow = createSceneFlow({
+      provider,
+      activateScene: async (sceneId: string) => {
+        activated.push(sceneId);
+      },
+    });
+
+    const preload = flow.preload("scene-b", {
+      bundle: "ui",
+      paths: [],
+    });
+    await preload;
+
+    expect(activated).toEqual([]);
+    expect(flow.state).toBe("idle");
+    expect(calls).toHaveLength(0);
+  });
+
+  test("preload after a failed switch still works from the failed state", async () => {
+    const { loader, calls, pending } = createControlledLoader();
+    const provider = createResourceProvider({ loader, unloadBundle: () => {} });
+    const flow = createSceneFlow({
+      provider,
+      activateScene: async () => {},
+    });
+
+    const failed = flow.switchTo("scene-b", {
+      bundle: "ui",
+      paths: ["b.png"],
+    });
+    pending[0].reject(new Error("boom"));
+    await failed;
+    expect(flow.state).toBe("failed");
+
+    // failed 态下 preload 走 start 分支进入 preloading，再落回 idle
+    const preload = flow.preload("scene-c", {
+      bundle: "common",
+      paths: ["c.png"],
+    });
+    pending[1].resolve({ id: "c" });
+    await preload;
+
+    expect(flow.state).toBe("idle");
+    expect(calls).toHaveLength(2);
+  });
+
+  test("switching to the currently active scene performs a fresh switch", async () => {
+    const { loader, calls, pending } = createControlledLoader();
+    const activated: string[] = [];
+    const provider = createResourceProvider({ loader, unloadBundle: () => {} });
+    const flow = createSceneFlow({
+      provider,
+      activateScene: async (sceneId: string) => {
+        activated.push(sceneId);
+      },
+    });
+
+    const first = flow.switchTo("scene-a", {
+      bundle: "common",
+      paths: ["a.png"],
+    });
+    pending[0].resolve({ id: "a" });
+    const firstResult = await first;
+    expect(firstResult.ok).toBe(true);
+    expect(flow.state).toBe("active");
+
+    // active 态再次 switchTo 同一场景走 start 分支：重新预加载并激活
+    const second = flow.switchTo("scene-a", {
+      bundle: "common",
+      paths: ["a.png"],
+    });
+    pending[1].resolve({ id: "a2" });
+    const secondResult = await second;
+
+    expect(secondResult.ok).toBe(true);
+    expect(activated).toEqual(["scene-a", "scene-a"]);
+    expect(calls).toHaveLength(2);
+    expect(flow.state).toBe("active");
   });
 });

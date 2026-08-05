@@ -456,4 +456,30 @@ describe("ResourceScope failure isolation", () => {
     expect(unloaded).toEqual(["common"]);
     expect(registry.canUnload("common")).toBe(true);
   });
+
+  test("retain after release is a no-op and does not revive a released scope", async () => {
+    const { loader, pending } = createControlledLoader();
+    const coordinator = createLoadCoordinator({ loader });
+    const { registry, unloaded } = createRegistrySpy();
+    const scope = registry.createScope();
+
+    const handle = await settleReady(
+      coordinator,
+      pending,
+      assetKey("config.json"),
+    );
+
+    scope.retain(handle);
+    scope.release();
+    expect(registry.canUnload("common")).toBe(true);
+
+    // release 后再次 retain 不得复活作用域：引用必须保持归零、不得泄漏
+    scope.retain(handle);
+    expect(registry.canUnload("common")).toBe(true);
+
+    // 幂等重复释放仍安全，且不会因复活的引用触发卸载
+    scope.release();
+    expect(unloaded).toEqual(["common"]);
+    expect(registry.canUnload("common")).toBe(true);
+  });
 });

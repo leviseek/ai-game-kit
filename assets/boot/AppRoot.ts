@@ -2,15 +2,15 @@ import { _decorator, Component, game } from "cc";
 import {
   Application,
   createSceneFlow,
+  type IResourceProvider,
+  type Module,
   type SceneFlow,
   type SceneResources,
   type SceneSwitchResult,
 } from "../framework";
-import type { Module } from "../framework";
 import { createApplicationContext } from "../framework/application/ApplicationContext";
 import { ConsoleLogger } from "../framework/diagnostics/logging/ConsoleLogger";
 import { CocosApplicationAdapter } from "../framework/adapters/cocos/application/CocosApplicationAdapter";
-import type { IResourceProvider } from "../framework/contracts/resource/ResourceProvider";
 import { createCocosResourceProvider } from "../framework/adapters/cocos/resource/CocosResourceProvider";
 import { createCocosSceneAdapter } from "../framework/adapters/cocos/scene/CocosSceneAdapter";
 
@@ -104,6 +104,7 @@ export class AppRoot extends Component {
   onDestroy(): void {
     this.adapter?.unbind();
     this.sceneFlow?.dispose();
+    this.resourceProvider?.dispose();
     this.app?.dispose().catch(() => {
       // dispose 失败已由 Application 内部通过 context.logger 记录
     });
