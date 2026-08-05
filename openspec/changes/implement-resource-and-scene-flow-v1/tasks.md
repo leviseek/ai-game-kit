@@ -69,12 +69,21 @@
   - 新增 `tests/framework/foundation/cocos-scene-adapter.test.ts`（4 个测试）：激活映射到 `loadScene` 并在启动成功后 resolve、`onLaunched` 错误原样 reject、`loadScene` 拒绝启动时调用返回后立即 reject（含场景标识）、缺省 `cc.director` 兜底（因 bun 的 `mock.module("cc")` 全局共享且首个注册生效，缺省路径改用源码断言锁定 `options.director ?? cc.director`）。`mock.module("cc")` 注入 director 规避引擎依赖。
   - `public-boundary.test.ts` 的 `forbiddenInternals` 加入 `createCocosSceneAdapter`，锁死该适配器工厂不作为根入口导出。
   - 验证：`bun run test:foundation` 380 pass / 0 fail（46 文件），`bun run test:foundation:types` 0 diagnostics。
-- [ ] 6.2 完成 Cocos Creator 3.8.8 Web Desktop 场景切换冒烟验证，覆盖预加载、成功切换、失败保留与资源释放；失败路径通过加载不存在的 Bundle 或场景标识构造。
+- [x] 6.2 完成 Cocos Creator 3.8.8 Web Desktop 场景切换冒烟验证，覆盖预加载、成功切换、失败保留与资源释放；失败路径通过加载不存在的 Bundle 或场景标识构造。
   - 代码前置（已完成）：`assets/boot/AppRoot.ts` 的 `assembleApp` 组装 `createSceneFlow({ provider: createCocosResourceProvider(), activateScene: createCocosSceneAdapter().activateScene })`，`AppAssembly` 扩展 `sceneFlow` 与 `resourceProvider`；`AppRoot` 暴露冒烟触发 `smokePreload`/`smokeSwitchTo` 与释放观察 `smokeCanUnload`。仅经框架适配器工厂组装，不直接调引擎 API、不改 `createModules()`（仍为空）与 `startup.scene` 序列化。
   - `approot-composition.test.ts` 增加 sceneFlow 契约形状与 AppRoot 冒烟方法断言；`task68-scope-review.test.ts` 的 2 条源码锁定更新为新边界（AppRoot 只经适配器工厂组装、不直接调 `director.loadScene`/`assetManager.loadBundle`）。
-  - 剩余冒烟（需 Cocos Creator 编辑器操作）：新建第二场景并在 build settings 注册 `startup` + 新场景；按"预加载 → 成功切换 → 失败保留 → 资源释放"四段执行 Web Desktop Preview 并记录结果；确认 placeholder.json 经 Bundle 可加载。
   - 第二场景已就绪：编辑器新建 `assets/game/game.scene`（场景 Asset 名 `game`，`cc.director.loadScene("game")` 按文件名命中；已导入 asset-db 与 library，uuid `0a8e5055-1ca6-467e-be06-88b9b94fbbb2`）。`approot-composition.test.ts` 新增 game.scene 冒烟目标校验（合法 JSON、场景名匹配 `game`、仅基础设施组件无业务 UI）。
-  - 冒烟约定（ai-sensei 审查记录）：(1) AppRoot 节点只存在于 startup 场景且是 persist root，**单向冒烟（startup → game）安全**；若回切 startup 会实例化第二个 AppRoot，回切前需 `removePersistRootNode`，本 Change 冒烟只做单向；(2) `builder.json` 未配置构建场景列表，Preview 冒烟可加载 `game`，若需在正式构建产物冒烟须先在 build settings 注册 `startup` + `game`；(3) smoke 方法的行为验证依赖编辑器人工冒烟，Bun 测试只能锁 API 形状（受 `mock.module("cc")` 限制）；(4) `loadScene` 按"前缀 + `.scene` 后缀"匹配场景名，当前仅 `game.scene` 无歧义，新增同名前缀场景时冒烟须改用完整场景标识。
+  - 运行期冒烟（headless Chrome 连接 Web Preview，经 CDP 执行 smoke 方法并采集 console）全部通过：
+    - 段 0 入口：`cc` 可用、AppRoot 节点可经场景树定位（`persistRootNodes` 非公开属性，用树遍历）、`smokeSwitchTo`/`smokeCanUnload` 存在、初始场景 `startup`、`canUnload("ui")`=true。
+    - 段 1 预加载：`smokePreload("game", { bundle:"ui", paths:["placeholder"] })` resolve；ui 被流转作用域持有（canUnload=false）、`getBundle("ui")` 非空。
+    - 段 2 释放闭环：对第二个目标预加载触发 flowScope 释放 → ui 归零（canUnload=true）+ `getBundle("ui")`=null（完整释放证据）；common 被新流转作用域持有。**语义要点**：`canUnload` 是释放前置条件而非完成证据，须配合 `getBundle` 观察完整释放链。
+    - 段 3 成功切换：`{ ok:true, sceneId:"game" }`；当前场景变 `game`；ui 所有权转移给 game 场景作用域（canUnload=false）；AppRoot persist root 跨场景存活。
+    - 段 4A 资源链失败：`{ ok:false }`（FrameworkError，moduleId `resource`/component `load-coordinator`，cause 保留）；场景保留 `game`；ui 仍被 game 场景作用域持有。
+    - 段 4B 激活链失败：`{ ok:false }`（`loadScene("no-such-scene")` 返回 false → reject）；场景保留 `game`。
+    - 段 5 失败后重试：重试 `{ ok:true, sceneId:"game" }` 成功，FSM 回到可重试状态。
+    - 段 6 未加载 Bundle 卸载 no-op：`getBundle("no-such-bundle")`=null。
+    - console 佐证：`LoadScene game: ~6ms`、`Load assets/no-such-bundle/index.js failed`、`loadScene: Can not load the scene 'no-such-scene'`。
+  - 冒烟约定（ai-sensei 审查记录）：(1) AppRoot 节点只存在于 startup 场景且是 persist root，**单向冒烟（startup → game）安全**；若回切 startup 会实例化第二个 AppRoot，回切前需 `removePersistRootNode`，本 Change 冒烟只做单向；(2) `builder.json` 未配置构建场景列表，Preview 冒烟可加载 `game`，若需在正式构建产物冒烟须先在 build settings 注册 `startup` + `game`；(3) smoke 方法的行为验证依赖运行期冒烟，Bun 测试只能锁 API 形状（受 `mock.module("cc")` 限制）；(4) `loadScene` 按"前缀 + `.scene` 后缀"匹配场景名，当前仅 `game.scene` 无歧义，新增同名前缀场景时冒烟须改用完整场景标识。
 - [ ] 6.3 运行完整 Bun foundation 测试、strict 类型检查和依赖边界检查，记录测试数量与零失败结果。
 
 ## 7. 收口与 ADR 检查
