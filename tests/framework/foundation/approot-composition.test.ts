@@ -24,6 +24,12 @@ mock.module("cc", () => ({
   },
 }));
 
+// AppRoot 经 createCocosUiRoot 工厂间接依赖 fairygui-cc；测试不加载真实运行时，
+// 与 cocos-ui-root.test.ts 保持一致地注入空 GRoot 桩（缺省接缝访问返回 undefined）。
+mock.module("fairygui-cc", () => ({
+  GRoot: {},
+}));
+
 interface CocosComponent {
   onLoad(): void;
   start(): void;

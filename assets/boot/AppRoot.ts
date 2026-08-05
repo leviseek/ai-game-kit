@@ -13,6 +13,10 @@ import { ConsoleLogger } from "../framework/diagnostics/logging/ConsoleLogger";
 import { CocosApplicationAdapter } from "../framework/adapters/cocos/application/CocosApplicationAdapter";
 import { createCocosResourceProvider } from "../framework/adapters/cocos/resource/CocosResourceProvider";
 import { createCocosSceneAdapter } from "../framework/adapters/cocos/scene/CocosSceneAdapter";
+import {
+  createCocosUiRoot,
+  type CocosUiRoot,
+} from "../framework/adapters/cocos/ui/CocosUiRoot";
 
 const { ccclass } = _decorator;
 
@@ -26,6 +30,8 @@ export interface AppAssembly {
   readonly sceneFlow: SceneFlow;
   /** 冒烟用资源提供者：供释放观察（canUnload）查询。 */
   readonly resourceProvider: IResourceProvider;
+  /** UI 根宿主：封装 FairyGUI GRoot 获取与运行时初始化时机。 */
+  readonly uiRoot: CocosUiRoot;
 }
 
 export function assembleApp(): AppAssembly {
@@ -54,7 +60,11 @@ export function assembleApp(): AppAssembly {
     },
   });
 
-  return { app, adapter, sceneFlow, resourceProvider };
+  // UI 根宿主经 Adapter 工厂接入：fgui 类型不进入组合根，初始化时机由
+  // AppRoot.start 在引擎 ready 后触发（GRoot 未就绪时抛错可延迟重试）。
+  const uiRoot = createCocosUiRoot();
+
+  return { app, adapter, sceneFlow, resourceProvider, uiRoot };
 }
 
 @ccclass("AppRoot")
@@ -63,21 +73,40 @@ export class AppRoot extends Component {
   private adapter?: CocosApplicationAdapter;
   private sceneFlow?: SceneFlow;
   private resourceProvider?: IResourceProvider;
+  private uiRoot?: CocosUiRoot;
 
   onLoad(): void {
-    const { app, adapter, sceneFlow, resourceProvider } = assembleApp();
+    const { app, adapter, sceneFlow, resourceProvider, uiRoot } = assembleApp();
     this.app = app;
     this.adapter = adapter;
     this.sceneFlow = sceneFlow;
     this.resourceProvider = resourceProvider;
+    this.uiRoot = uiRoot;
     game.addPersistRootNode(this.node);
   }
 
   start(): void {
     this.adapter?.bind();
+    this.initializeUiRoot();
     this.app?.start().catch(() => {
       // 启动失败已由 Application 内部通过 context.logger 记录
     });
+  }
+
+  /**
+   * 引擎 ready 后初始化 UI 根宿主。GRoot 未就绪时 init 抛错；此处上报并
+   * 保留未初始化状态，运行期由后续重试/冒烟路径接管（task 2.2 契约）。
+   */
+  private initializeUiRoot(): void {
+    if (this.uiRoot === undefined) {
+      return;
+    }
+    try {
+      this.uiRoot.init();
+    } catch (error) {
+      // GRoot 尚未就绪：上报而不静默吞掉，保持未初始化以便引擎 ready 后重试
+      console.error("[ui] FairyGUI UI root initialization failed", error);
+    }
   }
 
   /** 冒烟触发：后台预加载目标场景资源，不切换当前场景。 */

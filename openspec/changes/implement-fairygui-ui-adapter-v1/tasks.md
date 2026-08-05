@@ -28,9 +28,15 @@
 
 ## 2. Cocos UI 根宿主
 
-- [ ] 2.1 先编写 UI 根契约测试，锁定初始化入口、重复初始化幂等、失败上报与 GRoot 接缝可注入。
-- [ ] 2.2 实现 `adapters/cocos/ui/CocosUiRoot.ts` 的 `createCocosUiRoot` 工厂，封装 GRoot 获取与运行时初始化时机。
-- [ ] 2.3 组合根 `AppRoot` 经 Adapter 工厂接入 UI 根宿主；`task68-scope-review.test.ts` 断言（AppRoot 不 `import fgui`、scene 无 FairyGUI 组件）保持通过。
+- [x] 2.1 先编写 UI 根契约测试，锁定初始化入口、重复初始化幂等、失败上报与 GRoot 接缝可注入。
+  - `tests/framework/foundation/cocos-ui-root.test.ts` 5 个测试锁定 `createCocosUiRoot` 契约：经工厂初始化入口（`init()` 后 GRoot 就绪、`initialized`/`root` 状态）、重复初始化幂等（接缝仅调用一次、不重复获取根）、失败上报（`getRoot` 抛错时 `init()` 透传且保持未初始化）、失败后重试可成功、缺省读引擎 GRoot 单例（源码断言 `GRoot.(inst|create)` 与 `options.getRoot ??`）。红期确认：`bun test tests/framework/foundation/cocos-ui-root.test.ts` 0 pass / 5 fail，全部因 `adapters/cocos/ui/CocosUiRoot.ts` 尚不存在（方案 B：task 2.2 实现工厂后转绿）；`bun run test:foundation` 427 pass / 5 fail（5 个失败即本红期测试，既有门禁未破坏）。
+- [x] 2.2 实现 `adapters/cocos/ui/CocosUiRoot.ts` 的 `createCocosUiRoot` 工厂，封装 GRoot 获取与运行时初始化时机。
+  - `adapters/cocos/ui/CocosUiRoot.ts` 实现 `createCocosUiRoot` 工厂：缺省接缝经 `GRoot.inst` 读取单例、未 create 时捕获异常走 `GRoot.create()` 完成首次初始化（引擎启动后首次可用时初始化）；`init()` 幂等（已初始化直接返回），`getRoot()` 抛错时透传上报且不置 `initialized`，保留调用方在引擎 ready 后重试的路径；`fgui` 类型仅存在于 Adapter 边界。目录与文件 meta（`ui.meta`/`CocosUiRoot.ts.meta`）按既有 directory/typescript importer 模式建立。
+  - 验证：`bun test tests/framework/foundation/cocos-ui-root.test.ts` 5 pass / 0 fail（红期转绿）；`bun run test:foundation` 432 pass / 0 fail；`bun run test:foundation:types` EXIT 0（`adapters/cocos` 按既有排除规则不参与该检查）；Creator 3.8.8 tsc strict（基于 `temp/tsconfig.cocos.json` + fairygui.d.ts ambient）对 `CocosUiRoot.ts` EXIT 0。
+- [x] 2.3 组合根 `AppRoot` 经 Adapter 工厂接入 UI 根宿主；`task68-scope-review.test.ts` 断言（AppRoot 不 `import fgui`、scene 无 FairyGUI 组件）保持通过。
+  - `AppRoot.ts` 经 `createCocosUiRoot` 工厂创建并持有 `uiRoot`（`AppAssembly` 增加 `uiRoot` 字段）；`start()` 内引擎 ready 后调用 `init()`，GRoot 未就绪时上报（console.error）并保持未初始化以便重试；`fgui` 类型不进入组合根，AppRoot 源码仍零 `fgui` 导入。
+  - `approot-composition.test.ts`/`smoke-approot-lifecycle.test.ts` 补充 `mock.module("fairygui-cc")` 空桩（AppRoot 经工厂间接依赖 fairygui-cc，与 `cocos-ui-root.test.ts` 一致，不加载真实运行时）。
+  - 验证：`task68-scope-review.test.ts`、`approot-composition.test.ts`、`smoke-approot-lifecycle.test.ts`、`cocos-ui-root.test.ts` 43 pass / 0 fail；`bun run test:foundation` 432 pass / 0 fail；`test:foundation:types` EXIT 0；Creator 3.8.8 tsc strict 对 AppRoot+CocosUiRoot 依赖链（含 fairygui.d.ts ambient）EXIT 0。
 
 ## 3. FairyGUI 页面适配器
 

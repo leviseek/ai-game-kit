@@ -21,6 +21,12 @@ mock.module("cc", () => ({
   Component: class {},
 }));
 
+// AppRoot 经 createCocosUiRoot 工厂间接依赖 fairygui-cc；测试不加载真实运行时，
+// 与 cocos-ui-root.test.ts 保持一致地注入空 GRoot 桩。
+mock.module("fairygui-cc", () => ({
+  GRoot: {},
+}));
+
 interface ApplicationLike {
   readonly state: string;
   start(): Promise<void>;
