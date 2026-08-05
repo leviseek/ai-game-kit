@@ -57,3 +57,19 @@ export { createObjectPool } from "./core/pooling/ObjectPool";
 export { Application } from "./application/Application";
 export { ApplicationStateError } from "./application/ApplicationStateError";
 export { ModuleLifecycleError } from "./application/ModuleLifecycleError";
+
+export type {
+  ResourceHandle,
+  ResourceKey,
+  ResourceKind,
+  ResourceLoadState,
+} from "./contracts/resource/Resource";
+
+export type { ResourceScope } from "./contracts/resource/ResourceScope";
+
+export type {
+  IResourceProvider,
+  ResourceProviderOptions,
+} from "./contracts/resource/ResourceProvider";
+
+export { createResourceProvider } from "./core/resource/ResourceProvider";

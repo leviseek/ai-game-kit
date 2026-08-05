@@ -461,6 +461,7 @@ describe("framework public boundary", () => {
       "EventMap",
       "FrameworkError",
       "FrameworkErrorOptions",
+      "IResourceProvider",
       "isRecoverableError",
       "LogContext",
       "LogLevel",
@@ -473,6 +474,12 @@ describe("framework public boundary", () => {
       "ObjectPool",
       "ObjectPoolOptions",
       "PlatformStorage",
+      "ResourceHandle",
+      "ResourceKey",
+      "ResourceKind",
+      "ResourceLoadState",
+      "ResourceProviderOptions",
+      "ResourceScope",
       "ScopedEventChannel",
       "ScopedEventChannelOptions",
       "StateHook",
@@ -481,6 +488,7 @@ describe("framework public boundary", () => {
       "StateMachineOptions",
       "StateTransitionTable",
       "TimeSource",
+      "createResourceProvider",
     ].sort();
 
     expect(extractRootExportNames(source)).toEqual(expectedRootExports);
@@ -498,6 +506,7 @@ describe("framework public boundary", () => {
       "createScopedLogger",
       "LogRecordSink",
       "CocosApplicationAdapter",
+      "createCocosResourceProvider",
     ];
 
     for (const name of forbiddenInternals) {

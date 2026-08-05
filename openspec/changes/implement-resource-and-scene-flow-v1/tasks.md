@@ -25,8 +25,15 @@
   - 新增 `contracts/resource/Resource.ts`（ResourceKind/ResourceKey/ResourceLoadState/ResourceHandle）、`ResourceScope.ts`、`ResourceProvider.ts`（IResourceProvider + ResourceProviderOptions）；类型提升后 `core/resource/LoadCoordinator.ts`、`ResourceScope.ts` 反向依赖并 re-export 保持既有导入兼容。
   - 新增 `core/resource/ResourceProvider.ts`（引擎无关组装器：协调器 + 作用域注册表 + 作用域集合）与 `adapters/memory/MemoryResourceProvider.ts`（内存 loader + 无操作卸载）。
   - 验证：`bun run test:foundation` 349 pass / 0 fail（43 文件，`contracts/resource` 边界 skipIf 测试激活），`bun run test:foundation:types` 0 diagnostics，public-boundary 20 pass。
-- [ ] 3.3 实现 Cocos Asset Bundle 适配器，覆盖加载、释放与可卸载判断，并保留底层错误 cause 和资源标识。
-- [ ] 3.4 根入口白名单导出稳定契约与工厂，实现细节保持内部。
+- [x] 3.3 实现 Cocos Asset Bundle 适配器，覆盖加载、释放与可卸载判断，并保留底层错误 cause 和资源标识。
+  - 新增 `assets/framework/adapters/cocos/resource/CocosResourceProvider.ts`：把 bundle 加载映射到 `assetManager.loadBundle` + `bundle.load`（回调转 Promise，原样传递引擎错误），卸载映射到 `bundle.releaseAll` + `assetManager.removeBundle`（从未加载的 Bundle 幂等跳过），通过 `createResourceProvider` 组装为 IResourceProvider；`assetManager` 可注入 mock，命名空间导入规避测试 mock 冲突。
+  - 新增 `tests/framework/foundation/cocos-resource-provider.test.ts`（5 个测试）：bundle+资源加载链路、bundle 加载失败保留 cause 与资源标识、资源加载失败保留标识、无持有后 releaseAll+removeBundle、未加载 Bundle 卸载为 no-op。
+  - 验证：`bun run test:foundation` 354 pass / 0 fail（44 文件），`bun run test:foundation:types` 0 diagnostics。
+- [x] 3.4 根入口白名单导出稳定契约与工厂，实现细节保持内部。
+  - `assets/framework/index.ts` 新增导出：`IResourceProvider`/`ResourceProviderOptions`/`ResourceHandle`/`ResourceKey`/`ResourceKind`/`ResourceLoadState`/`ResourceScope`（契约类型）+ `createResourceProvider`（引擎无关核心工厂）。
+  - 实现细节保持内部：`createMemoryResourceProvider`/`createCocosResourceProvider`（adapters 层，root 不允许依赖 adapters）不导出，boot 或场景组合按需深层导入；`createCocosResourceProvider` 加入 `forbiddenInternals` 锁定。
+  - `public-boundary.test.ts` 同步更新 `expectedRootExports` 白名单。
+  - 验证：`bun run test:foundation` 354 pass / 0 fail，`bun run test:foundation:types` 0 diagnostics。
 
 ## 4. 最小 Bundle 划分
 
