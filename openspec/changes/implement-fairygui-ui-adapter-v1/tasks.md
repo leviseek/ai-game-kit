@@ -73,8 +73,14 @@
 
 ## 5. 收口与门禁
 
-- [ ] 5.1 审查 UI 根/页面适配器公开入口，移除不必要导出，用依赖检查证明无深层导入。
+- [x] 5.1 审查 UI 根/页面适配器公开入口，移除不必要导出，用依赖检查证明无深层导入。
   - **审查遗留待办（ai-sensei 4.1-4.3 审查，非阻断）**：(a) M2 真实交互验证——`modal-show: ok` 目前是自证（`setModal` 不抛错即 ok），未做 CDP 点击注入断言下层页面在模态期间不响应；后续冒烟增强可在 DemoView 加可点击元素并用 CDP 派发点击验证阻断。(b) M4 导航自动同步——当前 `setModal` 是显式接缝，AppRoot 冒烟直接调用，未与 `UiNavigator.modal` 状态联动（spec 要求"阻断状态随导航状态自动同步"）；导航联动属总计划 6.4-6.5 集成范围，归档时明确为后续集成项。(c) S3 遮罩可见性——缺省 `createFairyGuiMask` 用 GComponent（阻断正确但透明不可见），可见半透明遮罩需 GGraph（引入 cc.Color 依赖）留给后续。(d) S4 `dispose()` 后 `createPage`/`mount`/`unmount` 未检查 disposed，行为不一致，建议补检查。(e) S5 遮罩尺寸为快照，窗口 resize 不同步。(f) S6 `CocosUiRoot.ts:74` 收尾格式多余空格、`GRootLike` 与 `FairyGuiRootLike` 形状重复可收敛、`approot-ui-smoke.test.ts` 死变量。
-- [ ] 5.2 运行完整 Bun foundation 测试、strict 类型检查与依赖边界检查，记录测试数量与零失败结果。
-- [ ] 5.3 ADR 检查：本次工作是否产生新的长期架构决策；如有，按 `doc/decisions/ADR-NNN-<slug>.md` 创建 ADR，如无则明确记录无需 ADR。
-- [ ] 5.4 归档时同步总计划 `create-game-framework-v1` 第 6 节 6.3 任务的完成状态与证据。
+  - 实施（5.1）：(d) 已补——`createPage` 增加 `disposed` 早退，返回已销毁句柄并保留诊断，与 mount/unmount/destroy/setModal 一致。(f) 已收敛——`FairyGuiPageAdapter` 删除重复的 `FairyGuiContainerLike` 形状，改为复用 `CocosUiRoot` 的权威 `GRootLike`（`FairyGuiContainerLike = GRootLike`，同层 type-only 导入）；`CocosUiRoot.ts:74` 收尾多余空格修复；`approot-ui-smoke.test.ts` 未使用的 `makeRecordingRoot` 死代码与死变量删除。(a)(b)(c)(e) 保持归档前记录，不阻塞本 Change。
+  - 公开入口收口：`createFairyGuiMask` 无外部消费者（AppRoot 依赖 adapter 内部默认接缝），降为模块内部函数不导出；对外仍只保留 `createFairyGuiPageAdapter`/`createFairyGuiView`/`createCocosUiRoot` 及契约类型，组合根经深路径导入（task68 与 forbiddenInternals 断言保持通过）。
+  - 依赖检查证明无深层导入：`public-boundary.test.ts` 新增测试锁定 UI 适配器模块只能被自身目录内引用（框架内部其它层不得深层导入 `adapters/cocos/ui`），组合根 AppRoot 是唯一外部消费者（boot 层深路径导入，frameworkRoot 扫描范围外）；既有 `locks fairygui-cc imports to the cocos adapter layer` 与 `keeps all current asset imports within architecture boundaries` 保持通过。
+- [x] 5.2 运行完整 Bun foundation 测试、strict 类型检查与依赖边界检查，记录测试数量与零失败结果。
+  - `bun run test:foundation` 462 pass / 0 fail（= 458 基线 + 4 新增/收敛后的边界断言，含 5.1 补的 `createPage` disposed 路径）；`test:foundation:types` EXIT 0（0 diagnostics）；`public-boundary.test.ts` 26 pass / 0 fail（55 expect，含新增 UI 适配器深层导入锁定）；`ccc typecheck`（Creator 3.8.8 strict + fairygui.d.ts ambient）0 diagnostics。
+- [x] 5.3 ADR 检查：本次工作是否产生新的长期架构决策；如有，按 `doc/decisions/ADR-NNN-<slug>.md` 创建 ADR，如无则明确记录无需 ADR。
+  - 结论：**无需新增 ADR**。本 Change 的长期架构决策均已成文——ADR-002（FairyGUI 选择）、ADR-011（FairyGUI runtime 引入，本 Change spike 0.5 产出）、ADR-004（资源策略，package 经资源层扩展）、ADR-010（UI 导航层级契约，GRoot 容器映射）、ADR-005（framework-game 边界，task68 零 fgui 导入）。5.1 的容器接缝收敛与 `createFairyGuiMask` 内部化属实现层重构，不改变既有决策；厂商决策（视图创建显式参数化、modal 显式接缝、provider 预留不直接读取、package 编排留 4.x）已记录于 design.md Open Questions，非长期架构决策。
+- [x] 5.4 归档时同步总计划 `create-game-framework-v1` 第 6 节 6.3 任务的完成状态与证据。
+  - 已同步：`openspec/changes/create-game-framework-v1/tasks.md` 6.3 标记 `[x]`，记录完成 evidence（spike 门禁与 ADR-011、CocosUiRoot/FairyGuiPageAdapter 工厂、fairygui-package 资源层能力、AppRoot 零 fgui 装配、Web Desktop 冒烟验证、5.x 收口与门禁数字、遗留集成项）。

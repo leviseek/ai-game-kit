@@ -1,8 +1,9 @@
 import { GRoot } from "fairygui-cc";
 
-// 结构化的 GRoot 接缝：对齐 FairyGuiPageAdapter 的 FairyGuiRootLike 容器能力，
-// 使 CocosUiRoot 初始化的 root 可直接作为页面适配器的 root 传入（真实 GRoot 为
-// GComponent 子类，天然满足）。缺省接缝返回引擎单例，测试可注入按形状的 mock。
+// 结构化的 GRoot 接缝：唯一权威容器形状。FairyGuiPageAdapter 直接复用本类型
+// 作为其容器接缝，使 CocosUiRoot 初始化的 root 可直接作为页面适配器的 root
+// 传入（真实 GRoot 为 GComponent 子类，天然满足）。缺省接缝返回引擎单例，
+// 测试可注入按形状的 mock。
 export interface GRootLike {
   readonly name: string;
   readonly width: number;
@@ -71,5 +72,6 @@ export function createCocosUiRoot(
       }
       root = next;
       initialized = true;
-    },  };
+    },
+  };
 }

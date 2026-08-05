@@ -77,68 +77,6 @@ async function loadAppRoot(): Promise<{
   return { AppRoot: exports.AppRoot as new () => AppRootInstance };
 }
 
-function makeRecordingRoot(): {
-  root: GRootLike;
-  containerCalls: Array<{ container: string; action: string; child?: unknown }>;
-} {
-  const containerCalls: Array<{ container: string; action: string; child?: unknown }> = [];
-  const containers = new Map<string, { children: unknown[] }>();
-
-  function makeContainer(name: string) {
-    const state = { children: [] as unknown[] };
-    containers.set(name, state);
-    return state;
-  }
-
-  const root: GRootLike = {
-    name: "GRoot",
-    width: 1280,
-    height: 720,
-    addChild(child) {
-      const name = (child as { name?: string } | undefined)?.name ?? "unknown";
-      const state = makeContainer(name);
-      containerCalls.push({ container: "GRoot", action: "addChild", child });
-      return {
-        name,
-        addChild: (c: unknown) => {
-          state.children.push(c);
-          containerCalls.push({ container: name, action: "addChild", child: c });
-          return c;
-        },
-        removeChild: (c: unknown, dispose = false) => {
-          const index = state.children.indexOf(c);
-          if (index >= 0) state.children.splice(index, 1);
-          containerCalls.push({ container: name, action: "removeChild", child: c });
-          return c;
-        },
-        removeChildren: () => {
-          state.children.length = 0;
-          containerCalls.push({ container: name, action: "removeChildren" });
-        },
-        getChildAt: (index: number) => state.children[index],
-        get numChildren() {
-          return state.children.length;
-        },
-        width: 1280,
-        height: 720,
-      };
-    },
-    removeChild(child) {
-      containerCalls.push({ container: "GRoot", action: "removeChild", child });
-      return child;
-    },
-    removeChildren() {
-      containerCalls.push({ container: "GRoot", action: "removeChildren" });
-    },
-    getChildAt() {
-      return undefined;
-    },
-    numChildren: 0,
-  };
-
-  return { root, containerCalls };
-}
-
 describe("AppRoot FairyGUI UI smoke methods", () => {
   test("smokeUiReady is false before UI root initialization", async () => {
     const { AppRoot } = await loadAppRoot();
@@ -150,7 +88,6 @@ describe("AppRoot FairyGUI UI smoke methods", () => {
 
   test("smokeUiInit establishes the page adapter once the UI root is ready", async () => {
     const { AppRoot } = await loadAppRoot();
-    const recording = makeRecordingRoot();
 
     const instance = new AppRoot();
     instance.onLoad();

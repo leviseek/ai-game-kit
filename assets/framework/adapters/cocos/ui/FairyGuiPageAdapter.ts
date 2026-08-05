@@ -4,21 +4,14 @@ import {
   UI_LAYER_ORDER,
   type UiLayer,
 } from "../../../contracts/ui/Navigation";
+import type { GRootLike } from "./CocosUiRoot";
 
-// 结构化的 FairyGUI 容器接缝：只依赖页面适配器用到的能力，便于测试注入 mock；
-// 真实实现由 fgui 的 GComponent 满足，运行时作为 GRoot 子容器承载页面
-export interface FairyGuiContainerLike {
-  name: string;
-  readonly width: number;
-  readonly height: number;
-  addChild(child: unknown): unknown;
-  removeChild(child: unknown, dispose?: boolean): unknown;
-  removeChildren(beginIndex?: number, endIndex?: number, dispose?: boolean): void;
-  getChildAt(index: number): unknown;
-  get numChildren(): number;
-}
+// 层容器与 GRoot 同为 GComponent 子类，容器接缝复用 CocosUiRoot 的权威
+// GRootLike 形状，避免两处重复定义漂移。真实实现由 fgui 的 GComponent 满足，
+// 运行时作为 GRoot 子容器承载页面
+export type FairyGuiContainerLike = GRootLike;
 
-/** GRoot 即根容器，语义上是 FairyGuiContainerLike 的别名。 */
+/** GRoot 即根容器，语义上是容器接缝的别名。 */
 export type FairyGuiRootLike = FairyGuiContainerLike;
 
 export interface FairyGuiViewLike {
@@ -48,7 +41,7 @@ export interface FairyGuiPageAdapterOptions {
 }
 
 /** 缺省模态遮罩工厂：GComponent + opaque/touchable，命中阻断下层页面输入。 */
-export function createFairyGuiMask(width: number, height: number): unknown {
+function createFairyGuiMask(width: number, height: number): unknown {
   const mask = new GComponent();
   mask.name = "modal-mask";
   // 空 GComponent 命中自身需 opaque=true（fairygui _hitTest 的 `_opaque` 分支），
@@ -194,6 +187,21 @@ export function createFairyGuiPageAdapter(
       layer: UiLayer,
       pageOptions?: { packageName?: string; resName?: string },
     ): FairyGuiPageHandle {
+      if (disposed) {
+        // dispose 后不可再创建页面：与 mount/unmount 一致走 disposed 早退，
+        // 但需返回句柄，返回已销毁句柄避免调用方误挂载
+        const handle = makeHandle(
+          route,
+          layer,
+          undefined,
+          new Error("page adapter is disposed"),
+        );
+        const state = handleStates.get(handle);
+        if (state !== undefined) {
+          state.disposed = true;
+        }
+        return handle;
+      }
       const createView = options.createView;
       if (createView === undefined) {
         // 与创建失败路径一致的语义：无视图即视为已销毁、不挂载，保留诊断信息

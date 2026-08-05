@@ -896,6 +896,26 @@ describe("framework public boundary", () => {
     expect(offenders).toEqual([]);
   });
 
+  test("keeps the UI adapter modules importable only from within their own directory", () => {
+    const uiAdapterRoot = resolve(frameworkRoot, "adapters/cocos/ui");
+
+    const offenders = collectTypeScriptFiles(frameworkRoot).filter((file) => {
+      if (isWithin(file, uiAdapterRoot)) {
+        return false;
+      }
+
+      const specifiers = extractModuleSpecifiers(readFileSync(file, "utf8"));
+      return specifiers.some((specifier) => {
+        const target = resolveImportTarget(file, specifier);
+        return target !== undefined && isWithin(target, uiAdapterRoot);
+      });
+    });
+
+    // UI 根/页面适配器只经组合根（boot）接入，框架内部不得深层导入；
+    // 目录内互相引用（CocosUiRoot ↔ FairyGuiPageAdapter）允许
+    expect(offenders).toEqual([]);
+  });
+
   test("keeps the resource core layer engine-agnostic", () => {
     const coreFiles = collectTypeScriptFiles(resolve(frameworkRoot, "core/resource"));
     expect(coreFiles.length).toBeGreaterThan(0);

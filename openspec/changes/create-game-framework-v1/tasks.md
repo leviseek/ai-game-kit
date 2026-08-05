@@ -53,7 +53,7 @@
 
 - [x] 6.1 先编写 UI 导航测试，覆盖页面栈、重复打开策略、返回、弹窗遮罩、层级和页面作用域清理。（由 change `implement-ui-navigation-v1` 1.1 完成：`ui-navigation.test.ts` 17 个测试覆盖页面入栈/栈顶、重复打开策略三选一、空栈拒绝、七层层级覆盖与 popup 返回父层、模态推导、页面作用域逆序释放与幂等关闭，红期确认后转绿。）
 - [x] 6.2 实现引擎无关的 UI 导航模型和 `scene/normal/popup/guide/toast/loading/system` 层级契约，使 6.1 的测试通过。（由 change `implement-ui-navigation-v1` 1.2/1.3/2.x/3.x 完成：`contracts/ui/Navigation.ts` 定义 `UiLayer`/`DuplicateOpenPolicy`/`UiPage`/`UiResult` 与 `UI_LAYER_ORDER`，`core/ui/UiNavigator.ts` 实现单一页面栈 + 按层级插入 + 模态推导 + 页面作用域逆序释放；根入口白名单导出；依赖边界检查通过。验证：Foundation 测试 417 pass / 0 fail，`test:foundation:types` 0 diagnostics，public-boundary 22 pass。ADR-010 记录四项导航长期决策；归档前审查修复 focus-existing 跨层语义、测试幽灵类型与释放失败隔离三项问题。）
-- [ ] 6.3 实现 Cocos UI 根与页面适配器，并用冒烟页面验证打开、关闭、遮罩、输入阻断和资源释放。
+- [x] 6.3 实现 Cocos UI 根与页面适配器，并用冒烟页面验证打开、关闭、遮罩、输入阻断和资源释放。（由 change `implement-fairygui-ui-adapter-v1` 完成：spike 门禁引入 FairyGUI Runtime 1.2.2（ADR-011）；`adapters/cocos/ui/CocosUiRoot.ts` 工厂封装 GRoot 获取与运行时初始化时机，`adapters/cocos/ui/FairyGuiPageAdapter.ts` 按 `UI_LAYER_ORDER` 建立七层 GRoot 容器、消费 modal 状态呈现遮罩并阻断输入、对齐 `UiPage` 生命周期；资源层落地 `fairygui-package` 加载与 `invalidatePackage` 重试入口，`CocosResourceProvider` 按 kind 分派 `UIPackage.loadPackage`/`removePackage`；AppRoot 经工厂接入且零 `fgui` 导入（task68 锁定）。Web Desktop 冒烟（headless Chrome + CDP）验证 UI 根初始化、package 加载、页面打开/关闭、遮罩呈现/移除、资源释放闭环与未加载 package no-op 全通过；5.x 收口公开入口（`createFairyGuiMask` 内部化、容器接缝收敛复用 `GRootLike`、补 `createPage` disposed 检查）、完整门禁 462 pass / 0 fail、strict 类型 0 diagnostics、边界检查通过、无需新增 ADR。遗留为后续集成项：导航 modal 自动同步（6.4-6.5 范围）、遮罩可见性增强、窗口 resize 同步与真实交互点击验证。）
 - [ ] 6.4 先编写输入测试，覆盖动作映射、上下文切换、按下/释放/值/时间戳和输入源替换。
 - [ ] 6.5 实现 Cocos 触摸、鼠标、键盘和可用手柄事件到类型化 action 的适配，验证 UI 与玩法上下文不会同时误响应。
 - [ ] 6.6 先编写音频服务测试，覆盖 music/sfx/ui 分组、音量、静音、切歌、作用域停止和可选模块降级。
