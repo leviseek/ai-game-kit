@@ -19,6 +19,12 @@ export interface LoadCoordinatorOptions {
 
 export interface LoadCoordinator {
   load<T = unknown>(key: ResourceKey): ResourceHandle<T>;
+
+  /**
+   * 使某资源键的终态缓存（ready/failed）失效，下次 load 触发新的底层加载。
+   * loading 中的 entry 不做驱逐，避免破坏并发去重共享语义；未知 key 为 no-op。
+   */
+  invalidate(key: ResourceKey): void;
 }
 
 interface LoadEntry {
@@ -173,5 +179,14 @@ export function createLoadCoordinator(
     return createHandle<T>(key, entry);
   }
 
-  return { load };
+  function invalidate(key: ResourceKey): void {
+    const entry = entries.get(serializeKey(key));
+
+    // 只驱逐终态 entry；loading 中的共享加载继续由已有等待者持有
+    if (entry !== undefined && entry.state !== "loading") {
+      entries.delete(serializeKey(key));
+    }
+  }
+
+  return { load, invalidate };
 }

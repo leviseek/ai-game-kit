@@ -50,6 +50,8 @@
 ## 5. SceneFlow 编排
 
 - [ ] 5.1 先编写 SceneFlow 测试，覆盖预加载、进度单调收敛、成功切换与资源所有权转移、失败保留当前场景、重试不残留、切换中重复请求被拒绝、作用域释放后未完成的预加载/切换被取消。
+  - 前置（3.3 记录的 5.x 必须项）：已落地 `invalidate` 能力——`LoadCoordinator.invalidate(key)`（仅驱逐 ready/failed 终态，loading 不动、未知 key no-op）+ 契约 `IResourceProvider.invalidate(bundle, path)`，经 `createResourceProvider` 透传（Cocos/内存适配器自动获得）。
+  - 验证：`load-coordinator.test.ts` 新增 4 个失效测试（ready/failed 失效重载、loading no-op、未知 key no-op），`resource-provider.test.ts` 新增 2 个契约行为测试（invalidate 后同 key 重载触发新 loader 返回新资源、缓存失败后 invalidate 可重试）+ 契约形态断言含 invalidate；`bun run test:foundation` 361 pass / 0 fail，`bun run test:foundation:types` 0 diagnostics。
 - [ ] 5.2 实现引擎无关的 `SceneFlow`（复用既有 FSM），使 5.1 的测试通过，失败后不残留半激活状态。
 
 ## 6. Cocos 场景适配器与冒烟验证

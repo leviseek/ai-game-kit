@@ -45,6 +45,10 @@ export function createResourceProvider(
       return registry.canUnload(bundle);
     },
 
+    invalidate(bundle: string, path: string) {
+      coordinator.invalidate(assetKey(bundle, path));
+    },
+
     dispose() {
       for (const scope of scopes) {
         scope.release();

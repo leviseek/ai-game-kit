@@ -66,6 +66,7 @@ describe("IResourceProvider contract shape", () => {
     expect(source).toMatch(/\bload\s*(?:<[^>]*>\s*)?\(/);
     expect(source).toMatch(/\bpreload\s*(?:<[^>]*>\s*)?\(/);
     expect(source).toMatch(/canUnload\s*\(/);
+    expect(source).toMatch(/invalidate\s*\(/);
     expect(source).toMatch(/\bdispose\s*\(/);
   });
 
@@ -143,6 +144,46 @@ describe("IResourceProvider as the only resource entry", () => {
     expect(failure.cause).toBe(original);
     expect(failure.message).toMatch(/missing\.txt/);
     expect(failure.message).toMatch(/common/);
+  });
+
+  test("invalidate drops the cached terminal state so reload triggers a fresh underlying load", async () => {
+    const { loader, calls, pending } = createControlledLoader();
+    const provider = createResourceProvider({ loader, unloadBundle: () => {} });
+
+    const first = provider.load("common", "config.json");
+    pending[0].resolve({ id: "cached" });
+    await first.done;
+    expect(first.resource).toEqual({ id: "cached" });
+
+    provider.invalidate("common", "config.json");
+
+    const second = provider.load("common", "config.json");
+    expect(calls).toHaveLength(2);
+
+    pending[1].resolve({ id: "fresh" });
+    await second.done;
+    expect(second.state).toBe("ready");
+    expect(second.resource).toEqual({ id: "fresh" });
+  });
+
+  test("invalidate enables retry after a cached failure", async () => {
+    const { loader, calls, pending } = createControlledLoader();
+    const provider = createResourceProvider({ loader, unloadBundle: () => {} });
+
+    const first = provider.load("common", "flaky.json");
+    pending[0].reject(new Error("first attempt failed"));
+    await first.done;
+    expect(first.state).toBe("failed");
+
+    provider.invalidate("common", "flaky.json");
+
+    const retry = provider.load("common", "flaky.json");
+    expect(calls).toHaveLength(2);
+
+    pending[1].resolve({ id: "recovered" });
+    await retry.done;
+    expect(retry.state).toBe("ready");
+    expect(retry.resource).toEqual({ id: "recovered" });
   });
 
   test("scopes own resources and release without premature unload", async () => {

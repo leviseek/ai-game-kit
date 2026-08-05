@@ -32,6 +32,12 @@ export interface IResourceProvider {
   /** 查询某 Bundle 当前是否已无任何作用域持有（可卸载）。 */
   canUnload(bundle: string): boolean;
 
+  /**
+   * 使某资源的终态缓存（ready/failed）失效，下次 load/preload 触发新的底层加载。
+   * 用于场景重试或卸载后同 key 重载需要新资源实例的场景。
+   */
+  invalidate(bundle: string, path: string): void;
+
   /** 释放本 Provider 创建的全部作用域。不使 Provider 失效，也不清除底层缓存终态。 */
   dispose(): void;
 }

@@ -193,6 +193,73 @@ describe("LoadCoordinator late waiter after terminal state", () => {
   });
 });
 
+describe("LoadCoordinator invalidation", () => {
+  test("invalidating a ready entry forces a fresh underlying load on the next request", async () => {
+    const { loader, calls, pending } = createControlledLoader();
+    const coordinator = createLoadCoordinator({ loader });
+    const key = assetKey("a.png");
+
+    const first = coordinator.load(key);
+    pending[0].resolve({ id: "cached" });
+    await first.done;
+    expect(first.resource).toEqual({ id: "cached" });
+
+    coordinator.invalidate(key);
+
+    const second = coordinator.load(key);
+    expect(calls).toHaveLength(2);
+
+    pending[1].resolve({ id: "fresh" });
+    await second.done;
+    expect(second.state).toBe("ready");
+    expect(second.resource).toEqual({ id: "fresh" });
+  });
+
+  test("invalidating a failed entry allows retrying the same key", async () => {
+    const { loader, pending } = createControlledLoader();
+    const coordinator = createLoadCoordinator({ loader });
+    const key = assetKey("flaky.txt");
+
+    const first = coordinator.load(key);
+    pending[0].reject(new Error("first attempt failed"));
+    await first.done;
+    expect(first.state).toBe("failed");
+
+    coordinator.invalidate(key);
+
+    const retry = coordinator.load(key);
+    pending[1].resolve({ id: "recovered" });
+    await retry.done;
+
+    expect(retry.state).toBe("ready");
+    expect(retry.resource).toEqual({ id: "recovered" });
+  });
+
+  test("invalidating a key still loading is a no-op and keeps the shared load", () => {
+    const { loader, calls, pending } = createControlledLoader();
+    const coordinator = createLoadCoordinator({ loader });
+    const key = assetKey("a.png");
+
+    const first = coordinator.load(key);
+    coordinator.invalidate(key);
+    const second = coordinator.load(key);
+
+    expect(calls).toHaveLength(1);
+    expect(first.state).toBe("loading");
+    expect(second.state).toBe("loading");
+    expect(second).not.toBe(first);
+    expect(pending).toHaveLength(1);
+  });
+
+  test("invalidating an unknown key is a no-op", () => {
+    const { loader, calls } = createControlledLoader();
+    const coordinator = createLoadCoordinator({ loader });
+
+    expect(() => coordinator.invalidate(assetKey("ghost.png"))).not.toThrow();
+    expect(calls).toHaveLength(0);
+  });
+});
+
 describe("LoadCoordinator shared underlying resource", () => {
   test("requests from different callers share the same underlying load result", async () => {
     const { loader, calls, pending } = createControlledLoader();
