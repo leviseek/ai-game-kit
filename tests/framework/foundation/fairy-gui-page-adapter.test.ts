@@ -42,6 +42,8 @@ interface FairyGuiPageAdapterOptions {
     packageName: string,
     resName: string,
   ) => FairyGuiViewLike;
+  /** 遮罩创建接缝：按 GRoot 尺寸创建模态遮罩对象（4.2 引入）。 */
+  readonly createMask?: (width: number, height: number) => unknown;
 }
 
 interface FairyGuiPageHandle {
@@ -367,15 +369,19 @@ describe("FairyGuiPageAdapter", () => {
     // 预置页面 + 遮罩
     expect(maskCalls).toHaveLength(2);
 
-    // 遮罩为全屏且可命中触摸，阻断下层输入
+    // 遮罩为全屏、可命中（opaque）且可触摸，阻断下层输入
     const mask = maskCalls[1].child as {
       width?: number;
       height?: number;
       touchable?: boolean;
+      opaque?: boolean;
     };
     expect(mask.width).toBe(recording.root.width);
     expect(mask.height).toBe(recording.root.height);
     expect(mask.touchable).toBe(true);
+    // 空 GGraph/GComponent 命中自身需 opaque=true（fairygui _hitTest `_opaque` 分支），
+    // 否则触摸穿透到下层页面，阻断失效
+    expect(mask.opaque).toBe(true);
 
     // 重复进入模态幂等：不重复添加遮罩
     adapter.setModal(true);
@@ -391,8 +397,38 @@ describe("FairyGuiPageAdapter", () => {
     expect(system?.numChildren).toBe(1);
   });
 
-  test("dispose removes containers from the root and leaves no residual mask", async () => {
+  test("default mask factory produces an opaque, touchable, full-screen graph", async () => {
     const { createFairyGuiPageAdapter } = await loadFactory();
+    const recording = createRecordingRoot();
+    const adapter = createFairyGuiPageAdapter({
+      root: recording.root,
+      // 缺省 createMask 用 GGraph：drawRect 半透明填充 + opaque + touchable
+      createView: () => ({ name: "view", dispose: () => {} }),
+    });
+
+    adapter.init();
+    adapter.setModal(true);
+
+    const maskCalls = findContainerCalls(recording.calls, "system", "addChild");
+    expect(maskCalls).toHaveLength(1);
+    const mask = maskCalls[0].child as {
+      width?: number;
+      height?: number;
+      touchable?: boolean;
+      opaque?: boolean;
+    };
+    expect(mask.width).toBe(recording.root.width);
+    expect(mask.height).toBe(recording.root.height);
+    expect(mask.touchable).toBe(true);
+    expect(mask.opaque).toBe(true);
+
+    adapter.setModal(false);
+    expect(
+      findContainerCalls(recording.calls, "system", "removeChild"),
+    ).toHaveLength(1);
+  });
+
+  test("dispose removes containers from the root and leaves no residual mask", async () => {    const { createFairyGuiPageAdapter } = await loadFactory();
     const recording = createRecordingRoot();
     const adapter = makeSimpleAdapter(createFairyGuiPageAdapter, recording);
 

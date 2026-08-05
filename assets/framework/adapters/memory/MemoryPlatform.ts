@@ -61,7 +61,10 @@ export class MemoryPlatform
     const listenerErrors: unknown[] = [];
 
     // 一个监听器抛错不中断其他监听器；错误聚合后抛出第一个。
-    for (const listener of [...this.visibilityListeners]) {
+    // Array.from 而非展开运算符：Creator 构建会把 `[...set]` 转译成
+    // `[].concat(set)`，concat 不展开 Set 导致遍历得到 Set 对象本身，
+    // listener(state) 报 "listener is not a function"（同 LoadCoordinator 修复）
+    for (const listener of Array.from(this.visibilityListeners)) {
       try {
         listener(state);
       } catch (error) {

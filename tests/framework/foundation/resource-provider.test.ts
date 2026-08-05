@@ -277,31 +277,90 @@ describe("memory resource adapter", () => {
 
 describe("Creator build-transpilation guard: Set/iterator spreads", () => {
   const projectRoot = resolve(import.meta.dir, "../../..");
-  const files = [
-    resolve(projectRoot, "assets/framework/core/resource/LoadCoordinator.ts"),
-    resolve(projectRoot, "assets/framework/core/resource/ResourceScope.ts"),
-    resolve(projectRoot, "assets/framework/adapters/cocos/ui/FairyGuiPageAdapter.ts"),
-  ];
+  const frameworkRoot = resolve(projectRoot, "assets/framework");
 
   // Creator 构建会把 `[...set]`/`[...iterable]` 转译为 `[].concat(iterable)`，
-  // concat 不展开 Set/迭代器导致运行期失败（LoadCoordinator waiters / ResourceScope
-  // 逆序释放 / FairyGuiPageAdapter 页面快照）。锁定必须使用 Array.from 显式转换，
-  // 防止被改回展开运算符（4.2 冒烟红期实测 `finish is not a function`）。
+  // concat 不展开 Set/迭代器导致运行期失败（LoadCoordinator waiters /
+  // ResourceScope 逆序释放 / FairyGuiPageAdapter 页面快照 / MemoryPlatform 监听器，
+  // 4.2 冒烟红期实测 `finish is not a function`）。必须使用 Array.from 显式转换。
+  // 全库扫描锁定：任何 `[...x]` 后接 `.values()`/`.keys()`/`.entries()` 或展开的
+  // 变量名指向 Set/Map 的场景都必须经 Array.from，禁止直接展开运算符。
+
+  const suspiciousPatterns: Array<RegExp> = [
+    /\[\.\.\.[A-Za-z_$][\w$]*\.values\(\)\]/,
+    /\[\.\.\.[A-Za-z_$][\w$]*\.keys\(\)\]/,
+    /\[\.\.\.[A-Za-z_$][\w$]*\.entries\(\)\]/,
+  ];
+
+  const knownSetLikeNames = ["waiters", "pages", "visibilityListeners"];
+
+  function collectTypeScriptFiles(directory: string): string[] {
+    return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+      const path = resolve(directory, entry.name);
+      if (entry.isDirectory()) {
+        return collectTypeScriptFiles(path);
+      }
+      return entry.isFile() && path.endsWith(".ts") ? [path] : [];
+    });
+  }
+
   test("LoadCoordinator snapshots waiters with Array.from", () => {
-    const source = readFileSync(files[0], "utf8");
+    const source = readFileSync(
+      resolve(frameworkRoot, "core/resource/LoadCoordinator.ts"),
+      "utf8",
+    );
     expect(source).toMatch(/Array\.from\(entry\.waiters\)/);
     expect(source).not.toMatch(/\[\.\.\.entry\.waiters\]/);
   });
 
   test("ResourceScope iterates held values with Array.from", () => {
-    const source = readFileSync(files[1], "utf8");
+    const source = readFileSync(
+      resolve(frameworkRoot, "core/resource/ResourceScope.ts"),
+      "utf8",
+    );
     expect(source).toMatch(/Array\.from\(held\.values\(\)\)/);
     expect(source).not.toMatch(/\[\.\.\.held\.values\(\)\]/);
   });
 
   test("FairyGuiPageAdapter snapshots pages with Array.from", () => {
-    const source = readFileSync(files[2], "utf8");
+    const source = readFileSync(
+      resolve(frameworkRoot, "adapters/cocos/ui/FairyGuiPageAdapter.ts"),
+      "utf8",
+    );
     expect(source).toMatch(/Array\.from\(pages\)/);
     expect(source).not.toMatch(/\[\.\.\.pages\]/);
+  });
+
+  test("MemoryPlatform iterates visibility listeners with Array.from", () => {
+    const source = readFileSync(
+      resolve(frameworkRoot, "adapters/memory/MemoryPlatform.ts"),
+      "utf8",
+    );
+    expect(source).toMatch(/Array\.from\(this\.visibilityListeners\)/);
+    expect(source).not.toMatch(/\[\.\.\.this\.visibilityListeners\]/);
+  });
+
+  test("no framework file spreads a Set/Map iterator with the spread operator", () => {
+    const offenders: Array<{ file: string; line: string }> = [];
+
+    for (const file of collectTypeScriptFiles(frameworkRoot)) {
+      const lines = readFileSync(file, "utf8").split("\n");
+      for (let index = 0; index < lines.length; index += 1) {
+        const line = lines[index];
+        if (suspiciousPatterns.some((pattern) => pattern.test(line))) {
+          offenders.push({ file, line: line.trim() });
+        }
+        // 展开的变量名若命中已知 Set/Map 名，视为危险展开
+        const expanded = line.match(/\[\.\.\.([A-Za-z_$][\w$]*)\]/);
+        if (
+          expanded !== null &&
+          knownSetLikeNames.includes(expanded[1])
+        ) {
+          offenders.push({ file, line: line.trim() });
+        }
+      }
+    }
+
+    expect(offenders).toEqual([]);
   });
 });

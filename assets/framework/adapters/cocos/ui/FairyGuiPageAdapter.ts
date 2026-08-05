@@ -40,6 +40,24 @@ export interface FairyGuiPageAdapterOptions {
     packageName: string,
     resName: string,
   ) => FairyGuiViewLike;
+  /**
+   * 遮罩创建接缝：按 GRoot 尺寸创建模态遮罩对象。缺省用 GComponent 并设
+   * `opaque`/`touchable` 保证命中阻断；测试可注入记录型 mock 观察遮罩属性。
+   */
+  readonly createMask?: (width: number, height: number) => unknown;
+}
+
+/** 缺省模态遮罩工厂：GComponent + opaque/touchable，命中阻断下层页面输入。 */
+export function createFairyGuiMask(width: number, height: number): unknown {
+  const mask = new GComponent();
+  mask.name = "modal-mask";
+  // 空 GComponent 命中自身需 opaque=true（fairygui _hitTest 的 `_opaque` 分支），
+  // 否则触摸穿透到下层页面、阻断失效；touchable 放行命中回调
+  // （GComponent 类型声明未暴露 opaque，运行时存在，按接缝断言）
+  (mask as unknown as { opaque: boolean }).opaque = true;
+  mask.touchable = true;
+  mask.setSize(width, height);
+  return mask;
 }
 
 /**
@@ -108,8 +126,9 @@ export function createFairyGuiPageAdapter(
   const containers = new Map<UiLayer, FairyGuiContainerLike>();
   const pages = new Set<FairyGuiPageHandle>();
   const handleStates = new WeakMap<FairyGuiPageHandle, HandleState>();
-  // 遮罩节点：进入模态时挂到 system 层容器，收敛时整体移除
-  let mask: FairyGuiContainerLike | undefined;
+  // 遮罩节点：进入模态时挂到 system 层容器，收敛时整体移除。
+  // 遮罩是 GObject（GGraph），非容器接缝，仅作 system 容器子对象引用
+  let mask: unknown | undefined;
   let initialized = false;
   let disposed = false;
 
@@ -263,12 +282,11 @@ export function createFairyGuiPageAdapter(
         return;
       }
       if (modal && mask === undefined) {
-        // 遮罩节点挂到最高层 system 容器，全屏尺寸对齐 GRoot、触摸可命中，
-        // 阻断下层页面输入；收敛时精确移除，避免误删 system 层其它页面
-        const created = new GComponent();
-        created.name = "modal-mask";
-        created.setSize(options.root.width, options.root.height);
-        created.touchable = true;
+        // 遮罩节点挂到最高层 system 容器，全屏尺寸对齐 GRoot、可命中（opaque）
+        // 且可触摸（touchable），阻断下层页面输入；收敛时精确移除，避免误删
+        // system 层其它页面
+        const createMask = options.createMask ?? createFairyGuiMask;
+        const created = createMask(options.root.width, options.root.height);
         mask = created;
         system.addChild(created);
       } else if (!modal && mask !== undefined) {

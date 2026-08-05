@@ -3,13 +3,13 @@
  *
  * bun 的 mock.module 在同一进程内全局共享且首个注册生效（仓库多处以实测为准），
  * 因此所有 mock 了 fairygui-cc 的测试文件必须注册相同内容，避免某个文件先注册
- * 了缺符号的桩导致其它文件在全量运行时解析失败。本 fixture 统一四类符号：
+ * 了缺符号的桩导致其它文件在全量运行时解析失败。本 fixture 统一符号：
  * - GRoot：忠实模拟真实语义（inst 未 create 时抛错、create 返回实例）
  * - UIPackage：静态注册表 API 桩
- * - GComponent：可实例化容器类（name/setSize/touchable 可写，对齐 3.2 遮罩语义）
+ * - GComponent：可实例化容器类（name/setSize/touchable/opaque 可写，对齐 4.2 遮罩语义）
  *
  * 测试文件只依赖本 fixture 的符号存在性与形态，不依赖具体行为；真实 GRoot/
- * UIPackage 行为由注入的接缝 mock（如 getRoot / uiPackage / createView）承载。
+ * UIPackage 行为由注入的接缝 mock（如 getRoot / uiPackage / createView / createMask）承载。
  */
 export function createFairyGuiMock(): {
   GRoot: {
@@ -96,6 +96,7 @@ export function createFairyGuiMock(): {
       width = 0;
       height = 0;
       touchable = false;
+      opaque = false;
       setSize(width: number, height: number) {
         this.width = width;
         this.height = height;
@@ -109,6 +110,7 @@ export interface FairyGuiGComponentMock {
   width: number;
   height: number;
   touchable: boolean;
+  opaque: boolean;
   setSize(width: number, height: number): void;
 }
 
