@@ -495,6 +495,14 @@ describe("framework public boundary", () => {
       "TimeSource",
       "createResourceProvider",
       "createSceneFlow",
+      "createUiNavigator",
+      "DuplicateOpenPolicy",
+      "UiLayer",
+      "UiNavigator",
+      "UiNavigatorOptions",
+      "UiPage",
+      "UiResult",
+      "UI_LAYER_ORDER",
     ].sort();
 
     expect(extractRootExportNames(source)).toEqual(expectedRootExports);
@@ -843,8 +851,35 @@ describe("framework public boundary", () => {
     }
   });
 
-  test("keeps platform, time and scheduling layers free of service locators and global singletons", () => {
-    const newLayerRoots = [
+  test.skipIf(
+    !existsSync(resolve(frameworkRoot, "contracts/ui")),
+  )("keeps ui contracts free of core implementations and Cocos", () => {
+    const contractsUiRoot = resolve(frameworkRoot, "contracts/ui");
+
+    for (const file of collectTypeScriptFiles(contractsUiRoot)) {
+      const source = stripComments(readFileSync(file, "utf8"));
+      expect(source).not.toMatch(/from\s*["'][^"']*core\/ui/);
+      expect(source).not.toMatch(/from\s*["']cc(?:["']|\/)/);
+    }
+  });
+
+  test("keeps the ui core layer engine-agnostic and free of service locators", () => {
+    const coreUiRoot = resolve(frameworkRoot, "core/ui");
+    if (!existsSync(coreUiRoot)) {
+      return;
+    }
+
+    const sources = collectTypeScriptFiles(coreUiRoot)
+      .map((file) => stripComments(readFileSync(file, "utf8")))
+      .join("\n");
+
+    expect(sources).not.toMatch(/from\s*["']cc(?:["']|\/)/);
+    expect(sources).not.toMatch(
+      /\b(?:getInstance|singleton|ServiceLocator|globalThis|window)\b/,
+    );
+  });
+
+  test("keeps platform, time and scheduling layers free of service locators and global singletons", () => {    const newLayerRoots = [
       resolve(frameworkRoot, "contracts/platform"),
       resolve(frameworkRoot, "contracts/time"),
       resolve(frameworkRoot, "core/time"),

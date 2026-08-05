@@ -82,3 +82,14 @@ export type {
   SceneSwitchResult,
 } from "./core/scene/SceneFlow";
 export { createSceneFlow } from "./core/scene/SceneFlow";
+
+export type {
+  DuplicateOpenPolicy,
+  UiLayer,
+  UiPage,
+  UiResult,
+} from "./contracts/ui/Navigation";
+export { UI_LAYER_ORDER } from "./contracts/ui/Navigation";
+
+export type { UiNavigator, UiNavigatorOptions } from "./core/ui/UiNavigator";
+export { createUiNavigator } from "./core/ui/UiNavigator";
