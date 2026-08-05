@@ -97,5 +97,11 @@
   - `assets/boot/AppRoot.ts` 的 SceneFlow 导入改走根入口；其余深层导入（`createApplicationContext`/`ConsoleLogger`/`CocosApplicationAdapter`/两个 Cocos 工厂）为组合根特许，属设计内状态。
   - 依赖检查证明：`public-boundary.test.ts` 全量 import 扫描通过（`keeps all current asset imports within architecture boundaries`），`expectedRootExports` 白名单加入 6 个场景符号，`task68-scope-review` token 断言仍成立。
   - 验证：`bun run test:foundation` 385 pass / 0 fail，`bun run test:foundation:types` 0 diagnostics。
-- [ ] 7.2 ADR 检查：本次实现是否产生新的长期架构决策；如有，按 `doc/decisions/ADR-NNN-<slug>.md` 创建 ADR，如无则明确记录无需 ADR。
+- [x] 7.2 ADR 检查：本次实现是否产生新的长期架构决策；如有，按 `doc/decisions/ADR-NNN-<slug>.md` 创建 ADR，如无则明确记录无需 ADR。
+  - **产生新的长期架构决策，已创建 `doc/decisions/ADR-009-resource-ownership-and-scene-flow.md`**（标题 Resource Ownership, Coordination and Scene Transition）。
+  - ADR-009 记录 4 项决策：(1) 资源加载协调语义（键去重共享加载 + 终态缓存 + `invalidate` 只驱逐 ready/failed、loading 不动）；(2) 资源作用域所有权模型（持有列表 + 全局引用计数 + Bundle 引用归零且无进行中加载才卸载 + 所有权转移先增后减）；(3) `IResourceProvider` 契约边界（六方法形态 + loader/unloadBundle 引擎接缝，ADR-004 的契约落地）；(4) SceneFlow 场景流转编排（五状态集完整转移、失败保留当前场景、重试重走流程、切换中拒绝重复请求、preload 结果跨 switchTo 复用）。
+  - 与既有 ADR 关系：唯一入口与 Bundle 划分属 ADR-004 落地（不重复成文）；复用 FSM 属 ADR-008 落地；`kind` 维度为 FairyGUI 键空间预留（呼应 ADR-002）。
+  - 判断依据（对齐 ADR-006 背景逻辑）：契约面 + 行为预期——未来 UI/音频/存档重构若不知终态缓存、invalidate、失败保留、preload 复用语义，可能无感改变行为。
+  - 仅 tasks 记录、不成 ADR 的项：AppRoot 持久根持有 SceneFlow（ADR-001 装配细节）、单向冒烟约定与已知限制、根入口白名单具体导出项、内存适配器、适配器 forbiddenInternals。
+  - 审查：ai-sensei 复核决策清单后确认需创建 ADR-009，并审查通过（含 3 处轻微修正：补全 preloadDone->idle 转移、限定 invalidate 于非复用路径、协调器缓存措辞对齐）。
 - [ ] 7.3 归档时同步总计划 `create-game-framework-v1` 第 5 节任务的完成状态与证据。
