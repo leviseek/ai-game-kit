@@ -860,15 +860,34 @@ describe("framework public boundary", () => {
 
   test("locks fairygui-cc imports to the cocos adapter layer", () => {
     const cocosAdapterRoot = resolve(frameworkRoot, "adapters/cocos");
+    const thirdPartyFairyGuiRoot = resolve(
+      assetsRoot,
+      "third-party/fairygui",
+    );
 
     const offenders = collectTypeScriptFiles(frameworkRoot).filter((file) => {
       if (isWithin(file, cocosAdapterRoot)) {
         return false;
       }
 
-      return /from\s*["']fairygui(?:-cc)?(?:["']|\/)/.test(
-        stripComments(readFileSync(file, "utf8")),
-      );
+      const specifiers = extractModuleSpecifiers(readFileSync(file, "utf8"));
+      const importsFairyGui = specifiers.some((specifier) => {
+        if (
+          specifier === "fairygui-cc" ||
+          specifier.startsWith("fairygui-cc/")
+        ) {
+          return true;
+        }
+
+        // 相对/别名路径直指 vendor 目录同样绕过白名单，一并锁定
+        const target = resolveImportTarget(file, specifier);
+        return (
+          target !== undefined &&
+          isWithin(target, thirdPartyFairyGuiRoot)
+        );
+      });
+
+      return importsFairyGui;
     });
 
     expect(offenders).toEqual([]);

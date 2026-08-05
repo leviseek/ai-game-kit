@@ -94,3 +94,5 @@ Adapter 订阅/轮询导航 `modal` 状态（或经导航回调）：进入阻�
 
 - FairyGUI package 与单文件 handle 在协调器中的具体键空间复用方式：本 Change 决定 package 经资源层扩展接入，但 package 注册/依赖排序的精确语义（FairyGUI 全局注册表移除时机）需在 spike 确认 API 后细化，不改变 spec 与任务拆解。
 - 遮罩节点由谁创建（Adapter 自建 vs 预置在 package 中）：spike 确认 GRoot 能力后定，属于实现细节，不改变契约。
+- package 键空间的失效/重载入口：`IResourceProvider.invalidate` 当前固定 `kind: "asset"`，`loadPackage` 失败后无公共 API 清缓存或重试。协调器底层已支持任意 key，缺口仅在 Provider 入口，随 task 3.3 落地 `invalidatePackage` 或按 kind 泛化 `invalidate`。
+- Cocos loader 的 kind 分派：`createCocosLoader` 当前只按 bundle+path 当普通 asset 加载，task 3.3 需让 loader 按 `key.kind === "fairygui-package"` 分派到 `UIPackage.addPackage`，并在 `unloadBundle` 卸载路径实现 `removePackage`；同 bundle 多 package 的注册/卸载顺序与跨 bundle 依赖排序需在 task 3.3 细化。
