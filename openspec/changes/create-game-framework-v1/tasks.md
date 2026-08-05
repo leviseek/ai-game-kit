@@ -41,13 +41,13 @@
 
 ## 5. 资源与场景流转
 
-- [ ] 5.1 先编写资源协调器测试，覆盖并发加载去重、加载失败传播、取消等待者和不同作用域共享底层资源。
-- [ ] 5.2 实现引擎无关的资源 handle、资源作用域和加载协调器，使 5.1 的测试通过。
-- [ ] 5.3 先编写资源释放测试，覆盖页面/场景/应用作用域逆序释放、仍被引用资源保留和 Bundle 可卸载判断。
-- [ ] 5.4 实现 Cocos Asset Bundle 适配器，使 5.3 的测试通过，并保留底层错误 cause 和资源标识。
-- [ ] 5.5 通过 Cocos Creator 建立最小 `common`、`ui`、`audio` 和游戏内容 Bundle，确认 `resources` 只保留启动所需资源。
-- [ ] 5.6 先编写 SceneFlow 测试，覆盖预加载、进度、成功切换、失败保留当前场景、重试和场景作用域释放。
-- [ ] 5.7 实现场景流转编排和 Cocos 场景适配器，使 5.6 的测试通过，并完成 Web Desktop 场景切换冒烟验证。
+- [x] 5.1 先编写资源协调器测试，覆盖并发加载去重、加载失败传播、取消等待者和不同作用域共享底层资源。（由 change `implement-resource-and-scene-flow-v1` 1.x 完成：`load-coordinator.test.ts` 覆盖并发去重、失败传播、取消隔离、终态缓存与 `invalidate` 失效，`resource-provider.test.ts` 覆盖契约行为与内存适配器。）
+- [x] 5.2 实现引擎无关的资源 handle、资源作用域和加载协调器，使 5.1 的测试通过。（由 change `implement-resource-and-scene-flow-v1` 1.2/2.2 完成：`contracts/resource/Resource.ts`、`core/resource/{LoadCoordinator,ResourceScope,ResourceProvider}.ts`，含 `invalidate` 终态失效语义。）
+- [x] 5.3 先编写资源释放测试，覆盖页面/场景/应用作用域逆序释放、仍被引用资源保留和 Bundle 可卸载判断。（由 change `implement-resource-and-scene-flow-v1` 2.1/2.3 完成：`resource-scope.test.ts` 覆盖独立作用域逆序释放、共享引用保留、引用归零只卸载一次、重复释放幂等、释放取消进行中加载、所有权转移先增后减。）
+- [x] 5.4 实现 Cocos Asset Bundle 适配器，使 5.3 的测试通过，并保留底层错误 cause 和资源标识。（由 change `implement-resource-and-scene-flow-v1` 3.2/3.3 完成：`adapters/cocos/resource/CocosResourceProvider.ts` 映射 `loadBundle`/`bundle.load`/`releaseAll`/`removeBundle`，失败保留 cause 与资源标识，未加载 Bundle 卸载为 no-op；契约形态由 `resource-provider.test.ts` 锁定。）
+- [x] 5.5 通过 Cocos Creator 建立最小 `common`、`ui`、`audio` 和游戏内容 Bundle，确认 `resources` 只保留启动所需资源。（由 change `implement-resource-and-scene-flow-v1` 4.x 完成：四个 Bundle 目录含 `placeholder.json` 且 `isBundle: true`，`resources` 为空目录；编辑器 asset-db 导入与构建脚本编译通过。）
+- [x] 5.6 先编写 SceneFlow 测试，覆盖预加载、进度、成功切换、失败保留当前场景、重试和场景作用域释放。（由 change `implement-resource-and-scene-flow-v1` 5.1 完成：`scene-flow.test.ts` 覆盖预加载、进度单调收敛、成功切换与所有权转移、失败保留、重试、重复切换拒绝、dispose 取消与释放，共 20 个测试。）
+- [x] 5.7 实现场景流转编排和 Cocos 场景适配器，使 5.6 的测试通过，并完成 Web Desktop 场景切换冒烟验证。（由 change `implement-resource-and-scene-flow-v1` 5.2/6.x 完成：`core/scene/SceneFlow.ts` 复用 FSM，`adapters/cocos/scene/CocosSceneAdapter.ts` 薄映射 `cc.director.loadScene`；6.2 完成 Web Desktop Preview 冒烟——预加载、成功切换、失败保留×2、重试、资源释放闭环与未加载 Bundle no-op 全部通过，headless Chrome + CDP 驱动采集证据；7.1 收口 SceneFlow 进根入口白名单。）
 
 ## 6. UI、输入与音频能力
 

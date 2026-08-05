@@ -108,4 +108,5 @@
     - 修复项：`ResourceScope.retain` release 后防护（避免已释放作用域被复活引泄漏）+ 契约注释；`AppRoot.onDestroy` 追加 `resourceProvider.dispose()`（避免 scopes Set 无界增长）；`SceneFlow.dispose` 注释补"同时释放当前激活场景作用域"与 transitioning 竞态说明；`AppRoot` 的 `IResourceProvider` 改根入口导入（对齐 7.1 收口）；`IResourceProvider.canUnload` 契约注释补"true 仅表示无框架侧持有，引擎侧卸载以适配器观察为准"。
     - 测试加固：transitioning 中途 dispose 竞态（激活迟到 resolve 不拉回 active）；preload 重复被跳过 / 空 paths / failed 态 preload / active 态自切换 4 个组合用例；release 后 retain no-op 用例。
     - 语义记录：ADR-009 决策 4 补"单 FSM 下 preload 与 switchTo 互斥"取舍；失败路径进度收敛到 1 的语义由 spec 场景覆盖（spec 只要求"失败后收敛到终态"，progress=1 与终态一致）。
-- [ ] 7.3 归档时同步总计划 `create-game-framework-v1` 第 5 节任务的完成状态与证据。
+- [x] 7.3 归档时同步总计划 `create-game-framework-v1` 第 5 节任务的完成状态与证据。
+  - 已同步 `openspec/changes/create-game-framework-v1/tasks.md` 第 5 节 5.1–5.7 全部标记完成，并逐条记录对应 change 任务与证据（资源协调器/作用域/Bundle 适配器/Bundle 划分/SceneFlow/冒烟验证）。
