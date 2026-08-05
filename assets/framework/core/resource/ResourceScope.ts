@@ -109,7 +109,13 @@ export function createResourceScopeRegistry(
     }
 
     counts.delete(keyId);
-    bundleKeys.get(key.bundle)?.delete(keyId);
+
+    const bundleKeysForBundle = bundleKeys.get(key.bundle);
+    bundleKeysForBundle?.delete(keyId);
+
+    if (bundleKeysForBundle !== undefined && bundleKeysForBundle.size === 0) {
+      bundleKeys.delete(key.bundle);
+    }
 
     return maybeUnloadIfNotOwned(key.bundle);
   }
@@ -142,9 +148,8 @@ export function createResourceScopeRegistry(
         entry.counted = true;
       }
 
-      if (maybeUnloadIfNotOwned(entry.handle.key.bundle) !== undefined) {
-        // 异步回调中的卸载失败无法向调用方可靠上报，这里隔离；Adapter 应自行防御引擎异常
-      }
+      // 异步回调中的卸载失败无法向调用方可靠上报，这里隔离；Adapter 应自行防御引擎异常
+      maybeUnloadIfNotOwned(entry.handle.key.bundle);
     }
 
     return {

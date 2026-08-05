@@ -32,6 +32,6 @@ export interface IResourceProvider {
   /** 查询某 Bundle 当前是否已无任何作用域持有（可卸载）。 */
   canUnload(bundle: string): boolean;
 
-  /** 释放本 Provider 创建的全部作用域。 */
+  /** 释放本 Provider 创建的全部作用域。不使 Provider 失效，也不清除底层缓存终态。 */
   dispose(): void;
 }

@@ -54,6 +54,7 @@ interface CocosMockState {
   readonly assetLoads: readonly Array<{ bundle: string; path: string }>;
   readonly releaseAllCalls: readonly string[];
   readonly removeBundleCalls: readonly string[];
+  readonly unloadSequence: readonly string[];
 }
 
 interface CocosMock {
@@ -70,6 +71,7 @@ function createCocosMock(): CocosMock {
   const assetLoads: Array<{ bundle: string; path: string }> = [];
   const releaseAllCalls: string[] = [];
   const removeBundleCalls: string[] = [];
+  const unloadSequence: string[] = [];
   const loadedBundles = new Map<string, CocosBundleLike>();
   const pendingBundleCallbacks: Array<
     (err: Error | null, bundle?: CocosBundleLike) => void
@@ -87,6 +89,7 @@ function createCocosMock(): CocosMock {
       },
       releaseAll() {
         releaseAllCalls.push(name);
+        unloadSequence.push("releaseAll");
       },
     };
   }
@@ -101,6 +104,7 @@ function createCocosMock(): CocosMock {
     },
     removeBundle(bundle) {
       removeBundleCalls.push(bundle.name);
+      unloadSequence.push("removeBundle");
       loadedBundles.delete(bundle.name);
     },
   };
@@ -112,6 +116,7 @@ function createCocosMock(): CocosMock {
       assetLoads,
       releaseAllCalls,
       removeBundleCalls,
+      unloadSequence,
     },
     resolveBundle(name) {
       const bundle = makeBundle(name);
@@ -210,6 +215,8 @@ describe("CocosResourceProvider", () => {
     expect(provider.canUnload("common")).toBe(true);
     expect(cocos.state.releaseAllCalls).toEqual(["common"]);
     expect(cocos.state.removeBundleCalls).toEqual(["common"]);
+    // 契约顺序：先 releaseAll 释放资产，再 removeBundle 移除 Bundle
+    expect(cocos.state.unloadSequence).toEqual(["releaseAll", "removeBundle"]);
   });
 
   test("unloading a bundle that was never loaded is a no-op", async () => {
