@@ -15,6 +15,8 @@ mock.module("fairygui-cc", () => createFairyGuiMock());
 // ---- 接缝类型（task 3.2 扩展 CocosUiRoot.GRootLike 时的对齐目标）----
 interface FairyGuiContainerLike {
   name: string;
+  readonly width: number;
+  readonly height: number;
   addChild(child: unknown): unknown;
   removeChild(child: unknown, dispose?: boolean): unknown;
   removeChildren(beginIndex?: number, endIndex?: number, dispose?: boolean): void;
@@ -113,6 +115,8 @@ function createRecordingRoot(): {
     const children: unknown[] = [];
     return {
       name,
+      width: 1280,
+      height: 720,
       addChild(child) {
         children.push(child);
         calls.push({ container: name, action: "addChild", child });
@@ -145,6 +149,8 @@ function createRecordingRoot(): {
 
   const root: FairyGuiRootLike = {
     name: "GRoot",
+    width: 1280,
+    height: 720,
     addChild(child) {
       calls.push({ container: "GRoot", action: "addChild", child });
       // 返回记录型容器包装：adapter 将 addChild 的返回值作为该层容器持有，
@@ -360,6 +366,16 @@ describe("FairyGuiPageAdapter", () => {
     const maskCalls = findContainerCalls(recording.calls, "system", "addChild");
     // 预置页面 + 遮罩
     expect(maskCalls).toHaveLength(2);
+
+    // 遮罩为全屏且可命中触摸，阻断下层输入
+    const mask = maskCalls[1].child as {
+      width?: number;
+      height?: number;
+      touchable?: boolean;
+    };
+    expect(mask.width).toBe(recording.root.width);
+    expect(mask.height).toBe(recording.root.height);
+    expect(mask.touchable).toBe(true);
 
     // 重复进入模态幂等：不重复添加遮罩
     adapter.setModal(true);

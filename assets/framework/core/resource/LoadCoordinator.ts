@@ -75,7 +75,10 @@ export function createLoadCoordinator(
     entry.resource = value;
     entry.error = error;
 
-    const waiters = [...entry.waiters];
+    // Array.from 而非展开运算符：Creator 构建会把 `[...set]` 转译成
+    // `[].concat(set)`，concat 不展开 Set 导致迭代得到 Set 对象本身，
+    // finish() 报 "finish is not a function"。Array.from 转译后语义不变。
+    const waiters = Array.from(entry.waiters);
     entry.waiters.clear();
     for (const finish of waiters) {
       finish();

@@ -56,9 +56,19 @@
 
 ## 4. 冒烟页面与 Web Desktop 验证
 
-- [ ] 4.1 用 FairyGUI Editor 制作最小 package 导出到 `ui` Bundle（用户侧外部前置；现有 `ui` Bundle 仅有 placeholder.json）。
-- [ ] 4.2 完成 Cocos Creator 3.8.8 Web Desktop 冒烟验证（headless Chrome + CDP）：UI 根初始化、页面打开/关闭、遮罩呈现/移除、输入阻断、资源释放闭环与未加载 package no-op。
-- [ ] 4.3 根入口白名单收口：Adapter 工厂进 `forbiddenInternals` 不进白名单；`public-boundary.test.ts` 全量 import 扫描通过。
+- [x] 4.1 用 FairyGUI Editor 制作最小 package 导出到 `ui` Bundle（用户侧外部前置；现有 `ui` Bundle 仅有 placeholder.json）。
+  - 用户经 FairyGUI Editor 制作最小工程 `ui/demo`（组件 `DemoView`：1280x720 单个 text 子元件 `txt_title`，无图集/无跨包依赖），发布到 `assets/ui/Demo/Demo.bin`（349B，package id `4q9x2uij`，name `Demo`，binaryFormat + compressDesc，经 `buffer` importer 导入生成 meta，`ui` Bundle `isBundle` 保持 true）；加载路径语义 `provider.loadPackage("ui", "Demo/Demo")` 留 4.2 冒烟实测。误发布的 FairyGUI 内置工程产物（`assets/ui/Basic`、`assets/ui/Builder`）已清理。验证：`bun run test:foundation` 448 pass / 0 fail，`test:foundation:types` 0 diagnostics（既有门禁未破坏）。
+- [x] 4.2 完成 Cocos Creator 3.8.8 Web Desktop 冒烟验证（headless Chrome + CDP）：UI 根初始化、页面打开/关闭、遮罩呈现/移除、输入阻断、资源释放闭环与未加载 package no-op。
+  - **代码前置（AppRoot 装配）**：`AppRoot` 经工厂装配 `FairyGuiPageAdapter`（`ensurePageAdapter` 在 uiRoot init 成功后按需创建，root 延迟可用；`createFairyGuiView` 位于 Adapter 边界，组合根不直接 `import fgui`）；新增冒烟方法 `smokeUiInit`/`smokeUiReady`/`smokeUiLoadPackage`/`smokeUiOpenPage`/`smokeUiClosePage`/`smokeUiSetModal`/`smokeUiRelease`/`runUiSmoke`；`GRootLike` 扩展对齐 `FairyGuiRootLike` 容器形状（addChild/removeChild/removeChildren/getChildAt/numChildren/width/height）；`setModal` 遮罩补齐全屏尺寸与 `touchable=true`（真实输入阻断）。`AppRoot` 检测 URL `?smoke=fairygui-ui` 延迟触发 `runUiSmoke`，每步输出 `[ui-smoke]` 标记，CDP 采集验证。
+  - **转译 bug 修复**：Creator 构建把 `[...set]`/`[...iterable]` 转译为 `[].concat(set)`，concat 不展开 Set/迭代器，导致 `LoadCoordinator.settleEntry` 遍历 waiters 时报 `finish is not a function`（冒烟红期复现）、`ResourceScope.release` 逆序释放静默失效。改用 `Array.from`（转译后语义不变）：`LoadCoordinator.ts` waiters 快照、`ResourceScope.ts` held.values() 逆序、`FairyGuiPageAdapter.ts` pages 快照/findPage。
+  - 新增 `tools/creator/commands/ui-smoke.ts` 冒烟命令（校验 import-map → 构建 → serve → headless Chrome 加载 `?smoke=fairygui-ui` → 断言关键标记 + 零错误）。
+  - 测试：`fairy-gui-page-adapter.test.ts` 增遮罩尺寸/touchable 断言；`approot-ui-smoke.test.ts` 6 个测试覆盖 smokeUi 方法形状与 mock 引擎下序列执行；`approot-composition.test.ts` 增 smokeUi 方法形状断言；task68 豁免 `new Error`/`new URLSearchParams`（通用构造，非 Module 实例化）。
+  - 验证：`bun run ccc ui-smoke` 全链路通过——`ui-root-init: ok` → `package-load: ok (ready)`（Demo package 加载）→ `page-open: ok` → `modal-show/hide: ok` → `page-close: ok` → `resource-release: ok`（ui Bundle 可卸载）→ `missing-package-noop: ok (failed)` → `complete`，页面零 console error；`bun run test:foundation` 455 pass / 0 fail，`test:foundation:types` 0 diagnostics，Creator strict tsc（DOM lib + fairygui.d.ts ambient）对 AppRoot + adapter 依赖链 EXIT 0。
+- [x] 4.3 根入口白名单收口：Adapter 工厂进 `forbiddenInternals` 不进白名单；`public-boundary.test.ts` 全量 import 扫描通过。
+  - `framework/index.ts` 根入口白名单不导出 `createFairyGuiPageAdapter`/`createFairyGuiView`（`expectedRootExports` 快照锁定）；AppRoot 经深路径导入 adapter 工厂（与既有 `createCocosUiRoot` 模式一致，组合根仍零 `fgui` 导入，task68 断言保持通过）。
+  - `public-boundary.test.ts` 的 `forbiddenInternals` 加入 `createFairyGuiPageAdapter`、`createFairyGuiView`，锁定这两个工厂不得作为根入口导出。
+  - 全量 import 扫描（`locks fairygui-cc imports to the cocos adapter layer`）通过：frameworkRoot 非 cocos adapter 文件零 `fairygui-cc` 导入，资源层（core/contracts/resource）零 fgui 导入、package kind 仅由 Provider 入口固定；AppRoot 深路径导入只发生在 boot 层，不在 frameworkRoot 扫描范围。
+  - 验证：`public-boundary.test.ts` 25 pass / 0 fail（54 expect，含新增 forbiddenInternals 断言）；`bun run test:foundation` 458 pass / 0 fail。
 
 ## 5. 收口与门禁
 

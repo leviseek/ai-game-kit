@@ -192,7 +192,10 @@ export function createResourceScopeRegistry(
         let firstError: unknown;
 
         // 按持有顺序逆序释放，对齐"逆序释放其自身持有项"的契约
-        for (const entry of [...held.values()].reverse()) {
+        // Array.from 而非展开运算符：Creator 构建会把 `[...iterable]` 转译成
+        // `[].concat(iterable)`，concat 不展开迭代器/Set 导致迭代得到迭代器本身，
+        // 资源释放会静默失效。Array.from 转译后语义不变。
+        for (const entry of Array.from(held.values()).reverse()) {
           if (entry.counted) {
             const error = releaseReferenced(entry.handle.key);
 

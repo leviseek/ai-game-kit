@@ -523,6 +523,8 @@ describe("framework public boundary", () => {
       "createCocosResourceProvider",
       "createCocosSceneAdapter",
       "createCocosUiRoot",
+      "createFairyGuiPageAdapter",
+      "createFairyGuiView",
     ];
 
     for (const name of forbiddenInternals) {

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<packageDescription id="4q9x2uij">
+  <resources>
+    <component id="hz2u0" name="DemoView.xml" path="/" exported="true"/>
+    <image id="fmn11" name="background.png" path="/img/" scale="9grid" scale9grid="11,8,192,115" qualityOption="source" duplicatePadding="true"/>
+  </resources>
+  <publish name=""/>
+</packageDescription>

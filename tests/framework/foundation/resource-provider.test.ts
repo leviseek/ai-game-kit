@@ -274,3 +274,34 @@ describe("memory resource adapter", () => {
     expect(unloaded).toEqual(["common"]);
   });
 });
+
+describe("Creator build-transpilation guard: Set/iterator spreads", () => {
+  const projectRoot = resolve(import.meta.dir, "../../..");
+  const files = [
+    resolve(projectRoot, "assets/framework/core/resource/LoadCoordinator.ts"),
+    resolve(projectRoot, "assets/framework/core/resource/ResourceScope.ts"),
+    resolve(projectRoot, "assets/framework/adapters/cocos/ui/FairyGuiPageAdapter.ts"),
+  ];
+
+  // Creator 构建会把 `[...set]`/`[...iterable]` 转译为 `[].concat(iterable)`，
+  // concat 不展开 Set/迭代器导致运行期失败（LoadCoordinator waiters / ResourceScope
+  // 逆序释放 / FairyGuiPageAdapter 页面快照）。锁定必须使用 Array.from 显式转换，
+  // 防止被改回展开运算符（4.2 冒烟红期实测 `finish is not a function`）。
+  test("LoadCoordinator snapshots waiters with Array.from", () => {
+    const source = readFileSync(files[0], "utf8");
+    expect(source).toMatch(/Array\.from\(entry\.waiters\)/);
+    expect(source).not.toMatch(/\[\.\.\.entry\.waiters\]/);
+  });
+
+  test("ResourceScope iterates held values with Array.from", () => {
+    const source = readFileSync(files[1], "utf8");
+    expect(source).toMatch(/Array\.from\(held\.values\(\)\)/);
+    expect(source).not.toMatch(/\[\.\.\.held\.values\(\)\]/);
+  });
+
+  test("FairyGuiPageAdapter snapshots pages with Array.from", () => {
+    const source = readFileSync(files[2], "utf8");
+    expect(source).toMatch(/Array\.from\(pages\)/);
+    expect(source).not.toMatch(/\[\.\.\.pages\]/);
+  });
+});

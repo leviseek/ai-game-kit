@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="1280,720">
+  <displayList>
+    <image id="n1_fmn1" name="img_bg" src="fmn11" fileName="img/background.png" xy="0,0" size="1280,720"/>
+    <text id="n0_fmn1" name="txt_title" xy="593,100" size="94,44" fontSize="32" color="#ffffff" align="center" vAlign="middle" strokeColor="#000000" text="Demo"/>
+  </displayList>
+</component>

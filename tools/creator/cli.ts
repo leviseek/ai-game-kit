@@ -4,6 +4,7 @@ import { run as runBuild } from "./commands/build";
 import { run as runTypecheck } from "./commands/typecheck";
 import { run as runCheckImportMap } from "./commands/check-import-map";
 import { run as runSmoke } from "./commands/smoke";
+import { run as runUiSmoke } from "./commands/ui-smoke";
 
 interface Command {
   readonly run: (argv: readonly string[]) => Promise<number>;
@@ -25,6 +26,10 @@ const COMMANDS: Record<string, Command> = {
   smoke: {
     run: runSmoke,
     usage: "smoke [--debug true] [--scene <uuid|路径>...] 端到端冒烟：校验 → 构建 → headless Chrome 运行验证",
+  },
+  "ui-smoke": {
+    run: runUiSmoke,
+    usage: "ui-smoke [--debug true] FairyGUI UI 冒烟：构建 → headless Chrome 加载 ?smoke=fairygui-ui 验证 UI 根/页面/遮罩/资源释放",
   },
 };
 

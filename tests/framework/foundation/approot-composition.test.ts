@@ -304,6 +304,20 @@ describe("AppRoot Component", () => {
     expect(typeof instance.smokeSwitchTo).toBe("function");
     expect(typeof instance.smokeCanUnload).toBe("function");
   });
+
+  test("exposes FairyGUI UI smoke methods after onLoad", async () => {
+    const { AppRoot } = await loadAppRoot();
+
+    const instance = new AppRoot();
+    instance.onLoad();
+
+    expect(typeof instance.smokeUiInit).toBe("function");
+    expect(typeof instance.smokeUiReady).toBe("function");
+    expect(typeof instance.smokeUiLoadPackage).toBe("function");
+    expect(typeof instance.smokeUiOpenPage).toBe("function");
+    expect(typeof instance.smokeUiClosePage).toBe("function");
+    expect(typeof instance.smokeUiSetModal).toBe("function");
+  });
 });
 
 describe("startup.scene", () => {

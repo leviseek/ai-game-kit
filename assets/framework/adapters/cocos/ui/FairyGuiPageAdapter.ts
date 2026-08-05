@@ -1,4 +1,4 @@
-import { GComponent } from "fairygui-cc";
+import { GComponent, UIPackage } from "fairygui-cc";
 import type { IResourceProvider } from "../../../contracts/resource/ResourceProvider";
 import {
   UI_LAYER_ORDER,
@@ -9,6 +9,8 @@ import {
 // 真实实现由 fgui 的 GComponent 满足，运行时作为 GRoot 子容器承载页面
 export interface FairyGuiContainerLike {
   name: string;
+  readonly width: number;
+  readonly height: number;
   addChild(child: unknown): unknown;
   removeChild(child: unknown, dispose?: boolean): unknown;
   removeChildren(beginIndex?: number, endIndex?: number, dispose?: boolean): void;
@@ -40,6 +42,24 @@ export interface FairyGuiPageAdapterOptions {
   ) => FairyGuiViewLike;
 }
 
+/**
+ * 缺省页面视图创建接缝：经 FairyGUI 包注册表按 package + 资源名创建视图。
+ * 创建失败抛错保留诊断（与 createPage 失败语义一致）。只存在于 Adapter 边界，
+ * 供 AppRoot 装配时传入，组合根不直接 import fgui 类型。
+ */
+export function createFairyGuiView(
+  packageName: string,
+  resName: string,
+): FairyGuiViewLike {
+  const view = UIPackage.createObject(packageName, resName);
+  if (view === null) {
+    throw new Error(
+      `FairyGUI view "${resName}" in package "${packageName}" was not found`,
+    );
+  }
+  return view as FairyGuiViewLike;
+}
+
 export interface FairyGuiPageHandle {
   readonly route: string;
   readonly layer: UiLayer;
@@ -59,6 +79,8 @@ export interface FairyGuiPageAdapter {
     layer: UiLayer,
     options?: { packageName?: string; resName?: string },
   ): FairyGuiPageHandle;
+  /** 按 route 查找未销毁的页面句柄；不存在返回 undefined。 */
+  findPage(route: string): FairyGuiPageHandle | undefined;
   mount(page: FairyGuiPageHandle): void;
   /** 移除挂载；重复卸载幂等（idempotent）。 */
   unmount(page: FairyGuiPageHandle): void;
@@ -143,6 +165,10 @@ export function createFairyGuiPageAdapter(
     },
     containerFor(layer: UiLayer): FairyGuiContainerLike | undefined {
       return containers.get(layer);
+    },
+    findPage(route: string): FairyGuiPageHandle | undefined {
+      // Array.from 而非展开：Creator 构建转译 `[...set]` 为 `[].concat(set)` 会破坏迭代
+      return Array.from(pages).find((page) => page.route === route && !page.disposed);
     },
     createPage(
       route: string,
@@ -237,10 +263,12 @@ export function createFairyGuiPageAdapter(
         return;
       }
       if (modal && mask === undefined) {
-        // 遮罩节点挂到最高层 system 容器，阻断下层页面输入。
-        // 尺寸/touchable 需在 4.x Web Desktop 冒烟验证（见 design Open Questions）
+        // 遮罩节点挂到最高层 system 容器，全屏尺寸对齐 GRoot、触摸可命中，
+        // 阻断下层页面输入；收敛时精确移除，避免误删 system 层其它页面
         const created = new GComponent();
         created.name = "modal-mask";
+        created.setSize(options.root.width, options.root.height);
+        created.touchable = true;
         mask = created;
         system.addChild(created);
       } else if (!modal && mask !== undefined) {
@@ -262,8 +290,9 @@ export function createFairyGuiPageAdapter(
         }
         mask = undefined;
       }
-      // 页面按登记逆序销毁（后创建的页面先释放），对齐导航逆序释放契约
-      for (const page of [...pages].reverse()) {
+      // 页面按登记逆序销毁（后创建的页面先释放），对齐导航逆序释放契约。
+      // Array.from 而非展开：Creator 构建转译 `[...set]` 为 `[].concat(set)` 会破坏迭代
+      for (const page of Array.from(pages).reverse()) {
         const state = handleStates.get(page);
         if (state !== undefined && !state.disposed) {
           page.view?.dispose();

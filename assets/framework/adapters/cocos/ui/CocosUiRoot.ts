@@ -1,11 +1,17 @@
 import { GRoot } from "fairygui-cc";
 
-// 结构化的 GRoot 接缝：当前宿主仅消费根引用本身，成员按需最小化。
-// 4.x AppRoot 组装时若把 root 传给 FairyGuiPageAdapter，需向后兼容地扩展
-// 容器能力成员（addChild/removeChild 等），对齐 FairyGuiPageAdapter 的
-// FairyGuiRootLike 形状后再传入。
+// 结构化的 GRoot 接缝：对齐 FairyGuiPageAdapter 的 FairyGuiRootLike 容器能力，
+// 使 CocosUiRoot 初始化的 root 可直接作为页面适配器的 root 传入（真实 GRoot 为
+// GComponent 子类，天然满足）。缺省接缝返回引擎单例，测试可注入按形状的 mock。
 export interface GRootLike {
   readonly name: string;
+  readonly width: number;
+  readonly height: number;
+  addChild(child: unknown): unknown;
+  removeChild(child: unknown, dispose?: boolean): unknown;
+  removeChildren(beginIndex?: number, endIndex?: number, dispose?: boolean): void;
+  getChildAt(index: number): unknown;
+  readonly numChildren: number;
 }
 
 export interface CocosUiRootOptions {

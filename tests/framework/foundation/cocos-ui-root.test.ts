@@ -12,6 +12,13 @@ mock.module("fairygui-cc", () => createFairyGuiMock());
 
 interface GRootLike {
   readonly name: string;
+  readonly width: number;
+  readonly height: number;
+  addChild(child: unknown): unknown;
+  removeChild(child: unknown, dispose?: boolean): unknown;
+  removeChildren(beginIndex?: number, endIndex?: number, dispose?: boolean): void;
+  getChildAt(index: number): unknown;
+  readonly numChildren: number;
 }
 
 interface CocosUiRootOptions {
@@ -59,7 +66,16 @@ interface GRootSeam {
 
 function createGRootSeam(): GRootSeam {
   let calls = 0;
-  const root: GRootLike = { name: "GRoot" };
+  const root: GRootLike = {
+    name: "GRoot",
+    width: 1280,
+    height: 720,
+    addChild: () => undefined,
+    removeChild: () => undefined,
+    removeChildren: () => {},
+    getChildAt: () => undefined,
+    numChildren: 0,
+  };
 
   return {
     root,
