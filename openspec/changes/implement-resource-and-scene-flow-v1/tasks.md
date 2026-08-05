@@ -59,7 +59,8 @@
   - 新增 `assets/framework/core/scene/SceneFlow.ts`：`createSceneFlow` 复用 `core/fsm/StateMachine`（`idle -> preloading -> transitioning -> active`，含 `failed`），异步预加载/激活完成或失败经回调转 FSM 事件再 send；`switchTo` 返回 `{ ok, sceneId, error?, reason? }`，失败保留当前场景并回到可重试状态（failed --start--> preloading）。
   - 关键行为：每次切换先 `provider.invalidate(bundle, path)` 再 `load`（命中 5.x 前置失效能力，保证重试/切换走新的底层加载）；所有权转移先目标作用域增持、再释放被替换场景与流转作用域（复用 2.3 锁定的顺序）；切换进行中（preloading/transitioning）重复 switchTo 被拒绝、preload 被跳过；`dispose` 幂等，取消进行中工作并使 FSM 停止接收事件。
   - 审查修正（ai-sensei，本会话）：(1) `release()` 抛卸载失败时 FSM 仍收敛到 failed、Promise 仍 resolve，避免悬挂与半激活残留；(2) `activateScene` 同步 throw 走失败分支，不逃逸成 unhandled rejection；(3) **preload 结果跨 switchTo 复用**：preload 完成后资源保留在流转作用域并记录可复用 handle，switchTo 命中同场景时跳过 invalidate/重新加载，直接激活并转移所有权（修复"预加载结果被丢弃+卸载→重载抖动"缺陷）；(4) 测试收紧：失败状态精确断言 `failed`、补 activateScene 失败/空 paths/部分失败/复用/完成预加载后 dispose 释放的用例。
-  - 验证：`bun run test:foundation` 374 pass / 0 fail（45 文件，13 个 scene-flow 测试），`bun run test:foundation:types` 0 diagnostics。
+  - 复审加固（ai-sensei）：(5) 成功转移路径与 dispose 的 `release()` 补齐 try/catch，保证切换成功上报与 FSM 释放不被卸载异常中断；(6) 复用判定增加 bundle+paths 一致校验，避免同 sceneId 不同资源被误复用；(7) 补 activateScene 同步 throw 与"paths 不同不误复用"测试用例；(8) 修正 preload 记录注释（无论成败均记录，可复用性由 switchTo 判定）。
+  - 验证：`bun run test:foundation` 376 pass / 0 fail（45 文件，15 个 scene-flow 测试），`bun run test:foundation:types` 0 diagnostics。
 
 ## 6. Cocos 场景适配器与冒烟验证
 

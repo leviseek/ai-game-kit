@@ -97,6 +97,43 @@ describe("SceneFlow preload", () => {
     expect(activated).toEqual(["scene-b"]);
     expect(provider.canUnload("ui")).toBe(false);
   }, 1000);
+
+  test("a preload is not reused when the switch requests different paths", async () => {
+    const { loader, calls, pending } = createControlledLoader();
+    const unloaded: string[] = [];
+    const activated: string[] = [];
+    const provider = createResourceProvider({
+      loader,
+      unloadBundle: (bundle: string) => {
+        unloaded.push(bundle);
+      },
+    });
+    const flow = createSceneFlow({
+      provider,
+      activateScene: async (sceneId: string) => {
+        activated.push(sceneId);
+      },
+    });
+
+    const preloadPromise = flow.preload("scene-b", {
+      bundle: "ui",
+      paths: ["panel.json"],
+    });
+    pending[0].resolve({ id: "panel" });
+    await preloadPromise;
+
+    const resultPromise = flow.switchTo("scene-b", {
+      bundle: "ui",
+      paths: ["other.json"],
+    });
+    pending[1].resolve({ id: "other" });
+    const result = await resultPromise;
+
+    expect(result.ok).toBe(true);
+    expect(calls).toHaveLength(2);
+    expect(activated).toEqual(["scene-b"]);
+    expect(provider.canUnload("ui")).toBe(false);
+  }, 1000);
 });
 
 describe("SceneFlow progress", () => {
@@ -290,6 +327,29 @@ describe("SceneFlow failed switch", () => {
     expect(resultB.error).toBeTruthy();
     expect(provider.canUnload("common")).toBe(false);
     expect(unloaded).not.toContain("common");
+    expect(flow.state).toBe("failed");
+  });
+
+  test("a synchronously throwing activateScene fails the switch without hanging", async () => {
+    const { loader, pending } = createControlledLoader();
+    const provider = createResourceProvider({ loader, unloadBundle: () => {} });
+    const flow = createSceneFlow({
+      provider,
+      activateScene: () => {
+        throw new Error("sync activation boom");
+      },
+    });
+
+    const switching = flow.switchTo("scene-a", {
+      bundle: "common",
+      paths: ["a.png"],
+    });
+    pending[0].resolve({ id: "a" });
+    const result = await switching;
+
+    expect(result.ok).toBe(false);
+    expect(result.sceneId).toBe("scene-a");
+    expect(result.error).toBeTruthy();
     expect(flow.state).toBe("failed");
   });
 

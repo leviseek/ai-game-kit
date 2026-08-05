@@ -96,8 +96,10 @@ export function createSceneFlow(options: SceneFlowOptions): SceneFlow {
   let sceneScope: ResourceScope | undefined;
   let cancelSwitch: (() => void) | undefined;
   let cancelPreload: (() => void) | undefined;
-  // 已完成预加载且可被 switchTo 复用的场景资源（handle 仍 retain 在 flowScope 中）
+  // 已完成预加载且可被 switchTo 复用的场景资源（handle 仍 retain 在 flowScope 中）；
+  // 是否可复用由 switchTo 的判定（sceneId + bundle/paths 一致 + 全部 ready）决定。
   let preloadedSceneId: string | undefined;
+  let preloadedResourcesKey: string | undefined;
   let preloadedHandles: ResourceHandle[] = [];
 
   function currentFlowScope(): ResourceScope {
@@ -107,6 +109,7 @@ export function createSceneFlow(options: SceneFlowOptions): SceneFlow {
       // 卸载失败不阻塞新操作的开始；该次流转的资源已不可用，由新操作重新加载
     }
     preloadedSceneId = undefined;
+    preloadedResourcesKey = undefined;
     preloadedHandles = [];
     const next = provider.createScope();
     flowScope = next;
@@ -128,10 +131,15 @@ export function createSceneFlow(options: SceneFlowOptions): SceneFlow {
       }
 
       // 命中已完成预加载的目标场景时复用其 handle：不失效缓存、不重新加载，
-      // 直接进入激活；否则创建新流转作用域并重新走加载流程。
+      // 直接进入激活；否则创建新流转作用域并重新走加载流程。复用要求 bundle 与
+      // paths 清单一致，避免同 sceneId 不同资源被误复用。
+      const resourcesKey = JSON.stringify([
+        resources.bundle,
+        resources.paths,
+      ]);
       const reusable =
         preloadedSceneId === sceneId &&
-        preloadedHandles.length === resources.paths.length &&
+        preloadedResourcesKey === resourcesKey &&
         preloadedHandles.every((handle) => handle.state === "ready");
 
       let scope: ResourceScope;
@@ -141,6 +149,7 @@ export function createSceneFlow(options: SceneFlowOptions): SceneFlow {
         scope = flowScope as ResourceScope;
         handles = preloadedHandles;
         preloadedSceneId = undefined;
+        preloadedResourcesKey = undefined;
         preloadedHandles = [];
       } else {
         scope = currentFlowScope();
@@ -203,13 +212,21 @@ export function createSceneFlow(options: SceneFlowOptions): SceneFlow {
             }
 
             // 所有权转移：目标场景作用域先增持，再释放被替换场景与流转作用域，
-            // 避免中间引用归零触发误卸载。
+            // 避免中间引用归零触发误卸载。释放失败不中断转移与成功上报。
             const target = provider.createScope();
             for (const handle of handles) {
               target.retain(handle);
             }
-            sceneScope?.release();
-            scope.release();
+            try {
+              sceneScope?.release();
+            } catch {
+              // 被替换场景卸载失败不掩盖切换成功
+            }
+            try {
+              scope.release();
+            } catch {
+              // 流转作用域卸载失败不掩盖切换成功
+            }
             sceneScope = target;
 
             fsm.send("activated");
@@ -292,10 +309,15 @@ export function createSceneFlow(options: SceneFlowOptions): SceneFlow {
         finished = true;
         cancelPreload = undefined;
 
-        // 预加载完成的资源保留在流转作用域中供后续 switchTo 复用；只有全部
-        // 资源就绪才记录为可复用，含失败资源的预加载结果不参与复用。
+        // 预加载完成的资源保留在流转作用域中供后续 switchTo 复用。无论成败都
+        // 记录，是否真正可复用由 switchTo 判定（全部 ready 才复用，含失败的
+        // 预加载结果会被排除并重新加载）。
         if (handles.length === resources.paths.length) {
           preloadedSceneId = sceneId;
+          preloadedResourcesKey = JSON.stringify([
+            resources.bundle,
+            resources.paths,
+          ]);
           preloadedHandles = handles;
         }
         fsm.send("preloadDone");
@@ -338,8 +360,16 @@ export function createSceneFlow(options: SceneFlowOptions): SceneFlow {
     disposed = true;
     cancelSwitch?.();
     cancelPreload?.();
-    flowScope?.release();
-    sceneScope?.release();
+    try {
+      flowScope?.release();
+    } catch {
+      // 流转作用域卸载失败不中断后续释放与 FSM 释放
+    }
+    try {
+      sceneScope?.release();
+    } catch {
+      // 当前场景卸载失败不中断 FSM 释放
+    }
     fsm.dispose();
     return NOOP_HANDLE;
   }
