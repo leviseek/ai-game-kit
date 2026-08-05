@@ -73,3 +73,12 @@ export type {
 } from "./contracts/resource/ResourceProvider";
 
 export { createResourceProvider } from "./core/resource/ResourceProvider";
+
+export type {
+  SceneFlow,
+  SceneFlowOptions,
+  SceneFlowState,
+  SceneResources,
+  SceneSwitchResult,
+} from "./core/scene/SceneFlow";
+export { createSceneFlow } from "./core/scene/SceneFlow";

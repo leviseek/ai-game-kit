@@ -91,6 +91,11 @@
 
 ## 7. 收口与 ADR 检查
 
-- [ ] 7.1 审查资源与场景模块公开入口，移除不必要导出，并用依赖检查证明其他模块没有深层导入。
+- [x] 7.1 审查资源与场景模块公开入口，移除不必要导出，并用依赖检查证明其他模块没有深层导入。
+  - 冗余导出审查：`LoadCoordinatorOptions`、`ResourceScopeRegistryOptions`、`SceneFlowState` 无外部消费者，但均属工厂签名参数类型或 `SceneFlow.state` 公开属性类型，符合项目 options 导出约定（对齐 `SimulationClockOptions`/`PassiveSchedulerOptions`），无可移除项。
+  - 公开入口收口（ai-sensei 确认方案 B）：`assets/framework/index.ts` 新增导出 `createSceneFlow` 与 `SceneFlow`/`SceneFlowOptions`/`SceneFlowState`/`SceneResources`/`SceneSwitchResult`（对齐 `createResourceProvider`），兑现 proposal"后续 Change 可复用 SceneFlow"承诺；`createCocosResourceProvider`/`createCocosSceneAdapter` 维持 `forbiddenInternals` 不进白名单（Cocos 适配器层）。
+  - `assets/boot/AppRoot.ts` 的 SceneFlow 导入改走根入口；其余深层导入（`createApplicationContext`/`ConsoleLogger`/`CocosApplicationAdapter`/两个 Cocos 工厂）为组合根特许，属设计内状态。
+  - 依赖检查证明：`public-boundary.test.ts` 全量 import 扫描通过（`keeps all current asset imports within architecture boundaries`），`expectedRootExports` 白名单加入 6 个场景符号，`task68-scope-review` token 断言仍成立。
+  - 验证：`bun run test:foundation` 385 pass / 0 fail，`bun run test:foundation:types` 0 diagnostics。
 - [ ] 7.2 ADR 检查：本次实现是否产生新的长期架构决策；如有，按 `doc/decisions/ADR-NNN-<slug>.md` 创建 ADR，如无则明确记录无需 ADR。
 - [ ] 7.3 归档时同步总计划 `create-game-framework-v1` 第 5 节任务的完成状态与证据。

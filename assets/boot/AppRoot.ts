@@ -1,15 +1,15 @@
 import { _decorator, Component, game } from "cc";
-import { Application } from "../framework";
-import type { Module } from "../framework";
-import { createApplicationContext } from "../framework/application/ApplicationContext";
-import { ConsoleLogger } from "../framework/diagnostics/logging/ConsoleLogger";
-import { CocosApplicationAdapter } from "../framework/adapters/cocos/application/CocosApplicationAdapter";
 import {
+  Application,
   createSceneFlow,
   type SceneFlow,
   type SceneResources,
   type SceneSwitchResult,
-} from "../framework/core/scene/SceneFlow";
+} from "../framework";
+import type { Module } from "../framework";
+import { createApplicationContext } from "../framework/application/ApplicationContext";
+import { ConsoleLogger } from "../framework/diagnostics/logging/ConsoleLogger";
+import { CocosApplicationAdapter } from "../framework/adapters/cocos/application/CocosApplicationAdapter";
 import type { IResourceProvider } from "../framework/contracts/resource/ResourceProvider";
 import { createCocosResourceProvider } from "../framework/adapters/cocos/resource/CocosResourceProvider";
 import { createCocosSceneAdapter } from "../framework/adapters/cocos/scene/CocosSceneAdapter";

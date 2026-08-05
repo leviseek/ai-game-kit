@@ -480,6 +480,11 @@ describe("framework public boundary", () => {
       "ResourceLoadState",
       "ResourceProviderOptions",
       "ResourceScope",
+      "SceneFlow",
+      "SceneFlowOptions",
+      "SceneFlowState",
+      "SceneResources",
+      "SceneSwitchResult",
       "ScopedEventChannel",
       "ScopedEventChannelOptions",
       "StateHook",
@@ -489,6 +494,7 @@ describe("framework public boundary", () => {
       "StateTransitionTable",
       "TimeSource",
       "createResourceProvider",
+      "createSceneFlow",
     ].sort();
 
     expect(extractRootExportNames(source)).toEqual(expectedRootExports);
