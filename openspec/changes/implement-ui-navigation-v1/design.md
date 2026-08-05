@@ -40,7 +40,7 @@ Foundation 已提供 `DisposeHandle`、`ScopedEventChannel`、`ResourceScope`、
 
 ### 3. 重复打开策略在导航建立时锁定
 
-导航建立时以选项声明重复打开策略（`focus-existing | reject | allow-stack`），全局一致，不按 route 单独配置。`focus-existing` 把已存在页面提升为栈顶并返回聚焦结果，`reject` 拒绝并返回原因，`allow-stack` 允许同 route 多实例堆叠。
+导航建立时以选项声明重复打开策略（`focus-existing | reject | allow-stack`），全局一致，不按 route 单独配置。`focus-existing` 把已存在页面提升到**其层级内的最高位置**（层高页面在上、同层后开在上，仍受七层层级覆盖关系约束，不会压过更高层页面），并返回聚焦结果；`reject` 拒绝并返回原因，`allow-stack` 允许同 route 多实例堆叠。
 
 **理由：** 总计划设计决策 7 要求导航统一负责生命周期与返回策略；全局一致策略避免每个页面各自实现"防重复打开"，降低组合爆炸。三选一覆盖了 RPG 单例页面、弹窗队列与 HUD 等常见需求。
 

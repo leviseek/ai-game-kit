@@ -52,7 +52,7 @@
 ## 6. UI、输入与音频能力
 
 - [x] 6.1 先编写 UI 导航测试，覆盖页面栈、重复打开策略、返回、弹窗遮罩、层级和页面作用域清理。（由 change `implement-ui-navigation-v1` 1.1 完成：`ui-navigation.test.ts` 17 个测试覆盖页面入栈/栈顶、重复打开策略三选一、空栈拒绝、七层层级覆盖与 popup 返回父层、模态推导、页面作用域逆序释放与幂等关闭，红期确认后转绿。）
-- [x] 6.2 实现引擎无关的 UI 导航模型和 `scene/normal/popup/guide/toast/loading/system` 层级契约，使 6.1 的测试通过。（由 change `implement-ui-navigation-v1` 1.2/1.3/2.x/3.x 完成：`contracts/ui/Navigation.ts` 定义 `UiLayer`/`DuplicateOpenPolicy`/`UiPage`/`UiResult` 与 `UI_LAYER_ORDER`，`core/ui/UiNavigator.ts` 实现单一页面栈 + 按层级插入 + 模态推导 + 页面作用域逆序释放；根入口白名单导出；依赖边界检查通过。验证：Foundation 测试 410 pass / 0 fail，`test:foundation:types` 0 diagnostics，public-boundary 22 pass。ADR-010 记录四项导航长期决策。）
+- [x] 6.2 实现引擎无关的 UI 导航模型和 `scene/normal/popup/guide/toast/loading/system` 层级契约，使 6.1 的测试通过。（由 change `implement-ui-navigation-v1` 1.2/1.3/2.x/3.x 完成：`contracts/ui/Navigation.ts` 定义 `UiLayer`/`DuplicateOpenPolicy`/`UiPage`/`UiResult` 与 `UI_LAYER_ORDER`，`core/ui/UiNavigator.ts` 实现单一页面栈 + 按层级插入 + 模态推导 + 页面作用域逆序释放；根入口白名单导出；依赖边界检查通过。验证：Foundation 测试 417 pass / 0 fail，`test:foundation:types` 0 diagnostics，public-boundary 22 pass。ADR-010 记录四项导航长期决策；归档前审查修复 focus-existing 跨层语义、测试幽灵类型与释放失败隔离三项问题。）
 - [ ] 6.3 实现 Cocos UI 根与页面适配器，并用冒烟页面验证打开、关闭、遮罩、输入阻断和资源释放。
 - [ ] 6.4 先编写输入测试，覆盖动作映射、上下文切换、按下/释放/值/时间戳和输入源替换。
 - [ ] 6.5 实现 Cocos 触摸、鼠标、键盘和可用手柄事件到类型化 action 的适配，验证 UI 与玩法上下文不会同时误响应。

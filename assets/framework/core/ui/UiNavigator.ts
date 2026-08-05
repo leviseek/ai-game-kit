@@ -10,6 +10,8 @@ import type { DisposeHandle } from "../scheduling/DisposeHandle";
 export interface UiNavigatorOptions {
   /** 同 route 重复打开策略，导航建立时全局锁定。 */
   readonly duplicatePolicy?: DuplicateOpenPolicy;
+  /** 页面作用域释放失败的上报回调；缺省使用 console.error。 */
+  readonly onError?: (error: unknown) => void;
 }
 
 export interface UiNavigator {
@@ -41,9 +43,22 @@ export interface UiNavigator {
  */
 export function createUiNavigator(options: UiNavigatorOptions = {}): UiNavigator {
   const duplicatePolicy: DuplicateOpenPolicy = options.duplicatePolicy ?? "reject";
+  const reportError = options.onError ?? ((error: unknown) => console.error(error));
   const stack: UiPage[] = [];
   let nextId = 1;
   let disposed = false;
+
+  // 逆序释放页面登记的释放项；单次失败被隔离并上报，不中断其余项释放。
+  function releasePageDisposables(disposables: DisposeHandle[]): void {
+    for (let index = disposables.length - 1; index >= 0; index -= 1) {
+      try {
+        disposables[index]?.dispose();
+      } catch (error) {
+        reportError(error);
+      }
+    }
+    disposables.length = 0;
+  }
 
   function createPage(
     route: string,
@@ -74,10 +89,7 @@ export function createUiNavigator(options: UiNavigatorOptions = {}): UiNavigator
           return;
         }
         pageDisposed = true;
-        for (let index = disposables.length - 1; index >= 0; index -= 1) {
-          disposables[index]?.dispose();
-        }
-        disposables.length = 0;
+        releasePageDisposables(disposables);
       },
     };
   }
@@ -181,7 +193,11 @@ export function createUiNavigator(options: UiNavigatorOptions = {}): UiNavigator
       }
       disposed = true;
       for (let index = stack.length - 1; index >= 0; index -= 1) {
-        stack[index]?.dispose();
+        try {
+          stack[index]?.dispose();
+        } catch (error) {
+          reportError(error);
+        }
       }
       stack.length = 0;
     },

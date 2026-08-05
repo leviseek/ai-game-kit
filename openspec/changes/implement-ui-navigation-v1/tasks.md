@@ -14,7 +14,7 @@
 ## 2. 根入口收口与门禁
 
 - [x] 2.1 根入口白名单导出导航模型稳定契约与工厂，实现细节保持内部。
-  - `assets/framework/index.ts` 新增导出：`UiLayer`/`DuplicateOpenPolicy`/`UiPage`/`UiResult`（契约类型）、`UI_LAYER_ORDER`（层级常量）、`UiNavigator`/`UiNavigatorOptions`（导航接口）+ `createUiNavigator`（核心工厂）；`public-boundary.test.ts` 的 `expectedRootExports` 白名单同步新增 9 个符号。
+  - `assets/framework/index.ts` 新增导出：`UiLayer`/`DuplicateOpenPolicy`/`UiPage`/`UiResult`（契约类型）、`UI_LAYER_ORDER`（层级常量）、`UiNavigator`/`UiNavigatorOptions`（导航接口）+ `createUiNavigator`（核心工厂）；`public-boundary.test.ts` 的 `expectedRootExports` 白名单同步新增 8 个符号。
 - [x] 2.2 运行完整 Bun foundation 测试、Foundation strict 类型检查与依赖边界检查，记录测试数量与零失败结果。
   - 完整 `bun run test:foundation` → **410 pass / 0 fail**（47 文件，1349 expect calls；顶部红色块为 `scheduler-reentrancy.test.ts` 故意抛错的失败隔离用例，属预期）。
   - strict 类型检查：`bun run test:foundation:types` → **0 diagnostics，EXIT 0**。
@@ -24,8 +24,9 @@
 
 - [x] 3.1 审查导航模块公开入口，移除不必要导出，并用依赖检查证明其他模块没有深层导入。
   - 冗余导出审查：`UiNavigator.ts` 定义但未使用的 `NOOP_HANDLE` 常量与文件尾 `export { NOOP_HANDLE, UI_LAYER_ORDER }` re-export 已移除（`UI_LAYER_ORDER` 由 index.ts 直接从 `contracts/ui` 导出，`NOOP_HANDLE` 无消费者）；`DisposeHandle` 类型导入保留（供 `addDisposable` 签名使用）。
-  - 依赖检查证明：`public-boundary.test.ts` 全量 import 扫描通过（`keeps all current asset imports within architecture boundaries`），`expectedRootExports` 白名单含 9 个导航符号，无深层导入泄漏。
+  - 依赖检查证明：`public-boundary.test.ts` 全量 import 扫描通过（`keeps all current asset imports within architecture boundaries`），`expectedRootExports` 白名单含 8 个导航符号，无深层导入泄漏。
   - 验证：`bun run test:foundation:types` 0 diagnostics，`public-boundary.test.ts` 22 pass。
+  - **归档前审查修复（ai-sensei，gpt-5.6-sol high）**：终审发现 3 项阻塞项并已全部修复——(1) R1 focus-existing 跨层提升语义与文档不符：修正 design.md 决策 3、ADR-010 决策 2 与 `DuplicateOpenPolicy` 注释为"提升到其层级内的最高位置（受层级覆盖约束）"，并新增 2 个跨层 focus 测试锁定 top/modal 按层级契约推导；(2) R2 测试文件幽灵类型导入（`UiOpenResult` TS2305、`UiPage` TS2459）：改为从 `contracts/ui` 导入 `UiResult`/`UiPage`，经 Cocos tsc 单独验证仅剩 `bun:test` 环境声明缺失（属门禁既有范围外）；(3) R3 spec"关闭失败隔离上报"未实现：`UiNavigatorOptions` 增加 `onError`，页面与导航释放循环 try/catch 隔离失败并上报，新增 5 个测试（抛错 disposable 不中断其余项/其余页面、dispose 后 close/back 拒绝、关闭后 addDisposable no-op、关闭非栈顶页面）。
 - [x] 3.2 ADR 检查：本次实现是否产生新的长期架构决策；如有，按 `doc/decisions/ADR-NNN-<slug>.md` 创建 ADR，如无则明确记录无需 ADR。
   - **产生新的长期架构决策，已创建 `doc/decisions/ADR-010-ui-navigation-layer-contract.md`**（标题 UI Navigation Layer Contract and Stack Semantics）。
   - ADR-010 记录 4 项决策：(1) 单一页面栈 + 按层级插入（`UI_LAYER_ORDER` 常量固定七层顺序，插入位置与打开顺序无关）；(2) 重复打开策略建立时全局锁定三选一（`focus-existing`/`reject`/`allow-stack`）；(3) 模态状态由栈顶 `blocking` 页面统一推导，导航只暴露状态不执行真实拦截；(4) 页面作用域按登记逆序释放、重复关闭幂等，为 FairyGUI Adapter 资源联动预留入口。
