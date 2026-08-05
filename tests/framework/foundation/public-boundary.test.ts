@@ -507,6 +507,7 @@ describe("framework public boundary", () => {
       "LogRecordSink",
       "CocosApplicationAdapter",
       "createCocosResourceProvider",
+      "createCocosSceneAdapter",
     ];
 
     for (const name of forbiddenInternals) {
