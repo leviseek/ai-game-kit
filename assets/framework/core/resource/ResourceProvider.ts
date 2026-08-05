@@ -2,13 +2,12 @@ import type {
   IResourceProvider,
   ResourceProviderOptions,
 } from "../../contracts/resource/ResourceProvider";
-import type { ResourceKey } from "../../contracts/resource/Resource";
+import type { ResourceKey, ResourceKind } from "../../contracts/resource/Resource";
 import { createLoadCoordinator } from "./LoadCoordinator";
 import { createResourceScopeRegistry } from "./ResourceScope";
 
-function assetKey(bundle: string, path: string): ResourceKey {
-  // 本阶段业务只加载 asset，kind 由 Provider 内部固定；FairyGUI 维度不进入公共 API
-  return { kind: "asset", bundle, path };
+function key(kind: ResourceKind, bundle: string, path: string): ResourceKey {
+  return { kind, bundle, path };
 }
 
 /**
@@ -33,12 +32,16 @@ export function createResourceProvider(
     },
 
     load<T>(bundle: string, path: string) {
-      return coordinator.load<T>(assetKey(bundle, path));
+      return coordinator.load<T>(key("asset", bundle, path));
+    },
+
+    loadPackage<T>(bundle: string, path: string) {
+      return coordinator.load<T>(key("fairygui-package", bundle, path));
     },
 
     preload<T>(bundle: string, path: string) {
       // 与 load 同形发起加载；预加载的消费与释放语义由 5.x SceneFlow 定义
-      return coordinator.load<T>(assetKey(bundle, path));
+      return coordinator.load<T>(key("asset", bundle, path));
     },
 
     canUnload(bundle: string) {
@@ -46,7 +49,7 @@ export function createResourceProvider(
     },
 
     invalidate(bundle: string, path: string) {
-      coordinator.invalidate(assetKey(bundle, path));
+      coordinator.invalidate(key("asset", bundle, path));
     },
 
     dispose() {

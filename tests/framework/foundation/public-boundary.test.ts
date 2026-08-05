@@ -826,6 +826,54 @@ describe("framework public boundary", () => {
     });
   });
 
+  test("keeps the resource package extension free of fgui imports", () => {
+    const resourceRoots = [
+      resolve(frameworkRoot, "core/resource"),
+      resolve(frameworkRoot, "contracts/resource"),
+    ];
+
+    for (const root of resourceRoots) {
+      for (const file of collectTypeScriptFiles(root)) {
+        const source = stripComments(readFileSync(file, "utf8"));
+        expect(source).not.toMatch(
+          /from\s*["']fairygui(?:-cc)?(?:["']|\/)/,
+        );
+      }
+    }
+  });
+
+  test("keeps the package kind pinned to the provider entry only", () => {
+    const coreResourceFiles = collectTypeScriptFiles(
+      resolve(frameworkRoot, "core/resource"),
+    );
+
+    for (const file of coreResourceFiles) {
+      const source = stripComments(readFileSync(file, "utf8"));
+
+      // 协调器/作用域只消费通用 ResourceKind，不得自行固定 package 键；
+      // 唯一固定点在 ResourceProvider 的 loadPackage 入口，避免绕过 Provider
+      if (!file.endsWith("ResourceProvider.ts")) {
+        expect(source).not.toMatch(/fairygui-package/);
+      }
+    }
+  });
+
+  test("locks fairygui-cc imports to the cocos adapter layer", () => {
+    const cocosAdapterRoot = resolve(frameworkRoot, "adapters/cocos");
+
+    const offenders = collectTypeScriptFiles(frameworkRoot).filter((file) => {
+      if (isWithin(file, cocosAdapterRoot)) {
+        return false;
+      }
+
+      return /from\s*["']fairygui(?:-cc)?(?:["']|\/)/.test(
+        stripComments(readFileSync(file, "utf8")),
+      );
+    });
+
+    expect(offenders).toEqual([]);
+  });
+
   test("keeps the resource core layer engine-agnostic", () => {
     const coreFiles = collectTypeScriptFiles(resolve(frameworkRoot, "core/resource"));
     expect(coreFiles.length).toBeGreaterThan(0);

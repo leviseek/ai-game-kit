@@ -18,9 +18,12 @@
 
 ## 1. 资源层扩展：fairygui-package 加载能力
 
-- [ ] 1.1 先编写 package 加载契约测试，覆盖 `ResourceKind = "fairygui-package"` 的加载、失败保留标识/cause 与逆序释放接缝。
-- [ ] 1.2 扩展资源层（协调器/作用域）支持 package 键空间，使 1.1 的测试通过；`core` 与 `contracts` 保持零 `fgui` 导入。
-- [ ] 1.3 补充依赖边界检查，验证资源层 package 扩展不导入 `fgui`、不绕过 Provider。
+- [x] 1.1 先编写 package 加载契约测试，覆盖 `ResourceKind = "fairygui-package"` 的加载、失败保留标识/cause 与逆序释放接缝。
+  - `tests/framework/foundation/fairygui-package-loading.test.ts` 7 个测试锁定 `IResourceProvider.loadPackage(bundle, path)` 契约：`fairygui-package` 标识与去重加载、失败保留 bundle:path + kind 与 cause、失败隔离、package 参与作用域逆序释放接缝（package/asset 混合逆序、共享 package 引用保留）。红期确认：`bun test tests/framework/foundation/fairygui-package-loading.test.ts` 0 pass / 7 fail，全部因 `loadPackage` 尚不存在（方案 B：经 `contracts/resource` 扩展 Provider 入口，符合 design 决策 5）。
+- [x] 1.2 扩展资源层（协调器/作用域）支持 package 键空间，使 1.1 的测试通过；`core` 与 `contracts` 保持零 `fgui` 导入。
+  - `IResourceProvider` 新增 `loadPackage(bundle, path)` 契约（`contracts/resource/ResourceProvider.ts`）；`createResourceProvider` 内部将 `assetKey` 泛化为按 `ResourceKind` 生成键的 `key()`，`loadPackage` 以 `kind: "fairygui-package"` 复用同一协调器/作用域（并发去重、失败保留 cause 与标识、逆序释放接缝全部继承）。`core`/`contracts` 无 `fairygui-cc` 导入；`bun test tests/framework/foundation/fairygui-package-loading.test.ts` 0→7 pass；`test:foundation` 424 pass / 0 fail，`test:foundation:types` 0 diagnostics，public-boundary 与 task68 边界检查通过。
+- [x] 1.3 补充依赖边界检查，验证资源层 package 扩展不导入 `fgui`、不绕过 Provider。
+  - `tests/framework/foundation/public-boundary.test.ts` 新增三个断言：资源层（`core/resource` 与 `contracts/resource`）零 `fairygui-cc` 导入；package kind 只由 `ResourceProvider` 的 `loadPackage` 入口固定（协调器/作用域不自行构造 package 键，避免绕过 Provider）；`fairygui-cc` 导入仅允许出现在 `adapters/cocos` 层。public-boundary 25 pass / 0 fail。
 
 ## 2. Cocos UI 根宿主
 

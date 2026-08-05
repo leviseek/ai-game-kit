@@ -24,6 +24,13 @@ export interface IResourceProvider {
   load<T = unknown>(bundle: string, path: string): ResourceHandle<T>;
 
   /**
+   * 加载 FairyGUI package 并同步返回 handle。与 load 共享同一协调器与作用域：
+   * 并发去重、失败保留 cause 与标识、逆序释放语义一致，仅底层资源键的 kind
+   * 固定为 `"fairygui-package"`。
+   */
+  loadPackage<T = unknown>(bundle: string, path: string): ResourceHandle<T>;
+
+  /**
    * 预加载：与 load 同形，发起加载并返回 handle。预加载的消费与释放语义
    * 由后续 SceneFlow 阶段定义，本契约只锁定其存在性与签名。
    */
