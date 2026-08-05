@@ -52,6 +52,10 @@ export function createResourceProvider(
       coordinator.invalidate(key("asset", bundle, path));
     },
 
+    invalidatePackage(bundle: string, path: string) {
+      coordinator.invalidate(key("fairygui-package", bundle, path));
+    },
+
     dispose() {
       for (const scope of scopes) {
         scope.release();

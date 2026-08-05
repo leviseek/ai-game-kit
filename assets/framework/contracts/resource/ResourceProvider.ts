@@ -49,6 +49,13 @@ export interface IResourceProvider {
    */
   invalidate(bundle: string, path: string): void;
 
+  /**
+   * 使某 FairyGUI package 的终态缓存（ready/failed）失效，下次 loadPackage
+   * 触发新的底层加载。`loadPackage` 失败后提供公共重试入口（协调整键空间
+   * 已支持任意 key，本入口固定 kind 为 `"fairygui-package"`）。
+   */
+  invalidatePackage(bundle: string, path: string): void;
+
   /** 释放本 Provider 创建的全部作用域。不使 Provider 失效，也不清除底层缓存终态。 */
   dispose(): void;
 }

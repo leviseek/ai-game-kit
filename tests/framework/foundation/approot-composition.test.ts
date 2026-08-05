@@ -26,6 +26,7 @@ mock.module("cc", () => ({
 
 // AppRoot 经 createCocosUiRoot 工厂间接依赖 fairygui-cc；测试不加载真实运行时，
 // mock 忠实模拟真实语义：GRoot.inst 未 create 时抛错，GRoot.create 返回实例。
+// 为兼容全量运行下 fairy-gui-page-adapter 值导入的符号，mock 同时提供 GComponent/UIPackage。
 mock.module("fairygui-cc", () => ({
   GRoot: {
     get inst(): never {
@@ -34,6 +35,18 @@ mock.module("fairygui-cc", () => ({
     create() {
       return { name: "GRoot" };
     },
+  },
+  UIPackage: {
+    addPackage(path: string) {
+      return { name: path, path };
+    },
+    removePackage(_name: string) {},
+    createObject(_pkg: string, _res: string) {
+      return null;
+    },
+  },
+  GComponent: class {
+    name = "";
   },
 }));
 

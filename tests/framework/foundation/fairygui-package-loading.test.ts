@@ -186,4 +186,38 @@ describe("FairyGUI package loading contract", () => {
     expect(provider.canUnload("ui")).toBe(true);
     expect(unloaded).toEqual(["ui"]);
   });
+
+  test("invalidatePackage clears a failed package entry so it can be reloaded", async () => {
+    const { loader, calls, pending } = createControlledLoader();
+    const provider = createResourceProvider({ loader, unloadBundle: () => {} });
+    const original = new Error("first attempt failed");
+
+    const first = provider.loadPackage("ui", "missing");
+    pending[0].reject(original);
+    await first.done;
+    expect(first.state).toBe("failed");
+    expect(calls).toHaveLength(1);
+
+    // 失效后再次加载触发新的底层加载
+    provider.invalidatePackage("ui", "missing");
+    const retried = provider.loadPackage("ui", "missing");
+    expect(calls).toHaveLength(2);
+
+    pending[1].resolve({ id: "package-reloaded" });
+    await retried.done;
+
+    expect(retried.state).toBe("ready");
+    expect(retried.resource).toEqual({ id: "package-reloaded" });
+  });
+
+  test("invalidatePackage on an unknown package key is a no-op", async () => {
+    const { loader, calls } = createControlledLoader();
+    const provider = createResourceProvider({ loader, unloadBundle: () => {} });
+
+    provider.invalidatePackage("ui", "never-loaded");
+
+    const handle = provider.loadPackage("ui", "never-loaded");
+    expect(calls).toHaveLength(1);
+    expect(handle.state).toBe("loading");
+  });
 });

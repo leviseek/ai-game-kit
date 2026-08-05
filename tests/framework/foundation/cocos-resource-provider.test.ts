@@ -6,6 +6,31 @@ mock.module("cc", () => ({
   assetManager: {},
 }));
 
+// 3.3 让 loader 按 kind 分派到 UIPackage：实现会值导入 fairygui-cc，
+// 与其它测试文件保持一致的完整 mock，避免全量运行时解析失败。
+mock.module("fairygui-cc", () => ({
+  GRoot: {
+    get inst(): never {
+      throw new Error("Call GRoot.create first!");
+    },
+    create() {
+      return { name: "GRoot" };
+    },
+  },
+  UIPackage: {
+    addPackage(path: string) {
+      return { name: path, path };
+    },
+    removePackage(_name: string) {},
+    createObject(_pkg: string, _res: string) {
+      return null;
+    },
+  },
+  GComponent: class {
+    name = "";
+  },
+}));
+
 import type { IResourceProvider } from "../../../assets/framework/contracts/resource/ResourceProvider";
 import type { ResourceKey } from "../../../assets/framework/contracts/resource/Resource";
 
@@ -64,6 +89,57 @@ interface CocosMock {
   failBundle(error: Error): void;
   resolveAsset(asset: unknown): void;
   failAsset(error: Error): void;
+}
+
+// 模拟 fairygui-cc 的 UIPackage 静态 API（3.3 loader kind 分派的目标）
+interface UIPackageLike {
+  loadPackage(
+    bundle: CocosBundleLike,
+    path: string,
+    onComplete?: (error: unknown, pkg?: { readonly name: string }) => void,
+  ): void;
+  removePackage(nameOrId: string): void;
+}
+
+interface UIPackageMock {
+  readonly uiPackage: UIPackageLike;
+  readonly state: {
+    readonly packageLoads: readonly Array<{ bundle: string; path: string }>;
+    readonly removeCalls: readonly string[];
+  };
+  resolvePackage(pkgName: string): void;
+  failPackage(error: Error): void;
+}
+
+function createUIPackageMock(): UIPackageMock {
+  const packageLoads: Array<{ bundle: string; path: string }> = [];
+  const removeCalls: string[] = [];
+  const pending: Array<
+    (error: unknown, pkg?: { readonly name: string }) => void
+  > = [];
+
+  const uiPackage: UIPackageLike = {
+    loadPackage(bundle, path, onComplete) {
+      packageLoads.push({ bundle: bundle.name, path });
+      if (onComplete !== undefined) {
+        pending.push(onComplete);
+      }
+    },
+    removePackage(nameOrId) {
+      removeCalls.push(nameOrId);
+    },
+  };
+
+  return {
+    uiPackage,
+    state: { packageLoads, removeCalls },
+    resolvePackage(pkgName) {
+      pending.shift()?.(null, { name: pkgName });
+    },
+    failPackage(error) {
+      pending.shift()?.(error);
+    },
+  };
 }
 
 function createCocosMock(): CocosMock {
@@ -261,5 +337,86 @@ describe("CocosResourceProvider", () => {
 
     expect(cocos.state.releaseAllCalls).toEqual([]);
     expect(cocos.state.removeBundleCalls).toEqual([]);
+  });
+
+  test("loadPackage dispatches to UIPackage.loadPackage instead of a plain asset load", async () => {
+    const { createCocosResourceProvider } = await loadFactory();
+    const cocos = createCocosMock();
+    const pkg = createUIPackageMock();
+    const provider = createCocosResourceProvider({
+      assetManager: cocos.manager,
+      uiPackage: pkg.uiPackage,
+    });
+
+    const handle = provider.loadPackage("ui", "main");
+
+    expect(handle.state).toBe("loading");
+    expect(cocos.state.bundleLoads).toEqual(["ui"]);
+
+    cocos.resolveBundle("ui");
+    // 双路 settle：红期（未分派）走 bundle.load，转绿后走 UIPackage.loadPackage，
+    // 两条路径都落定，红期才能快速失败而非挂起
+    pkg.resolvePackage("main");
+    cocos.resolveAsset({ name: "main" });
+    await handle.done;
+
+    // 分派断言：package 必须走 UIPackage，不得走普通 asset 加载路径
+    expect(pkg.state.packageLoads).toEqual([{ bundle: "ui", path: "main" }]);
+    expect(cocos.state.assetLoads).toEqual([]);
+    expect(handle.state).toBe("ready");
+    expect(handle.resource).toEqual({ name: "main" });
+  });
+
+  test("propagates package load failure with cause and resource identity", async () => {
+    const { createCocosResourceProvider } = await loadFactory();
+    const cocos = createCocosMock();
+    const pkg = createUIPackageMock();
+    const provider = createCocosResourceProvider({
+      assetManager: cocos.manager,
+      uiPackage: pkg.uiPackage,
+    });
+    const original = new Error("package manifest corrupt");
+
+    const handle = provider.loadPackage("ui", "main");
+    cocos.resolveBundle("ui");
+    // 双路 settle：红期走 asset 失败，转绿后走 package 失败
+    pkg.failPackage(original);
+    cocos.failAsset(original);
+    await handle.done;
+
+    expect(handle.state).toBe("failed");
+
+    const failure = handle.error as { cause?: unknown; message: string };
+    expect(failure.cause).toBe(original);
+    expect(failure.message).toMatch(/main/);
+    expect(failure.message).toMatch(/ui/);
+  });
+
+  test("unloadBundle removes registered packages before releasing the bundle", async () => {
+    const { createCocosResourceProvider } = await loadFactory();
+    const cocos = createCocosMock();
+    const pkg = createUIPackageMock();
+    const provider = createCocosResourceProvider({
+      assetManager: cocos.manager,
+      uiPackage: pkg.uiPackage,
+    });
+
+    const scope = provider.createScope();
+    const handle = provider.loadPackage("ui", "main");
+    cocos.resolveBundle("ui");
+    // 双路 settle：红期走 asset 路径，转绿后走 package 路径
+    pkg.resolvePackage("main");
+    cocos.resolveAsset({ name: "main" });
+    await handle.done;
+    scope.retain(handle);
+
+    expect(provider.canUnload("ui")).toBe(false);
+
+    scope.release();
+
+    expect(provider.canUnload("ui")).toBe(true);
+    // package 注册表先清理，再 releaseAll + removeBundle
+    expect(pkg.state.removeCalls).toEqual(["main"]);
+    expect(cocos.state.unloadSequence).toEqual(["releaseAll", "removeBundle"]);
   });
 });

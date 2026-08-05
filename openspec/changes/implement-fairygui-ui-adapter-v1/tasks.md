@@ -40,9 +40,19 @@
 
 ## 3. FairyGUI 页面适配器
 
-- [ ] 3.1 先编写页面适配契约测试，锁定按 `UI_LAYER_ORDER` 映射 GRoot 容器、页面创建/挂载/卸载/销毁与逆序释放。
-- [ ] 3.2 实现 `adapters/cocos/ui/FairyGuiPageAdapter.ts`：按七层层级建立 GRoot 容器映射，对齐 `UiPage` 生命周期，消费导航 `modal` 状态呈现遮罩并阻断输入。
-- [ ] 3.3 接入 package 资源作用域，实现 View → package → Bundle 逆序释放与共享引用保留；`core`/`contracts`/导航内核保持零 `fgui` 导入。
+- [x] 3.1 先编写页面适配契约测试，锁定按 `UI_LAYER_ORDER` 映射 GRoot 容器、页面创建（显式参数化 `packageName`/`resName`，不内建 route→资源路由表）/挂载/卸载/销毁、失败保留诊断、逆序释放与模态遮罩/输入阻断接缝（`setModal`）。
+  - `tests/framework/foundation/fairy-gui-page-adapter.test.ts` 9 个测试锁定 `createFairyGuiPageAdapter` 契约：七层 GRoot 容器按 `UI_LAYER_ORDER` 顺序建立且 `init` 幂等、`createPage(route, layer, { packageName, resName })` 显式参数化（createView 接缝收到 package/resName、失败保留 cause 且不挂载）、`mount` 落入声明层容器、`unmount`/`destroy` 幂等、`destroy` 逆序释放（view.dispose 先于 unloadBundle，锁 provider scope 层不锁 `UIPackage.removePackage`——后者属 task 3.3）、共享 package 多持有者保留、`setModal` 在 system 层呈现/移除遮罩且幂等。
+  - 前置确认：design.md Open Questions 补充页面创建显式参数化（route 仅作标识，package/resName 由调用方传入）与 modal 消费接缝（显式 `setModal`，3.2 由 AppRoot/导航回调驱动）两项决策；tasks.md 3.1 描述同步并入 modal 契约。
+  - 红期确认：`bun test tests/framework/foundation/fairy-gui-page-adapter.test.ts` 0 pass / 9 fail，全部因 `adapters/cocos/ui/FairyGuiPageAdapter.ts` 尚不存在；`bun run test:foundation` 433 pass / 9 fail（9 个失败即本红期测试，既有门禁未破坏）。
+- [x] 3.2 实现 `adapters/cocos/ui/FairyGuiPageAdapter.ts`：按七层层级建立 GRoot 容器映射，对齐 `UiPage` 生命周期，消费导航 `modal` 状态呈现遮罩并阻断输入。
+  - `adapters/cocos/ui/FairyGuiPageAdapter.ts` 实现 `createFairyGuiPageAdapter`：`init()` 按 `UI_LAYER_ORDER` 建立七层 GRoot 子容器（复用 `root.addChild` 返回值作容器引用，真实 GRoot.addChild 亦返回子对象）且幂等；`createPage(route, layer, { packageName, resName })` 显式参数化，创建失败保留 cause 且页面视为已销毁；`mount`/`unmount` 挂载/移除到声明层容器、重复操作幂等；`destroy` 先销毁 View 再释放资源（package/Bundle 逆序释放由调用方经资源作用域驱动，task 3.3 接入）；`setModal` 在 system 层呈现/移除遮罩（遮罩为自建 GComponent，仅挂到 system 容器）且幂等；handle 可变状态经 WeakMap 存取保持接口只读；`fgui` 类型仅存在于 Adapter 边界。
+  - 测试 harness 修正：recording root 的 `addChild` 返回记录型容器包装，使容器级调用（mount/unmount/setModal）可观测（红期时全部失败未暴露 harness 缺口）；两处逆序释放测试补 `await loadFactory()` 解构；`fairy-gui-page-adapter.test.ts`/`cocos-ui-root.test.ts`/`approot-composition.test.ts`/`smoke-approot-lifecycle.test.ts` 四处 fairygui-cc mock 统一为完整内容（GRoot 忠实语义 + UIPackage + GComponent），因 bun mock.module 全局共享首个生效，避免值导入 `GComponent` 时全量运行解析失败。
+  - 验证：`bun test tests/framework/foundation/fairy-gui-page-adapter.test.ts` 9 pass / 0 fail（红期转绿）；`bun run test:foundation` 442 pass / 0 fail；`test:foundation:types` EXIT 0；Creator 3.8.8 tsc strict 对 `FairyGuiPageAdapter.ts` EXIT 0。
+- [x] 3.3 接入 package 资源作用域，实现 View → package → Bundle 逆序释放与共享引用保留；`core`/`contracts`/导航内核保持零 `fgui` 导入。
+  - `contracts/resource/ResourceProvider.ts` 新增 `invalidatePackage(bundle, path)`（loadPackage 失败后的公共重试入口，kind 固定 `"fairygui-package"`，协调器键空间已支持任意 key）；`core/resource/ResourceProvider.ts` 落地实现，与 `invalidate` 仅 kind 不同。
+  - `adapters/cocos/resource/CocosResourceProvider.ts` 落地 kind 分派：loader 对 `key.kind === "fairygui-package"` 分派到 `UIPackage.loadPackage`（经 `uiPackage` 接缝注入，缺省用 fairygui-cc 静态 API，bundle 类型断言集中在 Adapter 边界），记录按 Bundle 注册的 package 名；`unloadBundle` 先 `UIPackage.removePackage` 清理注册表，再 `releaseAll` + `removeBundle`。`core`/`contracts`/导航内核保持零 `fgui` 导入（public-boundary 锁定）。
+  - 红期测试：`fairygui-package-loading.test.ts` 增 2 个 `invalidatePackage` 契约测试；`cocos-resource-provider.test.ts` 增 3 个 kind 分派测试（UIPackage mock 双路 settle 使红期快速失败而非挂起）。红期 14 pass / 4 fail，转绿 18 pass / 0 fail。
+  - 验证：`bun run test:foundation` 447 pass / 0 fail；`test:foundation:types` EXIT 0；Creator 3.8.8 tsc strict 对 `CocosResourceProvider.ts`（含 `cc.AssetManager.Bundle` 断言与 fairygui UIPackage 类型）EXIT 0。
 
 ## 4. 冒烟页面与 Web Desktop 验证
 
