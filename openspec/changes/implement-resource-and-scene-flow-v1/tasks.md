@@ -49,10 +49,17 @@
 
 ## 5. SceneFlow 编排
 
-- [ ] 5.1 先编写 SceneFlow 测试，覆盖预加载、进度单调收敛、成功切换与资源所有权转移、失败保留当前场景、重试不残留、切换中重复请求被拒绝、作用域释放后未完成的预加载/切换被取消。
+- [x] 5.1 先编写 SceneFlow 测试，覆盖预加载、进度单调收敛、成功切换与资源所有权转移、失败保留当前场景、重试不残留、切换中重复请求被拒绝、作用域释放后未完成的预加载/切换被取消。
+  - 新增 `tests/framework/foundation/scene-flow.test.ts`（8 个测试）：预加载不切换当前场景、进度单调不减且收敛到 1、成功切换激活目标场景并转移所有权（被替换场景可卸载）、切换中重复请求被拒绝返回原因、失败保留当前场景回到可重试状态、失败后重试重新走预加载（依赖 5.x 前置 `invalidate` 使 loader 再次被调用）、dispose 取消进行中的切换与预加载且幂等。
+  - 测试锁定 API 形态：`createSceneFlow({ provider, activateScene, onProgress })` 返回 `{ state, preload, switchTo, dispose }`，`state` 为 `idle/preloading/transitioning/active/failed`，`switchTo` 返回 `{ ok, sceneId, error?, reason? }`。
+  - 红期确认：`bun test tests/framework/foundation/scene-flow.test.ts` 因 `core/scene/SceneFlow` 模块不存在而失败（TDD 红期），5.2 实现后转绿。
   - 前置（3.3 记录的 5.x 必须项）：已落地 `invalidate` 能力——`LoadCoordinator.invalidate(key)`（仅驱逐 ready/failed 终态，loading 不动、未知 key no-op）+ 契约 `IResourceProvider.invalidate(bundle, path)`，经 `createResourceProvider` 透传（Cocos/内存适配器自动获得）。
   - 验证：`load-coordinator.test.ts` 新增 4 个失效测试（ready/failed 失效重载、loading no-op、未知 key no-op），`resource-provider.test.ts` 新增 2 个契约行为测试（invalidate 后同 key 重载触发新 loader 返回新资源、缓存失败后 invalidate 可重试）+ 契约形态断言含 invalidate；`bun run test:foundation` 361 pass / 0 fail，`bun run test:foundation:types` 0 diagnostics。
-- [ ] 5.2 实现引擎无关的 `SceneFlow`（复用既有 FSM），使 5.1 的测试通过，失败后不残留半激活状态。
+- [x] 5.2 实现引擎无关的 `SceneFlow`（复用既有 FSM），使 5.1 的测试通过，失败后不残留半激活状态。
+  - 新增 `assets/framework/core/scene/SceneFlow.ts`：`createSceneFlow` 复用 `core/fsm/StateMachine`（`idle -> preloading -> transitioning -> active`，含 `failed`），异步预加载/激活完成或失败经回调转 FSM 事件再 send；`switchTo` 返回 `{ ok, sceneId, error?, reason? }`，失败保留当前场景并回到可重试状态（failed --start--> preloading）。
+  - 关键行为：每次切换先 `provider.invalidate(bundle, path)` 再 `load`（命中 5.x 前置失效能力，保证重试/切换走新的底层加载）；所有权转移先目标作用域增持、再释放被替换场景与流转作用域（复用 2.3 锁定的顺序）；切换进行中（preloading/transitioning）重复 switchTo 被拒绝、preload 被跳过；`dispose` 幂等，取消进行中工作并使 FSM 停止接收事件。
+  - 审查修正（ai-sensei，本会话）：(1) `release()` 抛卸载失败时 FSM 仍收敛到 failed、Promise 仍 resolve，避免悬挂与半激活残留；(2) `activateScene` 同步 throw 走失败分支，不逃逸成 unhandled rejection；(3) **preload 结果跨 switchTo 复用**：preload 完成后资源保留在流转作用域并记录可复用 handle，switchTo 命中同场景时跳过 invalidate/重新加载，直接激活并转移所有权（修复"预加载结果被丢弃+卸载→重载抖动"缺陷）；(4) 测试收紧：失败状态精确断言 `failed`、补 activateScene 失败/空 paths/部分失败/复用/完成预加载后 dispose 释放的用例。
+  - 验证：`bun run test:foundation` 374 pass / 0 fail（45 文件，13 个 scene-flow 测试），`bun run test:foundation:types` 0 diagnostics。
 
 ## 6. Cocos 场景适配器与冒烟验证
 
