@@ -36,7 +36,6 @@ export interface ResourceScopeRegistryOptions {
 }
 
 interface CountedResource {
-  readonly key: ResourceKey;
   count: number;
 }
 
@@ -82,7 +81,7 @@ export function createResourceScopeRegistry(
     const existing = counts.get(keyId);
 
     if (existing === undefined) {
-      counts.set(keyId, { key, count: 1 });
+      counts.set(keyId, { count: 1 });
 
       let keys = bundleKeys.get(key.bundle);
       if (keys === undefined) {
@@ -95,28 +94,38 @@ export function createResourceScopeRegistry(
     }
   }
 
-  function releaseReferenced(key: ResourceKey): void {
+  function maybeUnloadIfNotOwned(bundle: string): unknown {
+    if (isBundleOwned(bundle)) {
+      return undefined;
+    }
+
+    try {
+      options.unloadBundle(bundle);
+      return undefined;
+    } catch (error) {
+      // 卸载执行器失败不阻断引用计数收敛；调用方（release）决定如何上报
+      return error;
+    }
+  }
+
+  function releaseReferenced(key: ResourceKey): unknown {
     const keyId = serializeKey(key);
     const entry = counts.get(keyId);
 
     if (entry === undefined) {
-      return;
+      return undefined;
     }
 
     entry.count -= 1;
 
     if (entry.count > 0) {
-      return;
+      return undefined;
     }
 
     counts.delete(keyId);
     bundleKeys.get(key.bundle)?.delete(keyId);
 
-    if (isBundleOwned(key.bundle)) {
-      return;
-    }
-
-    options.unloadBundle(key.bundle);
+    return maybeUnloadIfNotOwned(key.bundle);
   }
 
   function createScope(): ResourceScope {
@@ -145,6 +154,10 @@ export function createResourceScopeRegistry(
       if (!entry.counted && settled.state === "ready") {
         markReferenced(settled.key);
         entry.counted = true;
+      }
+
+      if (maybeUnloadIfNotOwned(entry.handle.key.bundle) !== undefined) {
+        // 异步回调中的卸载失败无法向调用方可靠上报，这里隔离；Adapter 应自行防御引擎异常
       }
     }
 
@@ -179,17 +192,35 @@ export function createResourceScopeRegistry(
 
         released = true;
 
-        for (const entry of held.values()) {
+        let firstError: unknown;
+
+        // 按持有顺序逆序释放，对齐"逆序释放其自身持有项"的契约
+        for (const entry of [...held.values()].reverse()) {
           if (entry.counted) {
-            releaseReferenced(entry.handle.key);
+            const error = releaseReferenced(entry.handle.key);
+
+            if (error !== undefined && firstError === undefined) {
+              firstError = error;
+            }
           } else if (entry.pending) {
             entry.pending = false;
             clearPending(entry.handle.key.bundle);
             entry.handle.cancel();
+
+            const error = maybeUnloadIfNotOwned(entry.handle.key.bundle);
+
+            if (error !== undefined && firstError === undefined) {
+              firstError = error;
+            }
           }
         }
 
         held.clear();
+
+        // 引用计数已全部收敛，再上报首个卸载失败，避免一次回调异常毁掉整个释放
+        if (firstError !== undefined) {
+          throw firstError;
+        }
       },
     };
   }

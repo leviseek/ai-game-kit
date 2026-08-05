@@ -215,6 +215,28 @@ describe("ResourceScope unload judgment", () => {
     expect(unloaded).toEqual(["common"]);
     expect(registry.canUnload("common")).toBe(true);
   });
+
+  test("a bundle with multiple resources unloads only when its last referenced resource is released", async () => {
+    const { loader, pending } = createControlledLoader();
+    const coordinator = createLoadCoordinator({ loader });
+    const { registry, unloaded } = createRegistrySpy();
+
+    const first = registry.createScope();
+    const second = registry.createScope();
+    const a = await settleReady(coordinator, pending, assetKey("a.png"));
+    const b = await settleReady(coordinator, pending, assetKey("b.png"));
+
+    first.retain(a);
+    second.retain(b);
+
+    first.release();
+    expect(registry.canUnload("common")).toBe(false);
+    expect(unloaded).toEqual([]);
+
+    second.release();
+    expect(registry.canUnload("common")).toBe(true);
+    expect(unloaded).toEqual(["common"]);
+  });
 });
 
 describe("ResourceScope idempotent release", () => {
@@ -289,6 +311,38 @@ describe("ResourceScope in-flight cancellation during release", () => {
     expect(registry.canUnload("common")).toBe(true);
     expect(unloaded).toEqual(["common"]);
   });
+
+  test("releasing the only scope holding an in-flight load cancels it and unloads the bundle", async () => {
+    const { loader, pending } = createControlledLoader();
+    const coordinator = createLoadCoordinator({ loader });
+    const { registry, unloaded } = createRegistrySpy();
+    const scope = registry.createScope();
+
+    const handle = coordinator.load(assetKey("config.json"));
+    scope.retain(handle);
+
+    scope.release();
+    expect(handle.state).toBe("cancelled");
+    expect(registry.canUnload("common")).toBe(true);
+    expect(unloaded).toEqual(["common"]);
+  });
+
+  test("a load that fails while its scope is active leaves the bundle unloadable and fires unload", async () => {
+    const { loader, pending } = createControlledLoader();
+    const coordinator = createLoadCoordinator({ loader });
+    const { registry, unloaded } = createRegistrySpy();
+    const scope = registry.createScope();
+
+    const handle = coordinator.load(assetKey("missing.json"));
+    scope.retain(handle);
+
+    pending[0].reject(new Error("missing"));
+    await handle.done;
+    expect(handle.state).toBe("failed");
+
+    expect(registry.canUnload("common")).toBe(true);
+    expect(unloaded).toEqual(["common"]);
+  });
 });
 
 describe("ResourceScope ownership transfer", () => {
@@ -319,6 +373,42 @@ describe("ResourceScope ownership transfer", () => {
     target.release();
     expect(registry.canUnload("common")).toBe(true);
     expect(unloaded).toEqual(["common"]);
+  });
+});
+
+describe("ResourceScope unload failure isolation", () => {
+  test("an unloadBundle failure does not prevent other bundles from being released", async () => {
+    const { loader, pending } = createControlledLoader();
+    const coordinator = createLoadCoordinator({ loader });
+    const unloaded: string[] = [];
+    const registry = createResourceScopeRegistry({
+      unloadBundle: (bundle: string) => {
+        unloaded.push(bundle);
+
+        if (bundle === "ui") {
+          throw new Error("ui unload failed");
+        }
+      },
+    });
+    const scope = registry.createScope();
+
+    const uiHandle = await settleReady(
+      coordinator,
+      pending,
+      assetKey("ui/main.png", "ui"),
+    );
+    const audioHandle = await settleReady(
+      coordinator,
+      pending,
+      assetKey("audio/bgm.mp3", "audio"),
+    );
+    scope.retain(uiHandle);
+    scope.retain(audioHandle);
+
+    expect(() => scope.release()).toThrow(/ui unload failed/);
+    expect([...unloaded].sort()).toEqual(["audio", "ui"]);
+    expect(registry.canUnload("ui")).toBe(true);
+    expect(registry.canUnload("audio")).toBe(true);
   });
 });
 

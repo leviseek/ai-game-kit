@@ -10,7 +10,9 @@
   - 新增 `tests/framework/foundation/resource-scope.test.ts`（10 个测试）：独立作用域逆序释放、共享引用保留、两个作用域各计一次引用、可卸载查询反映持有状态、引用归零只卸载一次、重复释放幂等、释放取消进行中加载且不影响其他等待者、加载中阻止卸载、失败资源不计数、同作用域同资源去重。
 - [x] 2.2 实现资源作用域（持有列表 + 全局引用计数）与可卸载查询，使 2.1 的测试通过，Bundle 引用归零后才执行卸载。
   - 新增 `assets/framework/core/resource/ResourceScope.ts`：`createResourceScopeRegistry` 提供 `createScope`/`canUnload`，按底层资源计引用、Bundle 在"无引用且无进行中加载"时才触发可注入的 `unloadBundle` 执行器（为 3.3 Cocos Adapter 留接缝）；协调器终态缓存与重载语义按 design 决策 2 留给 5.x，本阶段不引入 `invalidate`。
-  - 验证：`bun run test:foundation` 333 pass / 1 skip / 0 fail，`bun run test:foundation:types` 0 diagnostics。
+  - 审查后加固（ai-sensei）：`unloadBundle` 异常隔离（引用计数先全部收敛，release 最后才抛首个卸载失败，避免一次回调异常毁掉整个释放）；pending 归零且不再持有也触发 `unloadBundle`（幂等回调，对未加载成功的 Bundle 是 no-op）；release 按持有顺序逆序释放对齐契约；删除 `CountedResource.key` 死字段。
+  - 验证：`bun run test:foundation` 338 pass / 1 skip / 0 fail（15 个作用域测试），`bun run test:foundation:types` 0 diagnostics。
+  - 归档风险（已记录）：协调器终态缓存与 Bundle 卸载的协调需在 5.x 引入 `invalidate`，本阶段 Adapter 实现不得假设二者已解耦；所有权转移依赖调用方自持 handle（作用域不暴露持有项）。
 - [x] 2.3 补充测试锁定所有权转移顺序：目标作用域先增持、来源作用域后释放，转移过程中引用不归零、不触发误卸载。
   - 在 `resource-scope.test.ts` 增加"ownership transfer"测试：先 `target.retain(handle)` 再 `source.release()`，转移前后 `canUnload` 恒为 false、`unloaded` 为空，目标释放后才触发卸载。
 
