@@ -84,7 +84,10 @@
     - 段 6 未加载 Bundle 卸载 no-op：`getBundle("no-such-bundle")`=null。
     - console 佐证：`LoadScene game: ~6ms`、`Load assets/no-such-bundle/index.js failed`、`loadScene: Can not load the scene 'no-such-scene'`。
   - 冒烟约定（ai-sensei 审查记录）：(1) AppRoot 节点只存在于 startup 场景且是 persist root，**单向冒烟（startup → game）安全**；若回切 startup 会实例化第二个 AppRoot，回切前需 `removePersistRootNode`，本 Change 冒烟只做单向；(2) `builder.json` 未配置构建场景列表，Preview 冒烟可加载 `game`，若需在正式构建产物冒烟须先在 build settings 注册 `startup` + `game`；(3) smoke 方法的行为验证依赖运行期冒烟，Bun 测试只能锁 API 形状（受 `mock.module("cc")` 限制）；(4) `loadScene` 按"前缀 + `.scene` 后缀"匹配场景名，当前仅 `game.scene` 无歧义，新增同名前缀场景时冒烟须改用完整场景标识。
-- [ ] 6.3 运行完整 Bun foundation 测试、strict 类型检查和依赖边界检查，记录测试数量与零失败结果。
+- [x] 6.3 运行完整 Bun foundation 测试、strict 类型检查和依赖边界检查，记录测试数量与零失败结果。
+  - 完整 Bun foundation 测试：`bun run test:foundation` → **385 pass / 0 fail**（46 文件，1261 expect calls；顶部红色块为 `scheduler-reentrancy.test.ts` 故意抛错的失败隔离用例，属预期）。
+  - strict 类型检查：`bun run test:foundation:types`（`check-foundation-contracts.ts` 以 Cocos tsc `--strict` 编译 contracts.typecheck + application-context-contract.typecheck + 全框架源码）→ **0 diagnostics，EXIT 0**。
+  - 依赖边界检查：`public-boundary.test.ts` → **20 pass / 0 fail**（含 `keeps all current asset imports within architecture boundaries` 全量 import 扫描，root 白名单、forbiddenInternals、分层依赖方向全部通过）。
 
 ## 7. 收口与 ADR 检查
 
