@@ -1,7 +1,9 @@
 import { GRoot } from "fairygui-cc";
 
-// 结构化的 GRoot 接缝：当前宿主仅消费根引用本身，成员按需最小化，
-// task 3 页面适配器需要容器能力时再向后兼容地扩展
+// 结构化的 GRoot 接缝：当前宿主仅消费根引用本身，成员按需最小化。
+// 4.x AppRoot 组装时若把 root 传给 FairyGuiPageAdapter，需向后兼容地扩展
+// 容器能力成员（addChild/removeChild 等），对齐 FairyGuiPageAdapter 的
+// FairyGuiRootLike 形状后再传入。
 export interface GRootLike {
   readonly name: string;
 }
@@ -63,6 +65,5 @@ export function createCocosUiRoot(
       }
       root = next;
       initialized = true;
-    },
-  };
+    },  };
 }

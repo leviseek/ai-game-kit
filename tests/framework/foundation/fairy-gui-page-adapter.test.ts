@@ -2,45 +2,19 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, mock, test } from "bun:test";
 
-// 3.2 实现值导入 fairygui-cc，防御性 mock 避免转绿时加载真实 fairygui.mjs 崩溃。
-// bun 的 mock.module 按测试文件隔离，不影响 cocos-ui-root / approot 等既有注册。
-mock.module("fairygui-cc", () => ({
-  GRoot: {
-    get inst(): never {
-      throw new Error("Call GRoot.create first!");
-    },
-    create() {
-      return { name: "GRoot" };
-    },
-  },
-  UIPackage: {
-    addPackage(path: string) {
-      return { name: path, path };
-    },
-    removePackage(_name: string) {},
-    createObject(_pkg: string, _res: string) {
-      return null;
-    },
-  },
-  GComponent: class {
-    name = "";
-  },
-}));
-
-import { createResourceProvider } from "../../../assets/framework/core/resource/ResourceProvider";
-import type { IResourceProvider } from "../../../assets/framework/contracts/resource/ResourceProvider";
-import type {
-  ResourceHandle,
-  ResourceKey,
-} from "../../../assets/framework/contracts/resource/Resource";
+import { createFairyGuiMock } from "./helpers/fairygui-mock";
 import {
   UI_LAYER_ORDER,
   type UiLayer,
 } from "../../../assets/framework/contracts/ui/Navigation";
 
+// 3.2 实现值导入 fairygui-cc，统一使用共享 fixture 避免全量运行解析失败。
+// bun 的 mock.module 全局共享且首个注册生效，所有 mock 该模块的文件须注册相同内容。
+mock.module("fairygui-cc", () => createFairyGuiMock());
+
 // ---- 接缝类型（task 3.2 扩展 CocosUiRoot.GRootLike 时的对齐目标）----
 interface FairyGuiContainerLike {
-  readonly name: string;
+  name: string;
   addChild(child: unknown): unknown;
   removeChild(child: unknown, dispose?: boolean): unknown;
   removeChildren(beginIndex?: number, endIndex?: number, dispose?: boolean): void;
@@ -59,8 +33,8 @@ interface FairyGuiViewLike {
 interface FairyGuiPageAdapterOptions {
   /** GRoot 接缝：测试注入 mock，绕过 CocosUiRoot。 */
   readonly root: FairyGuiRootLike;
-  /** 资源入口：loadPackage / createScope。 */
-  readonly provider: IResourceProvider;
+  /** 资源入口（预留）：adapter 不直接读取，逆序释放编排由 4.x 接入。 */
+  readonly provider?: unknown;
   /** 页面创建接缝：按 package + 资源名创建页面视图，可抛错模拟失败。 */
   readonly createView?: (
     packageName: string,
@@ -90,7 +64,7 @@ interface FairyGuiPageAdapter {
   mount(page: FairyGuiPageHandle): void;
   /** 移除挂载；重复卸载幂等。 */
   unmount(page: FairyGuiPageHandle): void;
-  /** view.dispose + 逆序释放；重复销毁幂等。 */
+  /** 销毁页面 View（含先卸载挂载）；重复销毁幂等。 */
   destroy(page: FairyGuiPageHandle): void;
   /** 消费导航模态状态：呈现遮罩并阻断输入，幂等。 */
   setModal(modal: boolean): void;
@@ -208,17 +182,23 @@ function findContainerCalls(
   );
 }
 
+function makeSimpleAdapter(
+  createFairyGuiPageAdapter: FairyGuiPageAdapterFactory["createFairyGuiPageAdapter"],
+  recording: ReturnType<typeof createRecordingRoot>,
+  createView?: FairyGuiPageAdapterOptions["createView"],
+): FairyGuiPageAdapter {
+  return createFairyGuiPageAdapter({
+    root: recording.root,
+    createView: createView ?? (() => ({ name: "view", dispose: () => {} })),
+  });
+}
+
 describe("FairyGuiPageAdapter", () => {
   test("init establishes seven GRoot containers in UI_LAYER_ORDER", async () => {
     const { createFairyGuiPageAdapter } = await loadFactory();
     const recording = createRecordingRoot();
+    const adapter = makeSimpleAdapter(createFairyGuiPageAdapter, recording);
 
-    const adapter = createFairyGuiPageAdapter({
-      root: recording.root,
-      provider: createResourceProvider({ loader: () => Promise.resolve(), unloadBundle: () => {} }),
-    });
-
-    // 红期：adapter 尚未实现，init 不存在
     adapter.init();
 
     const addCalls = recording.calls.filter((call) => call.action === "addChild");
@@ -241,12 +221,7 @@ describe("FairyGuiPageAdapter", () => {
       name: `${packageName}:${resName}`,
       dispose: mock(() => {}),
     }));
-
-    const adapter = createFairyGuiPageAdapter({
-      root: recording.root,
-      provider: createResourceProvider({ loader: () => Promise.resolve(), unloadBundle: () => {} }),
-      createView,
-    });
+    const adapter = makeSimpleAdapter(createFairyGuiPageAdapter, recording, createView);
 
     const page = adapter.createPage("hero", "popup", {
       packageName: "ui",
@@ -263,12 +238,7 @@ describe("FairyGuiPageAdapter", () => {
   test("mount attaches the page view to its declared layer container", async () => {
     const { createFairyGuiPageAdapter } = await loadFactory();
     const recording = createRecordingRoot();
-
-    const adapter = createFairyGuiPageAdapter({
-      root: recording.root,
-      provider: createResourceProvider({ loader: () => Promise.resolve(), unloadBundle: () => {} }),
-      createView: () => ({ name: "view", dispose: () => {} }),
-    });
+    const adapter = makeSimpleAdapter(createFairyGuiPageAdapter, recording);
 
     adapter.init();
     const page = adapter.createPage("hero", "popup", {
@@ -285,12 +255,7 @@ describe("FairyGuiPageAdapter", () => {
   test("unmount removes the page and repeated unmount is idempotent", async () => {
     const { createFairyGuiPageAdapter } = await loadFactory();
     const recording = createRecordingRoot();
-
-    const adapter = createFairyGuiPageAdapter({
-      root: recording.root,
-      provider: createResourceProvider({ loader: () => Promise.resolve(), unloadBundle: () => {} }),
-      createView: () => ({ name: "view", dispose: () => {} }),
-    });
+    const adapter = makeSimpleAdapter(createFairyGuiPageAdapter, recording);
 
     adapter.init();
     const page = adapter.createPage("hero", "popup", {
@@ -310,15 +275,13 @@ describe("FairyGuiPageAdapter", () => {
     expect(removeCalls).toHaveLength(1);
   });
 
-  test("destroy disposes the view and is idempotent", async () => {
+  test("destroy unmounts then disposes the view, and is idempotent", async () => {
     const { createFairyGuiPageAdapter } = await loadFactory();
     const recording = createRecordingRoot();
     const viewDispose = mock(() => {});
     const view = { name: "view", dispose: viewDispose };
-
     const adapter = createFairyGuiPageAdapter({
       root: recording.root,
-      provider: createResourceProvider({ loader: () => Promise.resolve(), unloadBundle: () => {} }),
       createView: () => view,
     });
 
@@ -327,21 +290,25 @@ describe("FairyGuiPageAdapter", () => {
       packageName: "ui",
       resName: "Hero",
     });
+    adapter.mount(page);
     adapter.destroy(page);
     adapter.destroy(page);
 
     expect(page.disposed).toBe(true);
     expect(viewDispose).toHaveBeenCalledTimes(1);
+    // 销毁先移除挂载：popup 容器收到 removeChild，容器内无残留
+    expect(
+      findContainerCalls(recording.calls, "popup", "removeChild"),
+    ).toHaveLength(1);
+    expect(recording.containers.get("popup")?.numChildren).toBe(0);
   });
 
   test("a failing createView reports diagnostics and leaves the page unmounted", async () => {
     const { createFairyGuiPageAdapter } = await loadFactory();
     const recording = createRecordingRoot();
     const original = new Error("ui package missing");
-
     const adapter = createFairyGuiPageAdapter({
       root: recording.root,
-      provider: createResourceProvider({ loader: () => Promise.resolve(), unloadBundle: () => {} }),
       createView: () => {
         throw original;
       },
@@ -359,144 +326,80 @@ describe("FairyGuiPageAdapter", () => {
     expect(page.error).toBe(original);
   });
 
-  test("destroy releases view then package bundle in reverse order", async () => {
+  test("an unconfigured createView reports diagnostics and counts as disposed", async () => {
     const { createFairyGuiPageAdapter } = await loadFactory();
-    const unloaded: string[] = [];
-    const { loader, pending } = createControlledLoader();
-    const provider = createResourceProvider({
-      loader,
-      unloadBundle: (bundle: string) => {
-        unloaded.push(bundle);
-      },
-    });
-
     const recording = createRecordingRoot();
-    const viewDispose = mock(() => {
-      unloaded.push("view-dispose");
-    });
-
-    const adapter = createFairyGuiPageAdapter({
-      root: recording.root,
-      provider,
-      createView: () => ({ name: "view", dispose: viewDispose }),
-    });
+    const adapter = createFairyGuiPageAdapter({ root: recording.root });
 
     adapter.init();
     const page = adapter.createPage("hero", "popup", {
       packageName: "ui",
       resName: "Hero",
     });
-    // 页面持有 package 参与作用域计数
-    const handle = provider.loadPackage("ui", "main");
-    pending[0].resolve({ id: "package" });
-    await handle.done;
-    const scope = provider.createScope();
-    scope.retain(handle);
-    adapter.mount(page);
 
-    adapter.destroy(page);
-    scope.release();
-
-    // View 销毁先于 Bundle 释放（provider 作用域释放触发 unloadBundle）
-    expect(unloaded).toEqual(["view-dispose", "ui"]);
+    expect(page.view).toBeUndefined();
+    expect(page.mounted).toBe(false);
+    expect(page.disposed).toBe(true);
+    expect((page.error as Error)?.message).toMatch(/createView is not configured/);
   });
 
-  test("a shared package is preserved while another page holds it", async () => {
-    const { createFairyGuiPageAdapter } = await loadFactory();
-    const unloaded: string[] = [];
-    const { loader, pending } = createControlledLoader();
-    const provider = createResourceProvider({
-      loader,
-      unloadBundle: (bundle: string) => {
-        unloaded.push(bundle);
-      },
-    });
-
-    const first = provider.createScope();
-    const second = provider.createScope();
-    const handle = provider.loadPackage("ui", "main");
-    pending[0].resolve({ id: "package" });
-    await handle.done;
-    first.retain(handle);
-    second.retain(handle);
-
-    const recording = createRecordingRoot();
-    const adapter = createFairyGuiPageAdapter({
-      root: recording.root,
-      provider,
-      createView: () => ({ name: "view", dispose: () => {} }),
-    });
-
-    adapter.init();
-    const pageA = adapter.createPage("a", "popup", {
-      packageName: "ui",
-      resName: "A",
-    });
-    const pageB = adapter.createPage("b", "popup", {
-      packageName: "ui",
-      resName: "B",
-    });
-
-    adapter.destroy(pageA);
-    first.release();
-    expect(provider.canUnload("ui")).toBe(false);
-    expect(unloaded).toEqual([]);
-
-    adapter.destroy(pageB);
-    second.release();
-    expect(provider.canUnload("ui")).toBe(true);
-    expect(unloaded).toEqual(["ui"]);
-  });
-
-  test("setModal presents a mask on the system layer and blocks input, idempotently", async () => {
+  test("setModal presents a mask on the system layer, removes it precisely, idempotently", async () => {
     const { createFairyGuiPageAdapter } = await loadFactory();
     const recording = createRecordingRoot();
-
-    const adapter = createFairyGuiPageAdapter({
-      root: recording.root,
-      provider: createResourceProvider({ loader: () => Promise.resolve(), unloadBundle: () => {} }),
-      createView: () => ({ name: "view", dispose: () => {} }),
-    });
+    const adapter = makeSimpleAdapter(createFairyGuiPageAdapter, recording);
 
     adapter.init();
+    // 预置一个 system 层页面，验证模态收敛只移除遮罩、不误删其它子对象
+    const system = recording.containers.get("system");
+    expect(system).toBeDefined();
+    const other = { name: "system-toast" };
+    system?.addChild(other);
+
     adapter.setModal(true);
 
     const maskCalls = findContainerCalls(recording.calls, "system", "addChild");
-    expect(maskCalls).toHaveLength(1);
+    // 预置页面 + 遮罩
+    expect(maskCalls).toHaveLength(2);
 
     // 重复进入模态幂等：不重复添加遮罩
     adapter.setModal(true);
     expect(
       findContainerCalls(recording.calls, "system", "addChild"),
-    ).toHaveLength(1);
+    ).toHaveLength(2);
 
     adapter.setModal(false);
+    // 精确移除遮罩，保留预置页面
+    const removeCalls = findContainerCalls(recording.calls, "system", "removeChild");
+    expect(removeCalls).toHaveLength(1);
+    expect(system?.getChildAt(0)).toBe(other);
+    expect(system?.numChildren).toBe(1);
+  });
+
+  test("dispose removes containers from the root and leaves no residual mask", async () => {
+    const { createFairyGuiPageAdapter } = await loadFactory();
+    const recording = createRecordingRoot();
+    const adapter = makeSimpleAdapter(createFairyGuiPageAdapter, recording);
+
+    adapter.init();
+    const page = adapter.createPage("hero", "popup", {
+      packageName: "ui",
+      resName: "Hero",
+    });
+    adapter.mount(page);
+    adapter.setModal(true);
+
+    adapter.dispose();
+
+    // 七个容器都从 GRoot 移除（遮罩移除记录在 system 容器级，不算入此）
     expect(
-      findContainerCalls(recording.calls, "system", "removeChildren"),
-    ).toHaveLength(1);
+      recording.calls.filter(
+        (call) => call.container === "GRoot" && call.action === "removeChild",
+      ),
+    ).toHaveLength(UI_LAYER_ORDER.length);
+    // 遮罩被移除，system 容器不再持有任何子对象
+    const system = recording.containers.get("system");
+    expect(system?.numChildren).toBe(0);
+    // 页面在 dispose 时被销毁
+    expect(page.disposed).toBe(true);
   });
 });
-
-// ---- 受控资源加载器（对齐 fairygui-package-loading.test.ts 模式）----
-interface ControlledDeferred {
-  readonly resolve: (value: unknown) => void;
-  readonly reject: (reason: unknown) => void;
-}
-
-interface ControlledLoader {
-  readonly pending: readonly ControlledDeferred[];
-  readonly loader: (key: ResourceKey) => Promise<unknown>;
-}
-
-function createControlledLoader(): ControlledLoader {
-  const pending: ControlledDeferred[] = [];
-
-  const loader = (key: ResourceKey): Promise<unknown> => {
-    void key;
-    return new Promise((resolve, reject) => {
-      pending.push({ resolve, reject });
-    });
-  };
-
-  return { pending, loader };
-}

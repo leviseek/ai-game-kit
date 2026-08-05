@@ -27,8 +27,12 @@ export interface FairyGuiViewLike {
 export interface FairyGuiPageAdapterOptions {
   /** GRoot 接缝：真实运行时为 fgui 的 GRoot，测试可注入 mock。 */
   readonly root: FairyGuiRootLike;
-  /** 资源入口：loadPackage / createScope（task 3.3 接入作用域释放）。 */
-  readonly provider: IResourceProvider;
+  /**
+   * 资源入口（预留）：资源层能力已就绪（kind 分派 + removePackage 清理，task 3.3），
+   * View → package → Bundle 逆序释放的编排由 4.x AppRoot 集成时经资源作用域驱动；
+   * 当前 adapter 不直接读取本参数。
+   */
+  readonly provider?: IResourceProvider;
   /** 页面创建接缝：按 package + 资源名创建页面视图，可抛错模拟失败。 */
   readonly createView?: (
     packageName: string,
@@ -47,7 +51,7 @@ export interface FairyGuiPageHandle {
 }
 
 export interface FairyGuiPageAdapter {
-  /** 按 UI_LAYER_ORDER 建立七层 GRoot 容器，幂等。 */
+  /** 按 UI_LAYER_ORDER 建立七层 GRoot 容器，重复调用幂等（idempotent）。 */
   init(): void;
   containerFor(layer: UiLayer): FairyGuiContainerLike | undefined;
   createPage(
@@ -56,11 +60,11 @@ export interface FairyGuiPageAdapter {
     options?: { packageName?: string; resName?: string },
   ): FairyGuiPageHandle;
   mount(page: FairyGuiPageHandle): void;
-  /** 移除挂载；重复卸载幂等。 */
+  /** 移除挂载；重复卸载幂等（idempotent）。 */
   unmount(page: FairyGuiPageHandle): void;
-  /** view.dispose + 逆序释放；重复销毁幂等。 */
+  /** 销毁页面 View（含先卸载挂载）；重复销毁幂等（idempotent）。package/Bundle 释放由调用方编排。 */
   destroy(page: FairyGuiPageHandle): void;
-  /** 消费导航模态状态：呈现遮罩并阻断输入，幂等。 */
+  /** 消费导航模态状态：呈现遮罩并阻断输入，重复调用幂等（idempotent）。 */
   setModal(modal: boolean): void;
   dispose(): void;
 }
@@ -121,6 +125,9 @@ export function createFairyGuiPageAdapter(
 
   return {
     init(): void {
+      if (disposed) {
+        return;
+      }
       if (initialized) {
         return;
       }
@@ -144,12 +151,18 @@ export function createFairyGuiPageAdapter(
     ): FairyGuiPageHandle {
       const createView = options.createView;
       if (createView === undefined) {
-        return makeHandle(
+        // 与创建失败路径一致的语义：无视图即视为已销毁、不挂载，保留诊断信息
+        const handle = makeHandle(
           route,
           layer,
           undefined,
           new Error("createView is not configured"),
         );
+        const state = handleStates.get(handle);
+        if (state !== undefined) {
+          state.disposed = true;
+        }
+        return handle;
       }
       try {
         // 显式参数化：package/resName 由调用方传入，adapter 不内建路由表
@@ -206,7 +219,11 @@ export function createFairyGuiPageAdapter(
       if (state === undefined || state.disposed) {
         return;
       }
-      // 先销毁 View；package/Bundle 逆序释放由调用方经资源作用域驱动（task 3.3）
+      // 先卸载挂载再从容器移除，再销毁 View；契约不依赖 fgui dispose 自动
+      // 移除显示（自建包装视图可能不负责移除），保证销毁后容器无残留
+      if (state.mounted && page.view !== undefined) {
+        requireContainer(page.layer).removeChild(page.view);
+      }
       page.view?.dispose();
       state.disposed = true;
       state.mounted = false;
@@ -220,13 +237,15 @@ export function createFairyGuiPageAdapter(
         return;
       }
       if (modal && mask === undefined) {
-        // 遮罩节点挂到最高层 system 容器，阻断下层页面输入
+        // 遮罩节点挂到最高层 system 容器，阻断下层页面输入。
+        // 尺寸/touchable 需在 4.x Web Desktop 冒烟验证（见 design Open Questions）
         const created = new GComponent();
         created.name = "modal-mask";
         mask = created;
         system.addChild(created);
       } else if (!modal && mask !== undefined) {
-        system.removeChildren();
+        // 精确移除遮罩，避免误删 system 层其它页面（toast/loading/system 同层）
+        system.removeChild(mask);
         mask = undefined;
       }
     },
@@ -235,7 +254,16 @@ export function createFairyGuiPageAdapter(
         return;
       }
       disposed = true;
-      for (const page of pages) {
+      // 先移除遮罩，避免残留显示节点
+      if (mask !== undefined) {
+        const system = containers.get("system");
+        if (system !== undefined) {
+          system.removeChild(mask);
+        }
+        mask = undefined;
+      }
+      // 页面按登记逆序销毁（后创建的页面先释放），对齐导航逆序释放契约
+      for (const page of [...pages].reverse()) {
         const state = handleStates.get(page);
         if (state !== undefined && !state.disposed) {
           page.view?.dispose();
@@ -244,8 +272,12 @@ export function createFairyGuiPageAdapter(
         }
       }
       pages.clear();
-      mask = undefined;
+      // 七层容器从 GRoot 移除并清空；dispose 后容器/页面不可再用
+      for (const container of containers.values()) {
+        options.root.removeChild(container);
+      }
       containers.clear();
+      initialized = false;
     },
   };
 }

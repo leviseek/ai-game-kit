@@ -98,3 +98,5 @@ Adapter 订阅/轮询导航 `modal` 状态（或经导航回调）：进入阻�
 - Cocos loader 的 kind 分派：`createCocosLoader` 当前只按 bundle+path 当普通 asset 加载，task 3.3 需让 loader 按 `key.kind === "fairygui-package"` 分派到 `UIPackage.addPackage`，并在 `unloadBundle` 卸载路径实现 `removePackage`；同 bundle 多 package 的注册/卸载顺序与跨 bundle 依赖排序需在 task 3.3 细化。
 - 页面创建参数化（task 3.1 前置确认）：route 到 package/资源名的定位不做 adapter 内建路由表。`createPage(route, layer, { packageName, resName })` 显式参数化，route 仅作标识（对齐 `UiPage.route`），package/resName 由调用方显式传入；route → 资源映射留给游戏层或后续配置，不进入 adapter 边界。
 - modal 消费接缝（task 3.1 前置确认）：adapter 提供显式 `setModal(modal)` 状态入口，消费导航模态状态呈现遮罩并阻断输入；3.2 集成时由 AppRoot/导航回调驱动，测试直接调用锁定契约。
+- **package 资源编排（审查 A2 决策 a）**：task 3.3 只落地资源层能力（kind 分派 + `UIPackage.removePackage` 清理 + `invalidatePackage` 重试入口），**不实现 View → package → Bundle 的逆序释放编排**。adapter 的 `provider` 为预留参数、不直接读取；编排由 4.x AppRoot 集成时经资源作用域（`createScope().retain`/`release`）驱动，adapter 负责 `destroy` 时 View 卸载与销毁。共享 package 保留、逆序释放行为由 `fairygui-package-loading.test.ts` 的资源作用域测试锁定。
+- **同 bundle 多 package 卸载（审查 B1）**：`unloadBundle` 按注册逆序 `removePackage`（后加载先卸载）；跨 bundle 依赖排序是**已知限制**——本 Change 不做跨 bundle 依赖拓扑，4.x 依赖拓扑成立后再处理，届时补充排序语义与测试。

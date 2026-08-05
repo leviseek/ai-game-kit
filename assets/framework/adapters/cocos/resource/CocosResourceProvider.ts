@@ -129,9 +129,11 @@ function createCocosUnloadBundle(
       return;
     }
 
-    // 先移除该 Bundle 下注册的全部 package，再 releaseAll + removeBundle
+    // 先移除该 Bundle 下注册的全部 package，再 releaseAll + removeBundle。
+    // 同 bundle 多 package 按注册逆序移除（后加载的依赖先卸载），对齐逆序释放契约；
+    // 跨 bundle 依赖排序是已知限制，待 4.x 依赖拓扑成立后处理。
     const names = registeredPackages.get(bundleName) ?? [];
-    for (const name of names) {
+    for (const name of [...names].reverse()) {
       uiPackage.removePackage(name);
     }
     registeredPackages.delete(bundleName);

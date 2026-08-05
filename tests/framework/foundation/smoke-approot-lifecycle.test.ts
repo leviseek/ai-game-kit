@@ -2,6 +2,8 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, test, mock } from "bun:test";
 
+import { createFairyGuiMock } from "./helpers/fairygui-mock";
+
 mock.module("cc", () => ({
   game: {
     on(_event: string, _callback: () => void, _target: unknown) {},
@@ -22,30 +24,8 @@ mock.module("cc", () => ({
 }));
 
 // AppRoot 经 createCocosUiRoot 工厂间接依赖 fairygui-cc；测试不加载真实运行时，
-// mock 忠实模拟真实语义：GRoot.inst 未 create 时抛错，GRoot.create 返回实例。
-// 为兼容全量运行下 fairy-gui-page-adapter 值导入的符号，mock 同时提供 GComponent/UIPackage。
-mock.module("fairygui-cc", () => ({
-  GRoot: {
-    get inst(): never {
-      throw new Error("Call GRoot.create first!");
-    },
-    create() {
-      return { name: "GRoot" };
-    },
-  },
-  UIPackage: {
-    addPackage(path: string) {
-      return { name: path, path };
-    },
-    removePackage(_name: string) {},
-    createObject(_pkg: string, _res: string) {
-      return null;
-    },
-  },
-  GComponent: class {
-    name = "";
-  },
-}));
+// 统一使用共享 fixture（bun mock.module 全局共享首个生效，保证全量运行符号齐全）。
+mock.module("fairygui-cc", () => createFairyGuiMock());
 
 interface ApplicationLike {
   readonly state: string;

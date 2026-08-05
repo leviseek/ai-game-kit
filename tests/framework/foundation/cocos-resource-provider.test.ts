@@ -2,34 +2,15 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, mock, test } from "bun:test";
 
+import { createFairyGuiMock } from "./helpers/fairygui-mock";
+
 mock.module("cc", () => ({
   assetManager: {},
 }));
 
 // 3.3 让 loader 按 kind 分派到 UIPackage：实现会值导入 fairygui-cc，
-// 与其它测试文件保持一致的完整 mock，避免全量运行时解析失败。
-mock.module("fairygui-cc", () => ({
-  GRoot: {
-    get inst(): never {
-      throw new Error("Call GRoot.create first!");
-    },
-    create() {
-      return { name: "GRoot" };
-    },
-  },
-  UIPackage: {
-    addPackage(path: string) {
-      return { name: path, path };
-    },
-    removePackage(_name: string) {},
-    createObject(_pkg: string, _res: string) {
-      return null;
-    },
-  },
-  GComponent: class {
-    name = "";
-  },
-}));
+// 统一使用共享 fixture（bun mock.module 全局共享首个生效，保证全量运行符号齐全）。
+mock.module("fairygui-cc", () => createFairyGuiMock());
 
 import type { IResourceProvider } from "../../../assets/framework/contracts/resource/ResourceProvider";
 import type { ResourceKey } from "../../../assets/framework/contracts/resource/Resource";
@@ -390,15 +371,27 @@ describe("CocosResourceProvider", () => {
     expect(failure.cause).toBe(original);
     expect(failure.message).toMatch(/main/);
     expect(failure.message).toMatch(/ui/);
+    // 锁定失败确实走了 package 分派路径（红期走 asset 时此断言会失败）
+    expect(pkg.state.packageLoads).toEqual([{ bundle: "ui", path: "main" }]);
+    expect(cocos.state.assetLoads).toEqual([]);
   });
 
   test("unloadBundle removes registered packages before releasing the bundle", async () => {
     const { createCocosResourceProvider } = await loadFactory();
     const cocos = createCocosMock();
     const pkg = createUIPackageMock();
+    const unloadOrder: string[] = [];
+    const trackingPkg: UIPackageLike = {
+      loadPackage: (bundle, path, onComplete) =>
+        pkg.uiPackage.loadPackage(bundle, path, onComplete),
+      removePackage(nameOrId) {
+        unloadOrder.push(`removePackage:${nameOrId}`);
+        pkg.uiPackage.removePackage(nameOrId);
+      },
+    };
     const provider = createCocosResourceProvider({
       assetManager: cocos.manager,
-      uiPackage: pkg.uiPackage,
+      uiPackage: trackingPkg,
     });
 
     const scope = provider.createScope();
@@ -415,8 +408,39 @@ describe("CocosResourceProvider", () => {
     scope.release();
 
     expect(provider.canUnload("ui")).toBe(true);
-    // package 注册表先清理，再 releaseAll + removeBundle
+    // package 注册表先清理，再 releaseAll + removeBundle（removePackage 在 releaseAll 前）
     expect(pkg.state.removeCalls).toEqual(["main"]);
+    expect(unloadOrder).toEqual(["removePackage:main"]);
     expect(cocos.state.unloadSequence).toEqual(["releaseAll", "removeBundle"]);
+  });
+
+  test("unloadBundle removes multiple packages in reverse registration order", async () => {
+    const { createCocosResourceProvider } = await loadFactory();
+    const cocos = createCocosMock();
+    const pkg = createUIPackageMock();
+    const provider = createCocosResourceProvider({
+      assetManager: cocos.manager,
+      uiPackage: pkg.uiPackage,
+    });
+
+    const scope = provider.createScope();
+    const a = provider.loadPackage("ui", "a");
+    cocos.resolveBundle("ui");
+    pkg.resolvePackage("a");
+    cocos.resolveAsset({ name: "a" });
+    await a.done;
+    scope.retain(a);
+
+    const b = provider.loadPackage("ui", "b");
+    cocos.resolveBundle("ui");
+    pkg.resolvePackage("b");
+    cocos.resolveAsset({ name: "b" });
+    await b.done;
+    scope.retain(b);
+
+    scope.release();
+
+    // 同 bundle 两 package：后加载的 b 先移除，再移除 a（逆序）
+    expect(pkg.state.removeCalls).toEqual(["b", "a"]);
   });
 });
