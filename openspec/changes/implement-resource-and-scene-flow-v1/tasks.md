@@ -18,8 +18,13 @@
 
 ## 3. 资源提供契约与 Cocos Asset Bundle 适配器
 
-- [ ] 3.1 先编写契约测试，锁定 `IResourceProvider` 为业务访问资源的唯一入口，禁止业务直接调用引擎 Bundle 加载/释放 API。
-- [ ] 3.2 实现 `contracts/resource` 契约与内存适配器，使 3.1 的测试通过。
+- [x] 3.1 先编写契约测试，锁定 `IResourceProvider` 为业务访问资源的唯一入口，禁止业务直接调用引擎 Bundle 加载/释放 API。
+  - 新增 `tests/framework/foundation/resource-provider.test.ts`（10 个测试）：契约形态断言（IResourceProvider 存在 createScope/load/preload/canUnload/dispose、contracts/resource 不含 cc 与 core/resource 依赖）+ 行为断言（并发去重、同步返回带标识与状态的 handle、preload 同形、失败保留 cause 与资源标识、作用域逆序释放不误卸载、dispose 释放全部作用域、内存适配器）。
+  - 契约能力：`load`/`preload` 同步返回 `ResourceHandle<T>`，入参锁定 `bundle + path`（kind 由 Provider 内部固定为 asset）。
+- [x] 3.2 实现 `contracts/resource` 契约与内存适配器，使 3.1 的测试通过。
+  - 新增 `contracts/resource/Resource.ts`（ResourceKind/ResourceKey/ResourceLoadState/ResourceHandle）、`ResourceScope.ts`、`ResourceProvider.ts`（IResourceProvider + ResourceProviderOptions）；类型提升后 `core/resource/LoadCoordinator.ts`、`ResourceScope.ts` 反向依赖并 re-export 保持既有导入兼容。
+  - 新增 `core/resource/ResourceProvider.ts`（引擎无关组装器：协调器 + 作用域注册表 + 作用域集合）与 `adapters/memory/MemoryResourceProvider.ts`（内存 loader + 无操作卸载）。
+  - 验证：`bun run test:foundation` 349 pass / 0 fail（43 文件，`contracts/resource` 边界 skipIf 测试激活），`bun run test:foundation:types` 0 diagnostics，public-boundary 20 pass。
 - [ ] 3.3 实现 Cocos Asset Bundle 适配器，覆盖加载、释放与可卸载判断，并保留底层错误 cause 和资源标识。
 - [ ] 3.4 根入口白名单导出稳定契约与工厂，实现细节保持内部。
 

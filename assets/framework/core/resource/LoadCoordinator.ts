@@ -1,31 +1,17 @@
 import { FrameworkError } from "../errors/FrameworkError";
+import type {
+  ResourceHandle,
+  ResourceKey,
+  ResourceLoadState,
+} from "../../contracts/resource/Resource";
 
-export type ResourceKind = "asset" | "fairygui-package";
-
-export interface ResourceKey {
-  readonly kind: ResourceKind;
-  readonly bundle: string;
-  readonly path: string;
-}
-
-export type ResourceLoadState = "loading" | "ready" | "failed" | "cancelled";
-
-export interface ResourceHandle<T = unknown> {
-  readonly key: ResourceKey;
-  readonly state: ResourceLoadState;
-  readonly resource: T | undefined;
-  readonly error: unknown;
-  /**
-   * 加载落定（ready/failed）或 handle 被取消后，以 handle 自身 resolve。
-   * 从不 reject；读取 `state` 与 `error` 判断结果，不要使用 try/catch。
-   */
-  readonly done: Promise<ResourceHandle<T>>;
-  /**
-   * 将该等待者从共享加载中分离（detach）。幂等（idempotent），仅在 handle
-   * 仍处于 loading 时生效；不影响其他等待者。
-   */
-  cancel(): void;
-}
+// 类型定义提升至 contracts/resource，此处 re-export 保持既有导入路径兼容
+export type {
+  ResourceHandle,
+  ResourceKey,
+  ResourceKind,
+  ResourceLoadState,
+} from "../../contracts/resource/Resource";
 
 export interface LoadCoordinatorOptions {
   readonly loader: (key: ResourceKey) => Promise<unknown>;
