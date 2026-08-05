@@ -6,9 +6,13 @@
 
 ## 2. 资源作用域与 Bundle 卸载判断
 
-- [ ] 2.1 先编写资源作用域测试，覆盖页面/场景/应用独立作用域逆序释放、仍被引用的资源保留、Bundle 可卸载判断、作用域重复释放幂等、释放期间取消未完成加载和失败隔离。
-- [ ] 2.2 实现资源作用域（持有列表 + 全局引用计数）与可卸载查询，使 2.1 的测试通过，Bundle 引用归零后才执行卸载。
-- [ ] 2.3 补充测试锁定所有权转移顺序：目标作用域先增持、来源作用域后释放，转移过程中引用不归零、不触发误卸载。
+- [x] 2.1 先编写资源作用域测试，覆盖页面/场景/应用独立作用域逆序释放、仍被引用的资源保留、Bundle 可卸载判断、作用域重复释放幂等、释放期间取消未完成加载和失败隔离。
+  - 新增 `tests/framework/foundation/resource-scope.test.ts`（10 个测试）：独立作用域逆序释放、共享引用保留、两个作用域各计一次引用、可卸载查询反映持有状态、引用归零只卸载一次、重复释放幂等、释放取消进行中加载且不影响其他等待者、加载中阻止卸载、失败资源不计数、同作用域同资源去重。
+- [x] 2.2 实现资源作用域（持有列表 + 全局引用计数）与可卸载查询，使 2.1 的测试通过，Bundle 引用归零后才执行卸载。
+  - 新增 `assets/framework/core/resource/ResourceScope.ts`：`createResourceScopeRegistry` 提供 `createScope`/`canUnload`，按底层资源计引用、Bundle 在"无引用且无进行中加载"时才触发可注入的 `unloadBundle` 执行器（为 3.3 Cocos Adapter 留接缝）；协调器终态缓存与重载语义按 design 决策 2 留给 5.x，本阶段不引入 `invalidate`。
+  - 验证：`bun run test:foundation` 333 pass / 1 skip / 0 fail，`bun run test:foundation:types` 0 diagnostics。
+- [x] 2.3 补充测试锁定所有权转移顺序：目标作用域先增持、来源作用域后释放，转移过程中引用不归零、不触发误卸载。
+  - 在 `resource-scope.test.ts` 增加"ownership transfer"测试：先 `target.retain(handle)` 再 `source.release()`，转移前后 `canUnload` 恒为 false、`unloaded` 为空，目标释放后才触发卸载。
 
 ## 3. 资源提供契约与 Cocos Asset Bundle 适配器
 
