@@ -93,6 +93,7 @@ export async function runCdpProbe(
       const msg = JSON.parse(event.data as string) as {
         id?: number;
         method?: string;
+        result?: unknown;
         params?: {
           args?: Array<{ value?: unknown; description?: string }>;
           exceptionDetails?: unknown;
@@ -115,7 +116,8 @@ export async function runCdpProbe(
       }
       if (
         msg.method === "Log.entryAdded" &&
-        msg.params?.entry?.level === "error"
+        msg.params?.entry?.level === "error" &&
+        msg.params.entry.text !== undefined
       ) {
         errors.push(msg.params.entry.text);
       }

@@ -31,7 +31,7 @@ export async function run(argv: readonly string[]): Promise<number> {
   const t0 = Date.now();
   while (Date.now() - t0 < timeoutMs) {
     await sleep(5000);
-    if (isCreatorReady(projectName)) {
+    if (isCreatorReady(projectName, t0)) {
       const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
       console.log(`[ccc:open] 项目就绪（${elapsed}s）`);
       return 0;

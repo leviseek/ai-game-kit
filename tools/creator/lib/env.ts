@@ -10,7 +10,7 @@ import { basename, dirname, join, resolve } from "node:path";
 
 export function getProjectRoot(): string {
   // lib/env.ts → tools/creator/lib → tools/creator → tools → 仓库根
-  return resolve(import.meta.dir, "../../..");
+  return resolve(import.meta.dirname, "../../..");
 }
 
 export function getProjectName(): string {
