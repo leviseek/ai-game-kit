@@ -100,17 +100,20 @@ describe("6.8 scope review: AppRoot.ts", () => {
 
     expect(source).not.toMatch(/from\s+["']\.\.\/game/);
     expect(source).not.toMatch(/from\s+["']@game/);
-    expect(source).not.toMatch(/\bresources\b/);
-    expect(source).not.toMatch(/\bassetManager\b/);
+    // AppRoot 只经框架适配器工厂组装资源提供者，不直接引用引擎资源/场景对象
+    expect(source).not.toMatch(/import\s*\{[^}]*\b(assetManager|Asset|resources|director)\b[^}]*\}\s*from\s+["']cc["']/);
   });
 
-  test("does not import resource loading or scene switching APIs", () => {
+  test("composes resource and scene flow only through framework adapter factories", () => {
     const source = readFileSync(appRootFile, "utf8");
 
-    expect(source).not.toMatch(/\bdirector\b/);
-    expect(source).not.toMatch(/\bloadScene\b/);
-    expect(source).not.toMatch(/\bloadBundle\b/);
-    expect(source).not.toMatch(/\bBundle\b/);
+    // 本 Change 为冒烟组合引入框架适配器工厂，但 AppRoot 不得直接调用引擎
+    // 场景/资源 API，也不得手动实例化引擎管理器
+    expect(source).toMatch(/createCocosResourceProvider/);
+    expect(source).toMatch(/createCocosSceneAdapter/);
+    expect(source).toMatch(/createSceneFlow/);
+    expect(source).not.toMatch(/director\s*\.\s*loadScene/);
+    expect(source).not.toMatch(/assetManager\s*\.\s*loadBundle/);
     expect(source).not.toMatch(/\binstantiate\b/);
   });
 

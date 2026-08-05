@@ -70,6 +70,11 @@
   - `public-boundary.test.ts` 的 `forbiddenInternals` 加入 `createCocosSceneAdapter`，锁死该适配器工厂不作为根入口导出。
   - 验证：`bun run test:foundation` 380 pass / 0 fail（46 文件），`bun run test:foundation:types` 0 diagnostics。
 - [ ] 6.2 完成 Cocos Creator 3.8.8 Web Desktop 场景切换冒烟验证，覆盖预加载、成功切换、失败保留与资源释放；失败路径通过加载不存在的 Bundle 或场景标识构造。
+  - 代码前置（已完成）：`assets/boot/AppRoot.ts` 的 `assembleApp` 组装 `createSceneFlow({ provider: createCocosResourceProvider(), activateScene: createCocosSceneAdapter().activateScene })`，`AppAssembly` 扩展 `sceneFlow` 与 `resourceProvider`；`AppRoot` 暴露冒烟触发 `smokePreload`/`smokeSwitchTo` 与释放观察 `smokeCanUnload`。仅经框架适配器工厂组装，不直接调引擎 API、不改 `createModules()`（仍为空）与 `startup.scene` 序列化。
+  - `approot-composition.test.ts` 增加 sceneFlow 契约形状与 AppRoot 冒烟方法断言；`task68-scope-review.test.ts` 的 2 条源码锁定更新为新边界（AppRoot 只经适配器工厂组装、不直接调 `director.loadScene`/`assetManager.loadBundle`）。
+  - 剩余冒烟（需 Cocos Creator 编辑器操作）：新建第二场景并在 build settings 注册 `startup` + 新场景；按"预加载 → 成功切换 → 失败保留 → 资源释放"四段执行 Web Desktop Preview 并记录结果；确认 placeholder.json 经 Bundle 可加载。
+  - 第二场景已就绪：编辑器新建 `assets/game/game.scene`（场景 Asset 名 `game`，`cc.director.loadScene("game")` 按文件名命中；已导入 asset-db 与 library，uuid `0a8e5055-1ca6-467e-be06-88b9b94fbbb2`）。`approot-composition.test.ts` 新增 game.scene 冒烟目标校验（合法 JSON、场景名匹配 `game`、仅基础设施组件无业务 UI）。
+  - 冒烟约定（ai-sensei 审查记录）：(1) AppRoot 节点只存在于 startup 场景且是 persist root，**单向冒烟（startup → game）安全**；若回切 startup 会实例化第二个 AppRoot，回切前需 `removePersistRootNode`，本 Change 冒烟只做单向；(2) `builder.json` 未配置构建场景列表，Preview 冒烟可加载 `game`，若需在正式构建产物冒烟须先在 build settings 注册 `startup` + `game`；(3) smoke 方法的行为验证依赖编辑器人工冒烟，Bun 测试只能锁 API 形状（受 `mock.module("cc")` 限制）；(4) `loadScene` 按"前缀 + `.scene` 后缀"匹配场景名，当前仅 `game.scene` 无歧义，新增同名前缀场景时冒烟须改用完整场景标识。
 - [ ] 6.3 运行完整 Bun foundation 测试、strict 类型检查和依赖边界检查，记录测试数量与零失败结果。
 
 ## 7. 收口与 ADR 检查

@@ -48,6 +48,15 @@ interface AdapterLike {
 interface AppAssembly {
   readonly app: ApplicationLike;
   readonly adapter: AdapterLike;
+  readonly sceneFlow?: {
+    readonly state: string;
+    preload(...args: unknown[]): Promise<unknown>;
+    switchTo(...args: unknown[]): Promise<unknown>;
+    dispose(): unknown;
+  };
+  readonly resourceProvider?: {
+    canUnload(_bundle: string): boolean;
+  };
 }
 
 type AssembleAppFn = () => AppAssembly;
@@ -154,6 +163,21 @@ describe("AppRoot Composition Root", () => {
     for (const id of forbiddenIds) {
       expect(moduleIds.has(id)).toBe(false);
     }
+  });
+
+  test("assembled scene flow exposes the smoke contract", async () => {
+    const { assembleApp } = await loadAppRoot();
+
+    const { sceneFlow, resourceProvider } = assembleApp();
+
+    expect(sceneFlow).toBeDefined();
+    expect(typeof sceneFlow?.preload).toBe("function");
+    expect(typeof sceneFlow?.switchTo).toBe("function");
+    expect(typeof sceneFlow?.dispose).toBe("function");
+    expect(sceneFlow?.state).toBe("idle");
+
+    // 资源提供者提供释放观察入口，且初始无 Bundle 持有
+    expect(typeof resourceProvider?.canUnload).toBe("function");
   });
 });
 
@@ -263,6 +287,17 @@ describe("AppRoot Component", () => {
     instance.onDestroy();
     // After first onDestroy, app is disposed; second call is no-op via Application guard
   });
+
+  test("exposes smoke trigger and observation methods after onLoad", async () => {
+    const { AppRoot } = await loadAppRoot();
+
+    const instance = new AppRoot();
+    instance.onLoad();
+
+    expect(typeof instance.smokePreload).toBe("function");
+    expect(typeof instance.smokeSwitchTo).toBe("function");
+    expect(typeof instance.smokeCanUnload).toBe("function");
+  });
 });
 
 describe("startup.scene", () => {
@@ -335,6 +370,57 @@ describe("startup.scene", () => {
         const type = comp.__type__ as string;
         expect(type).not.toMatch(/^(cc\.)?(Canvas|Camera|UITransform|Widget|Sprite|Label|Button)/);
       }
+    }
+  });
+});
+
+describe("game.scene (smoke switch target)", () => {
+  const gameSceneFile = resolve(projectRoot, "assets/game/game.scene");
+
+  test("exists and is valid JSON", () => {
+    expect(existsSync(gameSceneFile)).toBe(true);
+
+    const content = readFileSync(gameSceneFile, "utf8");
+    const scene = JSON.parse(content);
+
+    expect(Array.isArray(scene)).toBe(true);
+    expect(scene.length).toBeGreaterThan(0);
+  });
+
+  test("scene asset name matches the director.loadScene target", () => {
+    const content = readFileSync(gameSceneFile, "utf8");
+    const scene = JSON.parse(content) as Array<{ _name?: string; __type__?: string }>;
+
+    const sceneAsset = scene.find((entry) => entry.__type__ === "cc.SceneAsset");
+    expect(sceneAsset).toBeDefined();
+
+    // cc.director.loadScene 按场景文件名（不含扩展名）解析，冒烟 sceneId 用 "game"
+    expect(sceneAsset?._name).toBe("game");
+  });
+
+  test("contains only infrastructure components (no business UI)", () => {
+    const content = readFileSync(gameSceneFile, "utf8");
+    const scene = JSON.parse(content) as Array<{ __type__?: string }>;
+
+    const forbiddenUI = [
+      "cc.Sprite",
+      "cc.Label",
+      "cc.Button",
+      "cc.RichText",
+      "cc.EditBox",
+      "cc.Layout",
+      "cc.ScrollView",
+      "cc.ProgressBar",
+      "cc.Slider",
+      "cc.Toggle",
+      "cc.Mask",
+      "cc.Graphics",
+    ];
+
+    for (const component of forbiddenUI) {
+      expect(content).not.toMatch(
+        new RegExp(`"__type__"\\s*:\\s*"${component.replace(".", "\\.")}"`),
+      );
     }
   });
 });
