@@ -14,6 +14,7 @@ interface GRootLike {
   readonly name: string;
   readonly width: number;
   readonly height: number;
+  setSize(width: number, height: number): void;
   addChild(child: unknown): unknown;
   removeChild(child: unknown, dispose?: boolean): unknown;
   removeChildren(beginIndex?: number, endIndex?: number, dispose?: boolean): void;
@@ -24,6 +25,10 @@ interface GRootLike {
 interface CocosUiRootOptions {
   /** GRoot 获取接缝；缺省使用引擎 GRoot 单例，测试可注入 mock。 */
   readonly getRoot?: () => GRootLike;
+  /** 窗口尺寸变化订阅接缝；缺省订阅真实 window resize，测试可注入受控触发源。 */
+  readonly subscribeResize?: (
+    callback: (width: number, height: number) => void,
+  ) => () => void;
 }
 
 interface CocosUiRoot {
@@ -33,6 +38,12 @@ interface CocosUiRoot {
   readonly initialized: boolean;
   /** 已初始化的 GRoot；未初始化时为 undefined。 */
   readonly root: GRootLike | undefined;
+  /** 注册根尺寸同步监听（窗口 resize 且根尺寸已更新后回调），返回退订。 */
+  readonly onResize: (
+    callback: (width: number, height: number) => void,
+  ) => () => void;
+  /** 释放：退订窗口尺寸监听；幂等。 */
+  readonly dispose: () => void;
 }
 
 interface CocosUiRootFactory {
@@ -62,14 +73,33 @@ interface GRootSeam {
   readonly root: GRootLike;
   readonly calls: number;
   readonly getRoot: () => GRootLike;
+  /** 捕获 subscribeResize 注册的回调；退订后置 undefined。 */
+  resizeCallback: ((width: number, height: number) => void) | undefined;
+  readonly setSizeCalls: Array<{ width: number; height: number }>;
+  readonly subscribeResize: (
+    callback: (width: number, height: number) => void,
+  ) => () => void;
 }
 
 function createGRootSeam(): GRootSeam {
   let calls = 0;
+  let width = 1280;
+  let height = 720;
+  let resizeCallback: ((width: number, height: number) => void) | undefined;
+  const setSizeCalls: Array<{ width: number; height: number }> = [];
   const root: GRootLike = {
     name: "GRoot",
-    width: 1280,
-    height: 720,
+    get width() {
+      return width;
+    },
+    get height() {
+      return height;
+    },
+    setSize(nextWidth: number, nextHeight: number) {
+      width = nextWidth;
+      height = nextHeight;
+      setSizeCalls.push({ width: nextWidth, height: nextHeight });
+    },
     addChild: () => undefined,
     removeChild: () => undefined,
     removeChildren: () => {},
@@ -86,6 +116,19 @@ function createGRootSeam(): GRootSeam {
       calls += 1;
       return root;
     }),
+    get resizeCallback() {
+      return resizeCallback;
+    },
+    set resizeCallback(callback) {
+      resizeCallback = callback;
+    },
+    setSizeCalls,
+    subscribeResize: (callback) => {
+      resizeCallback = callback;
+      return () => {
+        resizeCallback = undefined;
+      };
+    },
   };
 }
 
@@ -181,5 +224,79 @@ describe("CocosUiRoot", () => {
     const source = readFileSync(adapterFile, "utf8");
     expect(source).toMatch(/GRoot\.(?:inst|create)/);
     expect(source).toMatch(/options\.getRoot\s*\?\?/);
+    expect(source).toMatch(/options\.subscribeResize\s*\?\?/);
+  });
+
+  test("subscribes to window resize and syncs the root layout size", async () => {
+    const { createCocosUiRoot } = await loadFactory();
+    const seam = createGRootSeam();
+    const uiRoot = createCocosUiRoot({
+      getRoot: seam.getRoot,
+      subscribeResize: seam.subscribeResize,
+    });
+
+    // 订阅在根宿主创建时建立
+    expect(seam.resizeCallback).toBeDefined();
+
+    uiRoot.init();
+    seam.resizeCallback?.(800, 600);
+
+    expect(seam.root.width).toBe(800);
+    expect(seam.root.height).toBe(600);
+    expect(seam.setSizeCalls).toEqual([{ width: 800, height: 600 }]);
+  });
+
+  test("a resize before initialization is a no-op", async () => {
+    const { createCocosUiRoot } = await loadFactory();
+    const seam = createGRootSeam();
+    const uiRoot = createCocosUiRoot({
+      getRoot: seam.getRoot,
+      subscribeResize: seam.subscribeResize,
+    });
+
+    seam.resizeCallback?.(800, 600);
+
+    expect(uiRoot.initialized).toBe(false);
+    expect(seam.root.width).toBe(1280);
+    expect(seam.root.height).toBe(720);
+    expect(seam.setSizeCalls).toHaveLength(0);
+  });
+
+  test("dispose unsubscribes the window resize listener", async () => {
+    const { createCocosUiRoot } = await loadFactory();
+    const seam = createGRootSeam();
+    const uiRoot = createCocosUiRoot({
+      getRoot: seam.getRoot,
+      subscribeResize: seam.subscribeResize,
+    });
+
+    uiRoot.init();
+    uiRoot.dispose();
+
+    expect(seam.resizeCallback).toBeUndefined();
+  });
+
+  test("onResize notifies listeners after the root size is synced", async () => {
+    const { createCocosUiRoot } = await loadFactory();
+    const seam = createGRootSeam();
+    const uiRoot = createCocosUiRoot({
+      getRoot: seam.getRoot,
+      subscribeResize: seam.subscribeResize,
+    });
+    uiRoot.init();
+
+    const seen: Array<{ width: number; height: number }> = [];
+    const unsubscribe = uiRoot.onResize((width, height) => {
+      seen.push({ width, height });
+    });
+
+    seam.resizeCallback?.(800, 600);
+    expect(seen).toEqual([{ width: 800, height: 600 }]);
+
+    // 退订后监听者不再收到；根尺寸仍随窗口同步（根宿主职责）
+    unsubscribe();
+    seam.resizeCallback?.(1000, 500);
+    expect(seen).toEqual([{ width: 800, height: 600 }]);
+    expect(seam.root.width).toBe(1000);
   });
 });

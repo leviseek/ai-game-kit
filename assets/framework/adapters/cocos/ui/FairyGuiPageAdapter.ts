@@ -113,6 +113,8 @@ export interface FairyGuiPageAdapter {
   destroy(page: FairyGuiPageHandle): void;
   /** 消费导航模态状态：呈现遮罩并阻断输入，重复调用幂等（idempotent）。 */
   setModal(modal: boolean): void;
+  /** 窗口尺寸变化后同步层级容器与遮罩尺寸，避免残留旧尺寸影响呈现/命中。 */
+  resize(width: number, height: number): void;
   dispose(): void;
 }
 
@@ -371,6 +373,23 @@ export function createFairyGuiPageAdapter(
     },
     setModal(modal: boolean): void {
       applyModal(modal);
+    },
+    resize(width: number, height: number): void {
+      if (disposed) {
+        return;
+      }
+      // 层级容器随窗口尺寸同步：GRoot 已由 UI 根宿主 setSize，容器若不更新
+      // 会残留旧尺寸，影响页面呈现与命中覆盖范围
+      for (const container of containers.values()) {
+        container.setSize(width, height);
+      }
+      // 模态遮罩保持全屏覆盖：resize 后同步遮罩尺寸，继续阻断全部输入区域
+      if (mask !== undefined) {
+        (mask as { setSize?: (width: number, height: number) => void }).setSize?.(
+          width,
+          height,
+        );
+      }
     },
     dispose(): void {
       if (disposed) {

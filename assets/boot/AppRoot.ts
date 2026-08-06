@@ -136,6 +136,7 @@ export class AppRoot extends Component {
   private pageAdapter?: FairyGuiPageAdapter;
   private navigator?: UiNavigator;
   private uiScope?: ResourceScope;
+  private resizeUnsubscribe?: () => void;
   private logger?: Logger;
   private validateAssembly?: () => void;
 
@@ -250,6 +251,11 @@ export class AppRoot extends Component {
       createView: createFairyGuiView,
     });
     this.pageAdapter.init();
+    // 窗口尺寸变化 → UI 根同步 root 布局后通知适配器同步层级容器，无需手动刷新
+    this.resizeUnsubscribe?.();
+    this.resizeUnsubscribe = this.uiRoot.onResize((width, height) => {
+      this.pageAdapter?.resize(width, height);
+    });
     return true;
   }
 
@@ -432,6 +438,8 @@ export class AppRoot extends Component {
   }
 
   onDestroy(): void {
+    this.resizeUnsubscribe?.();
+    this.resizeUnsubscribe = undefined;
     this.adapter?.unbind();
     this.sceneFlow?.dispose();
     this.pageAdapter?.dispose();

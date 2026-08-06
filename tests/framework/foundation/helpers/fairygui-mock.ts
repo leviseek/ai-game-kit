@@ -38,11 +38,21 @@ export function createFairyGuiMock(): {
         // 对齐 GRootLike 容器形状：页面适配器 init 会经 root.addChild 建立七层容器，
         // 且把 addChild 返回值作为该层容器持有（真实 GRoot.addChild 返回 GComponent）。
         // 此处返回具备容器能力的 GComponent mock，使七层容器可被容器级调用消费。
+        let rootWidth = 1280;
+        let rootHeight = 720;
         const rootChildren: unknown[] = [];
         return {
           name: "GRoot",
-          width: 1280,
-          height: 720,
+          get width() {
+            return rootWidth;
+          },
+          get height() {
+            return rootHeight;
+          },
+          setSize(width: number, height: number) {
+            rootWidth = width;
+            rootHeight = height;
+          },
           addChild(child: unknown) {
             rootChildren.push(child);
             const name = (child as { name?: string } | undefined)?.name ?? "container";
@@ -168,8 +178,9 @@ export interface FairyGuiGGraphMock {
 
 export interface FairyGuiGRootMock {
   name: string;
-  width: number;
-  height: number;
+  readonly width: number;
+  readonly height: number;
+  setSize(width: number, height: number): void;
   addChild(child: unknown): unknown;
   removeChild(child: unknown, dispose?: boolean): unknown;
   removeChildren(beginIndex?: number, endIndex?: number, dispose?: boolean): void;
