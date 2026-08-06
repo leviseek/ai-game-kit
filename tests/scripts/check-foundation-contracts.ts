@@ -9,6 +9,7 @@ const typeCheckEntries = [
     projectRoot,
     "tests/framework/foundation/application-context-contract.typecheck.ts",
   ),
+  resolve(projectRoot, "tests/framework/foundation/service-registry.typecheck.ts"),
 ];
 const frameworkRoot = resolve(projectRoot, "assets/framework");
 

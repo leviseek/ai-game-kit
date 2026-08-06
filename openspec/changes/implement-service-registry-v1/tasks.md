@@ -1,7 +1,7 @@
 ## 1. 类型化 token 与注册表契约
 
-- [ ] 1.1 先编写失败测试，锁定 `ServiceToken<T>` 的类型绑定（泛型 token 解析类型与注册类型一致、类型不匹配编译期被拒）与 token 每次创建独立。
-- [ ] 1.2 实现 `core/services/ServiceRegistry.ts` 的 `ServiceToken`/`createServiceToken` 与 `ServiceRegistry` 契约，使 1.1 通过且不依赖 Cocos。
+- [x] 1.1 先编写失败测试，锁定 `ServiceToken<T>` 的类型绑定（泛型 token 解析类型与注册类型一致、类型不匹配编译期被拒）与 token 每次创建独立。（由本 change 完成：新增 `service-registry.typecheck.ts` 锁定 token 类型绑定/注册解析类型一致/`@ts-expect-error` 拒绝错配，并接入 `check-foundation-contracts.ts`；新增 `service-registry.test.ts` 覆盖 token 每次创建独立、description 诊断与对象身份唯一性。红色期确认：typecheck 与 test 均因 `core/services/ServiceRegistry` 不存在而失败。）
+- [x] 1.2 实现 `core/services/ServiceRegistry.ts` 的 `ServiceToken`/`createServiceToken` 与 `ServiceRegistry` 契约，使 1.1 通过且不依赖 Cocos。（本 change 完成：`core/services/ServiceRegistry.ts` 定义 `ServiceToken<T>`（`description` + 编译期 brand 键）、`createServiceToken`、`ServiceRegistry` 契约（`register`/`registerFactory`/`resolve`/`isRegistered`），纯 TypeScript 不依赖 Cocos；1.1 测试转绿，完整 foundation 465 pass / 0 fail。）
 
 ## 2. 注册、解析与错误路径
 
