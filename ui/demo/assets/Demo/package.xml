@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <packageDescription id="4q9x2uij">
   <resources>
+    <component id="gboof" name="CloseDialog.xml" path="/" exported="true"/>
+    <image id="fqx4a" name="close_dialog_button.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="z4kdn" name="close_dialog_panel.png" path="/img/" scale="9grid" scale9grid="2,2,5,5" qualityOption="source" duplicatePadding="true"/>
+    <image id="46cf3" name="close_dialog_mask.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
     <image id="cqv1p" name="start_bg.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
     <component id="yh150" name="StartButton.xml" path="/" exported="true"/>
     <component id="hz2u0" name="DemoView.xml" path="/" exported="true"/>

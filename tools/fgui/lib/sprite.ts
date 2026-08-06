@@ -37,7 +37,8 @@ export function ensureResourceRegistered(pkg: FguiPackage, fileName: string, pat
 
 function normalizePath(path: string): string {
   const p = path.replace(/\\/g, "/");
-  return p.endsWith("/") ? p : `${p}/`;
+  const withLeading = p.startsWith("/") ? p : `/${p}`;
+  return withLeading.endsWith("/") ? withLeading : `${withLeading}/`;
 }
 
 /**

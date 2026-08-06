@@ -23,6 +23,35 @@ describe("parseScale9grid", () => {
 });
 
 describe("ensureResourceRegistered / registerGeneratedImage", () => {
+  test("normalizePath 补前导斜杠，/img/ 与 img/ 视为同路径（幂等）", () => {
+    const dir = mkdtempSync(join(tmpdir(), "fgui-sprite-"));
+    try {
+      writeFileSync(join(dir, "demo.fairy"), `<?xml version="1.0" encoding="utf-8"?>\n<projectDescription id="t" type="CocosCreator" version="5.0"/>`);
+      const pkgDir = join(dir, "assets", "Demo");
+      mkdirSync(join(pkgDir, "img"), { recursive: true });
+      writeFileSync(
+        join(pkgDir, "package.xml"),
+        `<?xml version="1.0" encoding="utf-8"?>
+<packageDescription id="4q9x2uij">
+  <resources>
+    <component id="hz2u0" name="DemoView.xml" path="/" exported="true"/>
+    <image id="fmn11" name="background.png" path="/img/" scale="9grid" scale9grid="11,8,192,115" qualityOption="source" duplicatePadding="true"/>
+  </resources>
+</packageDescription>`,
+      );
+
+      const project = locateProject(dir);
+      const pkg = readPackage(project, "Demo");
+      // 带前导斜杠登记已存在资源 → 幂等，返回原 id
+      const id = registerGeneratedImage(pkg, "background.png", "img/", "11,8,192,115");
+      expect(id).toBe("fmn11");
+      const xml = readFileSync(join(pkgDir, "package.xml"), "utf8");
+      expect((xml.match(/name="background\.png"/g) ?? []).length).toBe(1);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   test("同名资源已登记时返回已存在（幂等）", () => {
     const dir = mkdtempSync(join(tmpdir(), "fgui-sprite-"));
     try {

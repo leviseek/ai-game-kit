@@ -13,3 +13,10 @@
 
 - 遵循 `.ai/instructions.md` 与 `openspec/config.yaml` 的规则与 guidance。
 - 涉及 OpenSpec change 的实现、审查与归档时，按 `openspec/config.yaml` 的 operations 执行。
+
+## FGUI 工作流
+
+- **禁止使用 FGUI graph 组件**（见 `.ai/instructions.md` 第 9 条）：任何组件源 XML 不得出现 `<graph>` 节点；纯色视觉一律用 `bun run fgui sprite` 生成像素图并以 `<image>` 引用。
+- **FGUI 组件创建/修改必须委派给 fgui-designer subagent**（绑定多模态 `codexapis/gpt-5.6-sol`）：遇到创建或修改 `ui/demo/assets/**/*.xml`、`package.xml` 的需求，先委派 `fgui-designer`，不要在主会话直接手写 XML。
+- **新建组件用 `/fgui-create`，编辑已有组件必须用 `/fgui-edit`**（编辑是写操作，必须走显式 command 固化的流程，禁止主 agent 凭记忆直接改）。
+- **确定性操作一律用 fgui CLI**：资源清单/组件索引/引用校验/短 id 分配/像素图生成与登记，均通过 `bun run fgui <command>`（`tools/fgui/`）。任何 src 引用前先 `list-resources` 确认真实资源 id，产出 XML 后必须 `validate` 到通过。

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="1280,720">
+  <displayList>
+    <image id="n1" name="img_mask" src="46cf3" fileName="img/close_dialog_mask.png" xy="0,0" size="1280,720"/>
+    <image id="n2" name="img_panel" src="z4kdn" fileName="img/close_dialog_panel.png" xy="440,210" size="400,300"/>
+    <text id="n3" name="txt_title" xy="440,228" size="400,36" fontSize="24" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="确认关闭"/>
+    <text id="n4" name="txt_content" xy="440,290" size="400,30" fontSize="16" color="#cccccc" align="center" vAlign="middle" autoSize="none" singleLine="true" text="是否确认退出游戏？"/>
+    <image id="n5" name="btn_cancel_bg" src="fqx4a" fileName="img/close_dialog_button.png" xy="500,446" size="120,40"/>
+    <text id="n6" name="txt_cancel" xy="500,446" size="120,40" fontSize="16" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="取消"/>
+    <image id="n7" name="btn_confirm_bg" src="fqx4a" fileName="img/close_dialog_button.png" xy="636,446" size="120,40"/>
+    <text id="n8" name="txt_confirm" xy="636,446" size="120,40" fontSize="16" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="确定"/>
+  </displayList>
+</component>
