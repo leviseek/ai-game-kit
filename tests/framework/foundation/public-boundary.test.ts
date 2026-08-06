@@ -990,7 +990,8 @@ describe("framework public boundary", () => {
 
     for (const file of collectTypeScriptFiles(contractsConfigRoot)) {
       const source = stripComments(readFileSync(file, "utf8"));
-      // 契约层只允许类型声明与错误类；不得反向依赖 core 实现细节（错误基座除外）
+      // 契约层只放纯类型；错误类在 core/config（对齐 ADR-013），契约层不得
+      // 反向依赖 core 实现细节
       expect(source).not.toMatch(/from\s*["'][^"']*core\/config/);
       expect(source).not.toMatch(/from\s*["']cc(?:["']|\/)/);
       expect(source).not.toMatch(

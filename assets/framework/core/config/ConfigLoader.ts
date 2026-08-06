@@ -1,7 +1,7 @@
 import { FrameworkError } from "../errors/FrameworkError";
 import type { IResourceProvider } from "../../contracts/resource/ResourceProvider";
 import type { ConfigTable } from "../../contracts/config/Config";
-import { ConfigLoadError } from "../../contracts/config/ConfigErrors";
+import { ConfigLoadError } from "./ConfigErrors";
 import { createConfigTable } from "./ConfigTable";
 
 /** 配置资源加载失败时，解包 LoadCoordinator 包装的 FrameworkError，保留底层原因。 */
@@ -18,9 +18,12 @@ function unwrapCause(error: unknown): unknown {
 
 /**
  * 经资源层装载配置资源并解析为配置表。配置走 `kind: "asset"` 资源读取路径，
- * 复用 LoadCoordinator/ResourceScope 语义，全程不触达存档键值后端。
+ * 经 LoadCoordinator 去重与并发共享，全程不触达存档键值后端。
  * 装载失败抛 ConfigLoadError 并保留底层原因；内容非纯对象在 createConfigTable
  * 抛 ConfigParseError，均不产生部分配置状态。
+ *
+ * 注意：配置资源按"应用生命周期内常驻"处理，本函数不创建 ResourceScope 也不
+ * 提供卸载入口；如需可释放语义由调用方显式管理（见 ADR-015 影响段）。
  *
  * extractContent 把加载到的引擎资源转换为配置内容；缺省原样透传，
  * Cocos 适配器用它把 JsonAsset 解包为纯数据后再走 createConfigTable。

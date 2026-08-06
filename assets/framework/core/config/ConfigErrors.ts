@@ -1,5 +1,5 @@
-import { FrameworkError } from "../../core/errors/FrameworkError";
-import type { ConfigKey } from "./Config";
+import { FrameworkError } from "../errors/FrameworkError";
+import type { ConfigKey } from "../../contracts/config/Config";
 
 /** 读取不存在的配置键时的类型化错误，携带键名。 */
 export class ConfigMissingError extends FrameworkError {

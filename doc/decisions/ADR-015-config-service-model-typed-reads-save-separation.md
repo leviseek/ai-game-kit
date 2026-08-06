@@ -12,24 +12,26 @@ Accepted
 
 ### 1. 配置内核采用"不可变配置表 + 只读快照"模型
 
-`core/config/ConfigTable.ts` 提供引擎无关配置服务：`createConfigTable(content)` 把纯对象装载为不可变配置表，装载后深度冻结（`Object.freeze` 递归），`snapshot()` 返回同一份冻结结构，读取方拿到即不可变；框架不提供任何可变访问路径。
+`core/config/ConfigTable.ts` 提供引擎无关配置服务：`createConfigTable(content)` 把纯对象装载为不可变配置表，装载后深度冻结（`Object.freeze` 递归），`snapshot()` 返回同一份冻结结构，读取方拿到即不可变；框架不提供任何可变访问路径。JSON 字符串读取路径的解析产物同样在返回前冻结，与直接对象字段路径保持同一只读语义。内容含循环引用时在装载入口抛 `ConfigParseError`，不以栈溢出崩溃（对齐 `VersionedStorage.findSerializationIssue` 的 WeakSet 祖先追踪）。
 
 **理由：** 配置只读语义直接对应 spec 快照需求；冻结结构避免深拷贝开销，快照与表共享同一份只读数据；引擎无关便于 TDD。
-**未采用方案：** 每次读取做深拷贝（无必要开销）；提供运行时配置写入路径（写路径属存档，见 `versioned-storage`）。
+**未采用方案：** 每次读取做深拷贝（无必要开销）；提供运行时配置写入路径（写路径属存档，见 `versioned-storage`）；对循环引用静默裁剪或返回部分数据（违反"不产生部分状态"）。
 
 ### 2. 类型化读取用最小声明式形状检查，不引入 schema 依赖
 
-读取以 `ConfigReadType<T>` 声明调用方期望的类型与形状，内置 `configString`/`configNumber`/`configBoolean`/`configObject`/`configArray`；形状不符抛 `ConfigTypeMismatchError`，结构化内容（以 `{`/`[` 开头）解析失败抛 `ConfigParseError`，键缺失抛 `ConfigMissingError`，三者均为 `FrameworkError` 子类且携带键名诊断。默认值仅在缺失时生效，配置存在但解析失败仍报错。
+读取以 `ConfigReadType<T>` 声明调用方期望的类型与形状，内置 `configString`/`configNumber`/`configBoolean`/`configObject`/`configArray`；形状不符抛 `ConfigTypeMismatchError`，结构化内容（以 `{`/`[` 开头，允许前导空白）解析失败抛 `ConfigParseError`，键缺失抛 `ConfigMissingError`，三者均为 `FrameworkError` 子类且携带键名诊断。默认值仅在缺失时生效，配置存在但解析失败仍报错。错误类置于 `core/config/ConfigErrors`（对齐 ADR-013 决策 1 的"错误类留在 core 实现层"约定），`contracts/config` 只保留纯类型契约。
 
 **理由：** 项目约束不主动引入新依赖；基础形状检查（对象/数组/标量）足以支撑类型化读取与调用方分支处理；错误携带键名使发布流程可定位漂移。
-**未采用方案：** 引入完整 JSON Schema 验证器；把类型不匹配与解析失败合并为单一错误（spec 要求分别表达）。
+**未采用方案：** 引入完整 JSON Schema 验证器；把类型不匹配与解析失败合并为单一错误（spec 要求分别表达）；把错误类放在 `contracts/config` 并值导入 `core/errors`（与 ADR-013 决策 1 冲突，会造成 contracts 值依赖 core 实现层）。
 
-### 3. 配置经资源层加载，不与玩家存档混用
+### 3. 配置经资源层加载，不与玩家存档混用；配置资源按应用生命周期常驻
 
-`core/config/ConfigLoader.ts` 的 `loadConfigTable(provider, bundle, path)` 经 `IResourceProvider.load`（`kind: "asset"`）读取配置资源并解析为配置表，复用 `LoadCoordinator`/`ResourceScope` 语义，全程不接触 `PlatformStorage`/`VersionedStorage`。装载失败抛 `ConfigLoadError` 并解包 `LoadCoordinator` 包装，保留底层原因；内容非纯对象抛 `ConfigParseError`，均不产生部分配置状态。Cocos 适配器 `adapters/cocos/config/CocosConfigLoader.ts` 解包 `JsonAsset.json` 后复用同一加载路径。
+`core/config/ConfigLoader.ts` 的 `loadConfigTable(provider, bundle, path)` 经 `IResourceProvider.load`（`kind: "asset"`）读取配置资源并解析为配置表，经 `LoadCoordinator` 去重与并发共享，全程不接触 `PlatformStorage`/`VersionedStorage`。装载失败抛 `ConfigLoadError` 并解包 `LoadCoordinator` 包装，保留底层原因；内容非纯对象抛 `ConfigParseError`，均不产生部分配置状态。Cocos 适配器 `adapters/cocos/config/CocosConfigLoader.ts` 解包 `JsonAsset.json` 后复用同一加载路径；加载成功但资源非 `JsonAsset` 形状时抛携带 bundle/path 的 `ConfigLoadError`。
 
 **理由：** 设计决策 11 的分离边界由此在实现层落实；配置与存档生命周期不同，混用会把配置生命周期与玩家存档耦合；复用资源层加载去重与作用域语义，不重建加载逻辑。
 **未采用方案：** 配置存到键值后端（与 ADR-013 存档侧耦合，违反设计决策 11）；在适配器内重建加载协调逻辑。
+
+**资源生命周期说明：** `loadConfigTable` 不创建 `ResourceScope` 也不自动卸载，配置资源在应用生命周期内常驻（配置随版本发布、启动装载）。如需可释放语义，由调用方显式管理 handle 与作用域，框架不内建配置卸载入口。
 
 ### 4. 无业务配置模型，配置结构属 game 层
 

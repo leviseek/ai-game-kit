@@ -19,7 +19,8 @@ export type ReadonlyConfigSnapshot = Readonly<Record<ConfigKey, unknown>>;
 /**
  * 引擎无关的类型化配置服务：不可变配置表 + 类型化读取 + 默认值回退 + 只读快照。
  * 抛错均为类型化错误：ConfigMissingError / ConfigTypeMismatchError /
- * ConfigParseError / ConfigLoadError，定义于 contracts/config/ConfigErrors。
+ * ConfigParseError / ConfigLoadError，定义于 core/config/ConfigErrors
+ * （对齐 ADR-013：错误类留在 core 实现层，contracts 层只放纯类型契约）。
  */
 export interface ConfigTable {
   /** 按声明类型读取配置值；键缺失抛 ConfigMissingError。 */

@@ -126,7 +126,7 @@ export {
   ConfigMissingError,
   ConfigParseError,
   ConfigTypeMismatchError,
-} from "./contracts/config/ConfigErrors";
+} from "./core/config/ConfigErrors";
 
 export {
   configArray,

@@ -11,7 +11,7 @@ import {
   ConfigMissingError,
   ConfigParseError,
   ConfigTypeMismatchError,
-} from "../../../assets/framework/contracts/config/ConfigErrors";
+} from "../../../assets/framework/core/config/ConfigErrors";
 import {
   configArray,
   configBoolean,
@@ -208,6 +208,57 @@ describe("ConfigTable read-only snapshot", () => {
 
     expect(table.read("level", configNumber)).toBe(snapshot.level);
     expect(Object.keys(snapshot)).toEqual(["level"]);
+  });
+
+  test("a JSON-string structured value is frozen on read, matching the direct object path", () => {
+    const table = createConfigTable({
+      startParams: '{"a":{"b":1}}',
+      badges: "[1,2,3]",
+    });
+
+    const obj = table.read("startParams", configObject) as Record<string, unknown>;
+    const arr = table.read("badges", configArray) as readonly unknown[];
+
+    expect(Object.isFrozen(obj)).toBe(true);
+    expect(Object.isFrozen((obj as { a: object }).a)).toBe(true);
+    expect(Object.isFrozen(arr)).toBe(true);
+  });
+});
+
+describe("ConfigTable content validation guards", () => {
+  test("a circular reference in the content is rejected with a typed parse error", () => {
+    const circular: Record<string, unknown> = { name: "alice" };
+    circular.self = circular;
+
+    expect(() => createConfigTable(circular)).toThrow(ConfigParseError);
+  });
+
+  test("an empty plain object is a valid config table", () => {
+    const table = createConfigTable({});
+
+    expect(table.read("anything", configNumber, 7)).toBe(7);
+  });
+
+  test("a leading-whitespace structured string is a parse failure, not a type mismatch", () => {
+    const table = createConfigTable({ startParams: "  {oops" });
+
+    expect(() => table.read("startParams", configObject)).toThrow(
+      ConfigParseError,
+    );
+  });
+
+  test("the type mismatch error carries the expected shape for diagnostics", () => {
+    const table = createConfigTable({ level: "abc" });
+
+    try {
+      table.read("level", configNumber);
+      expect.unreachable("read should have thrown");
+    } catch (error) {
+      expect(error).toBeInstanceOf(ConfigTypeMismatchError);
+      const mismatch = error as ConfigTypeMismatchError;
+      expect(mismatch.key).toBe("level");
+      expect(mismatch.expected).toBe("number");
+    }
   });
 });
 

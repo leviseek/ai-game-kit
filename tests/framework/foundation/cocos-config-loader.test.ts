@@ -13,7 +13,7 @@ import {
 import {
   ConfigLoadError,
   ConfigParseError,
-} from "../../../assets/framework/contracts/config/ConfigErrors";
+} from "../../../assets/framework/core/config/ConfigErrors";
 import type { IResourceProvider } from "../../../assets/framework/contracts/resource/ResourceProvider";
 
 // Cocos 适配器值导入 cc（缺省读 cc.assetManager）与 fairygui-cc（UIPackage）；
@@ -229,5 +229,41 @@ describe("CocosConfigLoader bundle config loading", () => {
 
     // 装载成功但内容非纯对象：经 createConfigTable 抛 ConfigParseError，不产生部分状态
     await expect(loading).rejects.toBeInstanceOf(ConfigParseError);
+  });
+
+  test("a config resource that is an array fails as a typed parse error", async () => {
+    const createCocosConfigLoader = await loadConfigLoader();
+    const cocos = createCocosMock();
+    const provider = await loadCocosResourceProvider(cocos.manager);
+    const loader = createCocosConfigLoader(provider);
+
+    const loading = loader.loadConfig("config", "array.json");
+    cocos.resolveBundle("config");
+    cocos.resolveAsset(jsonAsset([1, 2, 3]));
+
+    // 配置表内容必须是纯对象，数组属非法内容：不产生部分状态
+    await expect(loading).rejects.toBeInstanceOf(ConfigParseError);
+  });
+
+  test("a non-JsonAsset resource shape fails with ConfigLoadError carrying bundle and path", async () => {
+    const createCocosConfigLoader = await loadConfigLoader();
+    const cocos = createCocosMock();
+    const provider = await loadCocosResourceProvider(cocos.manager);
+    const loader = createCocosConfigLoader(provider);
+
+    // 加载成功但资源非 JsonAsset 形状（如 TextAsset，无 `.json` 属性）
+    const loading = loader.loadConfig("config", "notes.txt");
+    cocos.resolveBundle("config");
+    cocos.resolveAsset({ text: "plain text" });
+
+    try {
+      await loading;
+      expect.unreachable("load should have thrown");
+    } catch (error) {
+      expect(error).toBeInstanceOf(ConfigLoadError);
+      const loadError = error as ConfigLoadError;
+      expect(loadError.bundle).toBe("config");
+      expect(loadError.path).toBe("notes.txt");
+    }
   });
 });
