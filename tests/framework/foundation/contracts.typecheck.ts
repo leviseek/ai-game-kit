@@ -236,6 +236,7 @@ type _InputSampleActionIsGeneric = Expect<
 >;
 type _InputSampleIsReadonly = Expect<
   IsReadonlyKey<InputSample<TestAction>, "action"> &
+    IsReadonlyKey<InputSample<TestAction>, "pressed"> &
     IsReadonlyKey<InputSample<TestAction>, "value">
 >;
 type _InputMappingIsRecordOfActions = Expect<

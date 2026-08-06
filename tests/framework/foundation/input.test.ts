@@ -366,6 +366,39 @@ describe("input source replacement", () => {
 
     expect(source.listenerCount).toBe(0);
   });
+
+  test("dispose makes mutators no-op without re-subscribing", () => {
+    const source = createFakeSource("keyboard");
+    const replacement = createFakeSource("test-double");
+    const samples: InputSample<TestAction>[] = [];
+
+    const mapper = createMapper(
+      {
+        timeSource: { now: () => 0 },
+        activeContext: "ui",
+        mappings: {
+          ui: { "keyboard.enter": "confirm" },
+          gameplay: { "keyboard.space": "jump" },
+        },
+        source,
+      },
+      samples,
+    );
+
+    mapper.dispose();
+    mapper.replaceSource(replacement);
+    mapper.setActiveContext("gameplay");
+    mapper.setMappings({ gameplay: { "keyboard.space": "jump" } });
+
+    // dispose 后 replaceSource 不得重新订阅新源
+    expect(source.listenerCount).toBe(0);
+    expect(replacement.listenerCount).toBe(0);
+
+    // 旧源与新源的事件都不再派发采样
+    source.emit({ sourceId: "keyboard.enter", pressed: true });
+    replacement.emit({ sourceId: "keyboard.space", pressed: true });
+    expect(samples).toEqual([]);
+  });
 });
 
 describe("input UI blocking", () => {

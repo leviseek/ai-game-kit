@@ -129,34 +129,34 @@ export function createCocosInputAdapter(
 
   let listener: ((event: InputEvent) => void) | undefined;
   let bound = false;
-  let resolvedEventTypes: CocosInputEventTypes | undefined;
+  // 注册用的 handler 引用：首次订阅时解析并缓存，退订复用同一引用，
+  // 引擎按 callback 引用匹配退订，每次新建会导致 off 失效
+  let resolvedHandlers:
+    | ReadonlyArray<readonly [string, (event: unknown) => void]>
+    | undefined;
   // 手柄控件上次派发的状态：仅在状态变化时派发，避免轮询帧重复产生采样
   const lastState = new Map<string, { pressed: boolean; value: number }>();
   // 统一的订阅目标：引擎 on/off 需传同一 target 才能正确退订
   const target = {};
 
-  // 事件类型首次订阅时惰性解析：未注入时才读取 cc.Input.EventType，
+  // 事件类型与 handler 首次订阅时惰性解析：未注入时才读取 cc.Input.EventType，
   // 避免在测试/未初始化环境下构造即访问引擎枚举
-  function eventTypes(): CocosInputEventTypes {
-    if (resolvedEventTypes === undefined) {
-      resolvedEventTypes = options.eventTypes ?? defaultEventTypes();
-    }
-    return resolvedEventTypes;
-  }
-
   function handlers(): ReadonlyArray<readonly [string, (event: unknown) => void]> {
-    const types = eventTypes();
-    return [
-      [types.touchStart, (event) => handleTouch(event, true)],
-      [types.touchEnd, (event) => handleTouch(event, false)],
-      [types.touchCancel, (event) => handleTouch(event, false)],
-      [types.mouseDown, (event) => handleMouse(event, true)],
-      [types.mouseUp, (event) => handleMouse(event, false)],
-      [types.keyDown, (event) => handleKey(event, true)],
-      [types.keyUp, (event) => handleKey(event, false)],
-      [types.gamepadChange, handleGamepadChange],
-      [types.gamepadInput, handleGamepadInput],
-    ];
+    if (resolvedHandlers === undefined) {
+      const types = options.eventTypes ?? defaultEventTypes();
+      resolvedHandlers = [
+        [types.touchStart, (event) => handleTouch(event, true)],
+        [types.touchEnd, (event) => handleTouch(event, false)],
+        [types.touchCancel, (event) => handleTouch(event, false)],
+        [types.mouseDown, (event) => handleMouse(event, true)],
+        [types.mouseUp, (event) => handleMouse(event, false)],
+        [types.keyDown, (event) => handleKey(event, true)],
+        [types.keyUp, (event) => handleKey(event, false)],
+        [types.gamepadChange, handleGamepadChange],
+        [types.gamepadInput, handleGamepadInput],
+      ];
+    }
+    return resolvedHandlers;
   }
 
   function emit(event: InputEvent): void {
@@ -206,9 +206,21 @@ export function createCocosInputAdapter(
     emit({ sourceId: `gamepad:${gamepad.deviceId}:${name}`, pressed, value });
   }
 
-  // 手柄断开时清空已知控件状态，避免重连后旧状态被误判为未变化
-  function handleGamepadChange(): void {
-    lastState.clear();
+  // 手柄断开时清空该设备控件状态，避免重连后旧状态被误判为未变化。
+  // 仅清除受影响设备：多手柄场景下其它已连接手柄的派发去重不受影响。
+  // 注意：断开时不补发已按住控件的释放采样（v1 降级语义，调用方不应依赖
+  // 状态永远闭环，见 ADR-014 决策 4）。
+  function handleGamepadChange(event: unknown): void {
+    const gamepad = (event as { gamepad?: CocosGamepadLike }).gamepad;
+    if (gamepad === undefined) {
+      return;
+    }
+    const prefix = `${gamepad.deviceId}:`;
+    for (const key of lastState.keys()) {
+      if (key.startsWith(prefix)) {
+        lastState.delete(key);
+      }
+    }
   }
 
   function handleGamepadInput(event: unknown): void {

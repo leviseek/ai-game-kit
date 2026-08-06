@@ -89,8 +89,11 @@ export function createInputMapper<TAction>(
 
   function attachSource(source: InputSource): void {
     detachSource();
+    // 先订阅成功再更新 currentSource：subscribe 抛错时旧源已退订、新源未挂载，
+    // currentSource 保持 undefined，避免静默"有源但无订阅"的不一致状态
+    const unsubscribe = source.subscribe(processEvent);
     currentSource = source;
-    currentUnsubscribe = source.subscribe(processEvent);
+    currentUnsubscribe = unsubscribe;
   }
 
   attachSource(initialSource);

@@ -83,9 +83,20 @@ function createMockInput(): MockInput {
     },
     off(eventType, callback, target) {
       unregistrations.push([eventType, callback, target]);
+      // 模拟引擎 CallbacksInvoker 的引用匹配语义：仅删除同 callback 且同
+      // target 的注册项，使退订后的 emit 不再派发给该 handler
+      const index = registrations.findIndex(
+        ([type, registered, registeredTarget]) =>
+          type === eventType &&
+          registered === callback &&
+          registeredTarget === target,
+      );
+      if (index >= 0) {
+        registrations.splice(index, 1);
+      }
     },
     emit(eventType, event) {
-      for (const [type, callback] of registrations) {
+      for (const [type, callback] of [...registrations]) {
         if (type === eventType) {
           callback(event);
         }
@@ -226,6 +237,55 @@ describe("CocosInputAdapter translation", () => {
     unsubscribe();
   });
 
+  test("an axis below the deadzone emits a neutral value", async () => {
+    const { createCocosInputAdapter } = await loadFactory();
+    const mockInput = createMockInput();
+    const adapter = createCocosInputAdapter({ input: mockInput, eventTypes: EVENT_TYPES });
+    const events: InputEvent[] = [];
+
+    const unsubscribe = adapter.subscribe((event) => events.push(event));
+
+    // 低于死区的微抖动归零且视为未按下
+    mockInput.emit(EVENT_TYPES.gamepadInput, {
+      gamepad: createGamepad({
+        axes: { leftStick: { getValue: () => 0.01 } },
+      }),
+    });
+
+    expect(events).toEqual([
+      { sourceId: "gamepad:0:leftStickX", pressed: false, value: 0 },
+      { sourceId: "gamepad:0:leftStickY", pressed: false, value: 0 },
+    ]);
+
+    unsubscribe();
+  });
+
+  test("reconnecting a gamepad re-emits changed controls after a disconnect", async () => {
+    const { createCocosInputAdapter } = await loadFactory();
+    const mockInput = createMockInput();
+    const adapter = createCocosInputAdapter({ input: mockInput, eventTypes: EVENT_TYPES });
+    const events: InputEvent[] = [];
+
+    const unsubscribe = adapter.subscribe((event) => events.push(event));
+
+    const gamepad = createGamepad({
+      buttons: { buttonSouth: { getValue: () => 1 } },
+    });
+    mockInput.emit(EVENT_TYPES.gamepadInput, { gamepad });
+    expect(events).toHaveLength(1);
+
+    // 断开后状态清空；同值重连应重新派发（未被旧状态去重吞掉）
+    mockInput.emit(EVENT_TYPES.gamepadChange, { gamepad });
+    mockInput.emit(EVENT_TYPES.gamepadInput, { gamepad });
+
+    expect(events.map((event) => event.sourceId)).toEqual([
+      "gamepad:0:south",
+      "gamepad:0:south",
+    ]);
+
+    unsubscribe();
+  });
+
   test("subscribe registers listeners and unsubscribe removes them", async () => {
     const { createCocosInputAdapter } = await loadFactory();
     const mockInput = createMockInput();
@@ -246,11 +306,13 @@ describe("CocosInputAdapter translation", () => {
     const unsubscribe = adapter.subscribe(() => {});
     expect(mockInput.registrations.map(([type]) => type)).toEqual(expectedTypes);
 
+    const registeredTarget = mockInput.registrations[0]?.[2];
+
     unsubscribe();
     expect(mockInput.unregistrations.map(([type]) => type)).toEqual(expectedTypes);
-    expect(mockInput.unregistrations[0]?.[2]).toBe(
-      mockInput.registrations[0]?.[2],
-    );
+    expect(mockInput.unregistrations[0]?.[2]).toBe(registeredTarget);
+    // off 按引用匹配移除了对应注册项
+    expect(mockInput.registrations).toHaveLength(0);
   });
 
   test("double subscribe returns a no-op handle without double registration", async () => {
@@ -268,6 +330,46 @@ describe("CocosInputAdapter translation", () => {
 
     unsubscribeA();
     expect(mockInput.unregistrations).toHaveLength(9);
+  });
+
+  test("unsubscribe stops delivering events and re-subscribe does not double-register", async () => {
+    const { createCocosInputAdapter } = await loadFactory();
+    const mockInput = createMockInput();
+    const adapter = createCocosInputAdapter({ input: mockInput, eventTypes: EVENT_TYPES });
+    const events: InputEvent[] = [];
+
+    const unsubscribe = adapter.subscribe((event) => events.push(event));
+
+    mockInput.emit(EVENT_TYPES.keyDown, { keyCode: 32 });
+    expect(events).toHaveLength(1);
+
+    unsubscribe();
+    // off 按 callback 引用匹配后，emit 不再派发
+    mockInput.emit(EVENT_TYPES.keyDown, { keyCode: 32 });
+    expect(events).toHaveLength(1);
+
+    // 重新订阅不产生重复监听：同一事件只派发一次
+    const unsubscribe2 = adapter.subscribe((event) => events.push(event));
+    mockInput.emit(EVENT_TYPES.keyDown, { keyCode: 32 });
+    expect(events).toHaveLength(2);
+    expect(mockInput.registrations).toHaveLength(9);
+
+    unsubscribe2();
+  });
+
+  test("touch cancel emits a release", async () => {
+    const { createCocosInputAdapter } = await loadFactory();
+    const mockInput = createMockInput();
+    const adapter = createCocosInputAdapter({ input: mockInput, eventTypes: EVENT_TYPES });
+    const events: InputEvent[] = [];
+
+    const unsubscribe = adapter.subscribe((event) => events.push(event));
+
+    mockInput.emit(EVENT_TYPES.touchCancel, { touch: { getID: () => 7 } });
+
+    expect(events).toEqual([{ sourceId: "touch:7", pressed: false }]);
+
+    unsubscribe();
   });
 
   test("defaults to cc.input and cc.Input.EventType when not injected", async () => {
