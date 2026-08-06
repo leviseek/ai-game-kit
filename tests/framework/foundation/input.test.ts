@@ -363,3 +363,83 @@ describe("input source replacement", () => {
     expect(source.listenerCount).toBe(0);
   });
 });
+
+describe("input UI blocking", () => {
+  test("a modal navigator blocks gameplay actions until it closes", () => {
+    let modal = true;
+    const navigator = { get modal() { return modal; } };
+    const source = createFakeSource("keyboard");
+    const samples: InputSample<TestAction>[] = [];
+
+    createMapper(
+      {
+        timeSource: { now: () => 0 },
+        activeContext: "gameplay",
+        mappings: { gameplay: { "keyboard.space": "jump" } },
+        source,
+        navigator,
+      },
+      samples,
+    );
+
+    source.emit({ sourceId: "keyboard.space", pressed: true });
+    expect(samples).toEqual([]);
+
+    modal = false;
+    source.emit({ sourceId: "keyboard.space", pressed: true });
+
+    expect(samples.map((sample) => sample.action)).toEqual(["jump"]);
+  });
+
+  test("an explicit isBlocked callback overrides the navigator", () => {
+    const navigator = { modal: false };
+    const source = createFakeSource("keyboard");
+    const samples: InputSample<TestAction>[] = [];
+
+    createMapper(
+      {
+        timeSource: { now: () => 0 },
+        activeContext: "gameplay",
+        mappings: { gameplay: { "keyboard.space": "jump" } },
+        source,
+        navigator,
+        isBlocked: () => true,
+      },
+      samples,
+    );
+
+    source.emit({ sourceId: "keyboard.space", pressed: true });
+
+    expect(samples).toEqual([]);
+  });
+
+  test("a single input produces exactly one sample across contexts", () => {
+    const source = createFakeSource("keyboard");
+    const samples: InputSample<TestAction>[] = [];
+
+    // 同一输入在 ui 与 gameplay 上下文均有映射，且均激活时
+    // 只按激活上下文产生一次采样，不重复派发
+    const mapper = createMapper(
+      {
+        timeSource: { now: () => 0 },
+        activeContext: "gameplay",
+        mappings: {
+          ui: { "keyboard.space": "confirm" },
+          gameplay: { "keyboard.space": "jump" },
+        },
+        source,
+      },
+      samples,
+    );
+
+    source.emit({ sourceId: "keyboard.space", pressed: true });
+
+    expect(samples).toHaveLength(1);
+    expect(samples[0]?.action).toBe("jump");
+
+    mapper.setActiveContext("ui");
+    source.emit({ sourceId: "keyboard.space", pressed: true });
+
+    expect(samples.map((sample) => sample.action)).toEqual(["jump", "confirm"]);
+  });
+});

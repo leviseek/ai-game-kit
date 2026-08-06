@@ -101,3 +101,15 @@ export { UI_LAYER_ORDER } from "./contracts/ui/Navigation";
 
 export type { UiNavigator, UiNavigatorOptions } from "./core/ui/UiNavigator";
 export { createUiNavigator } from "./core/ui/UiNavigator";
+
+export type {
+  InputContextId,
+  InputEvent,
+  InputMapping,
+  InputSample,
+  InputSource,
+  InputSourceId,
+} from "./contracts/input/Input";
+
+export type { InputMapper, InputMapperOptions } from "./core/input/InputMapper";
+export { createInputMapper } from "./core/input/InputMapper";
