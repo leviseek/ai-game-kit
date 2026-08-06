@@ -8,7 +8,10 @@ import type {
 import type { TimeSource } from "../../contracts/time/TimeSource";
 
 export interface InputMapperOptions<TAction> {
-  /** 采样时间戳来源，复用单调时钟语义。 */
+  /**
+   * 采样时间戳来源。内核直接取 now()，不保证单调；
+   * 时间戳单调性由注入的 TimeSource 保证，建议注入 MonotonicClock。
+   */
   readonly timeSource: TimeSource;
   /** 初始激活上下文。 */
   readonly activeContext: InputContextId;
@@ -33,9 +36,9 @@ export interface InputMapper<TAction> {
   setMappings(mappings: Readonly<Record<InputContextId, InputMapping<TAction>>>): void;
   /** 切换激活上下文，立即生效；不缓冲旧上下文输入。 */
   setActiveContext(context: InputContextId): void;
-  /** 运行时替换底层输入源：退订旧源并订阅新源，映射与上下文保持不变。 */
+  /** 运行时替换底层输入源：退订旧源并订阅新源，映射与上下文保持不变。已释放后 no-op。 */
   replaceSource(source: InputSource): void;
-  /** 退订当前输入源并停止派发，幂等。 */
+  /** 退订当前输入源并停止派发，幂等；后续 setMappings/setActiveContext/replaceSource 均为 no-op。 */
   dispose(): void;
 }
 
@@ -60,6 +63,7 @@ export function createInputMapper<TAction>(
   let currentUnsubscribe: (() => void) | undefined;
   let disposed = false;
 
+  // dispose 后全部变更入口 no-op，避免重新订阅造成无法解除的引用泄漏
   function processEvent(event: InputEvent): void {
     if (disposed || isBlocked()) {
       return;
@@ -71,6 +75,7 @@ export function createInputMapper<TAction>(
     onSample({
       action,
       pressed: event.pressed,
+      // 数字输入未携带连续值时，按下=1、释放=0
       value: event.value ?? (event.pressed ? 1 : 0),
       timestamp: timeSource.now(),
     });
@@ -94,13 +99,23 @@ export function createInputMapper<TAction>(
     get activeContext() {
       return activeContext;
     },
+    // 已释放后全部变更入口 no-op，避免重新订阅造成无法解除的引用泄漏
     setMappings(nextMappings) {
+      if (disposed) {
+        return;
+      }
       mappings = nextMappings;
     },
     setActiveContext(context) {
+      if (disposed) {
+        return;
+      }
       activeContext = context;
     },
     replaceSource(source) {
+      if (disposed) {
+        return;
+      }
       attachSource(source);
     },
     dispose() {

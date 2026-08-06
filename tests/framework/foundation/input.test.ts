@@ -236,7 +236,9 @@ describe("input sampling", () => {
     source.emit({ sourceId: "keyboard.space", pressed: true });
     source.emit({ sourceId: "keyboard.space", pressed: false });
 
+    // 数字输入未携带连续值时，按下=1、释放=0
     expect(samples.map((sample) => sample.pressed)).toEqual([true, false]);
+    expect(samples.map((sample) => sample.value)).toEqual([1, 0]);
   });
 
   test("analog input carries its continuous value", () => {
@@ -261,7 +263,9 @@ describe("input sampling", () => {
       value: 0.7,
     });
 
+    // 连续值透传，且时间戳取自注入时钟
     expect(samples[0]?.value).toBe(0.7);
+    expect(samples[0]?.timestamp).toBe(30);
   });
 
   test("timestamps come from the injected clock and increase press to release", () => {

@@ -19,6 +19,18 @@ import type {
 } from "../../../assets/framework/contracts/platform/Platform";
 import type { TimeSource } from "../../../assets/framework/contracts/time/TimeSource";
 import type {
+  InputContextId,
+  InputEvent,
+  InputMapping,
+  InputSample,
+  InputSource,
+  InputSourceId,
+} from "../../../assets/framework/contracts/input/Input";
+import type {
+  InputMapper,
+  InputMapperOptions,
+} from "../../../assets/framework/core/input/InputMapper";
+import type {
   ScopedEventChannel,
 } from "../../../assets/framework/core/events/ScopedEventChannel";
 import type { DisposeHandle } from "../../../assets/framework/core/scheduling/DisposeHandle";
@@ -200,6 +212,72 @@ type _DeviceInfoIsReadonly = Expect<
 type _TimeSourceShape = Expect<Equal<keyof TimeSource, "now">>;
 type _TimeSourceReturnsNumber = Expect<
   Equal<TimeSource["now"], () => number>
+>;
+
+type TestAction = "jump" | "move";
+
+type _InputSourceIdIsString = Expect<Equal<InputSourceId, string>>;
+type _InputContextIdIsString = Expect<Equal<InputContextId, string>>;
+type _InputEventShape = Expect<
+  Equal<keyof InputEvent, "sourceId" | "pressed" | "value">
+>;
+type _InputEventSourceIdIsReadonly = Expect<
+  IsReadonlyKey<InputEvent, "sourceId">
+>;
+type _InputEventValueIsOptional = Expect<IsOptionalKey<InputEvent, "value">>;
+type _InputSampleShape = Expect<
+  Equal<
+    keyof InputSample<TestAction>,
+    "action" | "pressed" | "value" | "timestamp"
+  >
+>;
+type _InputSampleActionIsGeneric = Expect<
+  Equal<InputSample<TestAction>["action"], TestAction>
+>;
+type _InputSampleIsReadonly = Expect<
+  IsReadonlyKey<InputSample<TestAction>, "action"> &
+    IsReadonlyKey<InputSample<TestAction>, "value">
+>;
+type _InputMappingIsRecordOfActions = Expect<
+  Equal<InputMapping<TestAction>, Readonly<Record<string, TestAction>>>
+>;
+type _InputSourceShape = Expect<
+  Equal<keyof InputSource, "id" | "subscribe">
+>;
+type _InputSourceSubscribeReturnsUnsubscribe = Expect<
+  Equal<InputSource["subscribe"], (listener: (event: InputEvent) => void) => () => void>
+>;
+
+type _InputMapperShape = Expect<
+  Equal<
+    keyof InputMapper<TestAction>,
+    | "activeContext"
+    | "setMappings"
+    | "setActiveContext"
+    | "replaceSource"
+    | "dispose"
+  >
+>;
+type _InputMapperActiveContextIsReadonly = Expect<
+  IsReadonlyKey<InputMapper<TestAction>, "activeContext">
+>;
+type _InputMapperSetMappingsIsTyped = Expect<
+  Equal<
+    InputMapper<TestAction>["setMappings"],
+    (mappings: Readonly<Record<InputContextId, InputMapping<TestAction>>>) => void
+  >
+>;
+type _InputMapperReplaceSourceIsTyped = Expect<
+  Equal<InputMapper<TestAction>["replaceSource"], (source: InputSource) => void>
+>;
+type _InputMapperDisposeIsVoid = Expect<
+  Equal<InputMapper<TestAction>["dispose"], () => void>
+>;
+type _InputMapperOptionsNavigatorIsOptional = Expect<
+  IsOptionalKey<InputMapperOptions<TestAction>, "navigator">
+>;
+type _InputMapperOptionsIsBlockedIsOptional = Expect<
+  IsOptionalKey<InputMapperOptions<TestAction>, "isBlocked">
 >;
 
 type ScopedEvents = {
