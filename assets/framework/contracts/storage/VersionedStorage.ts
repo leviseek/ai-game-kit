@@ -64,15 +64,30 @@ export class SaveMigrationError extends FrameworkError {
   readonly fromVersion: SaveVersion;
   readonly toVersion: SaveVersion;
 
-  constructor(fromVersion: SaveVersion, toVersion: SaveVersion) {
+  constructor(
+    fromVersion: SaveVersion,
+    toVersion: SaveVersion,
+    options?: { readonly cause?: unknown },
+  ) {
     super(
       `Missing or failed save migration from version ${fromVersion} to ${toVersion}`,
-      { component: "versioned-storage" },
+      { component: "versioned-storage", cause: options?.cause },
     );
 
     this.name = "SaveMigrationError";
     this.fromVersion = fromVersion;
     this.toVersion = toVersion;
+  }
+}
+
+/** 底层存档记录损坏（JSON 非法或形状不符）时的类型化错误，携带损坏描述。 */
+export class SaveCorruptionError extends FrameworkError {
+  constructor(detail: string) {
+    super(`Save record is corrupted: ${detail}`, {
+      component: "versioned-storage",
+    });
+
+    this.name = "SaveCorruptionError";
   }
 }
 

@@ -9,6 +9,7 @@ import type {
   VersionedStorageOptions,
 } from "../../../assets/framework/contracts/storage/VersionedStorage";
 import {
+  SaveCorruptionError,
   SaveMigrationError,
   SaveSerializationError,
   SaveVersionError,
@@ -203,6 +204,37 @@ describe("VersionedStorage consecutive migration", () => {
 
     expect(() => storage.load("player", "save")).toThrow(SaveMigrationError);
   });
+
+  test("a failing migration preserves the underlying error as cause", async () => {
+    const backend = emptyBackend();
+    const legacy = createVersionedStorage({
+      storage: backend,
+      currentVersion: 1,
+    });
+    await legacy.save("player", "save", { name: "alice" });
+
+    const underlying = new Error("corrupt legacy data");
+    const storage = createVersionedStorage({
+      storage: backend,
+      currentVersion: 3,
+      migrators: {
+        1: () => {
+          throw underlying;
+        },
+      },
+    });
+
+    try {
+      await storage.load("player", "save");
+      expect.unreachable("load should have thrown");
+    } catch (error) {
+      expect(error).toBeInstanceOf(SaveMigrationError);
+      const migrationError = error as SaveMigrationError;
+      expect(migrationError.fromVersion).toBe(1);
+      expect(migrationError.toVersion).toBe(2);
+      expect(migrationError.cause).toBe(underlying);
+    }
+  });
 });
 
 describe("VersionedStorage future version and serialization guards", () => {
@@ -296,6 +328,67 @@ describe("VersionedStorage future version and serialization guards", () => {
     ).toThrow(SaveSerializationError);
 
     expect(await storage.load("player", "save")).toBeNull();
+  });
+});
+
+describe("VersionedStorage corruption guards", () => {
+  test("a record that is not valid JSON is rejected as corrupted", async () => {
+    const backend = emptyBackend();
+    await backend.set("save:player:save", "not-json{{");
+
+    const storage = createVersionedStorage({
+      storage: backend,
+      currentVersion: 3,
+    });
+
+    expect(() => storage.load("player", "save")).toThrow(
+      SaveCorruptionError,
+    );
+  });
+
+  test("a record that is not an object is rejected as corrupted", async () => {
+    const backend = emptyBackend();
+    await backend.set("save:player:save", '"hello"');
+
+    const storage = createVersionedStorage({
+      storage: backend,
+      currentVersion: 3,
+    });
+
+    expect(() => storage.load("player", "save")).toThrow(
+      SaveCorruptionError,
+    );
+  });
+
+  test("a record missing the version field is rejected as corrupted", async () => {
+    const backend = emptyBackend();
+    await backend.set("save:player:save", JSON.stringify({ data: {} }));
+
+    const storage = createVersionedStorage({
+      storage: backend,
+      currentVersion: 3,
+    });
+
+    expect(() => storage.load("player", "save")).toThrow(
+      SaveCorruptionError,
+    );
+  });
+
+  test("a record with a non-positive version is rejected as corrupted", async () => {
+    const backend = emptyBackend();
+    await backend.set(
+      "save:player:save",
+      JSON.stringify({ version: 0, data: {} }),
+    );
+
+    const storage = createVersionedStorage({
+      storage: backend,
+      currentVersion: 3,
+    });
+
+    expect(() => storage.load("player", "save")).toThrow(
+      SaveCorruptionError,
+    );
   });
 });
 

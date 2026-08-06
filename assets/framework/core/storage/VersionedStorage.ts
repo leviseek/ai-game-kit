@@ -6,6 +6,7 @@ import type {
   VersionedStorageOptions,
 } from "../../contracts/storage/VersionedStorage";
 import {
+  SaveCorruptionError,
   SaveMigrationError,
   SaveSerializationError,
   SaveVersionError,
@@ -92,6 +93,36 @@ function composeStorageKey(namespace: string, key: string): string {
   return `${RECORD_PREFIX}${namespace}${NAMESPACE_SEPARATOR}${key}`;
 }
 
+// 校验解析出的存档记录形状：必须是包含正整数 version 与 data 字段的对象。
+// 形状不符视为数据损坏，抛出类型化错误而非静默降级为空存档。
+function parseRecord(raw: string): { version: SaveVersion; data: unknown } {
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new SaveCorruptionError("invalid JSON");
+  }
+
+  if (
+    parsed === null ||
+    typeof parsed !== "object" ||
+    Array.isArray(parsed) ||
+    !("version" in parsed) ||
+    !("data" in parsed)
+  ) {
+    throw new SaveCorruptionError("unexpected record shape");
+  }
+
+  const version = (parsed as { version: unknown }).version;
+
+  if (typeof version !== "number" || !Number.isInteger(version) || version <= 0) {
+    throw new SaveCorruptionError("unexpected record shape");
+  }
+
+  return { version, data: (parsed as { data: unknown }).data };
+}
+
 export function createVersionedStorage(
   options: VersionedStorageOptions,
 ): VersionedStorage {
@@ -116,7 +147,9 @@ export function createVersionedStorage(
         migrated = migrator(migrated);
       } catch (error) {
         // 迁移失败整体失败，不落盘部分结果；底层错误经 cause 保留可诊断。
-        throw new SaveMigrationError(sourceVersion, sourceVersion + 1);
+        throw new SaveMigrationError(sourceVersion, sourceVersion + 1, {
+          cause: error,
+        });
       }
 
       sourceVersion += 1;
@@ -140,8 +173,8 @@ export function createVersionedStorage(
         return null;
       }
 
-      // 底层存储损坏时 JSON 解析失败：视为数据损坏而非未来版本/迁移问题。
-      const record = JSON.parse(raw) as { version: SaveVersion; data: unknown };
+      // 底层存储损坏时 JSON 解析失败或形状不符：视为数据损坏而非未来版本/迁移问题。
+      const record = parseRecord(raw);
 
       if (record.version > currentVersion) {
         throw new SaveVersionError(record.version, currentVersion);
