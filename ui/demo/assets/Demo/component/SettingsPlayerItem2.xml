@@ -2,10 +2,10 @@
 <component size="390,30" extention="Button">
   <controller name="button" pages="0,up,1,down,2,over,3,selectedOver,4,disabled,5,selectedDisabled" selected="0"/>
   <displayList>
-    <image id="n1_player2" name="hover" src="wnms0" fileName="img/settings_item_hover2.png" xy="0,0" size="390,30">
+    <image id="n1_player2" name="img_hover" src="wnms0" fileName="img/settings_item_hover2.png" xy="0,0" size="390,30">
       <gearDisplay controller="button" pages="2"/>
     </image>
-    <image id="n2_player2" name="selected" src="s01su" fileName="img/settings_item_selected2.png" xy="0,0" size="390,30">
+    <image id="n2_player2" name="img_selected" src="s01su" fileName="img/settings_item_selected2.png" xy="0,0" size="390,30">
       <gearDisplay controller="button" pages="1,3"/>
     </image>
     <text id="n3_player2" name="title" xy="12,0" size="366,30" fontSize="16" color="#ffffff" vAlign="middle" autoSize="none" singleLine="true" text=""/>

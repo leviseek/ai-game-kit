@@ -1,15 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <packageDescription id="4q9x2uij">
   <resources>
+    <image id="v6hl7" name="start_btn_down.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="pvpp4" name="start_btn_up.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
     <component id="29kie" name="SettingsPanel2.xml" path="/" exported="true"/>
-    <component id="wgci2" name="SettingsPlayerItem2.xml" path="/" exported="true"/>
-    <component id="poomz" name="SettingsReturnButton2.xml" path="/" exported="true"/>
-    <component id="uog75" name="SettingsComboBox2.xml" path="/" exported="true"/>
-    <component id="u4c0o" name="SettingsComboPopup2.xml" path="/" exported="true"/>
-    <component id="glyx1" name="SettingsComboItem2.xml" path="/" exported="true"/>
-    <component id="ut0yg" name="SettingsProgress2.xml" path="/" exported="true"/>
-    <component id="ue410" name="SettingsSlider2.xml" path="/" exported="true"/>
-    <component id="cud16" name="SettingsSliderGrip2.xml" path="/" exported="true"/>
+    <component id="wgci2" name="SettingsPlayerItem2.xml" path="/component/" exported="true"/>
+    <component id="poomz" name="SettingsReturnButton2.xml" path="/component/" exported="true"/>
+    <component id="uog75" name="SettingsComboBox2.xml" path="/component/" exported="true"/>
+    <component id="u4c0o" name="SettingsComboPopup2.xml" path="/component/" exported="true"/>
+    <component id="glyx1" name="SettingsComboItem2.xml" path="/component/" exported="true"/>
+    <component id="ut0yg" name="SettingsProgress2.xml" path="/component/" exported="true"/>
+    <component id="ue410" name="SettingsSlider2.xml" path="/component/" exported="true"/>
+    <component id="cud16" name="SettingsSliderGrip2.xml" path="/component/" exported="true"/>
     <image id="s01su" name="settings_item_selected2.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
     <image id="wnms0" name="settings_item_hover2.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
     <image id="ncgt6" name="settings_popup2.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
@@ -29,7 +31,7 @@
     <image id="z4kdn" name="close_dialog_panel.png" path="/img/" scale="9grid" scale9grid="2,2,5,5" qualityOption="source" duplicatePadding="true"/>
     <image id="46cf3" name="close_dialog_mask.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
     <image id="cqv1p" name="start_bg.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
-    <component id="yh150" name="StartButton.xml" path="/" exported="true"/>
+    <component id="yh150" name="StartButton.xml" path="/component/" exported="true"/>
     <component id="hz2u0" name="DemoView.xml" path="/" exported="true"/>
     <image id="fmn11" name="background.png" path="/img/" scale="9grid" scale9grid="11,8,192,115" qualityOption="source" duplicatePadding="true"/>
   </resources>
