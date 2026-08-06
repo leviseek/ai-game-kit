@@ -25,5 +25,5 @@
 
 ## 4. 收口验证
 
-- [ ] 4.1 运行完整 Bun 单元测试与 strict TypeScript 检查，记录测试数量与零失败结果。
-- [ ] 4.2 执行 ADR 检查：确认本次音频实现是否产生新的架构决策；如有，按 `doc/decisions/ADR-NNN-<slug>.md` 创建 ADR；如无，明确记录无需新增 ADR。
+- [x] 4.1 运行完整 Bun 单元测试与 strict TypeScript 检查，记录测试数量与零失败结果。
+- [x] 4.2 执行 ADR 检查：确认本次音频实现是否产生新的架构决策；如有，按 `doc/decisions/ADR-NNN-<slug>.md` 创建 ADR；如无，明确记录无需新增 ADR。
