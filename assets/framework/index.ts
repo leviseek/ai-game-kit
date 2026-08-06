@@ -138,3 +138,15 @@ export {
 } from "./core/config/ConfigTable";
 
 export { loadConfigTable } from "./core/config/ConfigLoader";
+
+export type {
+  AudioBackend,
+  AudioBackgroundPolicy,
+  AudioGroup,
+  AudioGroupState,
+  AudioPlayScope,
+  AudioService,
+  AudioServiceOptions,
+  AudioTrackRef,
+} from "./contracts/audio/Audio";
+export { createAudioService } from "./core/audio/AudioService";

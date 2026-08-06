@@ -12,10 +12,10 @@
 
 ## 2. 音频服务内核实现
 
-- [ ] 2.1 实现 `contracts/audio/*` 纯接口：分组枚举、后端契约（play/stop/pause/resume/setVolume）、作用域与音量配置。
-- [ ] 2.2 实现 `core/audio/*` 引擎无关服务：分组状态、音量/静音、切歌、作用域停止与降级逻辑，使 1.x 测试通过且不依赖 `cc`。
-- [ ] 2.3 实现前后台策略：订阅 `ApplicationVisibility` 变更，按配置执行后台暂停/前台恢复，切换处理捕获错误并记录结构化诊断。
-- [ ] 2.4 根入口白名单同步：新增音频契约与核心符号至 `expectedRootExports`，依赖边界检查通过。
+- [x] 2.1 实现 `contracts/audio/*` 纯接口：分组枚举、后端契约（play/stop/pause/resume/setVolume）、作用域与音量配置。
+- [x] 2.2 实现 `core/audio/*` 引擎无关服务：分组状态、音量/静音、切歌、作用域停止与降级逻辑，使 1.x 测试通过且不依赖 `cc`。
+- [x] 2.3 实现前后台策略：订阅 `ApplicationVisibility` 变更，按配置执行后台暂停/前台恢复，切换处理捕获错误并记录结构化诊断。
+- [x] 2.4 根入口白名单同步：新增音频契约与核心符号至 `expectedRootExports`，依赖边界检查通过。
 
 ## 3. Cocos 音频适配器
 
