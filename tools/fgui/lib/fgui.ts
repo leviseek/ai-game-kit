@@ -1,0 +1,312 @@
+/**
+ * FGUI 确定性操作核心：定位 FGUI 项目、解析 package.xml 资源清单、
+ * 解析组件 XML、引用完整性校验、短 id 分配。
+ * 所有输入输出均为纯数据，供 CLI 与测试复用。
+ */
+
+import { existsSync, readFileSync } from "node:fs";
+import { basename, join, resolve } from "node:path";
+
+import { findChild, parseXml, type XmlElement } from "./xml";
+
+/** 仓库根：lib/fgui.ts → lib → tools → tools/fgui → tools → 仓库根 */
+export const PROJECT_ROOT = resolve(import.meta.dirname, "../../..");
+
+export interface FguiProject {
+  readonly root: string;
+  /** FGUI 工程目录，含 *.fairy */
+  readonly projectDir: string;
+  /** 工程名（如 demo） */
+  readonly name: string;
+  /** assets 目录 */
+  readonly assetsDir: string;
+}
+
+export interface PackageResource {
+  readonly kind: "component" | "image" | "movieclip";
+  readonly id: string;
+  readonly name: string;
+  readonly path: string;
+  readonly exported: boolean;
+  readonly scale9grid?: string;
+}
+
+export interface FguiPackage {
+  readonly id: string;
+  readonly name: string;
+  readonly dir: string;
+  readonly resources: readonly PackageResource[];
+}
+
+export interface ObjectIndex {
+  readonly id: string;
+  readonly name: string;
+  readonly type: string;
+  readonly xy?: string;
+  readonly size?: string;
+  readonly src?: string;
+  readonly fileName?: string;
+  readonly pkg?: string;
+  readonly visible?: string;
+}
+
+export interface ComponentInfo {
+  readonly file: string;
+  readonly root: XmlElement;
+  readonly objects: readonly ObjectIndex[];
+}
+
+export class FguiError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "FguiError";
+  }
+}
+
+/** 定位 FGUI 工程目录：默认 ui/demo；显式传入时以项目根为基准。 */
+export function locateProject(projectArg?: string): FguiProject {
+  const projectDir = projectArg
+    ? resolve(PROJECT_ROOT, projectArg)
+    : join(PROJECT_ROOT, "ui", "demo");
+
+  if (!existsSync(projectDir)) throw new FguiError(`FGUI 工程目录不存在: ${projectDir}`);
+  const fairies = findFairyFiles(projectDir);
+  if (fairies.length === 0) throw new FguiError(`FGUI 工程目录缺少 *.fairy: ${projectDir}`);
+
+  return {
+    root: PROJECT_ROOT,
+    projectDir,
+    name: basename(projectDir),
+    assetsDir: join(projectDir, "assets"),
+  };
+}
+
+function findFairyFiles(dir: string): string[] {
+  const { readdirSync } = require("node:fs") as typeof import("node:fs");
+  const entries = readdirSync(dir, { withFileTypes: true });
+  const out: string[] = [];
+  for (const entry of entries) {
+    if (entry.isFile() && entry.name.endsWith(".fairy")) out.push(entry.name);
+  }
+  return out;
+}
+
+/** 列出工程下所有包（含 package.xml 的 assets 子目录）。 */
+export function listPackages(project: FguiProject): string[] {
+  const { readdirSync } = require("node:fs") as typeof import("node:fs");
+  if (!existsSync(project.assetsDir)) return [];
+  const names = readdirSync(project.assetsDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort();
+  return names.filter((name) => existsSync(join(project.assetsDir, name, "package.xml")));
+}
+
+/** 解析包目录，返回包信息与资源清单。 */
+export function readPackage(project: FguiProject, packageName: string): FguiPackage {
+  const dir = join(project.assetsDir, packageName);
+  const packageXmlPath = join(dir, "package.xml");
+  if (!existsSync(packageXmlPath)) {
+    throw new FguiError(`包不存在或无 package.xml: ${packageName}`);
+  }
+
+  const root = parseXml(readFileSync(packageXmlPath, "utf8"));
+  const resourcesNode = findChild(root, "resources");
+  const resources: PackageResource[] = (resourcesNode?.children ?? [])
+    .map((node): PackageResource | undefined => {
+      const kind = node.name;
+      if (kind !== "component" && kind !== "image" && kind !== "movieclip") return undefined;
+      return {
+        kind,
+        id: node.attrs.id ?? "",
+        name: node.attrs.name ?? "",
+        path: node.attrs.path ?? "/",
+        exported: node.attrs.exported === "true",
+        ...(node.attrs.scale9grid ? { scale9grid: node.attrs.scale9grid } : {}),
+      };
+    })
+    .filter((r): r is PackageResource => r !== undefined && r.id.length > 0);
+
+  return { id: root.attrs.id ?? "", name: packageName, dir, resources };
+}
+
+/** 校验包内资源 id 是否唯一，返回冲突项。 */
+export function findResourceIdConflicts(pkg: FguiPackage): string[] {
+  const seen = new Set<string>();
+  const dup: string[] = [];
+  for (const r of pkg.resources) {
+    if (seen.has(r.id)) dup.push(r.id);
+    seen.add(r.id);
+  }
+  return dup;
+}
+
+/**
+ * 读取组件 XML 并建立对象索引。
+ * componentName 可传文件名（Foo.xml）或不带扩展名（Foo）。
+ * 组件文件可能位于包内子目录（package.xml 的 path 属性），按名称递归定位。
+ */
+export function readComponent(
+  project: FguiProject,
+  packageName: string,
+  componentName: string,
+): ComponentInfo {
+  const pkgDir = join(project.assetsDir, packageName);
+  const fileName = componentName.endsWith(".xml") ? componentName : `${componentName}.xml`;
+  const file = resolveComponentFile(pkgDir, fileName);
+  if (file === undefined) throw new FguiError(`组件不存在: ${packageName}/${fileName}`);
+
+  const root = parseXml(readFileSync(file, "utf8"));
+  const objects = collectObjects(root);
+  return { file, root, objects };
+}
+
+/** 在包目录内按文件名递归定位组件（兼容 path 子目录）。 */
+function resolveComponentFile(pkgDir: string, fileName: string): string | undefined {
+  const direct = join(pkgDir, fileName);
+  if (existsSync(direct)) return direct;
+  const { readdirSync } = require("node:fs") as typeof import("node:fs");
+  const entries = readdirSync(pkgDir, { withFileTypes: true });
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    const hit = resolveComponentFile(join(pkgDir, entry.name), fileName);
+    if (hit !== undefined) return hit;
+  }
+  return undefined;
+}
+
+/** 收集组件内所有带 id 的对象（含 displayList 内的嵌套），用于索引。 */
+function collectObjects(root: XmlElement): ObjectIndex[] {
+  const displayList = findChild(root, "displayList");
+  if (!displayList) return [];
+  const out: ObjectIndex[] = [];
+  for (const node of displayList.children) {
+    collectNode(node, out);
+  }
+  return out;
+}
+
+function collectNode(node: XmlElement, out: ObjectIndex[]): void {
+  const id = node.attrs.id;
+  if (id) {
+    out.push({
+      id,
+      name: node.attrs.name ?? "",
+      type: node.name,
+      ...(node.attrs.xy ? { xy: node.attrs.xy } : {}),
+      ...(node.attrs.size ? { size: node.attrs.size } : {}),
+      ...(node.attrs.src ? { src: node.attrs.src } : {}),
+      ...(node.attrs.fileName ? { fileName: node.attrs.fileName } : {}),
+      ...(node.attrs.pkg ? { pkg: node.attrs.pkg } : {}),
+      ...(node.attrs.visible !== undefined ? { visible: node.attrs.visible } : {}),
+    });
+  }
+  // displayList 与 group 内的子对象继续收集
+  for (const child of node.children) {
+    if (child.name === "displayList" || child.name === "group" || isDisplayObject(child)) {
+      collectNode(child, out);
+    }
+  }
+}
+
+const DISPLAY_TYPES = new Set([
+  "image", "graph", "text", "loader", "component", "list", "movieclip",
+]);
+
+function isDisplayObject(node: XmlElement): boolean {
+  return DISPLAY_TYPES.has(node.name);
+}
+
+/** 校验组件引用完整性，返回问题列表（空 = 全部通过）。 */
+export interface ValidationIssue {
+  readonly severity: "error" | "warning";
+  readonly message: string;
+}
+
+export function validateComponent(
+  project: FguiProject,
+  pkg: FguiPackage,
+  component: ComponentInfo,
+): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+  const pkgId = new Map(pkg.resources.map((r) => [r.id, r]));
+
+  // 1. 对象 id 唯一
+  const seenIds = new Map<string, string>();
+  for (const obj of component.objects) {
+    const existing = seenIds.get(obj.id);
+    if (existing) {
+      issues.push({ severity: "error", message: `对象 id 重复: "${obj.id}"（${existing} 与 ${obj.name}）` });
+    } else {
+      seenIds.set(obj.id, obj.name);
+    }
+  }
+
+  // 2. 资源引用有效（src 指向本包或跨包）
+  for (const obj of component.objects) {
+    if (!obj.src) continue;
+    if (obj.pkg) {
+      // 跨包引用 ui://pkgid...：无法在本包校验目标，仅提示人工确认
+      issues.push({
+        severity: "warning",
+        message: `跨包引用 ${obj.name} → pkg=${obj.pkg} src=${obj.src}，请在目标包确认资源存在`,
+      });
+      continue;
+    }
+    if (!pkgId.has(obj.src)) {
+      issues.push({
+        severity: "error",
+        message: `资源引用不存在: ${obj.name} → src="${obj.src}"（package.xml 未登记）`,
+      });
+    }
+  }
+
+  // 3. relation target 指向存在对象（target 非空时）
+  for (const node of collectAllDisplayNodes(component.root)) {
+    for (const relation of node.children.filter((c) => c.name === "relation")) {
+      const target = relation.attrs.target;
+      if (!target) continue;
+      if (target === "0") continue; // 0 表示根
+      if (!seenIds.has(target)) {
+        issues.push({
+          severity: "error",
+          message: `relation target 不存在: "${target}"（节点 ${node.attrs.id ?? node.attrs.name ?? "?"}）`,
+        });
+      }
+    }
+  }
+
+  return issues;
+}
+
+function collectAllDisplayNodes(root: XmlElement): XmlElement[] {
+  const displayList = findChild(root, "displayList");
+  if (!displayList) return [];
+  const out: XmlElement[] = [];
+  const walk = (node: XmlElement): void => {
+    out.push(node);
+    for (const child of node.children) walk(child);
+  };
+  for (const child of displayList.children) walk(child);
+  return out;
+}
+
+/** 分配不与现有资源冲突的短 id（4 位小写字母数字）。 */
+export function nextResourceId(pkg: FguiPackage, prefix?: string): string {
+  const used = new Set(pkg.resources.map((r) => r.id));
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  for (let attempt = 0; attempt < 1000; attempt++) {
+    let candidate = prefix ?? "";
+    if (candidate.length === 0) {
+      for (let i = 0; i < 4; i++) {
+        candidate += chars[Math.floor(Math.random() * chars.length)];
+      }
+    } else {
+      // 前缀 + 2 位随机补足，避免前缀本身已占用时反复失败
+      candidate += chars[Math.floor(Math.random() * chars.length)];
+      candidate += chars[Math.floor(Math.random() * chars.length)];
+    }
+    if (!used.has(candidate)) return candidate;
+  }
+  throw new FguiError("无法分配不冲突资源 id（命名空间耗尽）");
+}

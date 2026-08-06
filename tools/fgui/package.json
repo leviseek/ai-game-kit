@@ -1,0 +1,13 @@
+{
+  "name": "fgui-tools",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "FairyGUI 确定性工具：资源清单/组件结构读取/引用校验/短 id 分配",
+  "bin": {
+    "fgui": "cli.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.2"
+  }
+}
