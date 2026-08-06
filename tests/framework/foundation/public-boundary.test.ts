@@ -983,6 +983,57 @@ describe("framework public boundary", () => {
     }
   });
 
+  test.skipIf(
+    !existsSync(resolve(frameworkRoot, "contracts/config")),
+  )("keeps config contracts engine-agnostic and free of core implementations", () => {
+    const contractsConfigRoot = resolve(frameworkRoot, "contracts/config");
+
+    for (const file of collectTypeScriptFiles(contractsConfigRoot)) {
+      const source = stripComments(readFileSync(file, "utf8"));
+      // 契约层只允许类型声明与错误类；不得反向依赖 core 实现细节（错误基座除外）
+      expect(source).not.toMatch(/from\s*["'][^"']*core\/config/);
+      expect(source).not.toMatch(/from\s*["']cc(?:["']|\/)/);
+      expect(source).not.toMatch(
+        /from\s*["']fairygui(?:-cc)?(?:["']|\/)/,
+      );
+      // 配置与玩家存档严格分离：契约层不得触达任何存储实现
+      expect(source).not.toMatch(/from\s*["'][^"']*\/storage\//);
+    }
+  });
+
+  test.skipIf(
+    !existsSync(resolve(frameworkRoot, "core/config")),
+  )("keeps the config core layer engine-agnostic and separate from saves", () => {
+    const coreConfigRoot = resolve(frameworkRoot, "core/config");
+
+    const sources = collectTypeScriptFiles(coreConfigRoot)
+      .map((file) => stripComments(readFileSync(file, "utf8")))
+      .join("\n");
+
+    expect(sources).not.toMatch(/from\s*["']cc(?:["']|\/)/);
+    expect(sources).not.toMatch(/from\s*["']fairygui(?:-cc)?(?:["']|\/)/);
+    // 配置走资源读取路径，内核不得依赖存档键值后端（core/contracts 同级 import 需显式拦截）
+    expect(sources).not.toMatch(/from\s*["'][^"']*\/storage\//);
+    expect(sources).not.toMatch(
+      /\b(?:getInstance|singleton|ServiceLocator)\b/,
+    );
+  });
+
+  test.skipIf(
+    !existsSync(resolve(frameworkRoot, "adapters/cocos/config")),
+  )("keeps the cocos config adapter on the resource path only", () => {
+    const cocosConfigRoot = resolve(frameworkRoot, "adapters/cocos/config");
+
+    for (const file of collectTypeScriptFiles(cocosConfigRoot)) {
+      const source = stripComments(readFileSync(file, "utf8"));
+      // 适配器允许 cc 导入，但不得触达存档后端，且不得依赖 FairyGUI
+      expect(source).not.toMatch(/from\s*["'][^"']*\/storage\//);
+      expect(source).not.toMatch(
+        /from\s*["']fairygui(?:-cc)?(?:["']|\/)/,
+      );
+    }
+  });
+
   test("keeps the ui core layer engine-agnostic and free of service locators", () => {
     const coreUiRoot = resolve(frameworkRoot, "core/ui");
     if (!existsSync(coreUiRoot)) {

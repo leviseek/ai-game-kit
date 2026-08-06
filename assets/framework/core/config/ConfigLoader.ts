@@ -21,11 +21,15 @@ function unwrapCause(error: unknown): unknown {
  * 复用 LoadCoordinator/ResourceScope 语义，全程不触达存档键值后端。
  * 装载失败抛 ConfigLoadError 并保留底层原因；内容非纯对象在 createConfigTable
  * 抛 ConfigParseError，均不产生部分配置状态。
+ *
+ * extractContent 把加载到的引擎资源转换为配置内容；缺省原样透传，
+ * Cocos 适配器用它把 JsonAsset 解包为纯数据后再走 createConfigTable。
  */
 export async function loadConfigTable(
   provider: IResourceProvider,
   bundle: string,
   path: string,
+  extractContent: (resource: unknown) => unknown = (resource) => resource,
 ): Promise<ConfigTable> {
   const handle = provider.load(bundle, path);
   const settled = await handle.done;
@@ -40,5 +44,5 @@ export async function loadConfigTable(
     throw new ConfigLoadError(bundle, path);
   }
 
-  return createConfigTable(settled.resource);
+  return createConfigTable(extractContent(settled.resource));
 }
