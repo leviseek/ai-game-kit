@@ -18,8 +18,8 @@
 
 ## 4. 组合根接入与装配前校验
 
-- [ ] 4.1 在 `boot/AppRoot.ts` 的 `assembleApp` 接入最小服务注册/解析演示与装配前 token 校验（模块依赖缺失/循环在 `Application.start` 前抛错），使 3.3 通过；`createModules` 不依赖注册表，`startup.scene` 不修改。
-- [ ] 4.2 补充验证：装配前校验失败走既有 `app.start().catch` 失败路径，不进入 `running`，回滚按现有规则执行。
+- [x] 4.1 在 `boot/AppRoot.ts` 的 `assembleApp` 接入最小服务注册/解析演示与装配前 token 校验（模块依赖缺失/循环在 `Application.start` 前抛错），使 3.3 通过；`createModules` 不依赖注册表，`startup.scene` 不修改。（本 change 完成：`boot/AppRoot.ts` 的 `assembleApp` 显式创建 service-registry（`createServiceRegistry`），注册 `WallClock` 时间源作为最小演示（`app.time` 类型化 token，无副作用，注册表不进 `ApplicationContext`、不做全局单例）；新增 `validateRequiredTokens` 在 `Application.start` 前对必需 token 逐一 resolve，缺失/循环抛 `ServiceResolutionError`（继承 `FrameworkError`）；`AppRoot.start` 先执行 `validateAssembly` 再 `await app.start()`，校验失败走既有 `launch().catch` 失败路径。`createModules` 保持不依赖注册表，`startup.scene` 未修改。验证：`service-registry-composition.test.ts` 既有 3.3 用例转绿，完整 foundation 481 pass / 0 fail，types EXIT=0。）
+- [x] 4.2 补充验证：装配前校验失败走既有 `app.start().catch` 失败路径，不进入 `running`，回滚按现有规则执行。（本 change 完成：`service-registry-composition.test.ts` 新增失败路径用例——注入缺失 token 的装配前校验，`AppRoot.start` 经既有 `launch().catch` 吞掉失败不抛未捕获异常、应用保持 `created` 不进入 `running`（回滚无模块可执行），且类型化 `ServiceResolutionError` 经 `logger.error` 上报；配套 `AppRoot.ts` 在 `launch().catch` 中对装配前校验失败经 logger 记录类型化错误（app.start 失败仍由 Application 内部记录）。红色期确认：空 catch 不报告错误，用例因 `ServiceResolutionError` 未上报而失败；实现后转绿。验证：完整 foundation 481 pass / 0 fail，types EXIT=0。）
 
 ## 5. 集成验证与收口
 

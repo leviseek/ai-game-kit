@@ -2,6 +2,8 @@ import { _decorator, Component, game } from "cc";
 import {
   Application,
   createSceneFlow,
+  createServiceRegistry,
+  createServiceToken,
   type IResourceProvider,
   type Logger,
   type Module,
@@ -10,10 +12,15 @@ import {
   type SceneFlow,
   type SceneResources,
   type SceneSwitchResult,
+  ServiceResolutionError,
+  type ServiceRegistry,
+  type ServiceToken,
+  type TimeSource,
   type UiLayer,
   type UiPage,
 } from "../framework";
 import { createApplicationContext } from "../framework/application/ApplicationContext";
+import { WallClock } from "../framework/core/time/WallClock";
 import { ConsoleLogger } from "../framework/diagnostics/logging/ConsoleLogger";
 import { CocosApplicationAdapter } from "../framework/adapters/cocos/application/CocosApplicationAdapter";
 import { createCocosResourceProvider } from "../framework/adapters/cocos/resource/CocosResourceProvider";
@@ -35,6 +42,18 @@ export function createModules(): readonly Module[] {
   return [];
 }
 
+// 装配前 token 校验：对组合根声明的必需服务逐一 resolve。缺失 token 或解析期
+// 依赖循环抛 ServiceResolutionError（继承 FrameworkError），使非法装配在
+// Application.start 前失败、不进入 running。
+function validateRequiredTokens(
+  registry: ServiceRegistry,
+  requiredTokens: readonly ServiceToken<unknown>[],
+): void {
+  for (const token of requiredTokens) {
+    registry.resolve(token);
+  }
+}
+
 export interface AppAssembly {
   readonly app: Application;
   readonly adapter: CocosApplicationAdapter;
@@ -45,6 +64,10 @@ export interface AppAssembly {
   readonly uiRoot: CocosUiRoot;
   /** 组合根日志：供 UI 根初始化失败上报等场景使用。 */
   readonly logger: Logger;
+  /** 组合根显式创建的服务注册表：供装配前 token 校验与业务对象经构造注入服务契约。 */
+  readonly registry: ServiceRegistry;
+  /** 装配前 token 校验：缺失/循环在此同步抛错，失败走既有 app.start().catch 路径。 */
+  readonly validateAssembly: () => void;
 }
 
 export function assembleApp(): AppAssembly {
@@ -53,6 +76,18 @@ export function assembleApp(): AppAssembly {
   const modules = createModules();
   const app = new Application(modules, context);
   const adapter = new CocosApplicationAdapter(app);
+
+  // 服务注册表由组合根显式创建；注册一个无副作用的墙钟时间源作为最小接入演示，
+  // 后续业务服务在此以类型化 token 注册。注册表不进 Context、不做全局单例。
+  const registry = createServiceRegistry();
+  const appTimeSourceToken = createServiceToken<TimeSource>("app.time");
+  registry.register(appTimeSourceToken, new WallClock());
+
+  // 装配前 token 校验：模块声明依赖的 token 在此逐个 resolve（缺失/循环同步抛错）。
+  // 闭包在 AppRoot.start 先于 app.start 调用，失败走既有 app.start().catch 失败路径。
+  const validateAssembly = (): void => {
+    validateRequiredTokens(registry, [appTimeSourceToken]);
+  };
 
   // 场景流转冒烟组合：真实引擎接缝（cc.assetManager / cc.director）的整链路
   // 组装点。场景名与资源的映射属于游戏层组合，这里只提供最小组装与触发入口；
@@ -77,7 +112,16 @@ export function assembleApp(): AppAssembly {
   // AppRoot.start 在引擎 ready 后触发。
   const uiRoot = createCocosUiRoot();
 
-  return { app, adapter, sceneFlow, resourceProvider, uiRoot, logger };
+  return {
+    app,
+    adapter,
+    sceneFlow,
+    resourceProvider,
+    uiRoot,
+    logger,
+    registry,
+    validateAssembly,
+  };
 }
 
 @ccclass("AppRoot")
@@ -90,24 +134,44 @@ export class AppRoot extends Component {
   private pageAdapter?: FairyGuiPageAdapter;
   private uiScope?: ResourceScope;
   private logger?: Logger;
+  private validateAssembly?: () => void;
 
   onLoad(): void {
-    const { app, adapter, sceneFlow, resourceProvider, uiRoot, logger } =
-      assembleApp();
+    const {
+      app,
+      adapter,
+      sceneFlow,
+      resourceProvider,
+      uiRoot,
+      logger,
+      validateAssembly,
+    } = assembleApp();
     this.app = app;
     this.adapter = adapter;
     this.sceneFlow = sceneFlow;
     this.resourceProvider = resourceProvider;
     this.uiRoot = uiRoot;
     this.logger = logger;
+    this.validateAssembly = validateAssembly;
     game.addPersistRootNode(this.node);
   }
 
   start(): void {
     this.adapter?.bind();
     this.initializeUiRoot();
-    this.app?.start().catch(() => {
-      // 启动失败已由 Application 内部通过 context.logger 记录
+
+    const launch = async (): Promise<void> => {
+      // 装配前 token 校验：缺失/循环在此抛 ServiceResolutionError，
+      // 与启动失败共用下方既有 app.start().catch 失败路径，不进入 running。
+      this.validateAssembly?.();
+      await this.app?.start();
+    };
+    launch().catch((error) => {
+      // 装配前校验失败发生在 Application.start 之前，未经 Application 上报，
+      // 由组合根经 logger 记录类型化错误；app.start 失败已由 Application 内部记录。
+      if (error instanceof ServiceResolutionError) {
+        this.logger?.error("Service assembly validation failed", undefined, error);
+      }
     });
 
     // 冒烟驱动：URL 带 smoke=fairygui-ui 时延迟到引擎 ready 后执行完整序列。

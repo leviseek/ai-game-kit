@@ -4,8 +4,10 @@ import { describe, expect, test, mock } from "bun:test";
 
 import {
   createServiceToken,
+  ServiceResolutionError,
   type ServiceRegistry,
 } from "../../../assets/framework";
+import { MemoryLogger } from "../support/MemoryLogger";
 import { createFairyGuiMock } from "./helpers/fairygui-mock";
 
 mock.module("cc", () => ({
@@ -37,16 +39,33 @@ interface AppAssembly {
 
 type AssembleAppFn = () => AppAssembly;
 
+interface CocosComponent {
+  onLoad(): void;
+  start(): void;
+  onDestroy(): void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: any;
+}
+
 const projectRoot = resolve(import.meta.dir, "../../..");
 const appRootFile = resolve(projectRoot, "assets/boot/AppRoot.ts");
 
-async function loadAppRoot(): Promise<{ assembleApp: AssembleAppFn }> {
+async function loadAppRoot(): Promise<{
+  assembleApp: AssembleAppFn;
+  AppRoot: new () => CocosComponent;
+}> {
   const exports = (await import(pathToFileURL(appRootFile).href)) as {
     assembleApp?: AssembleAppFn;
+    AppRoot?: new () => CocosComponent;
   };
 
   expect(typeof exports.assembleApp).toBe("function");
-  return { assembleApp: exports.assembleApp as AssembleAppFn };
+  expect(typeof exports.AppRoot).toBe("function");
+
+  return {
+    assembleApp: exports.assembleApp as AssembleAppFn,
+    AppRoot: exports.AppRoot as new () => CocosComponent,
+  };
 }
 
 interface GreeterService {
@@ -106,5 +125,38 @@ describe("service registry composition root", () => {
     );
 
     expect(controller.greet("levi")).toBe("hello levi");
+  });
+
+  test("assembly validation failure routes through app.start().catch without entering running", async () => {
+    const { AppRoot } = await loadAppRoot();
+    const instance = new AppRoot();
+    instance.onLoad();
+
+    // 注入失败的装配前校验：必需 token 缺失（模拟模块依赖未注册）
+    const missingToken = createServiceToken<GreeterService>("greeter");
+    const appState = () =>
+      (instance as unknown as { app: { readonly state: string } }).app.state;
+
+    (instance as unknown as {
+      validateAssembly: () => void;
+      logger: MemoryLogger;
+    }).validateAssembly = () => {
+      throw new ServiceResolutionError(missingToken.description);
+    };
+    (instance as unknown as { logger: MemoryLogger }).logger = new MemoryLogger();
+
+    // start() 内部经 app.start().catch 吞掉装配失败，不抛未捕获异常
+    await instance.start();
+
+    // 装配前校验失败：应用未进入 running（保持 created，回滚无模块可执行）
+    expect(appState()).toBe("created");
+
+    // 类型化错误经既有失败路径上报（logger.error 携带 ServiceResolutionError）
+    const errorRecords = (instance as unknown as { logger: MemoryLogger }).logger
+      .records;
+    const assemblyError = errorRecords.find(
+      (record) => record.level === "error" && record.error instanceof ServiceResolutionError,
+    );
+    expect(assemblyError).toBeDefined();
   });
 });

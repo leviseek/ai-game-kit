@@ -148,7 +148,8 @@ describe("6.8 scope review: AppRoot.ts", () => {
     const source = readFileSync(appRootFile, "utf8");
 
     expect(source).toContain("export function createModules");
-    // new Error/URLSearchParams 是通用构造，不属于 Module 实例化，与既有豁免词并列排除
-    expect(source).not.toMatch(/\bnew\s+(?!ConsoleLogger|CocosApplicationAdapter|Application|Error|URLSearchParams)\w+\b/);
+    // new Error/URLSearchParams 是通用构造，不属于 Module 实例化；WallClock 是
+    // 注册表演示服务而非 Module，与既有豁免词并列排除
+    expect(source).not.toMatch(/\bnew\s+(?!ConsoleLogger|CocosApplicationAdapter|Application|Error|URLSearchParams|WallClock)\w+\b/);
   });
 });
