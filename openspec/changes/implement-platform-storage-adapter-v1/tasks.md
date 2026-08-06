@@ -24,5 +24,5 @@
 
 ## 4. 验证与 ADR
 
-- [ ] 4.1 运行完整 Bun 单元测试与 strict TypeScript 检查，记录测试数量与零失败结果。
-- [ ] 4.2 执行 ADR 检查：确认本次存储适配器实现是否产生新的架构决策；如有，按 `doc/decisions/ADR-NNN-<slug>.md` 创建 ADR；如无，明确记录无需新增 ADR。
+- [x] 4.1 运行完整 Bun 单元测试与 strict TypeScript 检查，记录测试数量与零失败结果。（完成：`bun test ./tests/framework/foundation` 635 pass / 0 fail（64 文件，2001 expect），`bun ./tests/scripts/check-foundation-contracts.ts` 0 diagnostics，public-boundary 29 pass。）
+- [x] 4.2 执行 ADR 检查：确认本次存储适配器实现是否产生新的架构决策；如有，按 `doc/decisions/ADR-NNN-<slug>.md` 创建 ADR；如无，明确记录无需新增 ADR。（完成：产生新架构决策，创建 `doc/decisions/ADR-017-platform-storage-adapter-atomicity-recovery.md`，记录四项决策——经既有 `PlatformStorage` 契约落地不扩展契约、临时值+校验+替换原子策略与备份键、损坏诊断复用 `SaveCorruptionError`、生命周期保存收敛经 `SaveCoordinator` 串行化合并。）
