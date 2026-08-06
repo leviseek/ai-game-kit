@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="390,36" extention="ComboBox">
+  <controller name="button" pages="0,up,1,down,2,over,3,selectedOver" selected="0"/>
+  <displayList>
+    <image id="n1_combo2" name="up" src="uz2sf" fileName="img/settings_control_up2.png" xy="0,0" size="390,36">
+      <gearDisplay controller="button" pages="0,2"/>
+    </image>
+    <image id="n2_combo2" name="down" src="j83k2" fileName="img/settings_control_down2.png" xy="0,0" size="390,36">
+      <gearDisplay controller="button" pages="1,3"/>
+    </image>
+    <text id="n3_combo2" name="title" xy="12,0" size="330,36" fontSize="16" color="#ffffff" vAlign="middle" autoSize="none" singleLine="true" text="高"/>
+    <text id="n4_combo2" name="arrow" xy="350,0" size="28,36" fontSize="18" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="v"/>
+  </displayList>
+  <ComboBox dropdown="ui://4q9x2uiju4c0o"/>
+</component>

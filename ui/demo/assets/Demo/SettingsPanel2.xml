@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="1280,720">
+  <displayList>
+    <image id="n1_panel2" name="mask" src="xojft" fileName="img/settings_mask2.png" xy="0,0" size="1280,720">
+      <relation target="" sidePair="width-width,height-height"/>
+    </image>
+    <image id="n2_panel2" name="panel" src="scz4g" fileName="img/settings_panel2.png" xy="340,120" size="600,480">
+      <relation target="" sidePair="center-center,middle-middle"/>
+    </image>
+    <text id="n3_panel2" name="title" xy="500,143" size="280,40" fontSize="24" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="游戏设置">
+      <relation target="n2_panel2" sidePair="center-center,top-top,width-width"/>
+    </text>
+    <text id="n4_panel2" name="musicLabel" xy="390,204" size="100,36" fontSize="18" color="#ffffff" vAlign="middle" autoSize="none" singleLine="true" text="音乐">
+      <relation target="n2_panel2" sidePair="left-left,top-top"/>
+    </text>
+    <component id="n5_panel2" name="musicSlider" src="ue410" fileName="SettingsSlider2.xml" xy="500,210" size="390,24">
+      <relation target="n2_panel2" sidePair="right-right,top-top"/>
+      <Slider value="75" max="100"/>
+    </component>
+    <text id="n6_panel2" name="sfxLabel" xy="390,259" size="100,36" fontSize="18" color="#ffffff" vAlign="middle" autoSize="none" singleLine="true" text="音效">
+      <relation target="n2_panel2" sidePair="left-left,top-top"/>
+    </text>
+    <component id="n7_panel2" name="sfxProgress" src="ut0yg" fileName="SettingsProgress2.xml" xy="500,267" size="390,20">
+      <relation target="n2_panel2" sidePair="right-right,top-top"/>
+      <ProgressBar value="70" max="100"/>
+    </component>
+    <text id="n8_panel2" name="qualityLabel" xy="390,314" size="100,36" fontSize="18" color="#ffffff" vAlign="middle" autoSize="none" singleLine="true" text="画质">
+      <relation target="n2_panel2" sidePair="left-left,top-top"/>
+    </text>
+    <component id="n9_panel2" name="qualityCombo" src="uog75" fileName="SettingsComboBox2.xml" xy="500,314" size="390,36">
+      <relation target="n2_panel2" sidePair="right-right,top-top"/>
+      <ComboBox title="高" visibleItemCount="3">
+        <item title="低" value="low"/>
+        <item title="中" value="medium"/>
+        <item title="高" value="high"/>
+      </ComboBox>
+    </component>
+    <text id="n10_panel2" name="playersLabel" xy="390,369" size="100,36" fontSize="18" color="#ffffff" vAlign="middle" autoSize="none" singleLine="true" text="玩家">
+      <relation target="n2_panel2" sidePair="left-left,top-top"/>
+    </text>
+    <list id="n11_panel2" name="playerList" xy="500,365" size="390,90" overflow="scroll" scrollBar="hidden" selectionMode="single" defaultItem="ui://4q9x2uijwgci2" autoClearItems="true">
+      <relation target="n2_panel2" sidePair="right-right,top-top"/>
+      <item title="玩家 1"/>
+      <item title="玩家 2"/>
+      <item title="玩家 3"/>
+    </list>
+    <component id="n12_panel2" name="returnButton" src="poomz" fileName="SettingsReturnButton2.xml" xy="560,530" size="160,44">
+      <relation target="n2_panel2" sidePair="center-center,bottom-bottom"/>
+      <Button title="返回"/>
+    </component>
+  </displayList>
+</component>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="390,24" extention="Slider">
+  <displayList>
+    <image id="n1_slider2" name="bg" src="38q7j" fileName="img/settings_track2.png" xy="0,8" size="390,8"/>
+    <image id="n2_slider2" name="bar" src="fp0ke" fileName="img/settings_music_fill2.png" xy="0,8" size="292,8"/>
+    <component id="n3_slider2" name="grip" src="cud16" fileName="SettingsSliderGrip2.xml" xy="282,0" size="20,24">
+      <relation target="n2_slider2" sidePair="right-right"/>
+    </component>
+  </displayList>
+  <Slider value="75" max="100"/>
+</component>

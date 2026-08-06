@@ -1,6 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <packageDescription id="4q9x2uij">
   <resources>
+    <component id="29kie" name="SettingsPanel2.xml" path="/" exported="true"/>
+    <component id="wgci2" name="SettingsPlayerItem2.xml" path="/" exported="true"/>
+    <component id="poomz" name="SettingsReturnButton2.xml" path="/" exported="true"/>
+    <component id="uog75" name="SettingsComboBox2.xml" path="/" exported="true"/>
+    <component id="u4c0o" name="SettingsComboPopup2.xml" path="/" exported="true"/>
+    <component id="glyx1" name="SettingsComboItem2.xml" path="/" exported="true"/>
+    <component id="ut0yg" name="SettingsProgress2.xml" path="/" exported="true"/>
+    <component id="ue410" name="SettingsSlider2.xml" path="/" exported="true"/>
+    <component id="cud16" name="SettingsSliderGrip2.xml" path="/" exported="true"/>
+    <image id="s01su" name="settings_item_selected2.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="wnms0" name="settings_item_hover2.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="ncgt6" name="settings_popup2.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="4cyx8" name="settings_button_down2.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="bul7l" name="settings_button_up2.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="j83k2" name="settings_control_down2.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="uz2sf" name="settings_control_up2.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="1wexo" name="settings_grip_down2.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="euint" name="settings_grip_up2.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="njlpv" name="settings_sfx_fill2.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="fp0ke" name="settings_music_fill2.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="38q7j" name="settings_track2.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="scz4g" name="settings_panel2.png" path="/img/" scale="9grid" scale9grid="2,2,5,5" qualityOption="source" duplicatePadding="true"/>
+    <image id="xojft" name="settings_mask2.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
     <component id="gboof" name="CloseDialog.xml" path="/" exported="true"/>
     <image id="fqx4a" name="close_dialog_button.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
     <image id="z4kdn" name="close_dialog_panel.png" path="/img/" scale="9grid" scale9grid="2,2,5,5" qualityOption="source" duplicatePadding="true"/>

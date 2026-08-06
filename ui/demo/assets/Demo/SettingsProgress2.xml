@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="390,20" extention="ProgressBar">
+  <displayList>
+    <image id="n1_progress2" name="bg" src="38q7j" fileName="img/settings_track2.png" xy="0,0" size="390,20"/>
+    <image id="n2_progress2" name="bar" src="njlpv" fileName="img/settings_sfx_fill2.png" xy="2,2" size="269,16"/>
+  </displayList>
+  <ProgressBar value="70" max="100"/>
+</component>

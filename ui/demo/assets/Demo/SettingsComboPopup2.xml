@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="390,96">
+  <displayList>
+    <image id="n1_popup2" name="bg" src="ncgt6" fileName="img/settings_popup2.png" xy="0,0" size="390,96"/>
+    <list id="n2_popup2" name="list" xy="4,3" size="382,90" overflow="scroll" scrollBar="hidden" selectionMode="single" defaultItem="ui://4q9x2uijglyx1" autoClearItems="true"/>
+  </displayList>
+</component>
