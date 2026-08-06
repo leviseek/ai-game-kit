@@ -1,4 +1,4 @@
-import { GComponent, UIPackage } from "fairygui-cc";
+import { GComponent, GGraph, UIConfig, UIPackage } from "fairygui-cc";
 import type { IResourceProvider } from "../../../contracts/resource/ResourceProvider";
 import {
   UI_LAYER_ORDER,
@@ -46,16 +46,24 @@ export interface FairyGuiPageAdapterOptions {
   readonly navigator?: UiNavigator;
 }
 
-/** 缺省模态遮罩工厂：GComponent + opaque/touchable，命中阻断下层页面输入。 */
+/**
+ * 缺省模态遮罩工厂：对齐 `GRoot._modalLayer` 模式，GGraph 画半透明填充呈现
+ * 可见遮罩并命中阻断下层页面输入。
+ * - 可见性：drawRect 用 `UIConfig.modalLayerColor`（半透明黑）填充，遮罩非透明可见
+ * - 命中：GGraph 矩形 `_hitTest` 按尺寸直接命中自身；opaque 参与命中但 GGraph
+ *   不依赖，显式配置以保持契约一致；touch 命中入口（GObject.hitTest）需 touchable，
+ *   否则事件穿透到下层页面
+ * - 覆盖：setSize 对齐 GRoot 尺寸，覆盖全部输入区域
+ */
 function createFairyGuiMask(width: number, height: number): unknown {
-  const mask = new GComponent();
+  const mask = new GGraph();
   mask.name = "modal-mask";
-  // 空 GComponent 命中自身需 opaque=true（fairygui _hitTest 的 `_opaque` 分支），
-  // 否则触摸穿透到下层页面、阻断失效；touchable 放行命中回调
-  // （GComponent 类型声明未暴露 opaque，运行时存在，按接缝断言）
-  (mask as unknown as { opaque: boolean }).opaque = true;
+  mask.opaque = true;
   mask.touchable = true;
   mask.setSize(width, height);
+  // lineSize=0 无线条；line/fill 复用 modalLayerColor，fill 决定可见性
+  const modalColor = UIConfig.modalLayerColor;
+  mask.drawRect(0, modalColor, modalColor);
   return mask;
 }
 

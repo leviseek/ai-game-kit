@@ -7,6 +7,8 @@
  * - GRoot：忠实模拟真实语义（inst 未 create 时抛错、create 返回实例）
  * - UIPackage：静态注册表 API 桩
  * - GComponent：可实例化容器类（name/setSize/touchable/opaque 可写，对齐 4.2 遮罩语义）
+ * - GGraph：可实例化图形类（对齐 GRoot._modalLayer 模式，记录 drawRect 的填充色）
+ * - UIConfig：提供 modalLayerColor（半透明黑），遮罩可见性来源于此
  *
  * 测试文件只依赖本 fixture 的符号存在性与形态，不依赖具体行为；真实 GRoot/
  * UIPackage 行为由注入的接缝 mock（如 getRoot / uiPackage / createView / createMask）承载。
@@ -22,6 +24,10 @@ export function createFairyGuiMock(): {
     createObject(_pkg: string, _res: string): null;
   };
   GComponent: new () => FairyGuiGComponentMock;
+  GGraph: new () => FairyGuiGGraphMock;
+  UIConfig: {
+    modalLayerColor: FairyGuiColorMock;
+  };
 } {
   return {
     GRoot: {
@@ -102,6 +108,28 @@ export function createFairyGuiMock(): {
         this.height = height;
       }
     },
+    GGraph: class {
+      name = "";
+      width = 0;
+      height = 0;
+      touchable = false;
+      opaque = false;
+      lineSize = 0;
+      lineColor: FairyGuiColorMock | undefined;
+      fillColor: FairyGuiColorMock | undefined;
+      setSize(width: number, height: number) {
+        this.width = width;
+        this.height = height;
+      }
+      drawRect(lineSize: number, lineColor: FairyGuiColorMock, fillColor: FairyGuiColorMock) {
+        this.lineSize = lineSize;
+        this.lineColor = lineColor;
+        this.fillColor = fillColor;
+      }
+    },
+    UIConfig: {
+      modalLayerColor: { r: 0x33, g: 0x33, b: 0x33, a: 0x33 },
+    },
   };
 }
 
@@ -112,6 +140,30 @@ export interface FairyGuiGComponentMock {
   touchable: boolean;
   opaque: boolean;
   setSize(width: number, height: number): void;
+}
+
+export interface FairyGuiColorMock {
+  r: number;
+  g: number;
+  b: number;
+  a: number;
+}
+
+export interface FairyGuiGGraphMock {
+  name: string;
+  width: number;
+  height: number;
+  touchable: boolean;
+  opaque: boolean;
+  lineSize: number;
+  lineColor?: FairyGuiColorMock;
+  fillColor?: FairyGuiColorMock;
+  setSize(width: number, height: number): void;
+  drawRect(
+    lineSize: number,
+    lineColor: FairyGuiColorMock,
+    fillColor: FairyGuiColorMock,
+  ): void;
 }
 
 export interface FairyGuiGRootMock {

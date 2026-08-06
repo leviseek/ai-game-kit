@@ -6,8 +6,8 @@
 
 - [x] 0.1 先编写导航模态自动同步测试：`UiNavigator` 模态状态变化自动驱动遮罩呈现/移除，组合根不再手动调用 `setModal`，重复进入/退出幂等。（`tests/framework/foundation/navigation-modal-sync.test.ts` 锁定目标契约：适配器选项新增 `navigator`，导航 open 阻断自动呈现遮罩、close/back 收敛自动移除、重复进入/退出幂等、非阻断页不呈现、dispose 后停止同步。红期确认：3 个自动同步测试失败因遮罩从未呈现，2 个无遮罩断言通过，符合预期。）
 - [x] 0.2 实现 modal 自动同步：页面适配器消费导航模态状态（默认消费 `UiNavigator.modal`），导航阻断时自动呈现遮罩、收敛时自动移除，使测试通过；移除 AppRoot 手动 `setModal` 调用路径。（`FairyGuiPageAdapter.ts` 选项新增 `navigator`：适配器包装导航器 `open/close/back/dispose`，操作后重读 `navigator.modal` 同步遮罩，`setModal` 与包装共用 `applyModal` 幂等核心，`dispose` 恢复导航器原始方法；`AppRoot.ts` 创建 `createUiNavigator` 传入适配器、删除 `smokeUiSetModal`、`runUiSmoke` 遮罩步骤改经导航器打开/关闭阻断页面；同步更新 approot-ui-smoke/approot-composition 对 `smokeUiSetModal` 移除的断言。审查后补 P2 保护测试：`navigator.dispose` 收敛自动移除遮罩、`adapter.dispose` 恢复导航器原始方法。验证：navigation-modal-sync 7 pass、Foundation 全量 648 pass / 0 fail、`test:foundation:types` EXIT=0。）
-- [ ] 0.3 先编写遮罩可见性/输入阻断增强测试：遮罩可见（非透明 GGraph 呈现）、阻断覆盖区域输入、点击不穿透到下层页面。
-- [ ] 0.4 实现遮罩可见性与输入阻断增强，使 0.3 测试通过（对齐 `GRoot._modalLayer` 模式：opaque/touchable 正确配置）。
+- [x] 0.3 先编写遮罩可见性/输入阻断增强测试：遮罩可见（非透明 GGraph 呈现）、阻断覆盖区域输入、点击不穿透到下层页面。（`tests/framework/foundation/modal-mask-blocking.test.ts` 锁定：缺省遮罩具备 GGraph drawRect 填充记录且填充色非透明（alpha>0）、touchable 且全屏覆盖；自顶向下命中模拟验证模态期间遮罩拦截点击不穿透下层页面、收敛后页面恢复可交互。红期确认：2 条测试因遮罩仍是 GComponent（无 drawRect 填充记录）失败，符合预期。）
+- [x] 0.4 实现遮罩可见性与输入阻断增强，使 0.3 测试通过（对齐 `GRoot._modalLayer` 模式：opaque/touchable 正确配置）。（`createFairyGuiMask` 由空 GComponent 改为 GGraph + `drawRect(0, UIConfig.modalLayerColor, UIConfig.modalLayerColor)` 半透明填充呈现可见遮罩，保留 opaque/touchable 显式配置；共享 mock 扩展 GGraph/UIConfig。验证：modal-mask-blocking 2 pass、fairy-gui-page-adapter 既有遮罩契约测试保持通过、Foundation 全量 650 pass / 0 fail、`test:foundation:types` EXIT=0。）
 - [ ] 0.5 先编写窗口 resize 同步测试：UI 根宿主在窗口尺寸变化后同步根布局尺寸，层级容器与页面不受残留旧尺寸影响。
 - [ ] 0.6 实现 resize 同步，使 0.5 测试通过（订阅窗口尺寸变化并更新 UI 根宿主/层级容器尺寸）。
 - [ ] 0.7 编写 CDP 真实交互点击验证：headless Chrome 驱动下对遮罩区域真实点击，断言下层页面在模态期间不响应、解除后恢复。
