@@ -27,3 +27,10 @@
 
 - [x] 4.1 运行完整 Bun 单元测试与 strict TypeScript 检查，记录测试数量与零失败结果。
 - [x] 4.2 执行 ADR 检查：确认本次音频实现是否产生新的架构决策；如有，按 `doc/decisions/ADR-NNN-<slug>.md` 创建 ADR；如无，明确记录无需新增 ADR。
+
+## 5. ai-sensei 审查修复
+
+- [x] 5.1 P1：适配器加载进行中 retain loading handle，加载期间 Bundle 视为持有不可卸载；补回归测试（加载中 stop 丢弃过期结果）。
+- [x] 5.2 P2：降级状态仍维护音量/静音内部状态（getGroupState 语义统一）；后端契约增加可选 `dispose`，适配器销毁 AudioSource/Node，服务 dispose 转调；前后台切换 try/catch 下沉到逐组隔离。
+- [x] 5.3 P3：补 NaN/±Infinity 拒绝与 -0 归一化为 0 的音量边界测试。
+- [x] 5.4 真实引擎 API 差异修复：`cc.AudioSource` 无 `resume` 接口，缺省包装层 resume 委托 `play()`（官方 play 语义即恢复播放）；补源码断言锁定该映射，防止 mock 侧有 resume 掩盖真实引擎路径运行时崩溃。

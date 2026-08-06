@@ -13,6 +13,7 @@ export interface AudioTrackRef {
 /**
  * 音频后端契约（引擎接缝）：由 Cocos 适配器或测试替身实现。
  * `available` 表达后端可用性，服务构造时据此决定是否降级。
+ * `dispose` 可选：适配器在服务销毁时释放引擎侧资源（如 AudioSource/Node）。
  */
 export interface AudioBackend {
   readonly available: boolean;
@@ -21,6 +22,7 @@ export interface AudioBackend {
   pause(group: AudioGroup): void;
   resume(group: AudioGroup): void;
   setVolume(group: AudioGroup, volume: number): void;
+  dispose?(): void;
 }
 
 /** 分组可查询状态：音量与静音为独立维度，静音不覆盖音量设定。 */

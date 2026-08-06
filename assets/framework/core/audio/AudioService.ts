@@ -79,23 +79,23 @@ export function createAudioService(options: AudioServiceOptions): AudioService {
       return false;
     }
 
-    if (degraded) {
-      // 降级：值合法即成功，但无状态变更与后端副作用
-      return true;
-    }
+    // 归一化负零：-0 在数值上等于 0，统一存为 0 便于状态查询比较
+    const normalized = volume === 0 ? 0 : volume;
 
-    stateOf(group).volume = volume;
-    backend.setVolume(group, effectiveVolume(group));
+    // 降级与非降级都更新内部状态，使 getGroupState 语义统一；降级不触达后端
+    stateOf(group).volume = normalized;
+    if (!degraded) {
+      backend.setVolume(group, effectiveVolume(group));
+    }
     return true;
   }
 
   function setMuted(group: AudioGroup, muted: boolean): void {
-    if (degraded) {
-      return;
-    }
-
+    // 降级与非降级都更新内部状态，使 getGroupState 语义统一；降级不触达后端
     stateOf(group).muted = muted;
-    backend.setVolume(group, effectiveVolume(group));
+    if (!degraded) {
+      backend.setVolume(group, effectiveVolume(group));
+    }
   }
 
   function stop(group: AudioGroup): void {
@@ -171,28 +171,39 @@ export function createAudioService(options: AudioServiceOptions): AudioService {
 
     unsubscribeVisibility = visibility.onVisibilityChange(
       (state: ApplicationVisibilityState) => {
-        try {
-          if (state === "background") {
-            for (const group of policy.pauseOnBackground) {
+        // 逐组处理并独立捕获：单组后端异常不中断其余分组的切换，
+        // 同时把错误隔离为结构化诊断，不向上抛破坏应用生命周期
+        const handleGroup = (group: AudioGroup): void => {
+          try {
+            if (state === "background") {
               if (stateOf(group).current !== undefined) {
                 backend.pause(group);
                 autoPaused.add(group);
               }
-            }
-          } else {
-            for (const group of Array.from(autoPaused)) {
+            } else {
               // 仅恢复仍在播放的分组：后台期间被显式停止的分组不复活
               if (stateOf(group).current !== undefined) {
                 backend.resume(group);
               }
               autoPaused.delete(group);
             }
+          } catch (error) {
+            logger?.warn("audio visibility transition failed", {
+              group,
+              visibilityState: state,
+              cause: error instanceof Error ? error.message : String(error),
+            });
           }
-        } catch (error) {
-          logger?.warn("audio visibility transition failed", {
-            visibilityState: state,
-            cause: error instanceof Error ? error.message : String(error),
-          });
+        };
+
+        if (state === "background") {
+          for (const group of policy.pauseOnBackground) {
+            handleGroup(group);
+          }
+        } else {
+          for (const group of Array.from(autoPaused)) {
+            handleGroup(group);
+          }
         }
       },
     );
@@ -202,6 +213,8 @@ export function createAudioService(options: AudioServiceOptions): AudioService {
     unsubscribeVisibility?.();
     unsubscribeVisibility = undefined;
     autoPaused.clear();
+    // 后端若实现 dispose（如 Cocos 适配器销毁引擎侧资源），随服务销毁一并释放
+    backend.dispose?.();
   }
 
   return {

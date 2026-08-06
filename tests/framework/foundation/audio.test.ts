@@ -98,6 +98,26 @@ describe("音量与静音", () => {
     expect(service.getGroupState("music").volume).toBe(0.4);
   });
 
+  test("NaN 与正负 Infinity 音量被拒绝并保留原值", () => {
+    const service = createAudioService({ backend: new RecordingBackend() });
+    service.setVolume("music", 0.4);
+
+    expect(service.setVolume("music", Number.NaN)).toBe(false);
+    expect(service.setVolume("music", Number.POSITIVE_INFINITY)).toBe(false);
+    expect(service.setVolume("music", Number.NEGATIVE_INFINITY)).toBe(false);
+
+    expect(service.getGroupState("music").volume).toBe(0.4);
+  });
+
+  test("负零音量被接受并按零存储", () => {
+    const service = createAudioService({ backend: new RecordingBackend() });
+
+    // -0 在数值上等于 0，属合法边界；存储值归一化为 0 便于比较
+    expect(service.setVolume("music", -0)).toBe(true);
+    expect(service.getGroupState("music").volume).toBe(0);
+    expect(Object.is(service.getGroupState("music").volume, -0)).toBe(false);
+  });
+
   test("静音不改变音量设定，取消静音恢复原音量", () => {
     const service = createAudioService({ backend: new RecordingBackend() });
     service.setVolume("music", 0.6);
@@ -271,6 +291,19 @@ describe("后端不可用降级", () => {
     expect(backend.stopCalls).toEqual([]);
     expect(backend.pauseCalls).toEqual([]);
     expect(backend.resumeCalls).toEqual([]);
+    expect(backend.volumeCalls).toEqual([]);
+  });
+
+  test("降级状态仍维护音量/静音内部状态，查询语义与非降级一致", () => {
+    const backend = new RecordingBackend(false);
+    const service = createAudioService({ backend });
+
+    expect(service.setVolume("music", 0.5)).toBe(true);
+    service.setMuted("music", true);
+
+    expect(service.getGroupState("music").volume).toBe(0.5);
+    expect(service.getGroupState("music").muted).toBe(true);
+    // 降级只禁止触达后端，不改变 set→get 闭环
     expect(backend.volumeCalls).toEqual([]);
   });
 });

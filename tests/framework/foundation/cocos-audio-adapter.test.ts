@@ -28,6 +28,7 @@ interface MockAudioSource {
   readonly stopCalls: number;
   readonly pauseCalls: number;
   readonly resumeCalls: number;
+  readonly destroyCalls: number;
 }
 
 class MockAudioSourceImpl implements MockAudioSource {
@@ -39,6 +40,7 @@ class MockAudioSourceImpl implements MockAudioSource {
   public stopCalls = 0;
   public pauseCalls = 0;
   public resumeCalls = 0;
+  public destroyCalls = 0;
 
   play(): void {
     this.playing = true;
@@ -56,6 +58,10 @@ class MockAudioSourceImpl implements MockAudioSource {
 
   resume(): void {
     this.resumeCalls += 1;
+  }
+
+  destroy(): void {
+    this.destroyCalls += 1;
   }
 }
 
@@ -257,5 +263,83 @@ describe("CocosAudioAdapter", () => {
     expect(source).toMatch(/cc\.Node/);
     expect(source).toMatch(/cc\.AudioSource/);
     expect(source).toMatch(/options\.createSource\s*\?\?/);
+  });
+
+  test("缺省 AudioSource 的 resume 委托 play 而非不存在的 cc.AudioSource.resume", async () => {
+    const source = readFileSync(adapterFile, "utf8");
+
+    // cc.AudioSource 无 resume 接口，官方 play() 语义即"暂停时调用恢复播放"。
+    // 锁定真实引擎路径的恢复映射，防止再次直接调用 source.resume() 运行时崩溃
+    //（mock 侧有 resume 所以仅靠行为测试无法暴露该差异）。
+    expect(source).toMatch(/resume\(\)\s*\{\s*source\.play\(\);\s*\}/);
+    expect(source).not.toMatch(/source\.resume\(\)/);
+  });
+
+  test("加载进行中 Bundle 视为持有，不可误判可卸载", async () => {
+    const createAdapter = await loadAdapter();
+    const controlled = createControlledProvider();
+    const seam = createSourceSeam();
+    const adapter = createAdapter({
+      provider: controlled.provider,
+      createSource: seam.createSource,
+    }) as import("../../../assets/framework/contracts/audio/Audio").AudioBackend;
+    const service = createAudioService({ backend: adapter });
+    const scope = service.createPlayScope();
+
+    scope.play("music", TRACKS.musicMain);
+
+    // 加载未 resolve 前：适配器已 retain loading handle，Bundle 必须视为持有
+    expect(controlled.provider.canUnload("audio")).toBe(false);
+
+    controlled.resolveNext({ name: "main" });
+    await flush();
+    expect(seam.sourceOf("music").playCalls).toBe(1);
+    scope.release();
+  });
+
+  test("加载进行中 stop 丢弃过期结果，不产生播放或残留引用", async () => {
+    const createAdapter = await loadAdapter();
+    const controlled = createControlledProvider();
+    const seam = createSourceSeam();
+    const adapter = createAdapter({
+      provider: controlled.provider,
+      createSource: seam.createSource,
+    }) as import("../../../assets/framework/contracts/audio/Audio").AudioBackend;
+    const service = createAudioService({ backend: adapter });
+    const scope = service.createPlayScope();
+
+    scope.play("music", TRACKS.musicMain);
+    service.stop("music");
+    controlled.resolveNext({ name: "main" });
+    await flush();
+
+    // 过期加载被丢弃：不应触发播放
+    expect(seam.sourceOf("music").playCalls).toBe(0);
+    // 占位作用域已释放：Bundle 可卸载
+    expect(controlled.provider.canUnload("audio")).toBe(true);
+    scope.release();
+  });
+
+  test("dispose 销毁引擎侧 AudioSource 并释放全部持有", async () => {
+    const createAdapter = await loadAdapter();
+    const controlled = createControlledProvider();
+    const seam = createSourceSeam();
+    const adapter = createAdapter({
+      provider: controlled.provider,
+      createSource: seam.createSource,
+    }) as import("../../../assets/framework/contracts/audio/Audio").AudioBackend;
+    const service = createAudioService({ backend: adapter });
+    const scope = service.createPlayScope();
+
+    scope.play("music", TRACKS.musicMain);
+    controlled.resolveNext({ name: "main" });
+    await flush();
+    const source = seam.sourceOf("music");
+
+    service.dispose();
+
+    expect(source.destroyCalls).toBe(1);
+    expect(controlled.provider.canUnload("audio")).toBe(true);
+    scope.release();
   });
 });
