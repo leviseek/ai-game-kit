@@ -10,6 +10,7 @@ import {
   readComponent,
   readPackage,
   validateComponent,
+  validateComponentSemantics,
   validatePackageFileIntegrity,
 } from "../lib/fgui";
 
@@ -148,6 +149,197 @@ describe("validateComponent", () => {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+  });
+});
+
+describe("validateComponentSemantics", () => {
+  function setupFixture(componentXml: string): { pkg: ReturnType<typeof readPackage>; comp: ReturnType<typeof readComponent>; project: ReturnType<typeof locateProject> } {
+    const dir = mkdtempSync(join(tmpdir(), "fgui-sem-"));
+    try {
+      writeFileSync(join(dir, "demo.fairy"), `<?xml version="1.0" encoding="utf-8"?>\n<projectDescription id="t" type="CocosCreator" version="5.0"/>`);
+      const pkgDir = join(dir, "assets", "Demo");
+      mkdirSync(pkgDir, { recursive: true });
+      writeFileSync(join(pkgDir, "package.xml"), `<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="testid"><resources><component id="aa11" name="A.xml" path="/" exported="true"/><image id="bb22" name="bg.png" path="/img/"/></resources></packageDescription>`);
+      writeFileSync(join(pkgDir, "A.xml"), componentXml);
+      const project = locateProject(dir);
+      return { project, pkg: readPackage(project, "Demo"), comp: readComponent(project, "Demo", "A.xml") };
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }
+
+  test("合法 Slider：controller + bar/grip + <Slider/> 通过", () => {
+    const { project, pkg, comp } = setupFixture(`<?xml version="1.0" encoding="utf-8"?>
+<component size="200,20" extention="Slider">
+  <displayList>
+    <image id="n1" name="bg" src="bb22"/>
+    <image id="n2" name="bar" src="bb22"/>
+    <component id="n3" name="grip" src="aa11" fileName="A.xml"/>
+  </displayList>
+  <Slider/>
+</component>`);
+    const errors = validateComponentSemantics(project, pkg, comp).filter((i) => i.severity === "error");
+    expect(errors).toEqual([]);
+  });
+
+  test("Slider 缺 bar/grip 或扩展节点报 error", () => {
+    const { project, pkg, comp } = setupFixture(`<?xml version="1.0" encoding="utf-8"?>
+<component size="200,20" extention="Slider">
+  <displayList>
+    <image id="n1" name="bg" src="bb22"/>
+  </displayList>
+</component>`);
+    const errors = validateComponentSemantics(project, pkg, comp).filter((i) => i.severity === "error").map((i) => i.message);
+    expect(errors.some((m) => m.includes("bar"))).toBe(true);
+    expect(errors.some((m) => m.includes("grip"))).toBe(true);
+    expect(errors.some((m) => m.includes("<Slider/>"))).toBe(true);
+  });
+
+  test("ProgressBar 缺 bar 报 error", () => {
+    const { project, pkg, comp } = setupFixture(`<?xml version="1.0" encoding="utf-8"?>
+<component size="200,20" extention="ProgressBar">
+  <displayList>
+    <image id="n1" name="bg" src="bb22"/>
+  </displayList>
+  <ProgressBar/>
+</component>`);
+    const errors = validateComponentSemantics(project, pkg, comp).filter((i) => i.severity === "error");
+    expect(errors.some((i) => i.message.includes("bar"))).toBe(true);
+  });
+
+  test("ComboBox 缺 dropdown 扩展节点报 error", () => {
+    const { project, pkg, comp } = setupFixture(`<?xml version="1.0" encoding="utf-8"?>
+<component size="100,20" extention="ComboBox">
+  <displayList>
+    <text id="n1" name="title"/>
+  </displayList>
+</component>`);
+    const errors = validateComponentSemantics(project, pkg, comp).filter((i) => i.severity === "error");
+    expect(errors.some((i) => i.message.includes("dropdown"))).toBe(true);
+  });
+
+  test("controller pages 非完整 pageId,pageName 对报 error", () => {
+    const { project, pkg, comp } = setupFixture(`<?xml version="1.0" encoding="utf-8"?>
+<component size="10,10">
+  <controller name="c1" pages="0,up,1" selected="0"/>
+  <displayList/>
+</component>`);
+    const errors = validateComponentSemantics(project, pkg, comp).filter((i) => i.severity === "error");
+    expect(errors.some((i) => i.message.includes("pages"))).toBe(true);
+  });
+
+  test("gear 引用不存在的 controller 报 error", () => {
+    const { project, pkg, comp } = setupFixture(`<?xml version="1.0" encoding="utf-8"?>
+<component size="10,10">
+  <controller name="c1" pages="0,,1," selected="0"/>
+  <displayList>
+    <image id="n1" name="img" src="bb22">
+      <gearDisplay controller="ghost" pages="0"/>
+    </image>
+  </displayList>
+</component>`);
+    const errors = validateComponentSemantics(project, pkg, comp).filter((i) => i.severity === "error");
+    expect(errors.some((i) => i.message.includes("ghost"))).toBe(true);
+  });
+
+  test("gear pages 值不在 controller 页内报 error", () => {
+    const { project, pkg, comp } = setupFixture(`<?xml version="1.0" encoding="utf-8"?>
+<component size="10,10">
+  <controller name="c1" pages="0,,1," selected="0"/>
+  <displayList>
+    <image id="n1" name="img" src="bb22">
+      <gearDisplay controller="c1" pages="0,9"/>
+    </image>
+  </displayList>
+</component>`);
+    const errors = validateComponentSemantics(project, pkg, comp).filter((i) => i.severity === "error");
+    expect(errors.some((i) => i.message.includes("9"))).toBe(true);
+  });
+
+  test("gearColor values 数量与 pages 数量不一致报 error", () => {
+    const { project, pkg, comp } = setupFixture(`<?xml version="1.0" encoding="utf-8"?>
+<component size="10,10">
+  <controller name="c1" pages="0,,1," selected="0"/>
+  <displayList>
+    <text id="n1" name="t" text="x">
+      <gearColor controller="c1" pages="0,1" values="#fff"/>
+    </text>
+  </displayList>
+</component>`);
+    const errors = validateComponentSemantics(project, pkg, comp).filter((i) => i.severity === "error");
+    expect(errors.some((i) => i.message.includes("values"))).toBe(true);
+  });
+
+  test("禁止 <graph>：出现即报 error", () => {
+    const { project, pkg, comp } = setupFixture(`<?xml version="1.0" encoding="utf-8"?>
+<component size="10,10">
+  <displayList>
+    <graph id="n1" name="g" type="rect" fillColor="#fff"/>
+  </displayList>
+</component>`);
+    const errors = validateComponentSemantics(project, pkg, comp).filter((i) => i.severity === "error");
+    expect(errors.some((i) => i.message.includes("<graph>"))).toBe(true);
+  });
+
+  test("list defaultItem 引用未登记组件报 error", () => {
+    const { project, pkg, comp } = setupFixture(`<?xml version="1.0" encoding="utf-8"?>
+<component size="200,300">
+  <displayList>
+    <list id="n1" name="list" defaultItem="ui://testidzzzz" overflow="scroll" selectionMode="single"/>
+  </displayList>
+</component>`);
+    const errors = validateComponentSemantics(project, pkg, comp).filter((i) => i.severity === "error");
+    expect(errors.some((i) => i.message.includes("defaultItem"))).toBe(true);
+  });
+
+  test("list defaultItem 指向本包已登记组件通过", () => {
+    const { project, pkg, comp } = setupFixture(`<?xml version="1.0" encoding="utf-8"?>
+<component size="200,300">
+  <displayList>
+    <list id="n1" name="list" defaultItem="aa11" overflow="scroll" selectionMode="single"/>
+  </displayList>
+</component>`);
+    const errors = validateComponentSemantics(project, pkg, comp).filter((i) => i.severity === "error");
+    expect(errors.filter((i) => i.message.includes("defaultItem"))).toEqual([]);
+  });
+
+  test("合法 relation sidePair 通过", () => {
+    const { project, pkg, comp } = setupFixture(`<?xml version="1.0" encoding="utf-8"?>
+<component size="200,200">
+  <displayList>
+    <image id="n1" name="bg" src="bb22">
+      <relation target="" sidePair="width-width,height-height"/>
+    </image>
+  </displayList>
+</component>`);
+    const errors = validateComponentSemantics(project, pkg, comp).filter((i) => i.severity === "error");
+    expect(errors.filter((i) => i.message.includes("sidePair"))).toEqual([]);
+  });
+
+  test("非法 side 名报 error", () => {
+    const { project, pkg, comp } = setupFixture(`<?xml version="1.0" encoding="utf-8"?>
+<component size="200,200">
+  <displayList>
+    <image id="n1" name="bg" src="bb22">
+      <relation target="" sidePair="width-width,foo-bar"/>
+    </image>
+  </displayList>
+</component>`);
+    const errors = validateComponentSemantics(project, pkg, comp).filter((i) => i.severity === "error").map((i) => i.message);
+    expect(errors.some((m) => m.includes("foo"))).toBe(true);
+  });
+
+  test("relation sidePair 非 target-side 形式报 error", () => {
+    const { project, pkg, comp } = setupFixture(`<?xml version="1.0" encoding="utf-8"?>
+<component size="200,200">
+  <displayList>
+    <image id="n1" name="bg" src="bb22">
+      <relation target="" sidePair="width"/>
+    </image>
+  </displayList>
+</component>`);
+    const errors = validateComponentSemantics(project, pkg, comp).filter((i) => i.severity === "error");
+    expect(errors.some((i) => i.message.includes("sidePair"))).toBe(true);
   });
 });
 

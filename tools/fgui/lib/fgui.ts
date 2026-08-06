@@ -291,6 +291,183 @@ function collectAllDisplayNodes(root: XmlElement): XmlElement[] {
   return out;
 }
 
+interface ControllerInfo {
+  readonly name: string;
+  readonly pageIds: readonly string[];
+  readonly pageNames: readonly string[];
+}
+
+/** 解析组件内所有 <controller> 声明。 */
+function collectControllers(root: XmlElement): ControllerInfo[] {
+  const out: ControllerInfo[] = [];
+  for (const node of root.children) {
+    if (node.name !== "controller") continue;
+    const pagesRaw = node.attrs.pages ?? "";
+    const parts = pagesRaw.split(",");
+    const pageIds: string[] = [];
+    const pageNames: string[] = [];
+    for (let i = 0; i + 1 < parts.length; i += 2) {
+      pageIds.push(parts[i]!);
+      pageNames.push(parts[i + 1]!);
+    }
+    out.push({ name: node.attrs.name ?? "", pageIds, pageNames });
+  }
+  return out;
+}
+
+const VALID_RELATION_SIDES = new Set([
+  "left", "right", "top", "bottom", "middle", "center", "width", "height",
+  "leftext", "rightext", "topext", "bottomext",
+]);
+
+/** 校验单个 sidePair 项（如 "width-width%" / "leftext-right"），合法返回 undefined，否则返回问题描述。 */
+function validateSidePair(pair: string): string | undefined {
+  const normalized = pair.endsWith("%") ? pair.slice(0, -1) : pair;
+  const parts = normalized.split("-");
+  if (parts.length !== 2) return `sidePair 项 "${pair}" 不是 "目标side-自身side" 形式`;
+  const [targetSide, selfSide] = parts as [string, string];
+  if (!VALID_RELATION_SIDES.has(targetSide)) return `sidePair 含非法目标 side "${targetSide}"（项 "${pair}"）`;
+  if (!VALID_RELATION_SIDES.has(selfSide)) return `sidePair 含非法自身 side "${selfSide}"（项 "${pair}"）`;
+  return undefined;
+}
+
+/** 校验组件语义（controller/gear/扩展节点/list/graph/relation），返回问题列表。 */
+export function validateComponentSemantics(
+  project: FguiProject,
+  pkg: FguiPackage,
+  component: ComponentInfo,
+): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+  const root = component.root;
+
+  // 0. 禁止 <graph>
+  for (const node of collectAllDisplayNodes(root)) {
+    if (node.name === "graph") {
+      issues.push({
+        severity: "error",
+        message: `组件含 <graph> 节点（id="${node.attrs.id ?? ""}" name="${node.attrs.name ?? ""}"），项目禁止使用，纯色视觉必须用 sprite 图片替代`,
+      });
+    }
+  }
+
+  const controllers = collectControllers(root);
+  const controllerMap = new Map(controllers.map((c) => [c.name, c]));
+
+  // 1. controller pages 必须是完整 pageId,pageName 对
+  for (const c of controllers) {
+    const raw = c.pageIds.length + c.pageNames.length;
+    if (raw === 0) continue; // 无 pages 视为合法
+    const parts = (root.children.find((n) => n.name === "controller" && n.attrs.name === c.name)?.attrs.pages ?? "").split(",");
+    if (parts.length % 2 !== 0) {
+      issues.push({
+        severity: "error",
+        message: `controller "${c.name}" 的 pages 不是完整 pageId,pageName 对: "${parts.join(",")}"`,
+      });
+    }
+  }
+
+  // 2. gear 引用检查：controller 存在、pages 值 ∈ pageIds、values 数量一致
+  for (const node of collectAllDisplayNodes(root)) {
+    for (const gear of node.children.filter((c) => c.name.startsWith("gear"))) {
+      const controllerName = gear.attrs.controller;
+      if (!controllerName) continue;
+      const controller = controllerMap.get(controllerName);
+      if (!controller) {
+        issues.push({
+          severity: "error",
+          message: `gear 引用不存在的 controller "${controllerName}"（节点 ${node.attrs.id ?? ""}）`,
+        });
+        continue;
+      }
+      const gearPages = (gear.attrs.pages ?? "").split(",").filter((s) => s.length > 0);
+      const validIds = new Set(controller.pageIds);
+      for (const page of gearPages) {
+        if (!validIds.has(page)) {
+          issues.push({
+            severity: "error",
+            message: `gear (controller="${controllerName}") 的 pages 含不存在页面 "${page}"（可用: ${controller.pageIds.join("/")}）`,
+          });
+        }
+      }
+      // values 数量 == pages 数量（gearColor/XY/Size/Text 等）
+      const valuesRaw = gear.attrs.values;
+      if (valuesRaw !== undefined) {
+        const valuesCount = valuesRaw.split("|").length;
+        const pagesCount = gearPages.length;
+        if (valuesCount !== pagesCount) {
+          issues.push({
+            severity: "error",
+            message: `gear (controller="${controllerName}") values 数量(${valuesCount})与 pages 数量(${pagesCount})不一致`,
+          });
+        }
+      }
+    }
+  }
+
+  // 2b. relation sidePair 校验：target 存在（validateComponent 已查）+ sidePair 格式合法
+  for (const node of collectAllDisplayNodes(root)) {
+    for (const relation of node.children.filter((c) => c.name === "relation")) {
+      const sidePair = relation.attrs.sidePair;
+      if (!sidePair) continue;
+      for (const pair of sidePair.split(",")) {
+        const problem = validateSidePair(pair.trim());
+        if (problem !== undefined) {
+          issues.push({
+            severity: "error",
+            message: `relation sidePair 非法: ${problem}（节点 ${node.attrs.id ?? ""}）`,
+          });
+        }
+      }
+    }
+  }
+
+  // 3. 扩展组件必备结构
+  const extention = root.attrs.extention;
+  const nodeNames = new Set(component.objects.map((o) => o.name));
+  const hasExtensionNode = (name: string) => root.children.some((c) => c.name === name);
+
+  if (extention === "Slider") {
+    if (!nodeNames.has("bar")) issues.push({ severity: "error", message: "extention=Slider 缺少 name=\"bar\" 的进度条节点" });
+    if (!nodeNames.has("grip")) issues.push({ severity: "error", message: "extention=Slider 缺少 name=\"grip\" 的滑块节点" });
+    if (!hasExtensionNode("Slider")) issues.push({ severity: "error", message: "extention=Slider 缺少 <Slider/> 扩展节点" });
+  }
+  if (extention === "ProgressBar") {
+    if (!nodeNames.has("bar")) issues.push({ severity: "error", message: "extention=ProgressBar 缺少 name=\"bar\" 的进度节点" });
+    if (!hasExtensionNode("ProgressBar")) issues.push({ severity: "error", message: "extention=ProgressBar 缺少 <ProgressBar/> 扩展节点" });
+  }
+  if (extention === "ComboBox") {
+    const combo = root.children.find((c) => c.name === "ComboBox");
+    if (!combo || !combo.attrs.dropdown) {
+      issues.push({ severity: "error", message: "extention=ComboBox 缺少 <ComboBox dropdown=\"ui://...\"/> 扩展节点" });
+    }
+  }
+
+  // 4. <list> 的 defaultItem 必须指向已登记组件
+  const pkgId = new Map(pkg.resources.map((r) => [r.id, r]));
+  for (const node of collectAllDisplayNodes(root)) {
+    if (node.name !== "list") continue;
+    const defaultItem = node.attrs.defaultItem;
+    if (!defaultItem) continue;
+    // ui://<pkgid><resid> 或裸资源 id（本包）。裸 id 整体作为本包资源 id。
+    let resId: string;
+    if (defaultItem.startsWith("ui://")) {
+      const target = defaultItem.slice(5);
+      // 形如 pkgidresid；本包可能也用 ui://pkgidresid，去掉包前缀取后 5 位为资源 id
+      resId = target.length > 5 ? target.slice(-5) : target;
+    } else {
+      resId = defaultItem;
+    }
+    if (!pkgId.has(resId)) {
+      issues.push({
+        severity: "error",
+        message: `list "${node.attrs.name ?? ""}" 的 defaultItem "${defaultItem}" 未指向已登记组件`,
+      });
+    }
+  }
+
+  return issues;
+}
+
 /** 分配不与现有资源冲突的短 id（5 位小写字母数字，FGUI 资源 id 约定长度）。 */
 export function nextResourceId(pkg: FguiPackage, prefix?: string): string {
   const used = new Set(pkg.resources.map((r) => r.id));

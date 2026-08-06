@@ -5,6 +5,7 @@ import {
   readComponent,
   readPackage,
   validateComponent,
+  validateComponentSemantics,
   validatePackageFileIntegrity,
 } from "../lib/fgui";
 
@@ -37,11 +38,14 @@ export async function run(argv: readonly string[]): Promise<number> {
     if (issue.severity === "error") exitCode = 1;
   }
 
-  // 2. 组件校验：单个组件或全部组件
+  // 2. 组件校验：单个组件或全部组件（引用完整性 + 语义校验）
   const targets = componentName ? [componentName] : collectComponentNames(pkg);
   for (const name of targets) {
     const component = readComponent(project, packageName, name);
-    const issues = validateComponent(project, pkg, component);
+    const issues = [
+      ...validateComponent(project, pkg, component),
+      ...validateComponentSemantics(project, pkg, component),
+    ];
     console.log(`校验 ${packageName}/${name}: ${issues.length === 0 ? "通过" : `${issues.length} 个问题`}`);
     for (const issue of issues) {
       console.error(`[${issue.severity}] ${issue.message}`);
