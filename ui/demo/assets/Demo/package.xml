@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <packageDescription id="4q9x2uij">
   <resources>
+    <image id="cqv1p" name="start_bg.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <component id="yh150" name="StartButton.xml" path="/" exported="true"/>
     <component id="hz2u0" name="DemoView.xml" path="/" exported="true"/>
     <image id="fmn11" name="background.png" path="/img/" scale="9grid" scale9grid="11,8,192,115" qualityOption="source" duplicatePadding="true"/>
   </resources>

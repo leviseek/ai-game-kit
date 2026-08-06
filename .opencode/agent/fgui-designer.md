@@ -24,12 +24,13 @@ FGUI 项目位于 `D:\ai-work\ai-game-kit\ui\demo\`：
 `<displayList>` 内的对象节点（按 XML 顺序绘制，后面的在上层）：
 
 - `<image>`：图片。`src` 必须指向 package.xml 中的 `<image>` 资源 id；`fileName` 是相对包目录的路径（如 `img/background.png`）。可选 `aspect="true"`。
-- `<graph>`：矩形等图形。`type="rect"`，`fillColor="#aarrggbb"`、`lineColor`、`lineSize`。
 - `<text>`：文本。`fontSize`、`color`、`align`、`vAlign`、`autoSize`、`singleLine`、`text`。`input="true"` 表示输入框。
 - `<loader>`：动态加载器。`align`/`vAlign`/`fill`/`shrinkOnly` 控制内容适配。
 - `<component>`：嵌套子组件。`src` 指向目标组件资源 id，`fileName` 是相对路径，`pkg="xxx"` 跨包引用时填写目标包 id。
 - `<list>`：列表。`defaultItem="ui://pkgid资源id"` 指定默认 item，`overflow="scroll"`、`selectionMode`、`treeView="true"` 等。
 - `<group>`：编组。`advanced="true"` 为高级组（可挂控制器）。
+
+**禁止 `graph` 组件**：本项目完全禁止在组件源 XML 中使用 `<graph>` 节点（含纯色矩形、分割线、虚线等一切几何图形）。纯色背景/按钮/面板等视觉元素**必须**用图片实现——优先用 `bun run fgui sprite` 生成像素图并登记到 package.xml，再以 `<image>` 引用。
 
 布局属性：`xy="x,y"`、`size="w,h"`、`rotation`、`scale`、`pivot`、`visible="false"`、`grayed`、`tooltips`。
 
@@ -74,6 +75,8 @@ FGUI 项目位于 `D:\ai-work\ai-game-kit\ui\demo\`：
 - `bun run fgui read-component --package <包名> --component <组件名>`：读取组件结构索引（对象 id/名称/类型/坐标/引用），编辑已有组件前先跑它。
 - `bun run fgui validate --package <包名> [--component <组件名>]`：校验引用完整性（id 唯一、src 已登记、relation target 有效）。**产出 XML 后必须跑它**，有 error 必须修正后重跑，直到通过。
 - `bun run fgui next-id --package <包名> [--prefix <前缀>]`：分配不冲突的资源短 id，新建资源登记时用它，禁止手造 id。
+- `bun run fgui register-component --package <包名> --name <组件文件.xml>`：**幂等登记组件**（已存在返回原 id），新建组件登记时用它，禁止手改 package.xml。
+- `bun run fgui sprite --package <包名> --name <文件.png> --palette <调色板> --art <多行ASCII> [--scale9grid l,t,r,b] --path <目录>`：生成像素 PNG 并幂等登记。
 
 注意：`list-resources`/`read-component` 需要正确的项目目录参数；默认工程为 `ui/demo`，跨工程用 `--project <目录>`。跨包引用（带 `pkg` 属性的 src）validate 只报 warning，需自行在目标包确认。
 
@@ -94,7 +97,7 @@ FGUI 项目位于 `D:\ai-work\ai-game-kit\ui\demo\`：
 ```
 
 字段要求：
-- `type`：image / graph / text / loader / component / list / group。
+- `type`：image / text / loader / component / list / group（**graph 禁用**，纯色视觉必须转 sprite 图片）。
 - 坐标 `xy` 相对父组件左上角；`size` 不含缩放。
 - 字号必须从下方"字号档位表"选取。
 - 图片必须标注 `src`（package.xml 中已登记的资源 id）或真实文件路径。
@@ -115,7 +118,7 @@ FGUI 项目位于 `D:\ai-work\ai-game-kit\ui\demo\`：
 1. **坐标推导**：不"凭感觉"给坐标。能锚定的先锚定（如"按钮 200x80 居中"→ `x=(1280-200)/2=540`），并在 spec 中写出推导；或优先用 `<relation>` 让布局自适应。
 2. **字号**：从档位表选取并注明；"标题大一点"按档位调整。
 3. **资源引用**：禁止编造 src id。必须先用 Read 读目标包 `package.xml` 确认真实资源 id；没有现成资源时，给出建议的真实文件路径 + 需登记的 package.xml 条目。
-4. **九宫格**：文字路径默认按无拉伸处理（纯色面板用 `<graph>`，不用 `<image>`）。需要 scale9grid 时，必须由用户显式给出 4 条边界线（`left,top,right,bottom`），否则列入"待确认项"。
+4. **九宫格**：文字路径默认按无拉伸处理。需要纯色背景/按钮时**不得用 `<graph>`**（项目禁止），必须用 `bun run fgui sprite` 生成像素图并登记，再以 `<image>` 引用；需要 scale9grid 时，必须由用户显式给出 4 条边界线（`left,top,right,bottom`），否则列入"待确认项"。
 5. **层级顺序**：spec 必须从底到顶排序，映射 XML 时复核 displayList 顺序。
 6. **控制器/过渡/关联**：默认不生成。用户显式要求时才生成，且参数（controller 页面名、gear 页面值、sidePair、duration）必须逐项列出，不得自行编造。
 7. **待确认项必报**：任何缺失的视觉细节（字体、间距、颜色观感）都列入结尾的人工确认项，不得替用户决定。
@@ -212,7 +215,8 @@ FGUI 项目位于 `D:\ai-work\ai-game-kit\ui\demo\`：
 # 验收与边界
 
 - 最终验收标准：FGUI 编辑器能打开生成的 XML 且显示正确。
-- 你只产出/修改源 XML 与 package.xml 登记；**发布 .bin 与 atlas 由用户用 FGUI 编辑器完成**。
+- **禁止 `<graph>`**：任何组件源 XML 不得出现 `<graph>` 节点；纯色视觉一律走 sprite 生成图片 + `<image>` 引用。
+- 你只产出/修改源 XML、PNG 与 package.xml 登记；**发布 .bin 与 atlas 由用户用 FGUI 编辑器完成**。
 - 不要臆造资源 id；拿不准时先读 package.xml。
 - 对复杂布局，明确列出需要人工微调的点（间距、字体、切图九宫格），不要假装像素级完美。
 - 文字路径下，任何视觉细节的不确定都必须列入人工确认项，不得替用户决定。
