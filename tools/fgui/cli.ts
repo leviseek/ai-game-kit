@@ -2,6 +2,7 @@ import { run as runListResources } from "./commands/list-resources";
 import { run as runReadComponent } from "./commands/read-component";
 import { run as runValidate } from "./commands/validate";
 import { run as runNextId } from "./commands/next-id";
+import { run as runSprite } from "./commands/sprite";
 
 interface Command {
   readonly run: (argv: readonly string[]) => Promise<number>;
@@ -24,6 +25,10 @@ const COMMANDS: Record<string, Command> = {
   "next-id": {
     run: runNextId,
     usage: "next-id --package <包名> [--prefix <前缀>] [--project <工程目录>] 分配不冲突的资源短 id",
+  },
+  sprite: {
+    run: runSprite,
+    usage: "sprite --package <包名> --name <文件.png> --palette <调色板> --art <多行ASCII> [--scale9grid l,t,r,b] [--path <目录>] [--project <工程目录>] 生成像素 PNG 并登记",
   },
 };
 
