@@ -54,6 +54,14 @@ export { createStateMachine } from "./core/fsm/StateMachine";
 export type { ObjectPool, ObjectPoolOptions } from "./core/pooling/ObjectPool";
 export { createObjectPool } from "./core/pooling/ObjectPool";
 
+export type { ServiceRegistry, ServiceToken } from "./core/services/ServiceRegistry";
+export {
+  ServiceRegistrationError,
+  ServiceResolutionError,
+  createServiceRegistry,
+  createServiceToken,
+} from "./core/services/ServiceRegistry";
+
 export { Application } from "./application/Application";
 export { ApplicationStateError } from "./application/ApplicationStateError";
 export { ModuleLifecycleError } from "./application/ModuleLifecycleError";

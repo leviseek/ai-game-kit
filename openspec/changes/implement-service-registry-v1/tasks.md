@@ -12,9 +12,9 @@
 
 ## 3. ApplicationContext/Module 边界与公开导出收口
 
-- [ ] 3.1 在 `contracts.typecheck.ts` 增补断言：引入服务注册表后 `ApplicationContext` 仍无 `get/resolve/registry/container/provide`，`Module` 仍无 `register/create/configure`，锁定独立接入边界。
-- [ ] 3.2 在 `assets/framework/index.ts` 导出稳定符号（`ServiceToken`、`ServiceRegistry`、两个错误类、`createServiceToken`、`createServiceRegistry`），并同步 `tests/framework/foundation/public-boundary.test.ts` 的 `expectedRootExports` 白名单。
-- [ ] 3.3 先编写组合根接入测试：注册表由组合根显式创建与注入，业务对象经构造接收服务契约，不直接依赖注册表或 `ApplicationContext`。
+- [x] 3.1 在 `contracts.typecheck.ts` 增补断言：引入服务注册表后 `ApplicationContext` 仍无 `get/resolve/registry/container/provide`，`Module` 仍无 `register/create/configure`，锁定独立接入边界。（本 change 完成：所需断言已存在——`_ApplicationContextHasNoServiceLocator`（`NeverKey` 锁定 `get|resolve|registry|container|provide`）与 `_ModuleHasNoManagerPattern`（`NeverKey` 锁定 `create|register|configure|manager|builder`，为任务要求的超集），均经顶层 `type _X = Expect<...>` 强制求值；`check-foundation-contracts.ts` 的 `typeCheckEntries` 已接入 `contracts.typecheck.ts`。引入 service-registry 后 `bun run test:foundation:types` EXIT=0，边界门禁验证有效，无需新增断言代码。）
+- [x] 3.2 在 `assets/framework/index.ts` 导出稳定符号（`ServiceToken`、`ServiceRegistry`、两个错误类、`createServiceToken`、`createServiceRegistry`），并同步 `tests/framework/foundation/public-boundary.test.ts` 的 `expectedRootExports` 白名单。（本 change 完成：`assets/framework/index.ts` 新增 `ServiceRegistry`/`ServiceToken` 类型导出与 `ServiceRegistrationError`/`ServiceResolutionError`/`createServiceRegistry`/`createServiceToken` 值导出；`public-boundary.test.ts` 的 `expectedRootExports` 白名单同步新增 6 个符号。验证：`bun test public-boundary.test.ts` 26 pass / 0 fail，`bun run test:foundation:types` EXIT=0。）
+- [x] 3.3 先编写组合根接入测试：注册表由组合根显式创建与注入，业务对象经构造接收服务契约，不直接依赖注册表或 `ApplicationContext`。（本 change 完成：新增 `service-registry-composition.test.ts` 锁定组合根接入边界——`assembleApp` 暴露组合根创建的注册表（register/registerFactory/resolve/isRegistered 可用）、每次 `assembleApp` 独立创建注册表非全局单例、业务对象 `GreetingController` 仅经构造接收已解析服务契约且不接触注册表/Context。红色期确认：`assembleApp` 当前不返回 `registry`，3 个新用例均因 `registry` undefined 失败，GREEN 由 4.1 在 `boot/AppRoot.ts` 接入后实现。）
 
 ## 4. 组合根接入与装配前校验
 
