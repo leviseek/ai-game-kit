@@ -8,11 +8,13 @@ import { createFairyGuiMock } from "./helpers/fairygui-mock";
 // 测试不加载真实运行时，统一使用共享 fixture（bun mock.module 全局共享首个生效）。
 mock.module("fairygui-cc", () => createFairyGuiMock());
 
-// cc 接缝：AppRoot 依赖 game.addPersistRootNode，其余成员不在此路径触发。
+// cc 接缝：AppRoot 依赖 director.addPersistRootNode，其余成员不在此路径触发。
 mock.module("cc", () => ({
   game: {
     on() {},
     off() {},
+  },
+  director: {
     addPersistRootNode() {},
   },
   Game: {

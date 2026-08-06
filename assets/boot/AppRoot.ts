@@ -1,4 +1,4 @@
-import { _decorator, Component, game } from "cc";
+import { _decorator, Component, director } from "cc";
 import {
   Application,
   createSceneFlow,
@@ -153,7 +153,7 @@ export class AppRoot extends Component {
     this.uiRoot = uiRoot;
     this.logger = logger;
     this.validateAssembly = validateAssembly;
-    game.addPersistRootNode(this.node);
+    director.addPersistRootNode(this.node);
   }
 
   start(): void {

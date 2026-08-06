@@ -100,8 +100,10 @@ describe("6.8 scope review: AppRoot.ts", () => {
 
     expect(source).not.toMatch(/from\s+["']\.\.\/game/);
     expect(source).not.toMatch(/from\s+["']@game/);
-    // AppRoot 只经框架适配器工厂组装资源提供者，不直接引用引擎资源/场景对象
-    expect(source).not.toMatch(/import\s*\{[^}]*\b(assetManager|Asset|resources|director)\b[^}]*\}\s*from\s+["']cc["']/);
+    // AppRoot 只经框架适配器工厂组装资源提供者，不直接引用引擎资源/场景对象；
+    // director 用于 Cocos 官方推荐的持久化根节点 API（game.addPersistRootNode 已废弃），
+    // 但 director.loadScene / assetManager 等场景切换与资源加载仍经适配器，见下方断言
+    expect(source).not.toMatch(/import\s*\{[^}]*\b(assetManager|Asset|resources)\b[^}]*\}\s*from\s+["']cc["']/);
   });
 
   test("composes resource and scene flow only through framework adapter factories", () => {

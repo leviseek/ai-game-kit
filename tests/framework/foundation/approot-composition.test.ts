@@ -9,6 +9,8 @@ mock.module("cc", () => ({
   game: {
     on(_event: string, _callback: () => void, _target: unknown) {},
     off(_event: string, _callback: () => void, _target: unknown) {},
+  },
+  director: {
     addPersistRootNode(_node: unknown) {},
   },
   Game: {
