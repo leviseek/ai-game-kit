@@ -47,14 +47,7 @@ FGUI 项目位于 `D:\ai-work\ai-game-kit\ui\demo\`：
 
 关联 `<relation>`：定义对象随父级/兄弟缩放时的行为，`target` 为目标对象 id，`sidePair` 如 `"width-width,height-height"`、`"center-center"`、`"right-right"`、`"top-bottom"`、`"leftext-right"`。宽度百分比用 `width-width%`。
 
-过渡 `<transition>`：写在 `</displayList>` 之后、扩展节点之前，控制动画。
-
-```xml
-<transition name="fadeIn">
-  <item time="0" type="Visible" target="n1" value="true"/>
-  <item time="0" type="XY" target="n1" tween="true" startValue="-,0" endValue="-,100" duration="10" ease="Linear"/>
-</transition>
-```
+过渡 `<transition>`：**自建组件禁止手写 transition**（FGUI 编辑器无法保证手写 XML 正确反解析；动画由 TypeScript 推进 controller 的 `selectedIndex` 实现）。官方库（Basic/Builder）的 transition 仅作参考，勿模仿。
 
 扩展节点：`extention="Button"` 的组件末尾写 `<Button mode="Radio"/>`（可选 `controller`/`page`），`ComboBox` 写 `<ComboBox dropdown="ui://..."/>`，`ProgressBar` 写 `<ProgressBar/>`，`Slider` 写 `<Slider/>` 等。**交互组件必须有完整结构**（controller + 命名约定子节点 + 扩展节点），详见"组件类型决策"。
 
@@ -67,16 +60,24 @@ FGUI 项目位于 `D:\ai-work\ai-game-kit\ui\demo\`：
 5. 引用项目内已有资源时，先读取对应 `package.xml` 确认真实资源 id，不要臆造。
 6. 布局要避开坐标陷阱：xy 是相对父组件的左上角，size 不含缩放；文本 autoSize 与容器尺寸冲突时以 `autoSize="none"` + 显式 size 为准。
 
+# 命名规范（强制）
+
+- **子元件 name 语义化且唯一**：禁止 `n1`/`n5` 这类无语义名（除 FGUI 自动生成的 group 内部）。推荐前缀：`txt_`（文本）、`btn_`（按钮）、`bg_`（背景）、`bar_`（进度）、`input_`（输入框）、`loader_`（动态加载）、`img_`（静态图）。
+- **资源 id 前缀续编**：用 `bun run fgui next-id --package <包名> --prefix <前缀>` 生成（如 Demo 包 `dm000`、图片 `bg000`），禁止随机手造。
+- **图片文件命名** `{用途}_{状态}.png`：如 `btn_primary_up.png`、`panel_bg.png`、`input_bg.png`。
+- **组件命名**：整屏/弹窗 `XxxView`/`XxxPopup`，可复用组件 `XxxCom` 或控件词（如 `VolumeSliderCom`）。
+- 改动已绑定子元件名会破坏 TS 绑定，非必要不改。
+
 # 确定性工具（优先于手工读取）
 
 项目提供 `fgui` CLI（`tools/fgui/`，通过 `bun run fgui <command>` 调用），用于替代"手工读 package.xml / 猜资源 id / 目测引用"等易错操作。**能用工具就必须用工具**：
 
 - `bun run fgui list-resources --package <包名>`：列出包的资源清单（id/名称/路径/导出/九宫格），**任何 src 引用前先跑它确认真实资源 id**。
 - `bun run fgui read-component --package <包名> --component <组件名>`：读取组件结构索引（对象 id/名称/类型/坐标/引用），编辑已有组件前先跑它。
-- `bun run fgui validate --package <包名> [--component <组件名>]`：校验引用完整性（id 唯一、src 已登记、relation target 有效）。**产出 XML 后必须跑它**，有 error 必须修正后重跑，直到通过。
-- `bun run fgui next-id --package <包名> [--prefix <前缀>]`：分配不冲突的资源短 id，新建资源登记时用它，禁止手造 id。
-- `bun run fgui register-component --package <包名> --name <组件文件.xml>`：**幂等登记组件**（已存在返回原 id），新建组件登记时用它，禁止手改 package.xml。
-- `bun run fgui sprite --package <包名> --name <文件.png> --palette <调色板> --art <多行ASCII> [--scale9grid l,t,r,b] --path <目录>`：生成像素 PNG 并幂等登记。
+- `bun run fgui validate --package <包名> [--component <组件名>] [--strict]`：校验引用完整性 + 语义（controller 配对、gear 一致性、Slider/ProgressBar/ComboBox/Button 骨架、image 误用 fill、fileName 一致、transition 禁令、graph 禁令、资源 id 续编冲突）。**产出 XML 后必须跑它**，有 error 必须修正后重跑，直到通过。**Basic/Builder 为官方库默认豁免**，仅 `--strict` 全量检查。
+- `bun run fgui next-id --package <包名> --prefix <前缀>`：分配前缀续编资源短 id（如 `--prefix dm` → `dm000/dm001`…），新建资源登记时用它，**禁止随机手造 id**。
+- `bun run fgui register-component --package <包名> --name <组件文件.xml> [--path <子目录>]`：**幂等登记组件**（已存在返回原 id），新建组件登记时用它，禁止手改 package.xml。
+- `bun run fgui sprite --package <包名> --name <文件.png> --palette <调色板> --art <多行ASCII> [--scale9grid l,t,r,b] --path <目录>`：生成像素 PNG 并幂等登记。**调色板锁定**：所用颜色必须 ⊆ `ui/demo/palette.json` 允许集合，新色先加入该文件。
 
 注意：`list-resources`/`read-component` 需要正确的项目目录参数；默认工程为 `ui/demo`，跨工程用 `--project <目录>`。跨包引用（带 `pkg` 属性的 src）validate 只报 warning，需自行在目标包确认。
 
