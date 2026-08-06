@@ -11,10 +11,10 @@
 
 ## 2. Cocos 平台存储适配器实现
 
-- [ ] 2.1 实现 `adapters/cocos/storage/*`：基于平台后端实现 `PlatformStorage`，内部采用临时值+校验+替换原子策略与备份键，使 1.1-1.3 测试通过。
-- [ ] 2.2 实现损坏数据诊断与恢复默认路径：区分"键不存在"与"内容损坏"，错误语义与 `versioned-storage` 的 `SaveCorruptionError` 衔接。
-- [ ] 2.3 实现 7.6 生命周期保存收敛：同一命名空间写入串行化，合并同一生命周期窗口内保存到最后一次有效状态，接 `ApplicationVisibility` 触发保存。
-- [ ] 2.4 根入口白名单同步：新增适配器相关符号至 `expectedRootExports`，依赖边界检查通过（内核/契约不导入 `cc`）。
+- [x] 2.1 实现 `adapters/cocos/storage/*`：基于平台后端实现 `PlatformStorage`，内部采用临时值+校验+替换原子策略与备份键，使 1.1-1.3 测试通过。（完成：`CocosStorageAdapter.ts` 实现 `createCocosStorageAdapter`，惰性取 `cc.sys.localStorage` 支持注入接缝；set 走临时键写入→读回校验→备份旧值→替换正式键→清理临时键；get/delete 兼容缺失返回 null；配套目录与文件 `.meta`。）
+- [x] 2.2 实现损坏数据诊断与恢复默认路径：区分"键不存在"与"内容损坏"，错误语义与 `versioned-storage` 的 `SaveCorruptionError` 衔接。（完成：存储信封含 FNV-1a 校验和，`get` 对非法信封/校验不一致抛 `SaveCorruptionError`，缺失返回 null 明确区分；`restoreDefault` 只清理目标键及备份/临时键，`restoreBackup` 校验备份有效后提升并清理。）
+- [x] 2.3 实现 7.6 生命周期保存收敛：同一命名空间写入串行化，合并同一生命周期窗口内保存到最后一次有效状态，接 `ApplicationVisibility` 触发保存。（完成：`core/storage/SaveCoordinator.ts` 实现 `createSaveCoordinator`，订阅 `ApplicationVisibility`，`running`/`pending` 串行化并合并窗口内触发到最后一次有效状态；默认 `["background"]` 触发。）
+- [x] 2.4 根入口白名单同步：新增适配器相关符号至 `expectedRootExports`，依赖边界检查通过（内核/契约不导入 `cc`）。（完成：按既有约定适配器与存储内核不导出至根入口——`createCocosStorageAdapter`/`createSaveCoordinator` 追加至 `public-boundary.test.ts` `forbiddenInternals` 锁定；`SaveCoordinator` 位于 `core/storage` 仅依赖 `contracts/platform`，`CocosStorageAdapter` 位于 `adapters/cocos` 依赖 core/contracts，`cc` 仅存在于适配器层；public-boundary 29 pass、strict 类型 0 diagnostics。）
 
 ## 3. 集成与收口
 
