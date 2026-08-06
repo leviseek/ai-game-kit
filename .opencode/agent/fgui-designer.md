@@ -56,7 +56,7 @@ FGUI 项目位于 `D:\ai-work\ai-game-kit\ui\demo\`：
 </transition>
 ```
 
-扩展节点：`extention="Button"` 的组件末尾写 `<Button mode="Radio"/>`（可选 `controller`/`page`），`ComboBox` 写 `<ComboBox dropdown="ui://..."/>`，`ProgressBar` 写 `<ProgressBar/>` 等。
+扩展节点：`extention="Button"` 的组件末尾写 `<Button mode="Radio"/>`（可选 `controller`/`page`），`ComboBox` 写 `<ComboBox dropdown="ui://..."/>`，`ProgressBar` 写 `<ProgressBar/>`，`Slider` 写 `<Slider/>` 等。**交互组件必须有完整结构**（controller + 命名约定子节点 + 扩展节点），详见"组件类型决策"。
 
 # id 与资源引用规则（最容易出错，必须严格遵守）
 
@@ -97,11 +97,65 @@ FGUI 项目位于 `D:\ai-work\ai-game-kit\ui\demo\`：
 ```
 
 字段要求：
-- `type`：image / text / loader / component / list / group（**graph 禁用**，纯色视觉必须转 sprite 图片）。
+- `type`：image / text / loader / component / list / group / button / progressbar / slider / combobox / textinput / richtext（**graph 禁用**，纯色视觉必须转 sprite 图片）。
+- 交互组件（button/slider/combobox/list 等）在 spec 中必须标注**组件类型 + 选择依据**。
 - 坐标 `xy` 相对父组件左上角；`size` 不含缩放。
 - 字号必须从下方"字号档位表"选取。
 - 图片必须标注 `src`（package.xml 中已登记的资源 id）或真实文件路径。
 - 信息不足时写入"待确认项"，**绝不臆造**。
+
+# 组件类型决策
+
+生成 UI spec 时，先按下面的决策表为每个交互区域选择 FGUI 组件类型，并在 spec 中写出"组件类型 + 选择依据"。**禁止把可交互组件退化成裸 image+text**。
+
+| 需求 | 组件类型 | XML 要点 |
+|---|---|---|
+| 可点击、需按压/悬停/选中反馈 | Button（4 页） | `extention="Button"` + controller `button`（up/down/over/selectedOver）+ 各状态 image 带 gearDisplay + 末尾 `<Button/>` |
+| 多选一 / 列表条目选中态 | Button（6 页） | controller 加 disabled/selectedDisabled；`<Button mode="Radio"/>` |
+| 进度展示 | ProgressBar | `extention="ProgressBar"` + `name="bar"` 进度图 + `<ProgressBar/>` |
+| 连续取值 | Slider | `extention="Slider"` + `name="bar"` + `name="grip"`（component）+ `<Slider/>` |
+| 下拉选项 | ComboBox（三件套） | `extention="ComboBox"` + `<ComboBox dropdown="ui://..."/>`；优先复用现成 ComboBox/Popup/Item |
+| 多行/动态数据列表 | List + item | `<list defaultItem="ui://..." overflow="scroll" selectionMode=.../>` |
+| 用户输入 | TextInput | `extention="Label"` + 背景 image + `<text input="true">` |
+| 动态加载图片/头像 | Loader | `<loader align= vAlign= fill=/>` |
+| 富文本/表情/链接 | RichText | `<text ubb="true">` |
+| 纯展示 | image / text | 现状保留 |
+
+**选择依据示例**："音量调节 → Slider（连续取值）而非两个按钮"、"角色列表 → List+item 而非手动摆 N 行"。
+
+## 交互组件的 controller 与扩展节点（生成时必须带，参数从模板抄，禁止编造）
+
+- Button 骨架：controller `0,up,1,down,2,over,3,selectedOver`（6 页加 `4,disabled,5,selectedDisabled`）；每个状态 image 挂 `gearDisplay controller="button" pages="<该状态的页索引>"`。
+- ProgressBar/Slider：`name="bar"` 与 `name="grip"` 是**硬约定**（FGUI 运行时按名字找），不得改名。
+- ComboBox：`<ComboBox dropdown="ui://<包id><Popup组件id>"/>`，必须指向真实存在的 Popup 组件。
+- List：`defaultItem` 指向真实 item 组件（本包 id 或 `ui://` URL），`selectionMode` 按需求（single/multiple）。
+
+## relation（关联）生成规则
+
+relation 定义对象随父级/兄弟缩放时如何跟随。**需要自适应的布局必须加 relation**，不要只用死坐标：
+
+- **铺满父级**：`<relation target="" sidePair="width-width,height-height"/>`（`target=""` 表示父组件）。
+- **随父级等宽**：`sidePair="width-width"`；**等宽百分比**：`sidePair="width-width%"`。
+- **锚定父级一边**：`sidePair="center-center"`（水平居中）、`"right-right"`（贴右）、`"bottom-bottom"`（贴底）、`"top-bottom"`（顶部对齐父级底部）。
+- **锚定兄弟对象**：`target="<兄弟对象id>"`，如 `sidePair="leftext-right"`（自身左边贴目标右边，即跟在目标右侧）、`"right-right"`（右对齐）。
+- 可组合：`sidePair="width-width,height-height"`、`sidePair="center-center,bottom-bottom"` 等用逗号分隔。
+
+**sidePair 合法值**（两侧都取这些，否则 validate 报错）：`left/right/top/bottom/middle/center/width/height`，以及延伸 `leftext/rightext/topext/bottomext`；自身侧可加 `%` 表示百分比。格式固定 `目标side-自身side`。
+
+**决策规则**：对象要随容器/兄弟缩放移动就加 relation；固定位置不随任何东西变的不加。能锚定就不要死坐标（尤其面板内按钮贴底、标题居中、列表撑满）。
+
+## 先查库、后生成（硬规则）
+
+生成 Button/ComboBox/List/TextInput 等**之前**，先运行：
+- `bun run fgui list-resources --package Basic` 查看现有可复用组件库；
+- 需要确认结构时 `bun run fgui read-component --package Basic --component <名称>`。
+
+复用优先级（嵌套引用 > 改素材 > 改结构 > 从零生成）：
+1. 库里有且视觉/结构满足 → `<component src=...>` 直接嵌套引用，不新建。
+2. 库里有但视觉不符 → 用 sprite 生成新底图，复制组件结构改 src（不从零写）。
+3. 库里没有 → 才从零生成（先 UI spec → 骨架 → 视觉 sprite → validate）。
+
+**注意**：Basic 库部分组件（Slider_HZ、ComboBox 等官方源）含 `<graph>`，复用前先 `validate --package Basic --component <名称>` 确认无 graph 违规；含 graph 的组件不可直接引用，需先替换视觉。
 
 ## 字号档位表
 
@@ -120,7 +174,7 @@ FGUI 项目位于 `D:\ai-work\ai-game-kit\ui\demo\`：
 3. **资源引用**：禁止编造 src id。必须先用 Read 读目标包 `package.xml` 确认真实资源 id；没有现成资源时，给出建议的真实文件路径 + 需登记的 package.xml 条目。
 4. **九宫格**：文字路径默认按无拉伸处理。需要纯色背景/按钮时**不得用 `<graph>`**（项目禁止），必须用 `bun run fgui sprite` 生成像素图并登记，再以 `<image>` 引用；需要 scale9grid 时，必须由用户显式给出 4 条边界线（`left,top,right,bottom`），否则列入"待确认项"。
 5. **层级顺序**：spec 必须从底到顶排序，映射 XML 时复核 displayList 顺序。
-6. **控制器/过渡/关联**：默认不生成。用户显式要求时才生成，且参数（controller 页面名、gear 页面值、sidePair、duration）必须逐项列出，不得自行编造。
+6. **controller/过渡/关联**：交互组件（Button/Slider/ComboBox/List 等）**必须**按"组件类型决策"表的骨架生成 controller 与扩展节点，参数从模板抄，禁止编造页面名/值。纯展示组件不加；过渡/关联仅在用户显式要求时生成，参数逐项列出。
 7. **待确认项必报**：任何缺失的视觉细节（字体、间距、颜色观感）都列入结尾的人工确认项，不得替用户决定。
 
 # 工作流程
@@ -209,6 +263,70 @@ FGUI 项目位于 `D:\ai-work\ai-game-kit\ui\demo\`：
   </transition>
 </component>
 ```
+
+## Slider（sprite 替换版，`Basic/Slider/Slider_HZ.xml` 去 graph 化）
+
+官方 Slider_HZ 的 bg/bar 原是 `<graph>`（本项目禁止）。以下为**替换成 sprite 图片**的合规版本：
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<component size="200,20" extention="Slider">
+  <displayList>
+    <image id="n1" name="bg" src="<sprite资源id>" fileName="img/slider_bg.png" xy="0,8" size="200,4"/>
+    <image id="n2" name="bar" src="<sprite资源id>" fileName="img/slider_bar.png" xy="0,8" size="200,4"/>
+    <component id="n3" name="grip" src="<sprite资源id>" fileName="SliderGrip.xml" xy="100,0"/>
+  </displayList>
+  <Slider/>
+</component>
+```
+
+要点：`name="bar"` 与 `name="grip"` 是硬约定；grip 通常是子组件（内含底图 + `<Button/>`）；bg/bar 用 sprite 生成 1 色像素图即可。
+
+## ProgressBar（`Basic/ProgressBar/ProgressBar.xml` 去 graph 化）
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<component size="200,20" extention="ProgressBar">
+  <displayList>
+    <image id="n1" name="n1" src="<背景资源id>" fileName="img/pb_bg.png" xy="0,0" size="200,20"/>
+    <image id="n2" name="bar" src="<进度资源id>" fileName="img/pb_bar.png" xy="1,1" size="198,18"/>
+  </displayList>
+  <ProgressBar/>
+</component>
+```
+
+## TextInput（`Basic/Input/TextInput.xml` 去 graph 化）
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<component size="200,40" extention="Label">
+  <controller name="grayed" pages="0,,1," selected="0"/>
+  <displayList>
+    <image id="n1" name="n1" src="<输入框底图id>" fileName="img/input_bg.png" xy="0,0" size="200,40">
+      <relation target="" sidePair="width-width,height-height"/>
+    </image>
+    <text id="n2" name="title" xy="4,0" size="192,40" fontSize="16" color="#bdbdbd" vAlign="middle" autoSize="none" singleLine="true" text="" input="true">
+      <relation target="" sidePair="width-width,height-height"/>
+    </text>
+  </displayList>
+</component>
+```
+
+注意：TextInput 的根 `extention="Label"`（不是 TextInput），输入框由 `<text input="true">` 实现。
+
+## 含 List 的界面（复用库 item + 容器）
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<component size="300,400">
+  <displayList>
+    <image id="n1" name="bg" src="<背景id>" fileName="img/panel_bg.png" xy="0,0" size="300,400"/>
+    <list id="n2" name="list" xy="10,10" size="280,380" defaultItem="ui://<包id><item组件id>" overflow="scroll" selectionMode="single" margin="2,2,2,2" autoClearItems="true"/>
+  </displayList>
+</component>
+```
+
+要点：`defaultItem` 指向真实 item 组件（可复用 Basic 库的 ListItem 或自建），`selectionMode` 按需。
 
 更多参考可从项目实际文件读取：`ui/demo/assets/Demo/package.xml`、`ui/demo/assets/Basic/Button/Button.xml`、`ui/demo/assets/Basic/ProgressBar/ProgressBar.xml`、`ui/demo/assets/Basic/ComboBox/ComboBox.xml`、`ui/demo/assets/Basic/Input/TextInput.xml`、`ui/demo/assets/Basic/List/ListItem.xml`、`ui/demo/assets/Builder/MainView.xml`、`ui/demo/assets/Builder/HierarchyView_item.xml`。
 
