@@ -113,3 +113,28 @@ export type {
 
 export type { InputMapper, InputMapperOptions } from "./core/input/InputMapper";
 export { createInputMapper } from "./core/input/InputMapper";
+
+export type {
+  ConfigKey,
+  ConfigReadType,
+  ConfigTable,
+  ReadonlyConfigSnapshot,
+} from "./contracts/config/Config";
+
+export {
+  ConfigLoadError,
+  ConfigMissingError,
+  ConfigParseError,
+  ConfigTypeMismatchError,
+} from "./contracts/config/ConfigErrors";
+
+export {
+  configArray,
+  configBoolean,
+  configNumber,
+  configObject,
+  configString,
+  createConfigTable,
+} from "./core/config/ConfigTable";
+
+export { loadConfigTable } from "./core/config/ConfigLoader";

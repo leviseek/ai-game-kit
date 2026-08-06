@@ -34,6 +34,11 @@ import type {
   ScopedEventChannel,
 } from "../../../assets/framework/core/events/ScopedEventChannel";
 import type { DisposeHandle } from "../../../assets/framework/core/scheduling/DisposeHandle";
+import type {
+  ConfigKey,
+  ConfigReadType,
+  ConfigTable,
+} from "../../../assets/framework/contracts/config/Config";
 
 type Equal<Left, Right> =
   (<Value>() => Value extends Left ? 1 : 2) extends
@@ -304,5 +309,32 @@ type _ScopedEventChannelEmitIsTyped = Expect<
       event: EventName,
       payload: ScopedEvents[EventName],
     ) => void
+  >
+>;
+
+type _ConfigKeyIsString = Expect<Equal<ConfigKey, string>>;
+
+type _ConfigTableShape = Expect<
+  Equal<keyof ConfigTable, "read" | "snapshot">
+>;
+type _ConfigTableReadIsOverloadedWithDefault = Expect<
+  Equal<
+    ConfigTable["read"],
+    {
+      <T>(key: ConfigKey, type: ConfigReadType<T>): T;
+      <T>(key: ConfigKey, type: ConfigReadType<T>, defaultValue: T): T;
+    }
+  >
+>;
+type _ConfigReadTypeParsesUnknownToDeclared = Expect<
+  Equal<
+    ConfigReadType<number>["parse"],
+    (key: ConfigKey, raw: unknown) => number
+  >
+>;
+type _ConfigTableSnapshotReturnsReadonly = Expect<
+  Equal<
+    ConfigTable["snapshot"],
+    () => Readonly<Record<ConfigKey, unknown>>
   >
 >;
