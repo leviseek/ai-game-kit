@@ -318,7 +318,8 @@ describe("AppRoot Component", () => {
     expect(typeof instance.smokeUiLoadPackage).toBe("function");
     expect(typeof instance.smokeUiOpenPage).toBe("function");
     expect(typeof instance.smokeUiClosePage).toBe("function");
-    expect(typeof instance.smokeUiSetModal).toBe("function");
+    // 组合根不再暴露手动 setModal：遮罩由适配器消费导航器模态状态自动同步
+    expect(instance.smokeUiSetModal).toBeUndefined();
   });
 });
 

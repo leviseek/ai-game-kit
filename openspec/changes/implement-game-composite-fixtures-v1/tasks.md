@@ -4,8 +4,8 @@
 
 ## 0. FairyGUI UI 集成缺口修补（6.3 遗留，前置）
 
-- [ ] 0.1 先编写导航模态自动同步测试：`UiNavigator` 模态状态变化自动驱动遮罩呈现/移除，组合根不再手动调用 `setModal`，重复进入/退出幂等。
-- [ ] 0.2 实现 modal 自动同步：页面适配器消费导航模态状态（默认消费 `UiNavigator.modal`），导航阻断时自动呈现遮罩、收敛时自动移除，使测试通过；移除 AppRoot 手动 `setModal` 调用路径。
+- [x] 0.1 先编写导航模态自动同步测试：`UiNavigator` 模态状态变化自动驱动遮罩呈现/移除，组合根不再手动调用 `setModal`，重复进入/退出幂等。（`tests/framework/foundation/navigation-modal-sync.test.ts` 锁定目标契约：适配器选项新增 `navigator`，导航 open 阻断自动呈现遮罩、close/back 收敛自动移除、重复进入/退出幂等、非阻断页不呈现、dispose 后停止同步。红期确认：3 个自动同步测试失败因遮罩从未呈现，2 个无遮罩断言通过，符合预期。）
+- [x] 0.2 实现 modal 自动同步：页面适配器消费导航模态状态（默认消费 `UiNavigator.modal`），导航阻断时自动呈现遮罩、收敛时自动移除，使测试通过；移除 AppRoot 手动 `setModal` 调用路径。（`FairyGuiPageAdapter.ts` 选项新增 `navigator`：适配器包装导航器 `open/close/back/dispose`，操作后重读 `navigator.modal` 同步遮罩，`setModal` 与包装共用 `applyModal` 幂等核心，`dispose` 恢复导航器原始方法；`AppRoot.ts` 创建 `createUiNavigator` 传入适配器、删除 `smokeUiSetModal`、`runUiSmoke` 遮罩步骤改经导航器打开/关闭阻断页面；同步更新 approot-ui-smoke/approot-composition 对 `smokeUiSetModal` 移除的断言。审查后补 P2 保护测试：`navigator.dispose` 收敛自动移除遮罩、`adapter.dispose` 恢复导航器原始方法。验证：navigation-modal-sync 7 pass、Foundation 全量 648 pass / 0 fail、`test:foundation:types` EXIT=0。）
 - [ ] 0.3 先编写遮罩可见性/输入阻断增强测试：遮罩可见（非透明 GGraph 呈现）、阻断覆盖区域输入、点击不穿透到下层页面。
 - [ ] 0.4 实现遮罩可见性与输入阻断增强，使 0.3 测试通过（对齐 `GRoot._modalLayer` 模式：opaque/touchable 正确配置）。
 - [ ] 0.5 先编写窗口 resize 同步测试：UI 根宿主在窗口尺寸变化后同步根布局尺寸，层级容器与页面不受残留旧尺寸影响。

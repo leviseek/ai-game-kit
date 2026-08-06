@@ -17,7 +17,9 @@ import {
   type ServiceToken,
   type TimeSource,
   type UiLayer,
+  type UiNavigator,
   type UiPage,
+  createUiNavigator,
 } from "../framework";
 import { createApplicationContext } from "../framework/application/ApplicationContext";
 import { WallClock } from "../framework/core/time/WallClock";
@@ -132,6 +134,7 @@ export class AppRoot extends Component {
   private resourceProvider?: IResourceProvider;
   private uiRoot?: CocosUiRoot;
   private pageAdapter?: FairyGuiPageAdapter;
+  private navigator?: UiNavigator;
   private uiScope?: ResourceScope;
   private logger?: Logger;
   private validateAssembly?: () => void;
@@ -235,10 +238,15 @@ export class AppRoot extends Component {
     }
     // 页面创建经 fgui 包注册表（createFairyGuiView 位于 Adapter 边界），
     // 组合根不直接 import fgui；provider 为预留参数，逆序释放由冒烟方法
-    // 经资源作用域驱动（见 4.x 编排约定）
+    // 经资源作用域驱动（见 4.x 编排约定）。导航器经适配器消费模态状态，
+    // 阻断自动呈现遮罩，组合根不再手动调用 setModal
+    if (this.navigator === undefined) {
+      this.navigator = createUiNavigator();
+    }
     this.pageAdapter = createFairyGuiPageAdapter({
       root,
       provider: this.resourceProvider,
+      navigator: this.navigator,
       createView: createFairyGuiView,
     });
     this.pageAdapter.init();
@@ -342,11 +350,21 @@ export class AppRoot extends Component {
       : false;
     report("page-open", opened);
 
-    // 4. 遮罩呈现/移除（模态输入阻断）
-    this.smokeUiSetModal(true);
-    report("modal-show", true);
-    this.smokeUiSetModal(false);
-    report("modal-hide", true);
+    // 4. 遮罩呈现/移除（模态输入阻断）：经导航器打开/关闭阻断页面，遮罩由
+    //    适配器消费导航模态状态自动同步，组合根不再手动调用 setModal
+    let modalShown = false;
+    let modalHidden = false;
+    if (this.navigator !== undefined) {
+      const openResult = this.navigator.open("ui-modal", {
+        layer: "popup",
+        blocking: true,
+      });
+      modalShown = openResult.ok === true && this.navigator.modal === true;
+      const closeResult = this.navigator.close();
+      modalHidden = closeResult.ok === true && this.navigator.modal === false;
+    }
+    report("modal-show", modalShown);
+    report("modal-hide", modalHidden);
 
     // 5. 关闭页面
     const closed = this.smokeUiClosePage("demo");
@@ -393,11 +411,6 @@ export class AppRoot extends Component {
     }
     this.pageAdapter.mount(page);
     return true;
-  }
-
-  /** 冒烟触发：消费导航模态状态呈现/移除遮罩。 */
-  smokeUiSetModal(modal: boolean): void {
-    this.pageAdapter?.setModal(modal);
   }
 
   /** 冒烟触发：关闭页面（先卸载挂载再销毁 View）。返回是否关闭。 */

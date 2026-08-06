@@ -4,6 +4,7 @@ import {
   UI_LAYER_ORDER,
   type UiLayer,
 } from "../../../contracts/ui/Navigation";
+import type { UiNavigator } from "../../../core/ui/UiNavigator";
 import type { GRootLike } from "./CocosUiRoot";
 
 // 层容器与 GRoot 同为 GComponent 子类，容器接缝复用 CocosUiRoot 的权威
@@ -38,6 +39,11 @@ export interface FairyGuiPageAdapterOptions {
    * `opaque`/`touchable` 保证命中阻断；测试可注入记录型 mock 观察遮罩属性。
    */
   readonly createMask?: (width: number, height: number) => unknown;
+  /**
+   * 导航器：提供时适配器消费其模态状态（默认读 `UiNavigator.modal`），包装其
+   * 导航操作，阻断时自动呈现遮罩、收敛时自动移除，组合根无需手动调用 setModal。
+   */
+  readonly navigator?: UiNavigator;
 }
 
 /** 缺省模态遮罩工厂：GComponent + opaque/touchable，命中阻断下层页面输入。 */
@@ -125,6 +131,31 @@ export function createFairyGuiPageAdapter(
   let initialized = false;
   let disposed = false;
 
+  // 遮罩同步核心：setModal 与导航器包装共用，保证两种驱动路径语义一致。
+  // 重复进入（mask 已存在）不重复添加，重复退出（mask 不存在）为 no-op，幂等。
+  function applyModal(modal: boolean): void {
+    if (disposed) {
+      return;
+    }
+    const system = containers.get("system");
+    if (system === undefined) {
+      return;
+    }
+    if (modal && mask === undefined) {
+      // 遮罩节点挂到最高层 system 容器，全屏尺寸对齐 GRoot、可命中（opaque）
+      // 且可触摸（touchable），阻断下层页面输入；收敛时精确移除，避免误删
+      // system 层其它页面
+      const createMask = options.createMask ?? createFairyGuiMask;
+      const created = createMask(options.root.width, options.root.height);
+      mask = created;
+      system.addChild(created);
+    } else if (!modal && mask !== undefined) {
+      // 精确移除遮罩，避免误删 system 层其它页面（toast/loading/system 同层）
+      system.removeChild(mask);
+      mask = undefined;
+    }
+  }
+
   function requireContainer(layer: UiLayer): FairyGuiContainerLike {
     const container = containers.get(layer);
     if (container === undefined) {
@@ -155,6 +186,55 @@ export function createFairyGuiPageAdapter(
     handleStates.set(handle, state);
     pages.add(handle);
     return handle;
+  }
+
+  // 消费导航器模态状态：导航器无事件推送，包装其导航操作，操作后重读
+  // `modal` 同步遮罩，使"阻断自动呈现、收敛自动移除"随导航状态成立。
+  // 组合根不再需要手动调用 setModal；未提供导航器时保持手动驱动路径。
+  const navigator = options.navigator;
+  let navigatorOriginalOpen: UiNavigator["open"] | undefined;
+  let navigatorOriginalClose: UiNavigator["close"] | undefined;
+  let navigatorOriginalBack: UiNavigator["back"] | undefined;
+  let navigatorOriginalDispose: UiNavigator["dispose"] | undefined;
+
+  function syncModalFromNavigator(): void {
+    if (navigator !== undefined) {
+      applyModal(navigator.modal === true);
+    }
+  }
+
+  if (navigator !== undefined) {
+    navigatorOriginalOpen = navigator.open;
+    navigatorOriginalClose = navigator.close;
+    navigatorOriginalBack = navigator.back;
+    navigatorOriginalDispose = navigator.dispose;
+
+    navigator.open = (
+      route: string,
+      navOptions?: { layer?: UiLayer; blocking?: boolean },
+    ) => {
+      const result = (navigatorOriginalOpen as UiNavigator["open"])(
+        route,
+        navOptions,
+      );
+      syncModalFromNavigator();
+      return result;
+    };
+    navigator.close = (pageId?: string) => {
+      const result = (navigatorOriginalClose as UiNavigator["close"])(pageId);
+      syncModalFromNavigator();
+      return result;
+    };
+    navigator.back = () => {
+      const result = (navigatorOriginalBack as UiNavigator["back"])();
+      syncModalFromNavigator();
+      return result;
+    };
+    navigator.dispose = () => {
+      (navigatorOriginalDispose as UiNavigator["dispose"])();
+      // 导航器释放后栈清空、模态收敛，遮罩一并移除
+      syncModalFromNavigator();
+    };
   }
 
   return {
@@ -282,26 +362,7 @@ export function createFairyGuiPageAdapter(
       state.mounted = false;
     },
     setModal(modal: boolean): void {
-      if (disposed) {
-        return;
-      }
-      const system = containers.get("system");
-      if (system === undefined) {
-        return;
-      }
-      if (modal && mask === undefined) {
-        // 遮罩节点挂到最高层 system 容器，全屏尺寸对齐 GRoot、可命中（opaque）
-        // 且可触摸（touchable），阻断下层页面输入；收敛时精确移除，避免误删
-        // system 层其它页面
-        const createMask = options.createMask ?? createFairyGuiMask;
-        const created = createMask(options.root.width, options.root.height);
-        mask = created;
-        system.addChild(created);
-      } else if (!modal && mask !== undefined) {
-        // 精确移除遮罩，避免误删 system 层其它页面（toast/loading/system 同层）
-        system.removeChild(mask);
-        mask = undefined;
-      }
+      applyModal(modal);
     },
     dispose(): void {
       if (disposed) {
@@ -315,6 +376,14 @@ export function createFairyGuiPageAdapter(
           system.removeChild(mask);
         }
         mask = undefined;
+      }
+      // 恢复导航器原始方法：适配器释放后不再劫持导航操作，避免其闭包持有
+      // 已释放适配器；导航器本身的生命周期由调用方管理
+      if (navigator !== undefined && navigatorOriginalOpen !== undefined) {
+        navigator.open = navigatorOriginalOpen;
+        navigator.close = navigatorOriginalClose as UiNavigator["close"];
+        navigator.back = navigatorOriginalBack as UiNavigator["back"];
+        navigator.dispose = navigatorOriginalDispose as UiNavigator["dispose"];
       }
       // 页面按登记逆序销毁（后创建的页面先释放），对齐导航逆序释放契约。
       // Array.from 而非展开：Creator 构建转译 `[...set]` 为 `[].concat(set)` 会破坏迭代

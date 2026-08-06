@@ -61,7 +61,6 @@ interface AppRootInstance {
     resName: string,
   ): boolean;
   smokeUiClosePage(route: string): boolean;
-  smokeUiSetModal(modal: boolean): void;
   runUiSmoke(): Promise<void>;
   [key: string]: unknown;
 }
@@ -97,8 +96,8 @@ describe("AppRoot FairyGUI UI smoke methods", () => {
     // 直接调用 smokeUiInit 时，真实 createCocosUiRoot 的缺省 GRoot seam 依赖引擎
     // GRoot 单例；此处仅验证方法存在性与幂等调用不抛错（运行时行为由 Web 冒烟验证）。
     expect(() => instance.smokeUiInit()).not.toThrow();
-    expect(() => instance.smokeUiSetModal(true)).not.toThrow();
-    expect(() => instance.smokeUiSetModal(false)).not.toThrow();
+    // 组合根不再手动 setModal：模态遮罩由适配器消费导航器状态自动同步
+    expect(instance.smokeUiSetModal).toBeUndefined();
   });
 
   test("smokeUiOpenPage/ClosePage are safe before the adapter is ready", async () => {
