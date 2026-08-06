@@ -291,22 +291,51 @@ function collectAllDisplayNodes(root: XmlElement): XmlElement[] {
   return out;
 }
 
-/** 分配不与现有资源冲突的短 id（4 位小写字母数字）。 */
+/** 分配不与现有资源冲突的短 id（5 位小写字母数字，FGUI 资源 id 约定长度）。 */
 export function nextResourceId(pkg: FguiPackage, prefix?: string): string {
   const used = new Set(pkg.resources.map((r) => r.id));
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  const targetLength = 5;
   for (let attempt = 0; attempt < 1000; attempt++) {
-    let candidate = prefix ?? "";
-    if (candidate.length === 0) {
-      for (let i = 0; i < 4; i++) {
-        candidate += chars[Math.floor(Math.random() * chars.length)];
-      }
-    } else {
-      // 前缀 + 2 位随机补足，避免前缀本身已占用时反复失败
-      candidate += chars[Math.floor(Math.random() * chars.length)];
+    const base = prefix ?? "";
+    let candidate = base;
+    while (candidate.length < targetLength) {
       candidate += chars[Math.floor(Math.random() * chars.length)];
     }
     if (!used.has(candidate)) return candidate;
   }
   throw new FguiError("无法分配不冲突资源 id（命名空间耗尽）");
+}
+
+/**
+ * 校验包登记的文件是否真实存在（组件 XML 与图片资源）。
+ * 用于拦截"package.xml 已登记但文件缺失"的脏状态——这正是 FGUI 编辑器
+ * 在加载包时读文件越界/报错的常见根因。
+ */
+export function validatePackageFileIntegrity(
+  project: FguiProject,
+  pkg: FguiPackage,
+): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+  for (const resource of pkg.resources) {
+    if (resource.kind === "component") {
+      const file = resolveComponentFile(pkg.dir, resource.name);
+      if (file === undefined) {
+        issues.push({
+          severity: "error",
+          message: `组件文件缺失: ${resource.name}（package.xml 已登记但文件不存在）`,
+        });
+      }
+      continue;
+    }
+    // image 资源：path + name 相对包目录
+    const rel = `${resource.path.replace(/^\/+/, "")}${resource.name}`;
+    if (!existsSync(join(pkg.dir, rel))) {
+      issues.push({
+        severity: "error",
+        message: `图片文件缺失: ${rel}（package.xml 已登记但文件不存在）`,
+      });
+    }
+  }
+  return issues;
 }

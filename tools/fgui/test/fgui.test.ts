@@ -10,6 +10,7 @@ import {
   readComponent,
   readPackage,
   validateComponent,
+  validatePackageFileIntegrity,
 } from "../lib/fgui";
 
 const REAL_DEMO = locateProject();
@@ -29,7 +30,7 @@ describe("readPackage", () => {
   test("解析 Demo 包资源清单", () => {
     const pkg = readPackage(REAL_DEMO, "Demo");
     expect(pkg.id).toBe("4q9x2uij");
-    const comp = pkg.resources.find((r) => r.kind === "component");
+    const comp = pkg.resources.find((r) => r.kind === "component" && r.name === "DemoView.xml");
     expect(comp).toMatchObject({ id: "hz2u0", name: "DemoView.xml", path: "/", exported: true });
     const img = pkg.resources.find((r) => r.id === "fmn11");
     expect(img?.kind).toBe("image");
@@ -150,19 +151,60 @@ describe("validateComponent", () => {
   });
 });
 
+describe("validatePackageFileIntegrity", () => {
+  test("临时 fixture：登记的组件与图片文件存在则通过", () => {
+    const dir = mkdtempSync(join(tmpdir(), "fgui-int-"));
+    try {
+      writeFileSync(join(dir, "demo.fairy"), `<?xml version="1.0" encoding="utf-8"?>\n<projectDescription id="t" type="CocosCreator" version="5.0"/>`);
+      const pkgDir = join(dir, "assets", "Demo");
+      const imgDir = join(pkgDir, "img");
+      mkdirSync(imgDir, { recursive: true });
+      writeFileSync(join(pkgDir, "package.xml"), `<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="t"><resources><component id="aa11" name="A.xml" path="/" exported="true"/><image id="bb22" name="bg.png" path="/img/"/></resources></packageDescription>`);
+      writeFileSync(join(pkgDir, "A.xml"), `<component size="1,1"><displayList/></component>`);
+      writeFileSync(join(imgDir, "bg.png"), "fake");
+
+      const project = locateProject(dir);
+      const pkg = readPackage(project, "Demo");
+      const issues = validatePackageFileIntegrity(project, pkg);
+      expect(issues.filter((i) => i.severity === "error")).toEqual([]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("临时 fixture：登记的组件文件缺失时报 error", () => {
+    const dir = mkdtempSync(join(tmpdir(), "fgui-int-"));
+    try {
+      writeFileSync(join(dir, "demo.fairy"), `<?xml version="1.0" encoding="utf-8"?>\n<projectDescription id="t" type="CocosCreator" version="5.0"/>`);
+      const pkgDir = join(dir, "assets", "Demo");
+      mkdirSync(pkgDir, { recursive: true });
+      writeFileSync(join(pkgDir, "package.xml"), `<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="t"><resources><component id="aa11" name="Ghost.xml" path="/" exported="true"/></resources></packageDescription>`);
+
+      const project = locateProject(dir);
+      const pkg = readPackage(project, "Demo");
+      const issues = validatePackageFileIntegrity(project, pkg);
+      const errors = issues.filter((i) => i.severity === "error");
+      expect(errors.length).toBe(1);
+      expect(errors[0]!.message).toContain("Ghost.xml");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
 describe("nextResourceId", () => {
   test("生成 id 不与现有资源冲突", () => {
     const pkg = readPackage(REAL_DEMO, "Demo");
     const existing = new Set(pkg.resources.map((r) => r.id));
     const id = nextResourceId(pkg);
     expect(existing.has(id)).toBe(false);
-    expect(id.length).toBe(4);
+    expect(id.length).toBe(5);
   });
 
   test("带前缀的 id 不与现有冲突", () => {
     const pkg = readPackage(REAL_DEMO, "Demo");
     const id = nextResourceId(pkg, "fmn");
-    expect(id.length).toBeGreaterThanOrEqual(3);
+    expect(id.length).toBeGreaterThanOrEqual(5);
     expect(pkg.resources.some((r) => r.id === id)).toBe(false);
   });
 });

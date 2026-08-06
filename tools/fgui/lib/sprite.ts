@@ -56,15 +56,32 @@ export function registerGeneratedImage(
     if (existing) return existing.id;
   }
 
+  const scaleAttr = scale9grid
+    ? ` scale="9grid" scale9grid="${scale9grid}"`
+    : "";
+  const entry = `<image id="" name="${fileName}" path="${normalizePath(path)}"${scaleAttr} qualityOption="source" duplicatePadding="true"/>`;
+  return appendResourceEntry(pkg, entry);
+}
+
+/**
+ * 在 package.xml 的 <resources> 内登记一个组件（幂等）：
+ * 已存在（同名组件）则返回其 id，否则分配新 id 并追加 <component> 条目。
+ */
+export function registerComponent(pkg: FguiPackage, fileName: string, path = "/"): string {
+  const existing = pkg.resources.find((r) => r.kind === "component" && r.name === fileName);
+  if (existing) return existing.id;
+
+  const entry = `<component id="" name="${fileName}" path="${normalizePath(path)}" exported="true"/>`;
+  return appendResourceEntry(pkg, entry);
+}
+
+/** 插入资源条目到 <resources> 块：分配 5 位 id 并写入磁盘。 */
+function appendResourceEntry(pkg: FguiPackage, entryTemplate: string): string {
   const packageXmlPath = join(pkg.dir, "package.xml");
   const xml = readFileSync(packageXmlPath, "utf8");
 
   const id = nextResourceId(pkg);
-  const normalizedPath = normalizePath(path);
-  const scaleAttr = scale9grid
-    ? ` scale="9grid" scale9grid="${scale9grid}"`
-    : "";
-  const entry = `<image id="${id}" name="${fileName}" path="${normalizedPath}"${scaleAttr} qualityOption="source" duplicatePadding="true"/>`;
+  const entry = entryTemplate.replace('id=""', `id="${id}"`);
 
   const resourcesStart = xml.indexOf("<resources>");
   const resourcesEnd = xml.indexOf("</resources>");

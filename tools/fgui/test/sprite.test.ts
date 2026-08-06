@@ -7,6 +7,7 @@ import { locateProject, readPackage } from "../lib/fgui";
 import {
   ensureResourceRegistered,
   parseScale9grid,
+  registerComponent,
   registerGeneratedImage,
 } from "../lib/sprite";
 
@@ -80,6 +81,38 @@ describe("ensureResourceRegistered / registerGeneratedImage", () => {
       expect(xml).toContain('name="DemoView.xml"');
       // id 不与现有冲突
       expect(id).not.toBe("hz2u0");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("registerComponent 幂等：重复登记返回同一 id 且不重复插入", () => {
+    const dir = mkdtempSync(join(tmpdir(), "fgui-sprite-"));
+    try {
+      writeFileSync(join(dir, "demo.fairy"), `<?xml version="1.0" encoding="utf-8"?>\n<projectDescription id="t" type="CocosCreator" version="5.0"/>`);
+      const pkgDir = join(dir, "assets", "Demo");
+      mkdirSync(pkgDir, { recursive: true });
+      writeFileSync(
+        join(pkgDir, "package.xml"),
+        `<?xml version="1.0" encoding="utf-8"?>
+<packageDescription id="4q9x2uij">
+  <resources>
+    <component id="hz2u0" name="DemoView.xml" path="/" exported="true"/>
+  </resources>
+</packageDescription>`,
+      );
+
+      const project = locateProject(dir);
+      const pkg = readPackage(project, "Demo");
+      const id1 = registerComponent(pkg, "StartButton.xml");
+      const pkgAfter = readPackage(project, "Demo");
+      const id2 = registerComponent(pkgAfter, "StartButton.xml");
+
+      expect(id1).toMatch(/^[a-z0-9]{5}$/);
+      expect(id2).toBe(id1);
+      const xml = readFileSync(join(pkgDir, "package.xml"), "utf8");
+      const count = (xml.match(/name="StartButton\.xml"/g) ?? []).length;
+      expect(count).toBe(1);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

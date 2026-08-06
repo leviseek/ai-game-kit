@@ -1,5 +1,12 @@
 import { flagString, hasHelp, parseArgs, requireFlag } from "../lib/args";
-import { findResourceIdConflicts, locateProject, readComponent, readPackage, validateComponent } from "../lib/fgui";
+import {
+  findResourceIdConflicts,
+  locateProject,
+  readComponent,
+  readPackage,
+  validateComponent,
+  validatePackageFileIntegrity,
+} from "../lib/fgui";
 
 export const help = "validate —— 校验包/组件引用完整性";
 
@@ -18,11 +25,16 @@ export async function run(argv: readonly string[]): Promise<number> {
 
   let exitCode = 0;
 
-  // 1. 包级校验：资源 id 冲突
+  // 1. 包级校验：资源 id 冲突 + 登记文件存在
   const dupIds = findResourceIdConflicts(pkg);
   for (const id of dupIds) {
     console.error(`[error] 资源 id 重复: "${id}"`);
     exitCode = 1;
+  }
+  const integrityIssues = validatePackageFileIntegrity(project, pkg);
+  for (const issue of integrityIssues) {
+    console.error(`[${issue.severity}] ${issue.message}`);
+    if (issue.severity === "error") exitCode = 1;
   }
 
   // 2. 组件校验：单个组件或全部组件

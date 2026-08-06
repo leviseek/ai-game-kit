@@ -3,6 +3,7 @@ import { run as runReadComponent } from "./commands/read-component";
 import { run as runValidate } from "./commands/validate";
 import { run as runNextId } from "./commands/next-id";
 import { run as runSprite } from "./commands/sprite";
+import { run as runRegisterComponent } from "./commands/register-component";
 
 interface Command {
   readonly run: (argv: readonly string[]) => Promise<number>;
@@ -29,6 +30,10 @@ const COMMANDS: Record<string, Command> = {
   sprite: {
     run: runSprite,
     usage: "sprite --package <包名> --name <文件.png> --palette <调色板> --art <多行ASCII> [--scale9grid l,t,r,b] [--path <目录>] [--project <工程目录>] 生成像素 PNG 并登记",
+  },
+  "register-component": {
+    run: runRegisterComponent,
+    usage: "register-component --package <包名> --name <组件文件.xml> [--path <目录>] [--project <工程目录>] 幂等登记组件（已存在返回原 id）",
   },
 };
 
