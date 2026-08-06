@@ -204,22 +204,21 @@ describe("ServiceRegistry dependency cycle detection", () => {
     expect(() => registry.resolve(aToken)).toThrow(/[ab]/);
   });
 
-  test("a failed cycle resolution leaves no partial state", () => {
+  test("failed resolution leaves no stale in-flight state", () => {
     const registry = createServiceRegistry();
     const aToken = createServiceToken<ServiceA>("a");
     const bToken = createServiceToken<ServiceB>("b");
 
+    // a 工厂依赖未注册的 b：第一次解析在 b 处失败。
     registry.registerFactory(aToken, (resolve) => {
       resolve(bToken);
       return { label: "a" as const };
     });
-    registry.registerFactory(bToken, (resolve) => {
-      resolve(aToken);
-      return { label: "b" as const };
-    });
 
-    expect(() => registry.resolve(aToken)).toThrow(ServiceResolutionError);
-    // 解析失败后，a/b 仍各自按工厂可被重新解析（无残留的进行中状态）。
-    expect(() => registry.resolve(bToken)).toThrow(ServiceResolutionError);
+    expect(() => registry.resolve(aToken)).toThrow(/b/);
+
+    // 再次解析必须仍报"缺失 b"（进入 a 工厂后才失败），而非因 resolving
+    // 残留误报 a 自身循环（若消息含 a 即表示进行中状态未清理）。
+    expect(() => registry.resolve(aToken)).toThrow(/b/);
   });
 });
