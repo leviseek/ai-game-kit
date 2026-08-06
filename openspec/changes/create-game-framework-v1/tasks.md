@@ -79,11 +79,11 @@
 
 ## 9. 公共 API 收口与交付验证
 
-- [ ] 9.1 审查每个模块的公开入口，移除不必要的实现导出，并用依赖检查证明其他模块没有深层导入。
-- [ ] 9.2 审查全局状态，确认除唯一应用组合根外不存在静态单例、未释放事件订阅、跨场景泄漏节点或无所有者调度任务。
+- [x] 9.1 审查每个模块的公开入口，移除不必要的实现导出，并用依赖检查证明其他模块没有深层导入。（完成：根入口 `assets/framework/index.ts` 仅 re-export 稳定契约与核心工厂；`public-boundary.test.ts` 锁定 `expectedRootExports` 白名单、禁止 `export *` 与内部符号（`forbiddenInternals` 拦截 ModuleGraph/ScopedLogger/Cocos* 适配器等）、禁止外部深层导入（只能经根入口）与框架内反向/跨层依赖；`findProjectImportViolations()` 扫描全部 assets TS 证明无深层导入。审查未发现多余导出，无需移除。）
+- [x] 9.2 审查全局状态，确认除唯一应用组合根外不存在静态单例、未释放事件订阅、跨场景泄漏节点或无所有者调度任务。（完成：除 `AppRoot`（组合根，`@ccclass` + `addPersistRootNode` 唯一常驻根）外无静态单例，全仓 grep `getInstance|singleton|ServiceLocator|globalThis|window` 无匹配且 `public-boundary.test.ts` 对 core/ui、config、resource、platform/time/scheduling 层有持续断言；所有 `let` 可变状态均在工厂闭包内、无模块级状态；事件订阅全部对称解绑——`CocosApplicationAdapter.bind/unbind`、`CocosInputAdapter.subscribe` 返回退订且 `InputMapper.dispose` 解除、`AudioService`/`SaveCoordinator` 在 dispose 时退订 visibility；`PassiveScheduler.dispose` 清空任务、任务经 `DisposeHandle` 取消，`ModuleRunner` 逆序 stop/dispose 模块，`SceneFlow.dispose` 清理作用域与取消切换；`AppRoot.onDestroy` 逆序释放 adapter→sceneFlow→pageAdapter→resourceProvider→app。审查未发现泄漏项。）
 - [x] 9.3 运行完整 Bun 单元测试和 strict TypeScript 检查，记录测试数量和零失败结果。（完成：`bun test ./tests/framework/foundation` 641 pass / 0 fail（64 文件、2033 expect 调用，含 public-boundary 边界检查），`bun ./tests/scripts/check-foundation-contracts.ts` EXIT=0、0 diagnostics。）
 - [ ] 9.4 运行 Cocos Creator 3.8.8 Web Desktop 构建与启动冒烟测试，验证启动、场景、UI、输入、音频和退出路径。
 - [ ] 9.5 使用 Cocos Profiler 对五类组合夹具执行基础性能检查，只对有数据证明的热点保留池化或缓存。
 - [ ] 9.6 更新框架使用与扩展说明，记录依赖规则、模块组合、资源所有权、错误处理以及新增平台/玩法能力需要创建独立 OpenSpec change 的流程。
 - [ ] 9.7 执行最终代码审查，确认 v1 没有实现联网、热更新、ECS 或五类具体玩法，并记录剩余风险和后续 change 候选。
-- [ ] 9.8 执行 ADR 检查：确认本次总计划同步和后续实现是否产生新的架构决策；如有，按 `doc/decisions/ADR-NNN-<slug>.md` 创建 ADR；如无，明确记录无需新增 ADR。
+- [x] 9.8 执行 ADR 检查：确认本次总计划同步和后续实现是否产生新的架构决策；如有，按 `doc/decisions/ADR-NNN-<slug>.md` 创建 ADR；如无，明确记录无需新增 ADR。（完成：无新增 ADR。本次补勾的 6.4-6.7/7.1-7.4 对应归档 change 均已创建 ADR-013/014/015/016/017；9.1/9.2 审查确认的公开入口白名单收口（`expectedRootExports`/`forbiddenInternals`）、组合根单例约束、事件订阅对称解绑与逆序释放均属既有约定，已在 ADR-005/007/008/009/010/012 等中覆盖；9.3 门禁为纯验证不涉及决策。故无需新增 ADR，后续实现若引入新架构决策仍须按约定创建。）
