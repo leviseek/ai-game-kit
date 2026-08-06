@@ -446,12 +446,19 @@ export function validateComponentSemantics(
     }
   }
 
-  // 2b. relation sidePair 校验：target 存在（validateComponent 已查）+ sidePair 格式合法
+  // 2b. relation sidePair 校验：FGUI 每条 relation 仅容纳横纵两个约束
   for (const node of collectAllDisplayNodes(root)) {
     for (const relation of node.children.filter((c) => c.name === "relation")) {
       const sidePair = relation.attrs.sidePair;
       if (!sidePair) continue;
-      for (const pair of sidePair.split(",")) {
+      const pairs = sidePair.split(",");
+      if (pairs.length > 2) {
+        issues.push({
+          severity: "error",
+          message: `relation sidePair 最多允许 2 项，当前为 ${pairs.length} 项（节点 ${node.attrs.id ?? ""}）`,
+        });
+      }
+      for (const pair of pairs) {
         const problem = validateSidePair(pair.trim());
         if (problem !== undefined) {
           issues.push({

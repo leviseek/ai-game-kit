@@ -317,6 +317,45 @@ describe("validateComponentSemantics", () => {
     expect(errors.filter((i) => i.message.includes("sidePair"))).toEqual([]);
   });
 
+  test("relation 同时声明三个 sidePair 报 error", () => {
+    const { project, pkg, comp } = setupFixture(`<?xml version="1.0" encoding="utf-8"?>
+<component size="200,200">
+  <displayList>
+    <image id="n1" name="title" src="bb22">
+      <relation target="" sidePair="center-center,top-top,width-width"/>
+    </image>
+  </displayList>
+</component>`);
+    const errors = validateComponentSemantics(project, pkg, comp).filter((i) => i.severity === "error");
+    expect(errors.some((i) => i.message.includes("最多允许 2 项"))).toBe(true);
+  });
+
+  test("relation 同时声明两个位置 sidePair 通过", () => {
+    const { project, pkg, comp } = setupFixture(`<?xml version="1.0" encoding="utf-8"?>
+<component size="200,200">
+  <displayList>
+    <image id="n1" name="title" src="bb22">
+      <relation target="" sidePair="center-center,top-top"/>
+    </image>
+  </displayList>
+</component>`);
+    const errors = validateComponentSemantics(project, pkg, comp).filter((i) => i.severity === "error");
+    expect(errors.filter((i) => i.message.includes("sidePair"))).toEqual([]);
+  });
+
+  test("relation 同时声明尺寸和位置 sidePair 通过", () => {
+    const { project, pkg, comp } = setupFixture(`<?xml version="1.0" encoding="utf-8"?>
+<component size="200,200">
+  <displayList>
+    <image id="n1" name="panel" src="bb22">
+      <relation target="" sidePair="width-width,bottom-bottom"/>
+    </image>
+  </displayList>
+</component>`);
+    const errors = validateComponentSemantics(project, pkg, comp).filter((i) => i.severity === "error");
+    expect(errors.filter((i) => i.message.includes("sidePair"))).toEqual([]);
+  });
+
   test("非法 side 名报 error", () => {
     const { project, pkg, comp } = setupFixture(`<?xml version="1.0" encoding="utf-8"?>
 <component size="200,200">

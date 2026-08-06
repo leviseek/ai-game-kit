@@ -21,4 +21,5 @@
 - **新建组件用 `/fgui-create`，编辑已有组件必须用 `/fgui-edit`**（编辑是写操作，必须走显式 command 固化的流程，禁止主 agent 凭记忆直接改）。
 - **确定性操作一律用 fgui CLI**：资源清单/组件索引/引用校验/短 id 分配/像素图生成与登记，均通过 `bun run fgui <command>`（`tools/fgui/`）。任何 src 引用前先 `list-resources` 确认真实资源 id，产出 XML 后必须 `validate` 到通过。
 - **validate 语义**：除引用完整性外还校验 controller 配对、gear 一致性、Slider/ProgressBar/ComboBox/Button 骨架、image 误用 fill、fileName 一致、transition 禁令、资源 id 续编冲突。**Basic/Builder 为官方库默认豁免**，需 `--strict` 才全量检查。
+- **relation 约束**：单个 `<relation>` 的 `sidePair` 最多 2 项；不得把第三个约束叠加到同一 relation。创建或编辑后必须由 `validate --strict` 检查，并在 FGUI 编辑器中刷新目标组件确认可读取。
 - **调色板锁定**：sprite 生成的颜色必须 ⊆ `ui/demo/palette.json` 允许集合；新色先加入该文件。资源 id 采用前缀续编（`next-id --prefix`）。

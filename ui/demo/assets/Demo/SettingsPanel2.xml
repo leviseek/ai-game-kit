@@ -8,7 +8,7 @@
       <relation target="" sidePair="center-center,middle-middle"/>
     </image>
     <text id="n3_panel2" name="title" xy="500,143" size="280,40" fontSize="24" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="游戏设置">
-      <relation target="n2_panel2" sidePair="center-center,top-top,width-width"/>
+      <relation target="n2_panel2" sidePair="center-center,top-top"/>
     </text>
     <text id="n4_panel2" name="txt_music" xy="390,204" size="100,36" fontSize="18" color="#ffffff" vAlign="middle" autoSize="none" singleLine="true" text="音乐">
       <relation target="n2_panel2" sidePair="left-left,top-top"/>
