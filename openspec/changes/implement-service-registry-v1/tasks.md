@@ -1,0 +1,29 @@
+## 1. 类型化 token 与注册表契约
+
+- [ ] 1.1 先编写失败测试，锁定 `ServiceToken<T>` 的类型绑定（泛型 token 解析类型与注册类型一致、类型不匹配编译期被拒）与 token 每次创建独立。
+- [ ] 1.2 实现 `core/services/ServiceRegistry.ts` 的 `ServiceToken`/`createServiceToken` 与 `ServiceRegistry` 契约，使 1.1 通过且不依赖 Cocos。
+
+## 2. 注册、解析与错误路径
+
+- [ ] 2.1 先编写注册/解析测试，覆盖实例注册、重复解析同一实例、注册状态查询、缺失 token 拒绝（携带 token 描述）与重复注册拒绝（不覆盖已有注册）。
+- [ ] 2.2 实现 `register`/`resolve`/`isRegistered` 与 `ServiceRegistrationError`/`ServiceResolutionError`（继承 `FrameworkError`），使 2.1 通过。
+- [ ] 2.3 先编写工厂注册与依赖循环测试，覆盖工厂解析依赖链成功、循环依赖拒绝（标识循环 token）与解析失败无残留状态。
+- [ ] 2.4 实现 `registerFactory` 与解析期依赖循环检测（进行中解析集合），使 2.3 通过。
+
+## 3. ApplicationContext/Module 边界与公开导出收口
+
+- [ ] 3.1 在 `contracts.typecheck.ts` 增补断言：引入服务注册表后 `ApplicationContext` 仍无 `get/resolve/registry/container/provide`，`Module` 仍无 `register/create/configure`，锁定独立接入边界。
+- [ ] 3.2 在 `assets/framework/index.ts` 导出稳定符号（`ServiceToken`、`ServiceRegistry`、两个错误类、`createServiceToken`、`createServiceRegistry`），并同步 `tests/framework/foundation/public-boundary.test.ts` 的 `expectedRootExports` 白名单。
+- [ ] 3.3 先编写组合根接入测试：注册表由组合根显式创建与注入，业务对象经构造接收服务契约，不直接依赖注册表或 `ApplicationContext`。
+
+## 4. 组合根接入与装配前校验
+
+- [ ] 4.1 在 `boot/AppRoot.ts` 的 `assembleApp` 接入最小服务注册/解析演示与装配前 token 校验（模块依赖缺失/循环在 `Application.start` 前抛错），使 3.3 通过；`createModules` 不依赖注册表，`startup.scene` 不修改。
+- [ ] 4.2 补充验证：装配前校验失败走既有 `app.start().catch` 失败路径，不进入 `running`，回滚按现有规则执行。
+
+## 5. 集成验证与收口
+
+- [ ] 5.1 运行完整 `bun run test:foundation`，记录原有 Foundation 测试与新增 service-registry 测试通过数量与零失败结果。
+- [ ] 5.2 运行 `bun run test:foundation:types` 与项目可用的 Framework 类型检查、`git diff --check`，确认无类型绕过、无宽松类型规则。
+- [ ] 5.3 审查公开 API 与依赖边界，确认只导出稳定契约/工厂，`ApplicationContext`、`Module`、`Application` 与 `startup.scene` 行为不变。
+- [ ] 5.4 将父级 `create-game-framework-v1/tasks.md` 的任务 2.8 标记完成并附实现证据；执行 ADR 检查，确认本 change 是否产生新的架构决策并按要求创建 ADR 或明确记录无需 ADR。
