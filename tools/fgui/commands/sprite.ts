@@ -88,7 +88,7 @@ export async function run(argv: readonly string[]): Promise<number> {
   const png = encodePng(rendered.width, rendered.height, rendered.data);
   writeFileSync(pngPath, png);
 
-  const id = registerGeneratedImage(pkg, fileName, pathArg, scale9);
+  const id = registerGeneratedImage(pkg, fileName, pathArg, scale9, flagString(parsed, "prefix"));
 
   console.log(`[fgui:sprite] 已生成 ${pngPath} (${rendered.width}x${rendered.height}) 资源 id=${id}`);
   if (scale9 !== undefined) {

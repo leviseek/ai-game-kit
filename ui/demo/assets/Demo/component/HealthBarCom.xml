@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="200,16" extention="ProgressBar">
+  <displayList>
+    <text id="n1_hp" name="txt_label" xy="0,0" size="40,16" fontSize="16" color="#ffffff" align="left" vAlign="middle" autoSize="none" singleLine="true" text="血量"/>
+    <image id="n2_hp" name="hp_track" src="63i1q" fileName="img/hp_track.png" xy="48,0" size="152,16"/>
+    <image id="bar_hp" name="bar" src="m4n3a" fileName="img/hp_fill.png" xy="48,0" size="152,16"/>
+  </displayList>
+  <ProgressBar/>
+</component>

@@ -11,16 +11,17 @@ export async function run(argv: readonly string[]): Promise<number> {
     return 0;
   }
 
-  const packageName = requireFlag(parsed, "package", "register-component --package <包名> --name <组件文件.xml> [--path <目录>]");
+  const packageName = requireFlag(parsed, "package", "register-component --package <包名> --name <组件文件.xml> [--path <目录>] [--prefix <前缀>]");
   const name = requireFlag(parsed, "name", "register-component --package <包名> --name <组件文件.xml>");
   const pathArg = flagString(parsed, "path") ?? "/";
+  const prefix = flagString(parsed, "prefix");
   const projectArg = flagString(parsed, "project");
 
   const fileName = name.endsWith(".xml") ? name : `${name}.xml`;
   const project = locateProject(projectArg);
   const pkg = readPackage(project, packageName);
 
-  const id = registerComponent(pkg, fileName, pathArg);
+  const id = registerComponent(pkg, fileName, pathArg, prefix);
   console.log(`已登记组件 ${fileName} id=${id}`);
   return 0;
 }

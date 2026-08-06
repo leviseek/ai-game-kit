@@ -146,4 +146,32 @@ describe("ensureResourceRegistered / registerGeneratedImage", () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+
+  test("registerComponent 支持前缀续编", () => {
+    const dir = mkdtempSync(join(tmpdir(), "fgui-sprite-"));
+    try {
+      writeFileSync(join(dir, "demo.fairy"), `<?xml version="1.0" encoding="utf-8"?>\n<projectDescription id="t" type="CocosCreator" version="5.0"/>`);
+      const pkgDir = join(dir, "assets", "Demo");
+      mkdirSync(pkgDir, { recursive: true });
+      writeFileSync(
+        join(pkgDir, "package.xml"),
+        `<?xml version="1.0" encoding="utf-8"?>
+<packageDescription id="4q9x2uij">
+  <resources>
+    <component id="hp000" name="A.xml" path="/" exported="true"/>
+  </resources>
+</packageDescription>`,
+      );
+      writeFileSync(join(pkgDir, "A.xml"), "<component size=\"1,1\"><displayList/></component>");
+
+      const project = locateProject(dir);
+      const pkg = readPackage(project, "Demo");
+      const id = registerComponent(pkg, "B.xml", "/component/", "hp");
+      expect(id).toBe("hp001");
+      const xml = readFileSync(join(pkgDir, "package.xml"), "utf8");
+      expect(xml).toContain('id="hp001"');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 });

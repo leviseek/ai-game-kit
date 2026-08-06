@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <packageDescription id="4q9x2uij">
   <resources>
+    <component id="hp000" name="HealthBarCom.xml" path="/component/" exported="true"/>
+    <image id="m4n3a" name="hp_fill.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="63i1q" name="hp_track.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
     <image id="v6hl7" name="start_btn_down.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
     <image id="pvpp4" name="start_btn_up.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
     <component id="29kie" name="SettingsPanel2.xml" path="/" exported="true"/>
