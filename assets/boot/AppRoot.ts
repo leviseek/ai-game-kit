@@ -157,20 +157,29 @@ export class AppRoot extends Component {
   }
 
   start(): void {
-    this.adapter?.bind();
-    this.initializeUiRoot();
-
+    // 装配前 token 校验先于 adapter.bind/initializeUiRoot：校验失败时不留
+    // 已绑定/已初始化的全局状态，应用保持 created 不进入 running。
     const launch = async (): Promise<void> => {
-      // 装配前 token 校验：缺失/循环在此抛 ServiceResolutionError，
-      // 与启动失败共用下方既有 app.start().catch 失败路径，不进入 running。
+      // 缺失/循环在此抛 ServiceResolutionError，与启动失败共用下方既有
+      // app.start().catch 失败路径。
       this.validateAssembly?.();
+      this.adapter?.bind();
+      this.initializeUiRoot();
       await this.app?.start();
     };
     launch().catch((error) => {
-      // 装配前校验失败发生在 Application.start 之前，未经 Application 上报，
-      // 由组合根经 logger 记录类型化错误；app.start 失败已由 Application 内部记录。
       if (error instanceof ServiceResolutionError) {
+        // 装配前校验失败发生在 Application.start 之前，未经 Application 上报，
+        // 由组合根经 logger 记录类型化错误。
         this.logger?.error("Service assembly validation failed", undefined, error);
+      } else {
+        // 非装配校验错误（如 ApplicationStateError）Application 内部不记录，
+        // 由组合根记录避免静默吞错；模块生命周期失败仍由 Application 记录。
+        this.logger?.error(
+          "AppRoot launch aborted",
+          undefined,
+          error instanceof Error ? error : undefined,
+        );
       }
     });
 

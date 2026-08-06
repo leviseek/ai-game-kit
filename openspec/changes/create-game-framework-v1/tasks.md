@@ -17,7 +17,7 @@
 - [x] 2.5 先编写模块启动与关闭测试，覆盖依赖顺序启动、逆序清理、必需模块失败回滚和清理错误隔离。
 - [x] 2.6 实现模块编排器，使 2.5 的失败与清理路径测试通过，不依赖组件 `onLoad` 的隐式顺序。
 - [x] 2.7 重新定义后续服务注册能力的行为边界和测试：Foundation 的 `ApplicationContext` 仅提供 Logger 与只读生命周期状态，不提供类型化 token、服务解析或 `get<T>()`；如仍需服务注册表，必须通过独立 OpenSpec change 设计并验证。（由 change `implement-diagnostics-and-events-v1` 2.x 完成：`application-context-contract.typecheck.ts` 锁定 `ApplicationContext` 无 `get<T>()`/token/服务解析，`contracts.typecheck.ts` 校验形状且不依赖实现，Foundation 测试 254 pass / 0 fail。）
-- [ ] 2.8 实现后续服务注册能力（仅在独立 change 明确批准后）：不得将 `ApplicationContext` 退化为全局 Service Locator，业务代码不得直接依赖 Context；本总计划不把该能力视为 Foundation 已完成。
+- [x] 2.8 实现后续服务注册能力（仅在独立 change 明确批准后）：不得将 `ApplicationContext` 退化为全局 Service Locator，业务代码不得直接依赖 Context；本总计划不把该能力视为 Foundation 已完成。（由 change `implement-service-registry-v1` 完成：`core/services/ServiceRegistry.ts` 提供类型化 token 注册表，注册/解析/查询/工厂/错误类型化；`ApplicationContext`/`Module` 契约锁定不变（typecheck 断言仍拦截服务成员），注册表由组合根 `boot/AppRoot.ts` `assembleApp` 显式创建并注入、非全局单例；装配前 token 校验在 `Application.start` 前抛 `ServiceResolutionError` 且走既有失败路径；根入口按白名单导出稳定符号并同步 `expectedRootExports`；创建 `doc/decisions/ADR-012-typed-service-registry-composition-root.md` 记录长期架构决策；Foundation 完整测试 481 pass / 0 fail、types EXIT=0。）
 
 ## 3. 诊断、事件与通用纯逻辑工具
 
