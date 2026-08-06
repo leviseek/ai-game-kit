@@ -1,0 +1,20 @@
+{
+  "mask": "#00000088",
+  "panel": "#5a5a5a",
+  "panel_light": "#6a6a6a",
+  "panel_dark": "#3a3a3a",
+  "button": "#4a90e2",
+  "button_down": "#3a76bd",
+  "button_light": "#5aa0f2",
+  "button_dark": "#2f6db3",
+  "track": "#3a3a3a",
+  "fill": "#4a90e2",
+  "grip_up": "#5aa0f2",
+  "grip_down": "#3a76bd",
+  "item_hover": "#335577",
+  "item_selected": "#4a90e2",
+  "popup": "#2a2a2a",
+  "white": "#ffffff",
+  "text_light": "#cccccc",
+  "text_dark": "#888888"
+}
