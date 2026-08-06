@@ -18,9 +18,9 @@
 
 ## 3. 集成与收口
 
-- [ ] 3.1 以平台存储适配器为后端运行 `versioned-storage` 既有测试，确认仓库行为不回归且经适配器持久化一致。
-- [ ] 3.2 完成依赖边界检查与 strict 类型检查，确认配置路径与存储路径互不混用。
-- [ ] 3.3 同步更新总计划 `create-game-framework-v1` tasks.md：将 7.5/7.6 标记为已完成并注明由本 change 交付。
+- [x] 3.1 以平台存储适配器为后端运行 `versioned-storage` 既有测试，确认仓库行为不回归且经适配器持久化一致。（完成：`versioned-storage-platform-backend.test.ts` 11 项——命名空间隔离、删除互不影响、新适配器实例持久化一致、schema version、连续迁移、缺失迁移报错、未来版本拒绝、DTO 校验、损坏记录类型化呈现、损坏不影响其它命名空间、键编码不冲突。）
+- [x] 3.2 完成依赖边界检查与 strict 类型检查，确认配置路径与存储路径互不混用。（完成：public-boundary 29 pass——适配器/内核新增符号入 `forbiddenInternals`，`cc` 仅存在于 `adapters/cocos`，`SaveCoordinator` 仅依赖 `contracts/platform`；`test:foundation:types` 0 diagnostics，配置契约/内核/适配器路径的 `/storage/` 禁入断言均通过。）
+- [x] 3.3 同步更新总计划 `create-game-framework-v1` tasks.md：将 7.5/7.6 标记为已完成并注明由本 change 交付。
 
 ## 4. 验证与 ADR
 

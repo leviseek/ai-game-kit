@@ -65,8 +65,8 @@
 - [ ] 7.2 实现配置契约和 Bundle 配置加载适配器，使 7.1 的测试通过且不与玩家存档混用。
 - [ ] 7.3 先编写存档测试，覆盖命名空间、schema version、连续迁移、未来版本拒绝和 DTO 可序列化约束。
 - [ ] 7.4 实现引擎无关的存档仓库与迁移链，使 7.3 的测试通过。
-- [ ] 7.5 实现平台存储适配器和可行的原子替换/备份策略，并测试写入中断、损坏数据、恢复默认和备份恢复路径。
-- [ ] 7.6 增加暂停、恢复和退出时的存档集成测试，确认重复生命周期事件不会产生并发覆盖或丢失最后一次有效状态。
+- [x] 7.5 实现平台存储适配器和可行的原子替换/备份策略，并测试写入中断、损坏数据、恢复默认和备份恢复路径。（由 change `implement-platform-storage-adapter-v1` 完成：`adapters/cocos/storage/CocosStorageAdapter.ts` 基于 `cc.sys.localStorage` 实现 `PlatformStorage`，采用临时值+读回校验+备份+替换原子策略，存储信封含校验和以区分"键不存在"与"内容损坏"并衔接 `SaveCorruptionError`；`restoreDefault`/`restoreBackup` 提供恢复路径。测试：`platform-storage.test.ts` 覆盖读写、跨实例持久化、写入中断、备份保留与清理、损坏诊断与恢复默认/备份。）
+- [x] 7.6 增加暂停、恢复和退出时的存档集成测试，确认重复生命周期事件不会产生并发覆盖或丢失最后一次有效状态。（由 change `implement-platform-storage-adapter-v1` 完成：`core/storage/SaveCoordinator.ts` 订阅 `ApplicationVisibility`，串行化保存并合并生命周期窗口内触发到最后一次有效状态；`storage-lifecycle.test.ts` 覆盖暂停/恢复/退出连续保存收敛、重复事件无交错损坏、新适配器实例持久化一致与损坏记录类型化呈现；以适配器为后端运行 versioned-storage 行为 `versioned-storage-platform-backend.test.ts` 11 项确认仓库语义不回归。）
 
 ## 8. 五类游戏组合验证
 
