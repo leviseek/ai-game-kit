@@ -5,6 +5,7 @@
  */
 
 import { existsSync, readFileSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 
 import { findChild, parseXml, type XmlElement } from "./xml";
@@ -82,7 +83,6 @@ export function locateProject(projectArg?: string): FguiProject {
 }
 
 function findFairyFiles(dir: string): string[] {
-  const { readdirSync } = require("node:fs") as typeof import("node:fs");
   const entries = readdirSync(dir, { withFileTypes: true });
   const out: string[] = [];
   for (const entry of entries) {
@@ -93,7 +93,6 @@ function findFairyFiles(dir: string): string[] {
 
 /** 列出工程下所有包（含 package.xml 的 assets 子目录）。 */
 export function listPackages(project: FguiProject): string[] {
-  const { readdirSync } = require("node:fs") as typeof import("node:fs");
   if (!existsSync(project.assetsDir)) return [];
   const names = readdirSync(project.assetsDir, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
@@ -165,7 +164,6 @@ export function readComponent(
 function resolveComponentFile(pkgDir: string, fileName: string): string | undefined {
   const direct = join(pkgDir, fileName);
   if (existsSync(direct)) return direct;
-  const { readdirSync } = require("node:fs") as typeof import("node:fs");
   const entries = readdirSync(pkgDir, { withFileTypes: true });
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
@@ -339,6 +337,7 @@ export function validateComponentSemantics(
 ): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   const root = component.root;
+  const pkgId = new Map(pkg.resources.map((r) => [r.id, r]));
 
   // 0. 禁止 <graph>
   for (const node of collectAllDisplayNodes(root)) {
@@ -363,6 +362,49 @@ export function validateComponentSemantics(
         severity: "error",
         message: `controller "${c.name}" 的 pages 不是完整 pageId,pageName 对: "${parts.join(",")}"`,
       });
+    }
+    // 空 page id 或 page name
+    for (let i = 0; i < parts.length; i += 2) {
+      const pageId = parts[i];
+      const pageName = parts[i + 1];
+      if (pageId === undefined || pageId.length === 0 || pageName === undefined || pageName.length === 0) {
+        issues.push({
+          severity: "error",
+          message: `controller "${c.name}" 含空 page id 或 page name: "${parts.join(",")}"`,
+        });
+        break;
+      }
+    }
+    // 重复 page id
+    if (new Set(c.pageIds).size !== c.pageIds.length) {
+      issues.push({
+        severity: "error",
+        message: `controller "${c.name}" 含重复 page id`,
+      });
+    }
+    // selected 必须数字索引且不越界
+    const selected = root.children.find((n) => n.name === "controller" && n.attrs.name === c.name)?.attrs.selected ?? "0";
+    const selectedIndex = Number.parseInt(selected, 10);
+    if (!Number.isFinite(selectedIndex) || selectedIndex < 0 || selectedIndex >= c.pageIds.length) {
+      issues.push({
+        severity: "error",
+        message: `controller "${c.name}" 的 selected 索引 ${selected} 越界（页数 ${c.pageIds.length}）`,
+      });
+    }
+  }
+
+  // 1b. displayList 子元件 name 重复
+  const seenNames = new Map<string, string>();
+  for (const obj of component.objects) {
+    if (!obj.name) continue;
+    const existing = seenNames.get(obj.name);
+    if (existing) {
+      issues.push({
+        severity: "error",
+        message: `displayList 子元件 name 重复: "${obj.name}"（${existing} 与 ${obj.id}）`,
+      });
+    } else {
+      seenNames.set(obj.name, obj.id);
     }
   }
 
@@ -441,19 +483,65 @@ export function validateComponentSemantics(
       issues.push({ severity: "error", message: "extention=ComboBox 缺少 <ComboBox dropdown=\"ui://...\"/> 扩展节点" });
     }
   }
+  if (extention === "Button") {
+    const hasButtonController = controllerMap.has("button");
+    const hasButtonNode = hasExtensionNode("Button");
+    if (!hasButtonController) {
+      issues.push({ severity: "error", message: 'extention=Button 缺少 name="button" 的 controller 骨架（按钮需按压/悬停状态）' });
+    }
+    if (!hasButtonNode) {
+      issues.push({ severity: "error", message: "extention=Button 缺少 <Button/> 扩展节点" });
+    }
+  }
+
+  // 3b. image 误用 loader 专属 fill 属性
+  for (const node of collectAllDisplayNodes(root)) {
+    if (node.name === "image" && node.attrs.fill !== undefined) {
+      issues.push({
+        severity: "error",
+        message: `image "${node.attrs.name ?? node.attrs.id ?? ""}" 不能使用 loader 专属 fill 属性（loader 才用 fill）`,
+      });
+    }
+  }
+
+  // 3c. fileName 必须与 package.xml 登记路径一致
+  for (const obj of component.objects) {
+    if (!obj.src || !obj.fileName) continue;
+    if (obj.pkg) continue; // 跨包不校验文件名
+    const resource = pkgId.get(obj.src);
+    if (!resource) continue; // src 未登记已由 validateComponent 报
+    const expected = `${resource.path.replace(/^\/+/, "")}${resource.name}`;
+    const actual = obj.fileName.replace(/\\/g, "/");
+    if (actual !== expected) {
+      issues.push({
+        severity: "error",
+        message: `元素 "${obj.name}" 的 fileName 应为 "${expected}"，当前为 "${actual}"`,
+      });
+    }
+  }
+
+  // 3d. 禁止手写 transition（自建组件；官方库经豁免跳过）
+  for (const child of root.children) {
+    if (child.name === "transition") {
+      issues.push({
+        severity: "error",
+        message: '组件含手写 <transition> 元素，项目禁止（动画由 TypeScript 推进 controller selectedIndex）',
+      });
+      break;
+    }
+  }
 
   // 4. <list> 的 defaultItem 必须指向已登记组件
-  const pkgId = new Map(pkg.resources.map((r) => [r.id, r]));
   for (const node of collectAllDisplayNodes(root)) {
     if (node.name !== "list") continue;
     const defaultItem = node.attrs.defaultItem;
     if (!defaultItem) continue;
-    // ui://<pkgid><resid> 或裸资源 id（本包）。裸 id 整体作为本包资源 id。
+    // ui://<pkgid><resid> 或裸资源 id（本包）。ui:// 形式按包 id 长度切分。
     let resId: string;
     if (defaultItem.startsWith("ui://")) {
       const target = defaultItem.slice(5);
-      // 形如 pkgidresid；本包可能也用 ui://pkgidresid，去掉包前缀取后 5 位为资源 id
-      resId = target.length > 5 ? target.slice(-5) : target;
+      // 目标可能指向本包（pkg.id）或跨包；资源 id 是包 id 之后的部分
+      resId = target.startsWith(pkg.id) ? target.slice(pkg.id.length) : target;
     } else {
       resId = defaultItem;
     }
@@ -468,15 +556,46 @@ export function validateComponentSemantics(
   return issues;
 }
 
-/** 分配不与现有资源冲突的短 id（5 位小写字母数字，FGUI 资源 id 约定长度）。 */
+/**
+ * 分配不与现有资源冲突的短 id（5 位小写字母数字）。
+ * 有前缀时按"前缀续编"：找该前缀下已用的最大数字序号，返回 max+1（如 dm000 → dm001）。
+ * 无前缀时随机生成 5 位。
+ */
 export function nextResourceId(pkg: FguiPackage, prefix?: string): string {
   const used = new Set(pkg.resources.map((r) => r.id));
+
+  if (prefix && prefix.length > 0) {
+    const base = prefix.length >= 5 ? prefix.slice(0, 5) : prefix;
+    const seqLen = 5 - base.length;
+    if (seqLen <= 0) {
+      // 前缀已达 5 位，直接查重
+      return used.has(base) ? findFreeRandomId(used, 5) : base;
+    }
+    // 扫描已有 id：前缀匹配且余下全数字 → 取最大序号
+    let maxSeq = -1;
+    for (const id of used) {
+      if (id.length !== 5 || !id.startsWith(base)) continue;
+      const suffix = id.slice(base.length);
+      if (/^\d+$/.test(suffix)) {
+        const n = Number.parseInt(suffix, 10);
+        if (n > maxSeq) maxSeq = n;
+      }
+    }
+    const next = maxSeq + 1;
+    const candidate = `${base}${String(next).padStart(seqLen, "0")}`;
+    if (!used.has(candidate)) return candidate;
+    return findFreeRandomId(used, 5);
+  }
+
+  return findFreeRandomId(used, 5);
+}
+
+/** 随机生成指定长度的小写字母数字 id，不与 used 冲突。 */
+function findFreeRandomId(used: Set<string>, length: number): string {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  const targetLength = 5;
   for (let attempt = 0; attempt < 1000; attempt++) {
-    const base = prefix ?? "";
-    let candidate = base;
-    while (candidate.length < targetLength) {
+    let candidate = "";
+    for (let i = 0; i < length; i++) {
       candidate += chars[Math.floor(Math.random() * chars.length)];
     }
     if (!used.has(candidate)) return candidate;
@@ -515,4 +634,92 @@ export function validatePackageFileIntegrity(
     }
   }
   return issues;
+}
+
+const RESOURCE_FILE_EXTENSIONS = new Set([
+  ".xml", ".png", ".jpg", ".jpeg", ".webp", ".gif", ".mp3", ".wav",
+  ".ogg", ".ttf", ".otf", ".fnt", ".json", ".bytes", ".svg",
+]);
+
+/** 校验包清单：package id 8 位、资源 id/name 非空、路径重复注册、类型-扩展名一致、未注册文件扫描。 */
+export function validatePackageManifest(
+  project: FguiProject,
+  pkg: FguiPackage,
+): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+
+  if (!/^[A-Za-z0-9]{8}$/.test(pkg.id)) {
+    issues.push({
+      severity: "error",
+      message: `package id 必须是 8 位字母或数字，当前为 "${pkg.id}"`,
+    });
+  }
+
+  // 资源 id/name 非空 + 路径重复注册
+  const seenPaths = new Set<string>();
+  for (const resource of pkg.resources) {
+    if (!resource.id) {
+      issues.push({ severity: "error", message: "资源缺少非空 id" });
+    }
+    if (!resource.name) {
+      issues.push({ severity: "error", message: `资源 ${resource.id || "?"} 缺少非空 name` });
+      continue;
+    }
+    const rel = normalizeRelPath(`${resource.path}/${resource.name}`);
+    if (seenPaths.has(rel)) {
+      issues.push({ severity: "error", message: `资源路径重复注册: "${rel}"` });
+    }
+    seenPaths.add(rel);
+  }
+
+  // 类型-扩展名一致
+  for (const resource of pkg.resources) {
+    const lower = resource.name.toLowerCase();
+    if (resource.kind === "component" && !lower.endsWith(".xml")) {
+      issues.push({ severity: "error", message: `component "${resource.id}" 必须指向 .xml 文件（实际 ${resource.name}）` });
+    }
+    if (resource.kind === "image") {
+      const ext = lower.slice(lower.lastIndexOf("."));
+      if (![".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg"].includes(ext)) {
+        issues.push({ severity: "error", message: `image "${resource.id}" 必须指向图片文件（实际 ${resource.name}）` });
+      }
+    }
+  }
+
+  // 未注册文件扫描：包目录内存在但 package.xml 未登记的资源扩展名文件
+  const registeredPaths = new Set(
+    pkg.resources.map((r) => normalizeRelPath(`${r.path}/${r.name}`)),
+  );
+  for (const file of walkFiles(pkg.dir)) {
+    if (file.name === "package.xml") continue;
+    const ext = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
+    if (!RESOURCE_FILE_EXTENSIONS.has(ext)) continue;
+    const rel = file.path;
+    if (!registeredPaths.has(rel)) {
+      issues.push({ severity: "error", message: `资源文件未在 package.xml 中登记: "${rel}"` });
+    }
+  }
+
+  return issues;
+}
+
+function normalizeRelPath(path: string): string {
+  return path.replace(/\\/g, "/").replace(/\/+/g, "/").replace(/^\/+/, "");
+}
+
+/** 递归列出包目录下所有文件，返回相对包目录的路径。 */
+function walkFiles(pkgDir: string): Array<{ name: string; path: string }> {
+  const out: Array<{ name: string; path: string }> = [];
+  const walk = (dir: string, prefix: string): void => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(full, `${prefix}${entry.name}/`);
+      } else if (entry.isFile()) {
+        out.push({ name: entry.name, path: `${prefix}${entry.name}` });
+      }
+    }
+  };
+  walk(pkgDir, "");
+  return out;
 }

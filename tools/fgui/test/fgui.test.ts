@@ -12,6 +12,7 @@ import {
   validateComponent,
   validateComponentSemantics,
   validatePackageFileIntegrity,
+  validatePackageManifest,
 } from "../lib/fgui";
 
 const REAL_DEMO = locateProject();
@@ -341,6 +342,93 @@ describe("validateComponentSemantics", () => {
     const errors = validateComponentSemantics(project, pkg, comp).filter((i) => i.severity === "error");
     expect(errors.some((i) => i.message.includes("sidePair"))).toBe(true);
   });
+
+  test("displayList 子元件 name 重复报 error", () => {
+    const { project, pkg, comp } = setupFixture(`<?xml version="1.0" encoding="utf-8"?>
+<component size="10,10">
+  <displayList>
+    <image id="n1" name="dup" src="bb22"/>
+    <image id="n2" name="dup" src="bb22"/>
+  </displayList>
+</component>`);
+    const errors = validateComponentSemantics(project, pkg, comp).filter((i) => i.severity === "error");
+    expect(errors.some((i) => i.message.includes("name 重复"))).toBe(true);
+  });
+
+  test("controller 空 page name 报 error", () => {
+    const { project, pkg, comp } = setupFixture(`<?xml version="1.0" encoding="utf-8"?>
+<component size="10,10">
+  <controller name="c1" pages="0,,1," selected="0"/>
+  <displayList/>
+</component>`);
+    const errors = validateComponentSemantics(project, pkg, comp).filter((i) => i.severity === "error");
+    expect(errors.some((i) => i.message.includes("空 page"))).toBe(true);
+  });
+
+  test("controller 重复 page id 报 error", () => {
+    const { project, pkg, comp } = setupFixture(`<?xml version="1.0" encoding="utf-8"?>
+<component size="10,10">
+  <controller name="c1" pages="0,a,0,b" selected="0"/>
+  <displayList/>
+</component>`);
+    const errors = validateComponentSemantics(project, pkg, comp).filter((i) => i.severity === "error");
+    expect(errors.some((i) => i.message.includes("重复 page"))).toBe(true);
+  });
+
+  test("controller selected 越界报 error", () => {
+    const { project, pkg, comp } = setupFixture(`<?xml version="1.0" encoding="utf-8"?>
+<component size="10,10">
+  <controller name="c1" pages="0,a,1,b" selected="5"/>
+  <displayList/>
+</component>`);
+    const errors = validateComponentSemantics(project, pkg, comp).filter((i) => i.severity === "error");
+    expect(errors.some((i) => i.message.includes("selected"))).toBe(true);
+  });
+
+  test("image 误用 loader fill 属性报 error", () => {
+    const { project, pkg, comp } = setupFixture(`<?xml version="1.0" encoding="utf-8"?>
+<component size="10,10">
+  <displayList>
+    <image id="n1" name="img" src="bb22" fill="scaleFree"/>
+  </displayList>
+</component>`);
+    const errors = validateComponentSemantics(project, pkg, comp).filter((i) => i.severity === "error");
+    expect(errors.some((i) => i.message.includes("fill"))).toBe(true);
+  });
+
+  test("fileName 与登记路径不一致报 error", () => {
+    const { project, pkg, comp } = setupFixture(`<?xml version="1.0" encoding="utf-8"?>
+<component size="10,10">
+  <displayList>
+    <image id="n1" name="img" src="bb22" fileName="wrong/bg.png"/>
+  </displayList>
+</component>`);
+    const errors = validateComponentSemantics(project, pkg, comp).filter((i) => i.severity === "error");
+    expect(errors.some((i) => i.message.includes("fileName"))).toBe(true);
+  });
+
+  test("extention=Button 缺少 controller 或扩展节点报 error", () => {
+    const { project, pkg, comp } = setupFixture(`<?xml version="1.0" encoding="utf-8"?>
+<component size="100,30" extention="Button">
+  <displayList>
+    <image id="n1" name="bg" src="bb22"/>
+  </displayList>
+</component>`);
+    const errors = validateComponentSemantics(project, pkg, comp).filter((i) => i.severity === "error").map((i) => i.message);
+    expect(errors.some((m) => m.includes("button controller") || m.includes("<Button/>"))).toBe(true);
+  });
+
+  test("手写 transition 报 error", () => {
+    const { project, pkg, comp } = setupFixture(`<?xml version="1.0" encoding="utf-8"?>
+<component size="10,10">
+  <displayList/>
+  <transition name="t1">
+    <item time="0" type="XY" target="n1" tween="true" startValue="0,0" endValue="10,10" duration="10"/>
+  </transition>
+</component>`);
+    const errors = validateComponentSemantics(project, pkg, comp).filter((i) => i.severity === "error");
+    expect(errors.some((i) => i.message.includes("transition"))).toBe(true);
+  });
 });
 
 describe("validatePackageFileIntegrity", () => {
@@ -398,5 +486,109 @@ describe("nextResourceId", () => {
     const id = nextResourceId(pkg, "fmn");
     expect(id.length).toBeGreaterThanOrEqual(5);
     expect(pkg.resources.some((r) => r.id === id)).toBe(false);
+  });
+});
+
+describe("validatePackageManifest", () => {
+  function setupPkg(xml: string, extraFiles: Array<[string, string]> = []) {
+    const dir = mkdtempSync(join(tmpdir(), "fgui-mani-"));
+    writeFileSync(join(dir, "demo.fairy"), `<?xml version="1.0" encoding="utf-8"?>\n<projectDescription id="t" type="CocosCreator" version="5.0"/>`);
+    const pkgDir = join(dir, "assets", "Demo");
+    mkdirSync(pkgDir, { recursive: true });
+    writeFileSync(join(pkgDir, "package.xml"), xml);
+    for (const [rel, content] of extraFiles) {
+      const full = join(pkgDir, rel);
+      mkdirSync(join(full, ".."), { recursive: true });
+      writeFileSync(full, content);
+    }
+    const project = locateProject(dir);
+    return { dir, project, pkg: readPackage(project, "Demo") };
+  }
+
+  test("package id 非 8 位报 error", () => {
+    const { dir, project, pkg } = setupPkg(`<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="short"><resources/></packageDescription>`);
+    try {
+      const errors = validatePackageManifest(project, pkg).filter((i) => i.severity === "error");
+      expect(errors.some((i) => i.message.includes("8"))).toBe(true);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("资源缺 name 报 error", () => {
+    const { dir, project, pkg } = setupPkg(`<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="12345678"><resources><image id="aa11"/></resources></packageDescription>`);
+    try {
+      const errors = validatePackageManifest(project, pkg).filter((i) => i.severity === "error");
+      expect(errors.some((i) => i.message.includes("name"))).toBe(true);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("资源路径重复注册报 error", () => {
+    const { dir, project, pkg } = setupPkg(`<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="12345678"><resources><image id="aa11" name="bg.png" path="/img/"/><image id="bb22" name="bg.png" path="/img/"/></resources></packageDescription>`, [["img/bg.png", "x"]]);
+    try {
+      const errors = validatePackageManifest(project, pkg).filter((i) => i.severity === "error");
+      expect(errors.some((i) => i.message.includes("重复"))).toBe(true);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("component 指向非 xml 文件报 error", () => {
+    const { dir, project, pkg } = setupPkg(`<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="12345678"><resources><component id="aa11" name="A.png" path="/"/></resources></packageDescription>`, [["A.png", "x"]]);
+    try {
+      const errors = validatePackageManifest(project, pkg).filter((i) => i.severity === "error");
+      expect(errors.some((i) => i.message.includes("xml"))).toBe(true);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("未注册文件扫描报 error", () => {
+    const { dir, project, pkg } = setupPkg(`<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="12345678"><resources/></packageDescription>`, [["img/orphan.png", "x"]]);
+    try {
+      const errors = validatePackageManifest(project, pkg).filter((i) => i.severity === "error");
+      expect(errors.some((i) => i.message.includes("登记"))).toBe(true);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("nextResourceId 前缀续编", () => {
+  test("续编：dm000 已用则返回 dm001", () => {
+    const dir = mkdtempSync(join(tmpdir(), "fgui-seq-"));
+    try {
+      writeFileSync(join(dir, "demo.fairy"), `<?xml version="1.0" encoding="utf-8"?>\n<projectDescription id="t" type="CocosCreator" version="5.0"/>`);
+      const pkgDir = join(dir, "assets", "Demo");
+      mkdirSync(pkgDir, { recursive: true });
+      writeFileSync(join(pkgDir, "package.xml"), `<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="12345678"><resources><component id="dm000" name="A.xml" path="/" exported="true"/><component id="dm001" name="B.xml" path="/" exported="true"/></resources></packageDescription>`);
+      writeFileSync(join(pkgDir, "A.xml"), "<component size=\"1,1\"><displayList/></component>");
+      writeFileSync(join(pkgDir, "B.xml"), "<component size=\"1,1\"><displayList/></component>");
+      const project = locateProject(dir);
+      const pkg = readPackage(project, "Demo");
+      expect(nextResourceId(pkg, "dm")).toBe("dm002");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("续编：无前缀时随机 5 位不与现有冲突", () => {
+    const dir = mkdtempSync(join(tmpdir(), "fgui-seq-"));
+    try {
+      writeFileSync(join(dir, "demo.fairy"), `<?xml version="1.0" encoding="utf-8"?>\n<projectDescription id="t" type="CocosCreator" version="5.0"/>`);
+      const pkgDir = join(dir, "assets", "Demo");
+      mkdirSync(join(pkgDir, "img"), { recursive: true });
+      writeFileSync(join(pkgDir, "package.xml"), `<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="12345678"><resources><image id="abc12" name="bg.png" path="/img/"/></resources></packageDescription>`);
+      writeFileSync(join(pkgDir, "img", "bg.png"), "x");
+      const project = locateProject(dir);
+      const pkg = readPackage(project, "Demo");
+      const id = nextResourceId(pkg);
+      expect(id.length).toBe(5);
+      expect(pkg.resources.some((r) => r.id === id)).toBe(false);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
