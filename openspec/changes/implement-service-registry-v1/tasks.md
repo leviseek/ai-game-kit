@@ -5,10 +5,10 @@
 
 ## 2. 注册、解析与错误路径
 
-- [ ] 2.1 先编写注册/解析测试，覆盖实例注册、重复解析同一实例、注册状态查询、缺失 token 拒绝（携带 token 描述）与重复注册拒绝（不覆盖已有注册）。
-- [ ] 2.2 实现 `register`/`resolve`/`isRegistered` 与 `ServiceRegistrationError`/`ServiceResolutionError`（继承 `FrameworkError`），使 2.1 通过。
-- [ ] 2.3 先编写工厂注册与依赖循环测试，覆盖工厂解析依赖链成功、循环依赖拒绝（标识循环 token）与解析失败无残留状态。
-- [ ] 2.4 实现 `registerFactory` 与解析期依赖循环检测（进行中解析集合），使 2.3 通过。
+- [x] 2.1 先编写注册/解析测试，覆盖实例注册、重复解析同一实例、注册状态查询、缺失 token 拒绝（携带 token 描述）与重复注册拒绝（不覆盖已有注册）。（由本 change 完成：`service-registry.test.ts` 新增注册/解析与错误路径用例——resolve 返回注册实例、重复 resolve 同一实例、isRegistered 查询、缺失 token 抛 `ServiceResolutionError` 且含描述、重复注册抛 `ServiceRegistrationError` 且保留首个注册、错误类携带 description。红色期确认：`createServiceRegistry`/错误类尚未实现，测试因导出缺失失败。）
+- [x] 2.2 实现 `register`/`resolve`/`isRegistered` 与 `ServiceRegistrationError`/`ServiceResolutionError`（继承 `FrameworkError`），使 2.1 通过。（本 change 完成：`core/services/ServiceRegistry.ts` 实现以 token 对象身份为键的实例存储，`register` 重复注册抛 `ServiceRegistrationError`、`resolve` 缺失 token 抛 `ServiceResolutionError`（均携带 description 且继承 `FrameworkError`）、`isRegistered` 查询；`registerFactory` 尚未实现，提供明确拒绝占位。2.1 测试转绿，完整 foundation 471 pass / 0 fail，types EXIT 0。）
+- [x] 2.3 先编写工厂注册与依赖循环测试，覆盖工厂解析依赖链成功、循环依赖拒绝（标识循环 token）与解析失败无残留状态。（由本 change 完成：`service-registry.test.ts` 新增工厂注册与循环检测用例——工厂经注入 resolve 解析依赖、工厂链式依赖、工厂直接解析、自引用循环拒绝、互依循环拒绝且错误含 token 名、解析失败无残留状态。红色期确认：`registerFactory` 尚未实现，6 个新用例失败。）
+- [x] 2.4 实现 `registerFactory` 与解析期依赖循环检测（进行中解析集合），使 2.3 通过。（本 change 完成：`core/services/ServiceRegistry.ts` 以 `instance`/`factory` 判别联合存储注册条目，`registerFactory` 存入工厂；`resolve` 经递归 `resolveInternal` 求值工厂依赖，以进行中解析集合检测自引用/互依循环并抛 `ServiceResolutionError`，`finally` 清理进行中状态保证解析失败无残留；工厂不缓存、每次解析按当前工厂求值。2.3 测试转绿，完整 foundation 477 pass / 0 fail，types EXIT 0。）
 
 ## 3. ApplicationContext/Module 边界与公开导出收口
 
