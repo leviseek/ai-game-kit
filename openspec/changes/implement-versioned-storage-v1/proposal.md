@@ -27,7 +27,7 @@
 
 ## Impact
 
-- 新增代码：`assets/framework/contracts/storage/*`（契约与类型化错误）、`assets/framework/core/storage/*`（存档仓库与迁移链实现）
+- 新增代码：`assets/framework/contracts/storage/*`（纯契约接口）、`assets/framework/core/storage/*`（类型化错误与存档仓库实现）
 - 新增测试：`tests/framework/foundation/versioned-storage.test.ts`，覆盖命名空间、schema version、连续迁移、未来版本拒绝与 DTO 可序列化约束
 - 依赖：纯 TypeScript，无 Cocos 依赖；存储后端通过 `PlatformStorage` 契约注入
 - 不影响既有公开 API；本 change 不接入平台存储适配器（7.5 范围），不改动 `index.ts` 白名单导出

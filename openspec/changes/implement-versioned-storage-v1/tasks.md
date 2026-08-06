@@ -23,5 +23,5 @@
 
 ## 4. 收口与 ADR
 
-- [ ] 4.1 审查公开入口，仅导出稳定契约与必要工厂，不导出内部存储结构；运行依赖边界检查确认无深层导入。
-- [ ] 4.2 ADR 检查：change 完成前审查本 change 是否产生新的架构决策；如有，按 doc/decisions/ADR-013-<slug>.md 约定创建 ADR；如无，明确记录无需 ADR。
+- [x] 4.1 审查公开入口，仅导出稳定契约与必要工厂，不导出内部存储结构；运行依赖边界检查确认无深层导入。（本 change 按 proposal 既定范围不接入 index.ts；错误类移入 core/storage，contracts 仅保留纯接口；存储键对 namespace/key 做 URI 编码消除分隔符冲突；收口审查通过，完整测试与 strict 类型检查、public-boundary 均通过。）
+- [x] 4.2 ADR 检查：change 完成前审查本 change 是否产生新的架构决策；如有，按 doc/decisions/ADR-013-<slug>.md 约定创建 ADR；如无，明确记录无需 ADR。（已产生架构决策，创建 doc/decisions/ADR-013-versioned-storage-contracts-errors-encoding.md：契约存 contracts/storage 纯接口、错误与实现存 core/storage、存储键 URI 编码、损坏/迁移失败类型化错误不静默降级。）

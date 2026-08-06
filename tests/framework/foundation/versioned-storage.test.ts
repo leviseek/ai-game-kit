@@ -13,8 +13,8 @@ import {
   SaveMigrationError,
   SaveSerializationError,
   SaveVersionError,
-} from "../../../assets/framework/contracts/storage/VersionedStorage";
-import { createVersionedStorage } from "../../../assets/framework/core/storage/VersionedStorage";
+  createVersionedStorage,
+} from "../../../assets/framework/core/storage/VersionedStorage";
 
 interface PlayerSave {
   readonly name: string;
@@ -251,9 +251,15 @@ describe("VersionedStorage future version and serialization guards", () => {
       currentVersion: 3,
     });
 
-    expect(() => storage.load("player", "future")).toThrow(
-      SaveVersionError,
-    );
+    try {
+      await storage.load("player", "future");
+      expect.unreachable("load should have thrown");
+    } catch (error) {
+      expect(error).toBeInstanceOf(SaveVersionError);
+      const versionError = error as SaveVersionError;
+      expect(versionError.recordVersion).toBe(5);
+      expect(versionError.currentVersion).toBe(3);
+    }
   });
 
   test("rejecting a future save leaves the stored data untouched", async () => {
@@ -329,9 +335,62 @@ describe("VersionedStorage future version and serialization guards", () => {
 
     expect(await storage.load("player", "save")).toBeNull();
   });
+
+  test("a DTO containing a symbol is rejected before any write", async () => {
+    const storage = createVersionedStorage(
+      createOptions(1),
+    );
+
+    expect(() =>
+      storage.save("player", "save", { name: "alice", sym: Symbol("id") }),
+    ).toThrow(SaveSerializationError);
+
+    expect(await storage.load("player", "save")).toBeNull();
+  });
+
+  test("a DTO containing a non-finite number is rejected before any write", async () => {
+    const storage = createVersionedStorage(
+      createOptions(1),
+    );
+
+    expect(() =>
+      storage.save("player", "save", { name: "alice", score: NaN }),
+    ).toThrow(SaveSerializationError);
+
+    expect(await storage.load("player", "save")).toBeNull();
+
+    expect(() =>
+      storage.save("player", "save", { name: "alice", score: Infinity }),
+    ).toThrow(SaveSerializationError);
+  });
+
+  test("a nested non-serializable value is rejected before any write", async () => {
+    const storage = createVersionedStorage(
+      createOptions(1),
+    );
+
+    expect(() =>
+      storage.save("player", "save", {
+        name: "alice",
+        stats: { bonus: () => 1 },
+      }),
+    ).toThrow(SaveSerializationError);
+
+    expect(await storage.load("player", "save")).toBeNull();
+
+    expect(() =>
+      storage.save("player", "save", {
+        name: "alice",
+        items: [{ hidden: undefined }],
+      }),
+    ).toThrow(SaveSerializationError);
+  });
 });
 
 describe("VersionedStorage corruption guards", () => {
+  // 直写底层存储键 "save:player:save" 模拟损坏记录。该键与
+  // composeStorageKey("player", "save") 编码结果一致（player/save 均无
+  // 保留字符，encodeURIComponent 后不变）；若未来修改键编码方式需同步。
   test("a record that is not valid JSON is rejected as corrupted", async () => {
     const backend = emptyBackend();
     await backend.set("save:player:save", "not-json{{");
@@ -389,6 +448,44 @@ describe("VersionedStorage corruption guards", () => {
     expect(() => storage.load("player", "save")).toThrow(
       SaveCorruptionError,
     );
+  });
+});
+
+describe("VersionedStorage key encoding", () => {
+  test("a separator inside namespace or key does not collide with another namespace", async () => {
+    const backend = emptyBackend();
+    const storage = createVersionedStorage({
+      storage: backend,
+      currentVersion: 1,
+    });
+
+    await storage.save("a:b", "c", { name: "first" });
+    await storage.save("a", "b:c", { name: "second" });
+
+    expect(await storage.load("a:b", "c")).toEqual({
+      version: 1,
+      data: { name: "first" },
+    });
+    expect(await storage.load("a", "b:c")).toEqual({
+      version: 1,
+      data: { name: "second" },
+    });
+  });
+
+  test("percent-encoded characters round-trip through storage keys", async () => {
+    const backend = emptyBackend();
+    const storage = createVersionedStorage({
+      storage: backend,
+      currentVersion: 1,
+    });
+
+    await storage.save("play%er", "s%ave", { name: "alice" });
+
+    expect(await storage.load("play%er", "s%ave")).toEqual({
+      version: 1,
+      data: { name: "alice" },
+    });
+    expect(await storage.load("play%er", "save")).toBeNull();
   });
 });
 

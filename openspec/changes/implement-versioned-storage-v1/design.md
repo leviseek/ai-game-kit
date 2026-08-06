@@ -48,9 +48,15 @@
 - 记录版本 == 当前版本：直接返回数据
 - 记录版本 < 当前版本：按迁移映射逐级升级；某级缺失则抛类型化错误（含缺失路径）
 
-### 5. 错误类型化
+### 5. 错误类型化与错误类归属
 
-新增存储专属类型化错误（如 `SaveVersionError`、`SaveMigrationError`、`SaveSerializationError`），沿用框架既有 `FrameworkError` 机制（`core/errors/`），携带版本号、缺失迁移路径等可诊断上下文。
+新增存储专属类型化错误（`SaveVersionError`、`SaveMigrationError`、`SaveSerializationError`、`SaveCorruptionError`），沿用框架既有 `FrameworkError` 机制（`core/errors/`），携带版本号、缺失迁移路径等可诊断上下文。错误类与实现同在 `core/storage`（遵循 ServiceRegistry 先例），`contracts/storage` 只保留纯接口，避免 contracts 值导入 core 实现层（见 ADR-013）。
+
+- **理由**：与 `core/services/ServiceRegistry.ts` 的"错误类与实现同层"一致；损坏记录（JSON 非法/形状不符）抛 `SaveCorruptionError`、迁移缺失/失败抛 `SaveMigrationError`（迁移失败经 `cause` 保留底层错误），调用方可区分空存档与数据损坏。
+
+### 6. 存储键编码
+
+存储键由 `save:` 前缀、`encodeURIComponent(namespace)`、分隔符 `:`、`encodeURIComponent(key)` 拼接，保证不同 (namespace, key) 组合不因保留字符（`:`, `%`）冲突而互相覆盖（见 ADR-013）。
 
 ## Risks / Trade-offs
 

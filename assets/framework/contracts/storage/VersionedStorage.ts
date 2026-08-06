@@ -1,4 +1,3 @@
-import { FrameworkError } from "../../core/errors/FrameworkError";
 import type { PlatformStorage } from "../platform/Platform";
 
 /** 存档 schema 版本：自增正整数。 */
@@ -29,6 +28,11 @@ export interface SaveLoadResult {
 /**
  * 版本化存档仓库：以命名空间隔离存档，记录 schema version，
  * 读取时对未来版本拒绝、对旧版本逐级迁移。不依赖 cc/fgui。
+ * 抛错均为类型化错误：SaveVersionError / SaveMigrationError /
+ * SaveSerializationError / SaveCorruptionError，定义于 core/storage。
+ *
+ * 命名空间与存档键允许任意字符串（含空串、保留字符 `:` 与 `%`）；
+ * 存储键经 URI 编码保证不同 (namespace, key) 组合不冲突。
  */
 export interface VersionedStorage {
   /** 校验数据可序列化后写入指定命名空间与键；不可序列化在写入前以类型化错误拒绝。 */
@@ -40,64 +44,4 @@ export interface VersionedStorage {
   load(namespace: string, key: string): Promise<SaveLoadResult | null>;
   /** 删除指定命名空间与键的存档；幂等，删除不存在条目不影响其他命名空间。 */
   delete(namespace: string, key: string): Promise<void>;
-}
-
-/** 存档版本高于当前支持版本时的类型化错误，携带记录版本与当前版本。 */
-export class SaveVersionError extends FrameworkError {
-  readonly recordVersion: SaveVersion;
-  readonly currentVersion: SaveVersion;
-
-  constructor(recordVersion: SaveVersion, currentVersion: SaveVersion) {
-    super(
-      `Save version ${recordVersion} is newer than supported version ${currentVersion}`,
-      { component: "versioned-storage" },
-    );
-
-    this.name = "SaveVersionError";
-    this.recordVersion = recordVersion;
-    this.currentVersion = currentVersion;
-  }
-}
-
-/** 存档版本迁移失败（缺失迁移级或迁移器抛错）时的类型化错误，携带缺口版本与原因。 */
-export class SaveMigrationError extends FrameworkError {
-  readonly fromVersion: SaveVersion;
-  readonly toVersion: SaveVersion;
-
-  constructor(
-    fromVersion: SaveVersion,
-    toVersion: SaveVersion,
-    options?: { readonly cause?: unknown },
-  ) {
-    super(
-      `Missing or failed save migration from version ${fromVersion} to ${toVersion}`,
-      { component: "versioned-storage", cause: options?.cause },
-    );
-
-    this.name = "SaveMigrationError";
-    this.fromVersion = fromVersion;
-    this.toVersion = toVersion;
-  }
-}
-
-/** 底层存档记录损坏（JSON 非法或形状不符）时的类型化错误，携带损坏描述。 */
-export class SaveCorruptionError extends FrameworkError {
-  constructor(detail: string) {
-    super(`Save record is corrupted: ${detail}`, {
-      component: "versioned-storage",
-    });
-
-    this.name = "SaveCorruptionError";
-  }
-}
-
-/** 存档 DTO 不可序列化时的类型化错误；发生在写入前，不产生部分写入。 */
-export class SaveSerializationError extends FrameworkError {
-  constructor(detail: string) {
-    super(`Save data is not serializable: ${detail}`, {
-      component: "versioned-storage",
-    });
-
-    this.name = "SaveSerializationError";
-  }
 }

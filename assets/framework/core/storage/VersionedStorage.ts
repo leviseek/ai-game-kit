@@ -1,3 +1,4 @@
+import { FrameworkError } from "../errors/FrameworkError";
 import type {
   SaveLoadResult,
   SaveMigrator,
@@ -5,18 +6,72 @@ import type {
   VersionedStorage,
   VersionedStorageOptions,
 } from "../../contracts/storage/VersionedStorage";
-import {
-  SaveCorruptionError,
-  SaveMigrationError,
-  SaveSerializationError,
-  SaveVersionError,
-} from "../../contracts/storage/VersionedStorage";
 
 /** 命名空间前缀与存档键的分隔符；键空间依赖它实现命名空间隔离。 */
 const NAMESPACE_SEPARATOR = ":";
 
 /** 存档封装记录的键前缀；区分存档记录与未来可能扩展的其他条目。 */
 const RECORD_PREFIX = "save:";
+
+/** 存档版本高于当前支持版本时的类型化错误，携带记录版本与当前版本。 */
+export class SaveVersionError extends FrameworkError {
+  readonly recordVersion: SaveVersion;
+  readonly currentVersion: SaveVersion;
+
+  constructor(recordVersion: SaveVersion, currentVersion: SaveVersion) {
+    super(
+      `Save version ${recordVersion} is newer than supported version ${currentVersion}`,
+      { component: "versioned-storage" },
+    );
+
+    this.name = "SaveVersionError";
+    this.recordVersion = recordVersion;
+    this.currentVersion = currentVersion;
+  }
+}
+
+/** 存档版本迁移失败（缺失迁移级或迁移器抛错）时的类型化错误，携带缺口版本与原因。 */
+export class SaveMigrationError extends FrameworkError {
+  readonly fromVersion: SaveVersion;
+  readonly toVersion: SaveVersion;
+
+  constructor(
+    fromVersion: SaveVersion,
+    toVersion: SaveVersion,
+    options?: { readonly cause?: unknown },
+  ) {
+    super(
+      `Missing or failed save migration from version ${fromVersion} to ${toVersion}`,
+      { component: "versioned-storage", cause: options?.cause },
+    );
+
+    this.name = "SaveMigrationError";
+    this.fromVersion = fromVersion;
+    this.toVersion = toVersion;
+  }
+}
+
+/** 存档 DTO 不可序列化时的类型化错误；发生在写入前，不产生部分写入。 */
+export class SaveSerializationError extends FrameworkError {
+  constructor(detail: string) {
+    super(`Save data is not serializable: ${detail}`, {
+      component: "versioned-storage",
+    });
+
+    this.name = "SaveSerializationError";
+  }
+}
+
+/** 底层存档记录损坏（JSON 非法或形状不符）时的类型化错误，携带损坏描述。 */
+export class SaveCorruptionError extends FrameworkError {
+  constructor(detail: string) {
+    super(`Save record is corrupted: ${detail}`, {
+      component: "versioned-storage",
+    });
+
+    this.name = "SaveCorruptionError";
+  }
+}
 
 // 递归校验 DTO 是否可 JSON 序列化。检测 undefined、函数、symbol、
 // BigInt 与循环引用；返回首个问题描述，null 表示可序列化。
@@ -88,9 +143,11 @@ function assertSerializable(data: unknown): void {
   }
 }
 
-// 组装底层存储键：RECORD_PREFIX + 命名空间 + 分隔符 + 存档键。
+// 组装底层存储键：RECORD_PREFIX + 编码命名空间 + 分隔符 + 编码存档键。
+// 对命名空间与键做 URI 编码，避免其中的分隔符或其他保留字符造成键空间冲突，
+// 保证不同 (namespace, key) 组合映射到不同存储键、互不覆盖。
 function composeStorageKey(namespace: string, key: string): string {
-  return `${RECORD_PREFIX}${namespace}${NAMESPACE_SEPARATOR}${key}`;
+  return `${RECORD_PREFIX}${encodeURIComponent(namespace)}${NAMESPACE_SEPARATOR}${encodeURIComponent(key)}`;
 }
 
 // 校验解析出的存档记录形状：必须是包含正整数 version 与 data 字段的对象。
