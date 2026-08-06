@@ -59,9 +59,11 @@ async function loadCreateAdapter(): Promise<CreateCocosStorageAdapter> {
 }
 
 // 适配器内部键方案（实现约定，测试据此注入损坏/检查清理）：
-// 正式键即调用方传入的键；临时键/备份键分别附加 .tmp/.bak 后缀。
-const TEMP_SUFFIX = ".tmp";
-const BACKUP_SUFFIX = ".bak";
+// 正式键即调用方传入的键；临时键/备份键附加 %tmp/%bak 后缀派生。
+// 后缀以 `%` + 小写字母开头：versioned-storage 的键经 encodeURIComponent 编码，
+// 其中 `%` 恒为大写 `%XX` 序列，故这些后缀不可能与任何正式键冲突。
+const TEMP_SUFFIX = "%tmp";
+const BACKUP_SUFFIX = "%bak";
 
 function tempKey(key: string): string {
   return `${key}${TEMP_SUFFIX}`;
@@ -312,5 +314,46 @@ describe("CocosStorageAdapter corruption recovery", () => {
     await expect(adapter.restoreBackup("player.save")).rejects.toThrow(
       SaveCorruptionError,
     );
+  });
+
+  test("keys ending with the temp/backup suffix do not collide with helper keys", async () => {
+    const createAdapter = await loadCreateAdapter();
+    const backend = createInspectableLocalStorage();
+    const adapter = createAdapter({ localStorage: backend });
+
+    // 若临时键/备份键用普通后缀（如 .tmp/.bak），会与以该后缀结尾的正式键
+    // 冲突导致互相覆盖。当前实现用 %tmp/%bak 派生，二者互不干扰。
+    await adapter.set("player.x.tmp", "A");
+    await adapter.set("player.x", "B");
+
+    expect(await adapter.get("player.x.tmp")).toBe("A");
+    expect(await adapter.get("player.x")).toBe("B");
+
+    await adapter.set("player.y.bak", "C");
+    expect(await adapter.get("player.y.bak")).toBe("C");
+  });
+
+  test("a same-value rewrite does not create a backup for that value", async () => {
+    const createAdapter = await loadCreateAdapter();
+    const backend = createInspectableLocalStorage();
+    const adapter = createAdapter({ localStorage: backend });
+
+    // 首次写入后同值重复写：不发生替换，不创建备份（备份依赖跨值写入历史）
+    await adapter.set("player.save", "v1");
+    await adapter.set("player.save", "v1");
+    expect(backend.entries()[backupKey("player.save")]).toBeUndefined();
+
+    // 损坏正式键后无备份可恢复，以可诊断错误呈现
+    backend.setItem("player.save", "corrupted!");
+    await expect(adapter.restoreBackup("player.save")).rejects.toThrow(
+      SaveCorruptionError,
+    );
+
+    // 跨值写入后备份才存在，损坏后可恢复
+    await adapter.set("player.save", "v2");
+    await adapter.set("player.save", "v3");
+    backend.setItem("player.save", "corrupted!");
+    await adapter.restoreBackup("player.save");
+    expect(await adapter.get("player.save")).toBe("v2");
   });
 });

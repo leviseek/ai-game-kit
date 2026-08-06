@@ -87,6 +87,7 @@ interface SaveCoordinatorExports {
     readonly visibility: ApplicationVisibility;
     readonly triggerStates?: readonly ("foreground" | "background")[];
     readonly save: () => Promise<void>;
+    readonly onError?: (error: unknown) => void;
   }) => SaveCoordinator;
 }
 
@@ -175,12 +176,12 @@ describe("存档生命周期保存收敛（7.6）", () => {
       state = { step: i };
       visibility.setVisibility(i % 2 === 0 ? "foreground" : "background");
 
-      // 生命周期事件密集期间读取：不抛损坏错误，读到即为完整记录
-      const snapshot = await storage.load("player", "save").catch(() => null);
-      if (snapshot !== null) {
-        expect(snapshot.version).toBe(1);
-        expect(typeof snapshot.data).toBe("object");
-      }
+      // 生命周期事件密集期间读取：load 必须不抛损坏错误，且读到完整记录。
+      // 不允许 catch 吞错放行——交错损坏会在此直接失败。
+      const snapshot = await storage.load("player", "save");
+      expect(snapshot).not.toBeNull();
+      expect(snapshot?.version).toBe(1);
+      expect(typeof snapshot?.data).toBe("object");
     }
 
     await flush();
@@ -252,5 +253,93 @@ describe("存档生命周期保存收敛（7.6）", () => {
       version: 1,
       data: { theme: "dark" },
     });
+  });
+
+  test("保存失败经 onError 报告而非未处理拒绝，后续事件收敛到最后一次有效状态", async () => {
+    const createAdapter = await loadCreateAdapter();
+    const createCoordinator = await loadCreateCoordinator();
+
+    const visibility = new MemoryPlatform();
+    const adapter = createAdapter({
+      localStorage: createInspectableLocalStorage(),
+    });
+    const storage = createVersionedStorage({
+      storage: adapter,
+      currentVersion: 1,
+    });
+
+    let state = { step: 0 };
+    // 首次保存抛错，其后保存恢复正常
+    let shouldFail = true;
+    const errors: unknown[] = [];
+    const coordinator = createCoordinator({
+      visibility,
+      save: async () => {
+        if (shouldFail) {
+          shouldFail = false;
+          throw new Error("save quota exceeded");
+        }
+        await storage.save("player", "save", state);
+      },
+      onError: (error) => {
+        errors.push(error);
+      },
+    });
+    coordinator.start();
+
+    // 失败触发：不产生未处理拒绝，错误经 onError 报告
+    state = { step: 1 };
+    visibility.setVisibility("background");
+    await flush();
+
+    // 后续事件触发成功保存，收敛到最后一次有效状态
+    state = { step: 2 };
+    visibility.setVisibility("foreground");
+    state = { step: 3 };
+    visibility.setVisibility("background");
+    await flush();
+    coordinator.dispose();
+
+    expect(errors).toHaveLength(1);
+    expect((errors[0] as Error).message).toBe("save quota exceeded");
+    expect(await storage.load("player", "save")).toEqual({
+      version: 1,
+      data: { step: 3 },
+    });
+  });
+
+  test("未配置 onError 时保存失败经 console.error 记录且不产生未处理拒绝", async () => {
+    const createAdapter = await loadCreateAdapter();
+    const createCoordinator = await loadCreateCoordinator();
+
+    const visibility = new MemoryPlatform();
+    const adapter = createAdapter({
+      localStorage: createInspectableLocalStorage(),
+    });
+
+    const originalError = console.error;
+    const reported: unknown[] = [];
+    console.error = (error: unknown) => {
+      reported.push(error);
+    };
+    try {
+      const coordinator = createCoordinator({
+        visibility,
+        save: async () => {
+          throw new Error("quota exceeded");
+        },
+      });
+      coordinator.start();
+
+      visibility.setVisibility("background");
+      await flush();
+      coordinator.dispose();
+    } finally {
+      console.error = originalError;
+    }
+
+    // 缺省 onError 走 console.error，而非静默吞掉
+    expect(reported).toHaveLength(1);
+    expect((reported[0] as Error).message).toBe("quota exceeded");
   });
 });

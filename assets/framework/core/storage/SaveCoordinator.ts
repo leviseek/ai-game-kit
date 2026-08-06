@@ -13,12 +13,20 @@ export interface SaveCoordinatorOptions {
    * 保存执行，生命周期窗口内的多次触发收敛到最后一次有效状态（合并写）。
    */
   readonly save: () => Promise<void>;
+  /**
+   * 保存失败回调：save 抛错时调用（错误不会被吞掉，也不产生未处理拒绝）。
+   * 缺省时经 console.error 记录诊断（同 ScopedEventChannel 缺省 onHandlerError）。
+   */
+  readonly onError?: (error: unknown) => void;
 }
 
 export interface SaveCoordinator {
   start(): void;
   dispose(): void;
 }
+
+// target ES2015 无 Array.prototype.includes，且模块级常量避免每次调用重建
+const DEFAULT_TRIGGER_STATES = ["background"] as const;
 
 /**
  * 生命周期保存协调器：订阅 ApplicationVisibility，在触发状态变化时调度保存，
@@ -28,8 +36,9 @@ export interface SaveCoordinator {
 export function createSaveCoordinator(
   options: SaveCoordinatorOptions,
 ): SaveCoordinator {
-  const triggerStates =
-    options.triggerStates ?? (["background"] as readonly ApplicationVisibilityState[]);
+  const triggerStates = options.triggerStates ?? DEFAULT_TRIGGER_STATES;
+  // 缺省记录错误诊断，避免保存失败静默吞掉（同 ScopedEventChannel 缺省模式）
+  const onError = options.onError ?? ((error: unknown) => console.error(error));
 
   let unsubscribe: (() => void) | undefined;
   // 串行化状态：running 表示当前有保存执行；pending 表示执行期间又有触发，
@@ -42,7 +51,14 @@ export function createSaveCoordinator(
     try {
       do {
         pending = false;
-        await options.save();
+        try {
+          await options.save();
+        } catch (error) {
+          // 单次保存失败：经 onError 报告（缺省 console.error）并继续处理后续
+          // 触发，避免未处理拒绝与状态静默丢失（最后一次有效状态仍有机会由
+          // 后续触发落盘）
+          onError(error);
+        }
       } while (pending);
     } finally {
       running = false;
@@ -64,7 +80,6 @@ export function createSaveCoordinator(
         return;
       }
       unsubscribe = options.visibility.onVisibilityChange((state) => {
-        // target ES2015：无 Array.prototype.includes，用 indexOf 判断触发状态
         if (triggerStates.indexOf(state) !== -1) {
           schedule();
         }

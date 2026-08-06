@@ -259,4 +259,45 @@ describe("VersionedStorage over the platform storage adapter", () => {
       data: { name: "second" },
     });
   });
+
+  test("keys ending in .tmp/.bak do not collide with adapter helper keys", async () => {
+    const harness = await createBackendHarness();
+    const storage = createRepository(harness.backend(), 1);
+
+    // 回归：临时/备份键以 %tmp/%bak 派生，与正式键空间不相交；
+    // 若使用 .tmp/.bak 后缀，此处第二个存档会覆盖第一个的正式键导致静默丢失。
+    await storage.save("player", "x.tmp", { owner: "A" });
+    await storage.save("player", "x", { owner: "B" });
+    await storage.save("player", "y.bak", { owner: "C" });
+
+    expect(await storage.load("player", "x.tmp")).toEqual({
+      version: 1,
+      data: { owner: "A" },
+    });
+    expect(await storage.load("player", "x")).toEqual({
+      version: 1,
+      data: { owner: "B" },
+    });
+    expect(await storage.load("player", "y.bak")).toEqual({
+      version: 1,
+      data: { owner: "C" },
+    });
+  });
+
+  test("a valid envelope holding a corrupted repository record is diagnosed", async () => {
+    const harness = await createBackendHarness();
+    const storage = createRepository(harness.backend(), 3);
+
+    // 经适配器写入非法仓库记录：适配器包装出校验和一致的信封（信封层通过），
+    // 仓库层 parseRecord 再诊断 JSON 非法
+    await harness.backend().set("save:player:save", '{"version":1,"data":{"name":"broken');
+    await harness.backend().set("save:other:save", '{"version":3,"data":{"name":"alice"}}');
+
+    expect(() => storage.load("player", "save")).toThrow(SaveCorruptionError);
+    // 合法信封 + 合法记录不受影响
+    expect(await storage.load("other", "save")).toEqual({
+      version: 3,
+      data: { name: "alice" },
+    });
+  });
 });
