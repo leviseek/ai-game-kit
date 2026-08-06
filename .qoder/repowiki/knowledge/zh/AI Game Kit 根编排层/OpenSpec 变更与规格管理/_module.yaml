@@ -1,6 +1,6 @@
 schema_version: 1
 module_path: openspec
-title: OpenSpec 规范驱动变更管理
+title: OpenSpec 变更与规格管理
 scope:
     - openspec/
 source_files: []

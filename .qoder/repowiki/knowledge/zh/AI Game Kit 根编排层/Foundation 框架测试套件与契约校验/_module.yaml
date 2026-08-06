@@ -1,6 +1,6 @@
 schema_version: 1
 module_path: tests
-title: Foundation 框架测试套件
+title: Foundation 框架测试套件与契约校验
 scope:
     - tests/
 source_files: []
