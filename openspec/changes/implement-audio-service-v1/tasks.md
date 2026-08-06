@@ -19,9 +19,9 @@
 
 ## 3. Cocos 音频适配器
 
-- [ ] 3.1 实现 `adapters/cocos/audio/CocosAudioAdapter.ts`：基于 `cc.AudioSource`/`AudioClip` 实现播放、停止、暂停、恢复与音量，遵循引擎接缝可注入 mock 模式，音频资源经资源层 `kind: "asset"` 加载。
-- [ ] 3.2 编写适配器集成测试：真实引擎路径下分组播放、音量、切歌正确；后台暂停/前台恢复策略生效；音频资源释放闭环不报错。
-- [ ] 3.3 完成依赖边界检查与 strict 类型检查：适配器允许 `cc` 导入，内核与契约不导入 `cc`/`fgui`。
+- [x] 3.1 实现 `adapters/cocos/audio/CocosAudioAdapter.ts`：基于 `cc.AudioSource`/`AudioClip` 实现播放、停止、暂停、恢复与音量，遵循引擎接缝可注入 mock 模式，音频资源经资源层 `kind: "asset"` 加载。
+- [x] 3.2 编写适配器集成测试：真实引擎路径下分组播放、音量、切歌正确；后台暂停/前台恢复策略生效；音频资源释放闭环不报错。
+- [x] 3.3 完成依赖边界检查与 strict 类型检查：适配器允许 `cc` 导入，内核与契约不导入 `cc`/`fgui`。
 
 ## 4. 收口验证
 
