@@ -108,14 +108,21 @@ describe("VersionedStorage schema version", () => {
 
 describe("VersionedStorage consecutive migration", () => {
   test("a legacy save migrates forward through consecutive versions", async () => {
-    const storage = createVersionedStorage(
-      createOptions(3, {
+    const backend = emptyBackend();
+    const legacy = createVersionedStorage({
+      storage: backend,
+      currentVersion: 1,
+    });
+    await legacy.save("player", "save", { name: "alice", level: 1 });
+
+    const storage = createVersionedStorage({
+      storage: backend,
+      currentVersion: 3,
+      migrators: {
         1: (data) => ({ ...(data as object), migratedTo: 2 }),
         2: (data) => ({ ...(data as object), migratedTo: 3 }),
-      }),
-    );
-
-    await storage.save("player", "save", { name: "alice", level: 1 });
+      },
+    });
 
     expect(await storage.load("player", "save")).toEqual({
       version: 3,
@@ -124,9 +131,18 @@ describe("VersionedStorage consecutive migration", () => {
   });
 
   test("a migration receives the output of the previous migration step", async () => {
+    const backend = emptyBackend();
+    const legacy = createVersionedStorage({
+      storage: backend,
+      currentVersion: 1,
+    });
+    await legacy.save("player", "save", { name: "alice" });
+
     const seen: unknown[] = [];
-    const storage = createVersionedStorage(
-      createOptions(3, {
+    const storage = createVersionedStorage({
+      storage: backend,
+      currentVersion: 3,
+      migrators: {
         1: (data) => {
           seen.push(data);
           return { ...(data as object), step: "v1-to-v2" };
@@ -135,10 +151,9 @@ describe("VersionedStorage consecutive migration", () => {
           seen.push(data);
           return { ...(data as object), step: "v2-to-v3" };
         },
-      }),
-    );
+      },
+    });
 
-    await storage.save("player", "save", { name: "alice" });
     await storage.load("player", "save");
 
     expect(seen).toEqual([
@@ -148,13 +163,20 @@ describe("VersionedStorage consecutive migration", () => {
   });
 
   test("a missing migration step fails with a typed error naming the gap", async () => {
-    const storage = createVersionedStorage(
-      createOptions(3, {
-        1: (data) => data,
-      }),
-    );
+    const backend = emptyBackend();
+    const legacy = createVersionedStorage({
+      storage: backend,
+      currentVersion: 2,
+    });
+    await legacy.save("player", "save", { name: "alice", level: 1 });
 
-    await storage.save("player", "save", { name: "alice", level: 1 });
+    const storage = createVersionedStorage({
+      storage: backend,
+      currentVersion: 3,
+      migrators: {
+        1: (data) => data,
+      },
+    });
 
     expect(() => storage.load("player", "save")).toThrow(
       SaveMigrationError,
@@ -162,15 +184,22 @@ describe("VersionedStorage consecutive migration", () => {
   });
 
   test("a migration that throws fails the whole load with a typed error", async () => {
-    const storage = createVersionedStorage(
-      createOptions(3, {
+    const backend = emptyBackend();
+    const legacy = createVersionedStorage({
+      storage: backend,
+      currentVersion: 1,
+    });
+    await legacy.save("player", "save", { name: "alice" });
+
+    const storage = createVersionedStorage({
+      storage: backend,
+      currentVersion: 3,
+      migrators: {
         1: () => {
           throw new Error("corrupt legacy data");
         },
-      }),
-    );
-
-    await storage.save("player", "save", { name: "alice" });
+      },
+    });
 
     expect(() => storage.load("player", "save")).toThrow(SaveMigrationError);
   });
@@ -178,11 +207,17 @@ describe("VersionedStorage consecutive migration", () => {
 
 describe("VersionedStorage future version and serialization guards", () => {
   test("a save from a future version is rejected with a typed error", async () => {
-    const storage = createVersionedStorage(
-      createOptions(3),
-    );
+    const backend = emptyBackend();
+    const future = createVersionedStorage({
+      storage: backend,
+      currentVersion: 5,
+    });
+    await future.save("player", "future", { name: "alice" });
 
-    await storage.save("player", "future", { name: "alice" });
+    const storage = createVersionedStorage({
+      storage: backend,
+      currentVersion: 3,
+    });
 
     expect(() => storage.load("player", "future")).toThrow(
       SaveVersionError,
@@ -190,20 +225,24 @@ describe("VersionedStorage future version and serialization guards", () => {
   });
 
   test("rejecting a future save leaves the stored data untouched", async () => {
-    const storage = createVersionedStorage(
-      createOptions(3),
-    );
+    const backend = emptyBackend();
+    const future = createVersionedStorage({
+      storage: backend,
+      currentVersion: 5,
+    });
+    await future.save("player", "save", { name: "alice" });
 
-    await storage.save("player", "save", { name: "alice" });
+    const storage = createVersionedStorage({
+      storage: backend,
+      currentVersion: 3,
+    });
 
-    try {
-      await storage.load("player", "save");
-    } catch {
-      // 未来版本拒绝不得破坏原数据。
-    }
+    expect(() => storage.load("player", "save")).toThrow(SaveVersionError);
 
-    expect(await storage.load("player", "save")).toEqual({
-      version: 3,
+    // 未来版本拒绝不得破坏原数据：以写入版本重新读取仍返回原始数据。
+    const reload = await future.load("player", "save");
+    expect(reload).toEqual({
+      version: 5,
       data: { name: "alice" },
     });
   });
@@ -262,13 +301,20 @@ describe("VersionedStorage future version and serialization guards", () => {
 
 describe("VersionedStorage injected backend", () => {
   test("works over an injected memory backend", async () => {
-    const storage = createVersionedStorage(
-      createOptions(2, {
-        1: (data) => ({ ...(data as object), migrated: true }),
-      }),
-    );
+    const backend = emptyBackend();
+    const legacy = createVersionedStorage({
+      storage: backend,
+      currentVersion: 1,
+    });
+    await legacy.save("player", "save", { name: "alice", level: 1 });
 
-    await storage.save("player", "save", { name: "alice", level: 1 });
+    const storage = createVersionedStorage({
+      storage: backend,
+      currentVersion: 2,
+      migrators: {
+        1: (data) => ({ ...(data as object), migrated: true }),
+      },
+    });
 
     expect(await storage.load("player", "save")).toEqual({
       version: 2,
@@ -302,7 +348,7 @@ describe("VersionedStorage injected backend", () => {
     });
   });
 
-  test("two repositories over the same backend stay isolated by namespace", async () => {
+  test("two repositories over the same backend keep namespaces independent", async () => {
     const backend = emptyBackend();
     const first = createVersionedStorage({
       storage: backend,
@@ -316,11 +362,19 @@ describe("VersionedStorage injected backend", () => {
     await first.save("player-a", "save", { name: "alice" });
     await second.save("player-b", "save", { name: "bob" });
 
+    // 共享 backend：同一命名空间经任意仓库实例都能读到同一份数据。
     expect(await first.load("player-a", "save")).toEqual({
       version: 1,
       data: { name: "alice" },
     });
-    expect(await first.load("player-b", "save")).toBeNull();
+    expect(await second.load("player-a", "save")).toEqual({
+      version: 1,
+      data: { name: "alice" },
+    });
+    expect(await first.load("player-b", "save")).toEqual({
+      version: 1,
+      data: { name: "bob" },
+    });
     expect(await second.load("player-b", "save")).toEqual({
       version: 1,
       data: { name: "bob" },
