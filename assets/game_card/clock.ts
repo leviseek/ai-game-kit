@@ -16,6 +16,11 @@ export function createCardSimClock(initialTime = 0): CardSimClock {
   return {
     now: () => current,
     advance: (milliseconds: number) => {
+      // 与框架 SimulationClock 先例一致：拒绝负值推进，保证时间单调，
+      // 避免倒退破坏 enemy 阶段超时判定与回合确定性
+      if (milliseconds < 0) {
+        throw new Error("CardSimClock advance must not be negative");
+      }
       current += milliseconds;
     },
   };

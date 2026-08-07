@@ -354,6 +354,120 @@ describe.skipIf(!assemblyExists)(
 
       await fixture.dispose();
     });
+
+    test("playCard rejects when mana is insufficient and battle state is unchanged", async () => {
+      const createCardFixture = await loadCreateCardFixture();
+      const fixture = createCardFixture();
+      await fixture.start();
+
+      // 默认配置 startMana 3：card-0 cost 1 / card-1 cost 2
+      expect(fixture.battle.playCard(0)).toBe(true); // mana 3 -> 2
+      expect(fixture.battle.playCard(1)).toBe(true); // mana 2 -> 0
+
+      const before = fixture.battle.state;
+      // mana 已耗尽：出牌被拒绝且状态不变
+      expect(fixture.battle.playCard(1)).toBe(false);
+      expect(fixture.battle.state.mana).toBe(before.mana);
+      expect(fixture.battle.state.enemyHp).toBe(before.enemyHp);
+
+      await fixture.dispose();
+    });
+
+    test("a finishing blow ends the battle in the over phase and blocks further actions", async () => {
+      const createCardFixture = await loadCreateCardFixture();
+      // 敌方 hp 4，两卡各 cost 1 / damage 3：两击后敌 hp 归零进入终局
+      const fixture = createCardFixture({
+        configContent: {
+          cards: [
+            { id: "strike", name: "Strike", cost: 1, damage: 3 },
+            { id: "swipe", name: "Swipe", cost: 1, damage: 3 },
+          ],
+          turnDurationMs: 1000,
+          playerHp: 10,
+          enemyHp: 4,
+          startMana: 2,
+        },
+      });
+      await fixture.start();
+
+      expect(fixture.battle.playCard(0)).toBe(true); // enemyHp 4 -> 1
+      expect(fixture.battle.playCard(1)).toBe(true); // enemyHp 1 -> 0, finish
+      expect(fixture.battle.state.phase).toBe("over");
+      expect(fixture.battle.state.enemyHp).toBe(0);
+
+      // 终局后出牌与结束回合均被拒绝
+      expect(fixture.battle.playCard(0)).toBe(false);
+      expect(fixture.battle.endTurn()).toBe(false);
+
+      await fixture.dispose();
+    });
+
+    test("mana resets to the configured start mana when a new turn begins", async () => {
+      const createCardFixture = await loadCreateCardFixture();
+      const fixture = createCardFixture();
+      await fixture.start();
+
+      expect(fixture.battle.playCard(0)).toBe(true); // mana 3 -> 2
+      fixture.battle.endTurn(); // -> enemy
+      fixture.clock.advance(1500); // 超时回 player，turn 2
+
+      expect(fixture.battle.state.turn).toBe(2);
+      expect(fixture.battle.state.mana).toBe(3); // 重置为 startMana
+
+      await fixture.dispose();
+    });
+
+    test("clock advance rejects negative values", async () => {
+      const createCardFixture = await loadCreateCardFixture();
+      const fixture = createCardFixture();
+      await fixture.start();
+
+      // 时钟只应正向推进：负值推进会破坏超时判定与回合确定性
+      expect(() => fixture.clock.advance(-1)).toThrow();
+
+      await fixture.dispose();
+    });
+
+    test("config rejects malformed card numbers at construction time", async () => {
+      const createCardFixture = await loadCreateCardFixture();
+
+      const malformed = [
+        { id: "a", name: "A", cost: Number.NaN, damage: 1 },
+        { id: "a", name: "A", cost: 1, damage: Number.POSITIVE_INFINITY },
+        { id: "a", name: "A", cost: -1, damage: 1 },
+        { id: "a", name: "A", cost: 1, damage: -1 },
+      ];
+
+      for (const cards of malformed) {
+        expect(
+          () =>
+            createCardFixture({
+              configContent: {
+                cards: [cards],
+                turnDurationMs: 1000,
+                playerHp: 10,
+                enemyHp: 8,
+                startMana: 3,
+              },
+            }),
+        ).toThrow();
+      }
+    });
+
+    test("enemy phase times out exactly at the configured turn duration", async () => {
+      const createCardFixture = await loadCreateCardFixture();
+      const fixture = createCardFixture();
+      await fixture.start();
+
+      fixture.battle.endTurn(); // -> enemy，phaseEnteredAt = 0
+      fixture.clock.advance(1000); // 恰等于 turnDurationMs
+
+      // 边界语义：达到时长即超时（>=），返回 player 且回合数 +1
+      expect(fixture.battle.state.phase).toBe("player");
+      expect(fixture.battle.state.turn).toBe(2);
+
+      await fixture.dispose();
+    });
   },
 );
 

@@ -27,8 +27,13 @@ function isCardConfig(value: unknown): value is CardConfig {
   return (
     typeof record.id === "string" &&
     typeof record.name === "string" &&
+    // 与框架 configNumber 语义一致：只接受有限数值；卡牌成本与伤害为非负
     typeof record.cost === "number" &&
-    typeof record.damage === "number"
+    Number.isFinite(record.cost) &&
+    record.cost >= 0 &&
+    typeof record.damage === "number" &&
+    Number.isFinite(record.damage) &&
+    record.damage >= 0
   );
 }
 

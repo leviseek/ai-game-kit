@@ -9,9 +9,9 @@ type CardTurnEvent = "end-turn" | "turn-elapsed" | "finish";
 
 /**
  * 回合流控制器：以状态机表达回合阶段转移，出牌结算由可控时钟驱动的
- * 阶段超时衔接。enemy 阶段持续超过配置回合时长后自动回到 player 阶段，
- * 回合数 +1；mana 在回合开始重置。业务规则（卡牌数值/回合时长）只来自
- * 注入的配置句柄，框架层不出现卡组/回合模型（3.1 负向断言锁定）。
+ * 阶段超时衔接。enemy 阶段持续达到配置回合时长（>=）后自动回到 player
+ * 阶段，回合数 +1；mana 在回合开始重置。业务规则（卡牌数值/回合时长）
+ * 只来自注入的配置句柄，框架层不出现卡组/回合模型（3.1 负向断言锁定）。
  */
 export interface CardBattleHandle {
   readonly state: CardBattleState;
