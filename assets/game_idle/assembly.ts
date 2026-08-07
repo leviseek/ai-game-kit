@@ -115,7 +115,12 @@ export function createIdleFixture(
 
   let disposed = false;
 
-  /** 离线收益结算与持久化：暂停→恢复衔接时写入版本化存档。 */
+  /**
+   * 离线收益结算与持久化：暂停→恢复衔接时写入版本化存档。
+   * 先内存结算（金币入账、离线起点消费），再写存档。若存档写入失败，
+   * resume reject 但金币已在内存结算；后续成功 resume 会按新结算重写补齐，
+   * 不产生重复累计（离线起点已消费，重复 resume 只结算 0 时长）。
+   */
   const settleOfflineAndSave = async (): Promise<IdleOfflineSettlement> => {
     const settlement = progress.onResume();
     await save.save("idle", "progress", {
@@ -152,9 +157,10 @@ export function createIdleFixture(
       load: (namespace: string, key: string) => save.load(namespace, key),
     },
     pause: async () => {
-      // 暂停衔接：先记录离线起点，再推进应用状态
-      progress.onPause();
+      // 暂停衔接：先推进应用状态，成功后再记录离线起点。若 base.pause() 因
+      // 状态错误 reject，不留下"从未真正暂停"的幽灵离线窗口
       await base.pause();
+      progress.onPause();
     },
     resume: async () => {
       // 恢复衔接：先恢复应用状态，再按墙钟累计离线时长结算并持久化

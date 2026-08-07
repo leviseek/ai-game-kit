@@ -316,6 +316,114 @@ describe.skipIf(!assemblyExists)(
 
       await fixture.dispose();
     });
+
+    test("online earnings survive small clock jitter beyond one tick interval", async () => {
+      // 回归防护（ai-sensei 审查 S1）：调度时机与 tick 间隔不严格对齐时
+      // 在线收益不应被误杀。推进 1.5 倍间隔后 tick 应照常结算在线收益。
+      const createIdleFixture = await loadCreateIdleFixture();
+      const fixture = createIdleFixture();
+      await fixture.start();
+
+      const before = fixture.progress.gold;
+      fixture.clock.advance(1500);
+      fixture.scheduler.tick();
+
+      expect(fixture.progress.gold).toBeGreaterThan(before);
+
+      await fixture.dispose();
+    });
+
+    test("a large wall-clock jump (offline-style) still skips online earnings", async () => {
+      // 与上一条对照：超过跳变阈值（如暂停恢复后的第一拍、异常长推进）才跳过
+      // 在线收益；正常抖动与离线级跳变由不同阈值区分。
+      const createIdleFixture = await loadCreateIdleFixture();
+      const fixture = createIdleFixture();
+      await fixture.start();
+
+      const before = fixture.progress.gold;
+      fixture.clock.advance(60_000);
+      fixture.scheduler.tick();
+
+      expect(fixture.progress.gold).toBe(before);
+
+      await fixture.dispose();
+    });
+
+    test("repeated pause does not lose accumulated offline time", async () => {
+      // 回归防护（ai-sensei 审查 S2）：Application.pause 对已暂停状态幂等 resolve，
+      // 暂停中再次 pause 是合法输入；第二次 pause 不得重置离线起点。
+      const createIdleFixture = await loadCreateIdleFixture();
+      const fixture = createIdleFixture();
+      await fixture.start();
+
+      await fixture.pause();
+      fixture.clock.advance(60_000); // 离线 1 分钟
+      await fixture.pause(); // 重复暂停：不得重置起点
+      fixture.clock.advance(60_000); // 再离线 1 分钟
+      const before = fixture.progress.gold;
+      await fixture.resume();
+
+      // 累计离线 2 分钟应结算 2 分钟收益（等级 1 → 2 金币）
+      expect(fixture.progress.gold - before).toBe(2);
+
+      await fixture.dispose();
+    });
+
+    test("repeated resume settles offline earnings only once", async () => {
+      // 回归防护（ai-sensei 审查 M4）：离线起点在首次结算时消费，
+      // 后续 resume 只结算 0 时长，不重复累计。
+      const createIdleFixture = await loadCreateIdleFixture();
+      const fixture = createIdleFixture();
+      await fixture.start();
+
+      await fixture.pause();
+      fixture.clock.advance(60_000);
+      await fixture.resume();
+
+      const afterFirst = fixture.progress.gold;
+
+      // 未暂停直接 resume：base.resume 幂等，settleOfflineAndSave 只结算 0 时长
+      await fixture.resume();
+      expect(fixture.progress.gold).toBe(afterFirst);
+
+      await fixture.dispose();
+    });
+
+    test("a failing save does not corrupt in-memory gold and a later resume rewrites the save", async () => {
+      // 回归防护（ai-sensei 审查 M2/M4）：存档写入失败时 resume reject，
+      // 但金币已在内存结算、离线起点已消费；后续成功 resume 重写存档补齐，
+      // 不产生重复累计。
+      let failWrites = true;
+      const failingStorage: PlatformStorage = {
+        async get(key: string): Promise<string | null> {
+          return null;
+        },
+        async set(): Promise<void> {
+          if (failWrites) {
+            throw new Error("storage write failed");
+          }
+        },
+        async delete(): Promise<void> {},
+      };
+
+      const createIdleFixture = await loadCreateIdleFixture();
+      const fixture = createIdleFixture({ storage: failingStorage });
+      await fixture.start();
+
+      await fixture.pause();
+      fixture.clock.advance(60_000);
+
+      // 首次 resume：存档写失败 → reject，但内存金币已结算
+      await expect(fixture.resume()).rejects.toThrow();
+      expect(fixture.progress.gold).toBeGreaterThan(0);
+
+      // 恢复写入后再次 resume：重写存档补齐，金币不重复累计
+      failWrites = false;
+      await fixture.resume();
+      expect(fixture.progress.gold).toBeGreaterThan(0);
+
+      await fixture.dispose();
+    });
   },
 );
 

@@ -21,7 +21,8 @@ interface ScheduledTask {
 /**
  * 被动任务调度器：没有内部定时器，必须由调用方外部驱动 tick()（墙钟注入）。
  * 在线收益任务经 schedule 注册，tick 结算到期任务；任务取消置 cancelled 标记
- * 并延迟到下次 tick 移除（与框架 PassiveScheduler 同一模式）。
+ * 并延迟到下次 tick 移除。单个任务回调异常隔离到 console.error，不中断
+ * 同一批其他到期任务（对齐框架 PassiveScheduler 的 onTaskError 语义）。
  * 框架根入口不导出 PassiveScheduler（public-boundary 白名单），
  * 故夹具层自实现最小调度器，驱动在线收益的确定性推进。
  */
@@ -106,7 +107,12 @@ export function createIdleScheduler(clock: IdleClock): IdleScheduler {
           continue;
         }
 
-        task.callback();
+        // 单任务异常隔离：回调抛错不中断同批其他到期任务
+        try {
+          task.callback();
+        } catch (error) {
+          console.error(error);
+        }
 
         if (task.repeat) {
           // 用当前 now 重排，避免长任务造成的到期时间漂移累积
