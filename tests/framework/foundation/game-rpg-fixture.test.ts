@@ -149,17 +149,16 @@ describe.skipIf(!assemblyExists)(
       const createRpgFixture = await loadCreateRpgFixture();
       const fixture = createRpgFixture();
 
-      expect(fixture.modules.length).toBeGreaterThan(0);
-
-      const ids = fixture.modules.map((m) => m.id).join(",");
-      // 跨场景状态、资源作用域、UI、输入与存档均作为显式模块参与装配
-      expect(ids).toMatch(/state|scene/);
-      expect(ids).toMatch(/resource|scope/);
-      expect(ids).toMatch(/ui|view/);
-      expect(ids).toMatch(/input/);
-      expect(ids).toMatch(/save|storage/);
-      // 未声明能力不参与装配：音频不在 RPG 组合清单内
-      expect(ids).not.toMatch(/audio/);
+      // 精确断言装配清单：跨场景状态、场景流转、资源作用域、UI、输入、存档
+      // 六类能力模块；未声明能力（音频）不参与装配
+      expect(fixture.modules.map((m) => m.id)).toEqual([
+        "rpg.state",
+        "rpg.scene",
+        "rpg.resource",
+        "rpg.ui",
+        "rpg.input",
+        "rpg.save",
+      ]);
     });
 
     test("cross-scene player state survives a scene switch and scene A resources are released", async () => {
@@ -270,14 +269,93 @@ describe.skipIf(!assemblyExists)(
 
       await fixture.dispose();
     });
+
+    test("failRollback does not disturb the fixture's own capabilities", async () => {
+      const createRpgFixture = await loadCreateRpgFixture();
+      const fixture = createRpgFixture();
+      await fixture.start();
+
+      // 契约保证：探针驱动注定失败的启动并回滚，不改动夹具自身 app 状态
+      await fixture.failRollback();
+
+      // 探针后夹具自身能力保持可用（模块 dispose 无副作用，释放归组合根）
+      const opened = fixture.navigator.open("rpg/status");
+      expect(opened.ok).toBe(true);
+
+      const switching = await fixture.sceneFlow.switchTo("scene-b", {
+        bundle: "rpg_b",
+        paths: ["b.png"],
+      });
+      expect(switching.ok).toBe(true);
+
+      const before = fixture.input.samples.length;
+      fixture.input.push("keyboard.space", true);
+      expect(fixture.input.samples.length).toBe(before + 1);
+
+      await fixture.dispose();
+    });
+
+    test("dispose stops input sampling and releases shared capabilities", async () => {
+      const createRpgFixture = await loadCreateRpgFixture();
+      const fixture = createRpgFixture();
+      await fixture.start();
+
+      const before = fixture.input.samples.length;
+      fixture.input.push("keyboard.space", true);
+      expect(fixture.input.samples.length).toBe(before + 1);
+
+      await fixture.dispose();
+
+      // 释放后：输入不再路由采样、导航/场景拒绝新请求，重复释放幂等
+      fixture.input.push("keyboard.space", true);
+      expect(fixture.input.samples.length).toBe(before + 1);
+
+      expect(fixture.navigator.open("rpg/status").ok).toBe(false);
+      const switching = await fixture.sceneFlow.switchTo("scene-b", {
+        bundle: "rpg_b",
+        paths: ["b.png"],
+      });
+      expect(switching.ok).toBe(false);
+
+      await fixture.dispose();
+    });
+
+    test("versioned save rejects corrupt or version-mismatched records", async () => {
+      const createRpgFixture = await loadCreateRpgFixture();
+      const storage = new MemoryPlatform();
+      const fixture = createRpgFixture({ storage });
+      await fixture.start();
+
+      // 损坏 JSON 视为无效记录
+      await storage.set("rpg:ns:corrupt", "{not json");
+      expect(await fixture.storage.load("ns", "corrupt")).toBeNull();
+
+      // 旧版本（低于当前版本）无迁移接缝，视为无效
+      await storage.set("rpg:ns:old", JSON.stringify({ version: 0, data: { x: 1 } }));
+      expect(await fixture.storage.load("ns", "old")).toBeNull();
+
+      // 缺版本字段视为无效
+      await storage.set("rpg:ns:noversion", JSON.stringify({ data: { x: 1 } }));
+      expect(await fixture.storage.load("ns", "noversion")).toBeNull();
+
+      // 合法记录仍可往返
+      await fixture.storage.save("ns", "good", { x: 2 });
+      expect(await fixture.storage.load("ns", "good")).toEqual({
+        version: fixture.storage.currentVersion,
+        data: { x: 2 },
+      });
+
+      await fixture.dispose();
+    });
   },
 );
 
 describe("RPG fixture framework boundary", () => {
   test("the framework layer declares no character/skill/quest models", () => {
-    // 负向断言：角色/技能/任务等业务模型只允许存在于游戏层，框架层不出现对应类型声明
+    // 负向断言：角色/技能/任务等业务模型只允许存在于游戏层，框架层不出现对应
+    // 类型声明（含裸名与 `Rpg` 前缀名，防止业务模型以品类前缀命名侵入框架）
     const modelPattern =
-      /\b(?:interface|class|type|enum)\s+(?:Character|Skill|Quest|Role|Job|Battle|Deck|Round|Economy|Production|Combo|Hitbox|FrameData|Player)\b/;
+      /\b(?:interface|class|type|enum)\s+(?:(?:Rpg|Character|Skill|Quest|Role|Job|Battle|Deck|Round|Economy|Production|Combo|Hitbox|FrameData|Player)\w*)\b/;
 
     const offenders: string[] = [];
     const collect = (directory: string): void => {

@@ -46,9 +46,5 @@ export function createRpgInputModule(handle: RpgInputSource): Module {
       // 输入源已就绪；mapper 在组合根创建并订阅该源
       void handle.source.id;
     },
-    dispose: () => {
-      // 订阅解除由 mapper.dispose 完成；此处无额外释放
-      void handle.source.id;
-    },
   };
 }

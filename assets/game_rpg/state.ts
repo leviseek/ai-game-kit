@@ -17,7 +17,8 @@ export function createRpgStateStore(): RpgStateStore {
   return {
     get: () => current,
     set: (state: RpgPlayerState) => {
-      current = state;
+      // 拷贝后持有，避免调用方随后修改同一对象影响已存状态
+      current = { ...state };
     },
   };
 }

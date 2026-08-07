@@ -14,9 +14,10 @@ export interface RpgSave {
 }
 
 /**
- * 版本化存档：把 (namespace, key) 编码为平台存储键，记录 `{ version, data }`
- * 记录。夹具层实现"版本化"语义（存版本号、读取时校验），不依赖框架根入口
- * 白名单外的内部实现（design decision 4 边界）。
+ * 版本化存档：把 (namespace, key) 编码为平台存储键，写入 `{ version, data }`
+ * 记录。读取时校验版本与数据完整性：损坏 JSON 或版本与当前版本不符的记录
+ * 视为无效并返回 null（夹具层无迁移接缝，旧版本直接拒绝）。夹具层实现
+ * "版本化"语义，不依赖框架根入口白名单外的内部实现（design decision 4 边界）。
  */
 export function createRpgSave(storage: PlatformStorage): RpgSave {
   const keyFor = (namespace: string, key: string): string =>
@@ -39,7 +40,23 @@ export function createRpgSave(storage: PlatformStorage): RpgSave {
       if (raw === null) {
         return null;
       }
-      const record = JSON.parse(raw) as { version: number; data: unknown };
+
+      let record: { version?: unknown; data?: unknown };
+      try {
+        record = JSON.parse(raw) as { version?: unknown; data?: unknown };
+      } catch {
+        // 损坏 JSON 视为无效记录，返回 null（对齐 PlatformStorage 缺档语义）
+        return null;
+      }
+
+      // 版本缺失或与当前版本不符的记录视为无效：夹具层不承载迁移
+      if (
+        typeof record.version !== "number" ||
+        record.version !== RPG_SAVE_VERSION
+      ) {
+        return null;
+      }
+
       return { version: record.version, data: record.data };
     },
   };

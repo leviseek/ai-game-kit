@@ -162,6 +162,8 @@ export function createRpgFixture(
     scope,
   });
 
+  let disposed = false;
+
   return {
     ...base,
     playerState: {
@@ -181,7 +183,8 @@ export function createRpgFixture(
         inputHandle.push(sourceId, pressed, value);
       },
       get samples() {
-        return samples;
+        // 返回快照，避免调用方持有内部数组引用绕过 readonly 约束
+        return [...samples];
       },
     },
     storage: {
@@ -191,6 +194,19 @@ export function createRpgFixture(
       save: (namespace: string, key: string, data: unknown) =>
         save.save(namespace, key, data),
       load: (namespace: string, key: string) => save.load(namespace, key),
+    },
+    dispose: async () => {
+      if (disposed) {
+        return;
+      }
+      disposed = true;
+      // 统一释放组合根持有的共享能力：模块 dispose 保持无副作用，
+      // 避免 failRollback 探针复用模块实例时提前销毁夹具自身能力
+      inputMapper.dispose();
+      navigator.dispose();
+      sceneFlow.dispose();
+      scope.release();
+      await base.dispose();
     },
   };
 }
