@@ -80,6 +80,21 @@ describe("game fixture smoke runner", () => {
 
     expect(markers.some((line) => line.includes("start: FAIL"))).toBe(true);
   });
+
+  test("reports a factory construction failure without throwing", async () => {
+    const registry: GameFixtureRegistry = {
+      boom: () => {
+        throw new Error("factory boom");
+      },
+    };
+
+    const markers = await captureFixtureSmoke("boom", registry);
+
+    expect(markers.some((line) => line.includes("fixture-create: FAIL"))).toBe(
+      true,
+    );
+    expect(markers.some((line) => line.includes("factory boom"))).toBe(true);
+  });
 });
 
 describe("AppRoot fixture smoke forwarding", () => {

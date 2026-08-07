@@ -200,6 +200,8 @@ export class AppRoot extends Component {
     // 冒烟驱动：URL 带 smoke=fairygui-ui 时延迟到引擎 ready 后执行完整序列。
     // 延迟用 setTimeout 让 GRoot 在首帧后可用（spike 已验证此窗口），
     // 仅在浏览器环境生效；纯 TS 测试不触发。
+    // 优先级：smoke=fairygui-ui > smoke=modal-click > fixture=<品类>，
+    // else-if 互斥保证一次请求只跑一种冒烟序列，不会叠加执行。
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       if (params.get("smoke") === "fairygui-ui") {

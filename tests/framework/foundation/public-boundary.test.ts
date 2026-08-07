@@ -55,6 +55,10 @@ function isWithin(path: string, directory: string): boolean {
 /**
  * 判断文件是否属于游戏层：`assets/game` 及其子目录，或顶层品类目录
  * `assets/game_*`。游戏层作为外部消费者，只能经框架根入口导入框架。
+ *
+ * 命名约定：游戏层品类目录 MUST 使用 `game_` 前缀（如 game_rpg/game_card），
+ * 该前缀是边界检查识别游戏层的依据；`assets/game-content` 等非品类目录
+ * 不属于游戏层，不受本判定约束。
  */
 function isGameLayerFile(path: string): boolean {
   if (isWithin(path, gameRoot)) {
@@ -298,7 +302,7 @@ function validateFrameworkImport(
     return createViolation(file, specifier, `${sourceLayer} cannot depend on Cocos`);
   }
 
-  if (target !== undefined && isWithin(target, gameRoot)) {
+  if (target !== undefined && isGameLayerFile(target)) {
     return createViolation(file, specifier, "Framework cannot depend on Game");
   }
 
@@ -796,6 +800,26 @@ describe("framework public boundary", () => {
       "diagnostics cannot depend on application",
       "Framework cannot depend on boot",
       "Framework internals cannot import the root barrel",
+    ]);
+  });
+
+  test("rejects framework deep imports into game category directories", () => {
+    // 框架内核不得反向依赖任何游戏层目录：既包括 assets/game，也包括顶层
+    // game_* 品类目录（2.x 起各品类在此建业务模型，漏检会让负向断言失真）
+    const fixtures = [
+      analyzeFixture(
+        "assets/framework/application/Application.ts",
+        'import type { Battle } from "../../game_rpg/Battle";',
+      ),
+      analyzeFixture(
+        "assets/framework/contracts/module/Module.ts",
+        'import { CardDeck } from "../../../game_card/CardDeck";',
+      ),
+    ];
+
+    expect(fixtures.map((violations) => violations[0]?.reason)).toEqual([
+      "Framework cannot depend on Game",
+      "Framework cannot depend on Game",
     ]);
   });
 

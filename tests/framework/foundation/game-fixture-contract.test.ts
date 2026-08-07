@@ -78,7 +78,7 @@ describe("GameFixture public contract", () => {
 
     const source = readFileSync(contractFile, "utf8");
 
-    expect(source).toMatch(/\bexport\s+interface\s+GameFixture\b/);
+    expect(source).toMatch(/\bexport\s+(?:interface|type|class)\s+GameFixture\b/);
     expect(source).toMatch(/readonly\s+modules\s*:/);
 
     for (const seam of lifecycleSeams) {
@@ -157,6 +157,27 @@ describe("uniform lifecycle driving", () => {
 
     // 失败回滚后不残留半启动状态：再次释放仍是安全的（幂等）
     await expect(fixture.dispose()).resolves.toBeUndefined();
+  });
+
+  test("failRollback probe does not disturb the fixture's own running app", async () => {
+    const log: string[] = [];
+    const fixture = createGameFixture({
+      id: "isolated",
+      modules: [createRecordingModule("core", log)],
+    });
+
+    await fixture.start();
+
+    // 探针驱动一次注定失败的启动并回滚（复用同一批模块实例，钩子会再次执行）
+    await fixture.failRollback();
+
+    // 夹具自身 app 保持 running，pause/resume 接缝不受探针状态机影响
+    await fixture.pause();
+    await fixture.resume();
+    await fixture.dispose();
+
+    expect(log).toContain("core:start");
+    expect(log).toContain("core:dispose");
   });
 });
 

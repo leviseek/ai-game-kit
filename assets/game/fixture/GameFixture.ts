@@ -10,6 +10,16 @@ import {
  * 品类组合夹具公共契约：声明该品类需要的模块装配清单（modules）与资源作用域
  * （scope），并提供统一生命周期接缝。五类夹具与 8.6 统一测试共用此接口，
  * 组合清单保持显式、不引入框架之外的自动扫描机制（对齐 design decision 2）。
+ *
+ * 幂等约束：夹具模块的生命周期钩子（initialize/start/pause/resume/stop/dispose）
+ * MUST 可重复执行——`failRollback` 的探针会复用同一批模块实例再次驱动一次
+ * 注定失败的启动并回滚，钩子不得依赖"单次执行"假设（如创建后必须成对释放的
+ * 资源、全局注册等）。轻量、无状态模块天然满足该约束。
+ *
+ * 装配约定：模块如何获得 scope / 服务等依赖，由品类 assembly 经构造闭包注入
+ * 到模块内部，契约不规定注入方式（ApplicationContext 只暴露 logger 与只读
+ * 生命周期状态）。各品类夹具在 assembly 中自行组织"哪些模块拿到哪个 scope"，
+ * 避免发明共享的全局注入机制。
  */
 export interface GameFixture {
   /** 品类标识（如 "rpg"、"card"）。 */
@@ -67,8 +77,9 @@ function createFixtureContext(logger: Logger): ApplicationContext {
 /**
  * 失败回滚接缝：用一个一次性探针 Application（本夹具模块 + 哨兵失败模块）
  * 驱动一次注定失败的启动，验证已启动模块按逆序回滚、应用进入 disposed 终态。
- * 探针复用同一批模块实例（启动/回滚钩子会再次执行），对轻量夹具可接受；
- * 本接缝只证明组合可回滚，不改变夹具自身 app 的当前状态。
+ * 探针复用同一批模块实例（钩子会再次执行，故契约要求幂等），且使用独立的
+ * Application 实例与独立探针状态机——不改变夹具自身 app 的当前状态。
+ * 本接缝只证明组合可回滚；真实品类模块的失败注入由各品类自身测试承担。
  */
 async function runFailRollbackProbe(
   modules: readonly Module[],
