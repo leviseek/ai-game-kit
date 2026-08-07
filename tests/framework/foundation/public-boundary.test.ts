@@ -52,6 +52,20 @@ function isWithin(path: string, directory: string): boolean {
   );
 }
 
+/**
+ * 判断文件是否属于游戏层：`assets/game` 及其子目录，或顶层品类目录
+ * `assets/game_*`。游戏层作为外部消费者，只能经框架根入口导入框架。
+ */
+function isGameLayerFile(path: string): boolean {
+  if (isWithin(path, gameRoot)) {
+    return true;
+  }
+
+  const pathFromAssets = normalizePath(relative(assetsRoot, path));
+  const topLevelDirectory = pathFromAssets.split("/")[0] ?? "";
+  return topLevelDirectory.startsWith("game_");
+}
+
 function collectTypeScriptFiles(directory: string): readonly string[] {
   if (!existsSync(directory)) {
     return [];
@@ -364,6 +378,13 @@ function findImportViolations(file: string, source: string): readonly ImportViol
         // 组合根（boot）是唯一允许"知道所有具体实现"的装配层：可依赖框架内部
         // 与游戏层夹具（design decision 3/4），AppRoot 只做薄转发不承载业务规则。
         return [];
+      }
+
+      if (isGameLayerFile(file) && target !== undefined && isWithin(target, bootRoot)) {
+        // 依赖方向单向：boot 可依赖 game，game 不得反向依赖 boot
+        return [
+          createViolation(file, specifier, "Game cannot depend on boot"),
+        ];
       }
 
       if (
@@ -791,7 +812,7 @@ describe("framework public boundary", () => {
 
   test("keeps Game as an external consumer of the framework root entry", () => {
     // 游戏层夹具只能经框架根入口导入框架，不得深层导入框架内部；
-    // 但游戏层夹具不得反向依赖 boot（组合根依赖方向单向）。
+    // 也不得反向依赖 boot（组合根依赖方向单向：boot → game）
     const source = `
       import type { GameFixture } from "./fixture/GameFixture";
       import type { Application } from "../../framework";
@@ -802,13 +823,80 @@ describe("framework public boundary", () => {
     const violations = analyzeFixture("assets/game/fixture/GameFixture.ts", source);
 
     expect(
-      violations.map(({ specifier, reason }) => ({ specifier, reason })),
-    ).toEqual([
-      {
-        specifier: "../../framework/application/Application",
-        reason: "External consumers must import the Framework root entry",
-      },
-    ]);
+      violations
+        .map(({ specifier, reason }) => ({ specifier, reason }))
+        .sort((left, right) => left.specifier.localeCompare(right.specifier)),
+    ).toEqual(
+      [
+        {
+          specifier: "../../framework/application/Application",
+          reason: "External consumers must import the Framework root entry",
+        },
+        {
+          specifier: "../../boot/AppRoot",
+          reason: "Game cannot depend on boot",
+        },
+      ].sort((left, right) => left.specifier.localeCompare(right.specifier)),
+    );
+  });
+
+  test("treats game category directories as external consumers of the framework root entry", () => {
+    // 品类目录（assets/game_*）与 assets/game 同属游戏层外部消费者：
+    // 允许经框架根入口导入框架与游戏层公共装配入口，禁止深层导入与反向依赖 boot
+    const allowed = [
+      analyzeFixture(
+        "assets/game_rpg/assembly.ts",
+        `
+          import type { GameFixture } from "../game/fixture/GameFixture";
+          import { createGameFixture } from "../game/fixture/GameFixture";
+          import type { Application } from "../framework";
+        `,
+      ),
+      analyzeFixture(
+        "assets/game_card/assembly.ts",
+        `
+          import { runFixtureSmoke } from "../game/fixture/smoke";
+          import type { Module } from "../framework";
+        `,
+      ),
+    ];
+
+    expect(allowed).toEqual([[], []]);
+
+    const violations = analyzeFixture(
+      "assets/game_rpg/assembly.ts",
+      `
+        import type { Module } from "../framework/application/ModuleRunner";
+        import type { StateMachine } from "@framework/core/fsm/StateMachine";
+        import { AppRoot } from "../boot/AppRoot";
+        import { createFairyGuiView } from "../framework/adapters/cocos/ui/FairyGuiPageAdapter";
+      `,
+    );
+
+    expect(
+      violations
+        .map(({ specifier, reason }) => ({ specifier, reason }))
+        .sort((left, right) => left.specifier.localeCompare(right.specifier)),
+    ).toEqual(
+      [
+        {
+          specifier: "../framework/application/ModuleRunner",
+          reason: "External consumers must import the Framework root entry",
+        },
+        {
+          specifier: "@framework/core/fsm/StateMachine",
+          reason: "External consumers must import the Framework root entry",
+        },
+        {
+          specifier: "../boot/AppRoot",
+          reason: "Game cannot depend on boot",
+        },
+        {
+          specifier: "../framework/adapters/cocos/ui/FairyGuiPageAdapter",
+          reason: "External consumers must import the Framework root entry",
+        },
+      ].sort((left, right) => left.specifier.localeCompare(right.specifier)),
+    );
   });
 
   test("ignores import-like text in comments", () => {
@@ -947,6 +1035,42 @@ describe("framework public boundary", () => {
       });
 
       return importsFairyGui;
+    });
+
+    expect(offenders).toEqual([]);
+  });
+
+  test("keeps the game layer free of fgui imports", () => {
+    // 游戏层（assets/game 与 assets/game_*）作为外部消费者，不得导入 fgui：
+    // 组合根经 adapter 边界接入 FairyGUI，游戏层只消费框架根入口的 UI 契约。
+    const thirdPartyFairyGuiRoot = resolve(
+      assetsRoot,
+      "third-party/fairygui",
+    );
+
+    const offenders = collectTypeScriptFiles(assetsRoot).filter((file) => {
+      if (!isGameLayerFile(file)) {
+        return false;
+      }
+
+      const specifiers = extractModuleSpecifiers(readFileSync(file, "utf8"));
+      return specifiers.some((specifier) => {
+        if (
+          specifier === "fairygui-cc" ||
+          specifier.startsWith("fairygui-cc/") ||
+          specifier === "fairygui" ||
+          specifier.startsWith("fairygui/")
+        ) {
+          return true;
+        }
+
+        // 相对/别名路径直指 vendor 目录同样绕过白名单，一并锁定
+        const target = resolveImportTarget(file, specifier);
+        return (
+          target !== undefined &&
+          isWithin(target, thirdPartyFairyGuiRoot)
+        );
+      });
     });
 
     expect(offenders).toEqual([]);
