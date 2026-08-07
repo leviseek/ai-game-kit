@@ -29,6 +29,11 @@ mock.module("cc", () => ({
     },
   },
   Component: class {},
+  Node: class {
+    static EventType: Record<string, string> = {};
+  },
+  EventTouch: class {},
+  Touch: class {},
 }));
 
 // AppRoot 经 createCocosUiRoot 工厂间接依赖 fairygui-cc；测试不加载真实运行时，

@@ -5,6 +5,7 @@ import { run as runTypecheck } from "./commands/typecheck";
 import { run as runCheckImportMap } from "./commands/check-import-map";
 import { run as runSmoke } from "./commands/smoke";
 import { run as runUiSmoke } from "./commands/ui-smoke";
+import { run as runUiModalClick } from "./commands/ui-modal-click";
 
 interface Command {
   readonly run: (argv: readonly string[]) => Promise<number>;
@@ -30,6 +31,10 @@ const COMMANDS: Record<string, Command> = {
   "ui-smoke": {
     run: runUiSmoke,
     usage: "ui-smoke [--debug true] FairyGUI UI 冒烟：构建 → headless Chrome 加载 ?smoke=fairygui-ui 验证 UI 根/页面/遮罩/资源释放",
+  },
+  "ui-modal-click": {
+    run: runUiModalClick,
+    usage: "ui-modal-click [--debug true] 模态遮罩真实点击验证：构建 → headless Chrome 注入真实点击断言模态拦截/解除恢复",
   },
 };
 

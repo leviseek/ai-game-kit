@@ -28,6 +28,11 @@ mock.module("cc", () => ({
     },
   },
   Component: class {},
+  Node: class {
+    static EventType: Record<string, string> = {};
+  },
+  EventTouch: class {},
+  Touch: class {},
 }));
 
 interface GRootLike {

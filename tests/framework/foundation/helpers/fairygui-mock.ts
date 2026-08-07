@@ -28,6 +28,11 @@ export function createFairyGuiMock(): {
   UIConfig: {
     modalLayerColor: FairyGuiColorMock;
   };
+  Event: {
+    CLICK: string;
+    TOUCH_BEGIN: string;
+    TOUCH_END: string;
+  };
 } {
   return {
     GRoot: {
@@ -139,6 +144,11 @@ export function createFairyGuiMock(): {
     },
     UIConfig: {
       modalLayerColor: { r: 0x33, g: 0x33, b: 0x33, a: 0x33 },
+    },
+    Event: {
+      CLICK: "fui_click",
+      TOUCH_BEGIN: "fui_touch_begin",
+      TOUCH_END: "fui_touch_end",
     },
   };
 }

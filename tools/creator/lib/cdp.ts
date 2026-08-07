@@ -16,6 +16,16 @@ export interface CdpResult {
   readonly errors: readonly string[];
 }
 
+/** CDP 会话：交互回调内可注入真实输入、求值页面状态。 */
+export interface CdpSession {
+  /** 发送任意 CDP 命令并等待结果。 */
+  send(method: string, params?: unknown): Promise<unknown>;
+  /** 在页面上下文求值表达式并返回结果值（returnByValue）。 */
+  evaluate(expression: string): Promise<unknown>;
+  /** 在视口坐标注入一次真实鼠标左键点击（按下 + 抬起）。 */
+  click(x: number, y: number): Promise<void>;
+}
+
 async function findFreePort(): Promise<number> {
   const server: Server = createServer();
   await new Promise<void>((resolve, reject) => {
@@ -51,6 +61,7 @@ async function waitForPageTarget(
 export async function runCdpProbe(
   url: string,
   timeoutMs: number,
+  interact?: (session: CdpSession) => Promise<void>,
 ): Promise<CdpResult> {
   const chromePath = findChrome();
   const profileDir = mkdtempSync(join(tmpdir(), "creator-cdp-"));
@@ -126,6 +137,35 @@ export async function runCdpProbe(
     await send("Runtime.enable");
     await send("Log.enable");
     await send("Page.enable");
+    if (interact !== undefined) {
+      try {
+        const session: CdpSession = {
+          send,
+          async evaluate(expression) {
+            const response = (await send("Runtime.evaluate", {
+              expression,
+              returnByValue: true,
+            })) as { result?: { value?: unknown } };
+            return response?.result?.value;
+          },
+          async click(x, y) {
+            const base = { x, y, button: "left" as const, clickCount: 1 };
+            await send("Input.dispatchMouseEvent", {
+              type: "mousePressed",
+              ...base,
+            });
+            await send("Input.dispatchMouseEvent", {
+              type: "mouseReleased",
+              ...base,
+            });
+          },
+        };
+        await interact(session);
+      } catch (error) {
+        // 交互断言失败（如遮罩未阻断、下层未恢复）记录到 errors，不中断清理
+        errors.push(error instanceof Error ? error.message : String(error));
+      }
+    }
     await sleep(timeoutMs);
     ws.close();
   } finally {

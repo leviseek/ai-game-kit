@@ -1,4 +1,11 @@
-import { _decorator, Component, director } from "cc";
+import {
+  _decorator,
+  Component,
+  director,
+  EventTouch,
+  Node,
+  Touch,
+} from "cc";
 import {
   Application,
   createSceneFlow,
@@ -34,6 +41,7 @@ import {
 import {
   createFairyGuiPageAdapter,
   createFairyGuiView,
+  createClickableFairyGuiView,
   type FairyGuiPageAdapter,
   type FairyGuiPageHandle,
 } from "../framework/adapters/cocos/ui/FairyGuiPageAdapter";
@@ -196,6 +204,12 @@ export class AppRoot extends Component {
         setTimeout(() => {
           this.runUiSmoke().catch((error) => {
             console.error("[ui-smoke] sequence error", error);
+          });
+        }, 1000);
+      } else if (params.get("smoke") === "modal-click") {
+        setTimeout(() => {
+          this.runModalClickSmoke().catch((error) => {
+            console.error("[modal-click] sequence error", error);
           });
         }, 1000);
       }
@@ -393,6 +407,100 @@ export class AppRoot extends Component {
     this.smokeUiRelease();
 
     console.log("[ui-smoke] complete");
+  }
+
+  /**
+   * 冒烟触发：运行模态遮罩真实交互点击验证序列（引擎集成冒烟驱动）。挂载
+   * 全屏可点击下层页面到 normal 层，经导航器进入阻断模态自动呈现遮罩，暴露
+   * CDP 交互钩子；headless Chrome 驱动下注入触摸到 GRoot 根节点，经 fgui
+   * 真实命中逻辑断言模态期间遮罩拦截（点击不穿透下层）、解除后下层恢复。
+   * 每步经 console 输出 `[modal-click]` 标记。
+   */
+  async runModalClickSmoke(): Promise<void> {
+    const report = (step: string, ok: boolean, detail = "") => {
+      console.log(`[modal-click] ${step}: ${ok ? "ok" : "FAIL"}${detail ? ` (${detail})` : ""}`);
+    };
+
+    // 1. UI 根与页面适配器初始化
+    const ready = this.smokeUiInit();
+    report("ui-root-init", ready);
+    if (!ready) {
+      return;
+    }
+
+    // 2. 加载 Demo package（复用资源作用域，验证 package 加载路径不受影响）
+    let packageLoaded = false;
+    try {
+      const handle = await this.smokeUiLoadPackage("ui", "Demo/Demo");
+      packageLoaded = handle.state === "ready";
+      report("package-load", packageLoaded, String(handle.state));
+    } catch (error) {
+      report("package-load", false, error instanceof Error ? error.message : String(error));
+    }
+
+    // 3. 挂载全屏可点击下层页面到 normal 层：遮罩在 system 层更上，命中优先
+    //    遮罩，下层页面在模态期间收不到点击
+    const root = this.uiRoot?.root;
+    const width = root?.width ?? 1280;
+    const height = root?.height ?? 720;
+    const container = this.pageAdapter?.containerFor("normal");
+    let underHits = 0;
+    if (container === undefined) {
+      report("under-mounted", false, "normal layer container not ready");
+      return;
+    }
+    const under = createClickableFairyGuiView(() => {
+      underHits += 1;
+      console.log(`[modal-click] under-hit (${underHits})`);
+    }, width, height);
+    container.addChild(under);
+    report("under-mounted", true);
+
+    // 4. 进入阻断模态：遮罩由导航器状态自动呈现
+    const opened = this.navigator?.open("modal-click-under", {
+      layer: "system",
+      blocking: true,
+    });
+    report("modal-active", opened?.ok === true && this.navigator?.modal === true);
+
+    // 5. 暴露 CDP 交互钩子：轮询模态状态、解除模态、读取下层命中数、注入触摸
+    if (typeof window !== "undefined") {
+      (window as unknown as Record<string, unknown>).__modalClick = {
+        active: () => this.navigator?.modal === true,
+        clear: () => this.navigator?.close(),
+        underHits: () => underHits,
+        // 点击是否命中下层页面：fgui 真实命中测试（含遮罩拦截后的结果）
+        hitIsUnder: (x: number, y: number) => {
+          const rootForHit = this.uiRoot?.root as unknown as {
+            hitTest?: (ax: number, ay: number, forTouch?: boolean) => unknown;
+          };
+          return rootForHit.hitTest?.(x, y, true) === under;
+        },
+        // 应用内触摸注入：向 GRoot.node 派发 cc 触摸流（TOUCH_START + TOUCH_END），
+        // 经 fgui InputProcessor 真实命中/遮罩拦截逻辑处理。坐标取屏幕坐标
+        // （左下原点），fgui 经 screenToWorld + rootSize 翻转转换后命中
+        tap: (x: number, y: number) => {
+          const grNode = (this.uiRoot?.root as unknown as {
+            node?: Node;
+          }).node;
+          if (grNode === undefined) {
+            return false;
+          }
+          const touch = new Touch(x, y);
+          const all = [touch];
+          grNode.emit(
+            Node.EventType.TOUCH_START,
+            new EventTouch([touch], false, Node.EventType.TOUCH_START, all),
+          );
+          grNode.emit(
+            Node.EventType.TOUCH_END,
+            new EventTouch([touch], false, Node.EventType.TOUCH_END, all),
+          );
+          return true;
+        },
+      };
+    }
+    console.log("[modal-click] ready");
   }
 
   /**

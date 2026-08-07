@@ -1,4 +1,4 @@
-import { GComponent, GGraph, UIConfig, UIPackage } from "fairygui-cc";
+import { Event, GComponent, GGraph, UIConfig, UIPackage } from "fairygui-cc";
 import type { IResourceProvider } from "../../../contracts/resource/ResourceProvider";
 import {
   UI_LAYER_ORDER,
@@ -83,6 +83,32 @@ export function createFairyGuiView(
     );
   }
   return view as FairyGuiViewLike;
+}
+
+/**
+ * 冒烟专用：创建全屏可点击的下层页面视图（不依赖 package 资源），用于 CDP
+ * 真实点击验证模态遮罩拦截。opaque 使空 GComponent 命中自身、touchable 放行
+ * 命中，点击经 fgui click 事件回调 onHit。只存在于 Adapter 边界，组合根不
+ * 直接 import fgui 类型。
+ */
+export function createClickableFairyGuiView(
+  onHit: () => void,
+  width: number,
+  height: number,
+  onTouch?: () => void,
+): FairyGuiViewLike {
+  const view = new GComponent();
+  view.name = "modal-click-under";
+  // GComponent 类型声明未暴露 opaque，运行时存在，按接缝断言（与遮罩一致）
+  (view as unknown as { opaque: boolean }).opaque = true;
+  view.touchable = true;
+  view.setSize(width, height);
+  // fgui 事件经 Event 常量（值如 "fui_click"）派发，GObject.on 直接透传事件名
+  view.on(Event.CLICK, onHit, view);
+  if (onTouch !== undefined) {
+    view.on(Event.TOUCH_BEGIN, onTouch, view);
+  }
+  return view;
 }
 
 export interface FairyGuiPageHandle {
