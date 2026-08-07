@@ -95,11 +95,14 @@ describe("6.8 scope review: startup.scene", () => {
 });
 
 describe("6.8 scope review: AppRoot.ts", () => {
-  test("does not import Game assets or business logic", () => {
+  test("does not import Game business logic", () => {
     const source = readFileSync(appRootFile, "utf8");
 
-    expect(source).not.toMatch(/from\s+["']\.\.\/game/);
+    // 组合根允许薄转发到游戏层公共装配入口（game/fixture，design decision 3/4），
+    // 但不得导入品类业务模型目录（game_*），业务规则留在游戏层夹具内
+    expect(source).not.toMatch(/from\s+["']\.\.\/game_[^/]+/);
     expect(source).not.toMatch(/from\s+["']@game/);
+    expect(source).not.toMatch(/from\s+["']\.\.\/game\/(?!fixture\/)/);
     // AppRoot 只经框架适配器工厂组装资源提供者，不直接引用引擎资源/场景对象；
     // director 用于 Cocos 官方推荐的持久化根节点 API（game.addPersistRootNode 已废弃），
     // 但 director.loadScene / assetManager 等场景切换与资源加载仍经适配器，见下方断言
@@ -127,10 +130,13 @@ describe("6.8 scope review: AppRoot.ts", () => {
     expect(source).not.toMatch(/game\.(on|off)\s*\(\s*Game\./);
   });
 
-  test("imports only framework and engine modules", () => {
+  test("imports only framework, game fixture assembly and engine modules", () => {
     const source = readFileSync(appRootFile, "utf8");
 
+    // 组合根只允许导入框架、游戏层公共装配入口（game/fixture）与引擎模块；
+    // 品类业务目录（game_*）与 fgui 不允许进入组合根
     const forbiddenImports = [
+      "/game_",
       "/game/",
       "/boot/",
       "fairygui",
@@ -140,7 +146,11 @@ describe("6.8 scope review: AppRoot.ts", () => {
       const lines = source.split("\n");
       for (const line of lines) {
         if (line.startsWith("import ") && line.includes(pattern)) {
-          expect.fail(`Forbidden import found: ${line.trim()}`);
+          // game/fixture 是薄转发的公共装配入口，允许
+          if (pattern === "/game/" && line.includes("game/fixture")) {
+            continue;
+          }
+          throw new Error(`Forbidden import found: ${line.trim()}`);
         }
       }
     }

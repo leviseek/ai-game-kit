@@ -1,0 +1,95 @@
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { describe, expect, test } from "bun:test";
+
+import {
+  createGameFixture,
+  type GameFixture,
+} from "../../../assets/game/fixture/GameFixture";
+import type { GameFixtureRegistry } from "../../../assets/game/fixture/registry";
+import { runFixtureSmoke } from "../../../assets/game/fixture/smoke";
+
+const projectRoot = resolve(import.meta.dir, "../../..");
+const appRootFile = resolve(projectRoot, "assets/boot/AppRoot.ts");
+
+async function captureFixtureSmoke(
+  fixtureId: string,
+  registry: GameFixtureRegistry,
+): Promise<string[]> {
+  const logs: string[] = [];
+  const originalLog = console.log;
+  console.log = (message?: unknown) => logs.push(String(message));
+
+  try {
+    await runFixtureSmoke(fixtureId, registry);
+  } finally {
+    console.log = originalLog;
+  }
+
+  return logs.filter((line) => line.startsWith("[fixture-smoke]"));
+}
+
+describe("game fixture smoke runner", () => {
+  test("reports an unknown fixture without throwing", async () => {
+    const markers = await captureFixtureSmoke("rpg", {});
+
+    expect(markers.some((line) => line.includes("fixture-unknown: FAIL"))).toBe(
+      true,
+    );
+  });
+
+  test("drives a registered fixture through the uniform lifecycle", async () => {
+    const registry: GameFixtureRegistry = {
+      rpg: () => createGameFixture({ id: "rpg", modules: [] }),
+    };
+
+    const markers = await captureFixtureSmoke("rpg", registry);
+
+    const expectedSteps = [
+      "fixture-found",
+      "start",
+      "pause",
+      "resume",
+      "failRollback",
+      "dispose",
+    ];
+
+    for (const step of expectedSteps) {
+      expect(markers.some((line) => line.includes(`${step}: ok`))).toBe(true);
+    }
+    expect(markers.some((line) => line.includes(": FAIL"))).toBe(false);
+  });
+
+  test("reports a lifecycle failure without throwing", async () => {
+    const failingFixture: GameFixture = {
+      id: "broken",
+      modules: [],
+      start: async () => {
+        throw new Error("boom");
+      },
+      pause: async () => {},
+      resume: async () => {},
+      failRollback: async () => {},
+      dispose: async () => {},
+    };
+    const registry: GameFixtureRegistry = {
+      broken: () => failingFixture,
+    };
+
+    const markers = await captureFixtureSmoke("broken", registry);
+
+    expect(markers.some((line) => line.includes("start: FAIL"))).toBe(true);
+  });
+});
+
+describe("AppRoot fixture smoke forwarding", () => {
+  test("parses ?fixture= and forwards to the game-layer smoke runner", () => {
+    expect(existsSync(appRootFile)).toBe(true);
+
+    const source = readFileSync(appRootFile, "utf8");
+
+    expect(source).toMatch(/params\.get\("fixture"\)/);
+    expect(source).toMatch(/from\s*["'][^"']*game\/fixture\/smoke["']/);
+    expect(source).toMatch(/runFixtureSmoke/);
+  });
+});

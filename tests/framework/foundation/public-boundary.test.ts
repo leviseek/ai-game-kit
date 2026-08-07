@@ -361,11 +361,8 @@ function findImportViolations(file: string, source: string): readonly ImportViol
 
     if (sourceLayer === undefined) {
       if (isWithin(file, bootRoot)) {
-        if (target !== undefined && isWithin(target, gameRoot)) {
-          return [
-            createViolation(file, specifier, "boot cannot depend on Game"),
-          ];
-        }
+        // 组合根（boot）是唯一允许"知道所有具体实现"的装配层：可依赖框架内部
+        // 与游戏层夹具（design decision 3/4），AppRoot 只做薄转发不承载业务规则。
         return [];
       }
 
@@ -781,18 +778,36 @@ describe("framework public boundary", () => {
     ]);
   });
 
-  test("rejects boot depending on Game", () => {
+  test("allows boot to depend on Game as the composition root", () => {
+    // 组合根是唯一允许"知道所有具体实现"的装配层：可依赖游戏层夹具做薄转发。
+    // 但框架内核（core/contracts/application/diagnostics/adapters）仍不得反向依赖 Game。
     const source = `
-      import type { Battle } from "../game/Battle";
-      import { InventoryService } from "../game/inventory/InventoryService";
+      import { runFixtureSmoke } from "../game/fixture/smoke";
+      import { gameFixtureRegistry } from "../game/fixture/registry";
     `;
 
-    const violations = analyzeFixture("assets/boot/AppRoot.ts", source);
+    expect(analyzeFixture("assets/boot/AppRoot.ts", source)).toEqual([]);
+  });
 
-    expect(violations).toHaveLength(2);
-    expect(violations.map(({ reason }) => reason)).toEqual([
-      "boot cannot depend on Game",
-      "boot cannot depend on Game",
+  test("keeps Game as an external consumer of the framework root entry", () => {
+    // 游戏层夹具只能经框架根入口导入框架，不得深层导入框架内部；
+    // 但游戏层夹具不得反向依赖 boot（组合根依赖方向单向）。
+    const source = `
+      import type { GameFixture } from "./fixture/GameFixture";
+      import type { Application } from "../../framework";
+      import type { Module } from "../../framework/application/Application";
+      import { AppRoot } from "../../boot/AppRoot";
+    `;
+
+    const violations = analyzeFixture("assets/game/fixture/GameFixture.ts", source);
+
+    expect(
+      violations.map(({ specifier, reason }) => ({ specifier, reason })),
+    ).toEqual([
+      {
+        specifier: "../../framework/application/Application",
+        reason: "External consumers must import the Framework root entry",
+      },
     ]);
   });
 

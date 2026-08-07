@@ -39,6 +39,7 @@ import {
   createCocosUiRoot,
   type CocosUiRoot,
 } from "../framework/adapters/cocos/ui/CocosUiRoot";
+import { runFixtureSmoke } from "../game/fixture/smoke";
 import {
   createFairyGuiPageAdapter,
   createFairyGuiView,
@@ -211,6 +212,14 @@ export class AppRoot extends Component {
         setTimeout(() => {
           this.runModalClickSmoke().catch((error) => {
             console.error("[modal-click] sequence error", error);
+          });
+        }, 1000);
+      } else if (params.get("fixture") !== null) {
+        // 按品类夹具冒烟：组合逻辑留在游戏层夹具登记表，AppRoot 只做薄转发
+        const fixtureId = params.get("fixture") ?? "";
+        setTimeout(() => {
+          runFixtureSmoke(fixtureId).catch((error) => {
+            console.error("[fixture-smoke] sequence error", error);
           });
         }, 1000);
       }
