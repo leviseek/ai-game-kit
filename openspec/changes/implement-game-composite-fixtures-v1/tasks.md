@@ -22,9 +22,9 @@
 
 ## 2. RPG 组合夹具
 
-- [ ] 2.1 先编写 RPG 组合测试：跨场景状态、资源作用域、UI、输入与存档协作；场景切换后持有状态可恢复、场景 A 独有资源被释放；负向断言框架无角色/技能/任务模型。
-- [ ] 2.2 建立 `assets/game_rpg` 最小夹具：跨场景状态持有、代表性资源作用域、一个 FairyGUI route/ViewModel、输入上下文与版本化存档，使 2.1 测试通过。
-- [ ] 2.3 收口 RPG 夹具边界：依赖边界检查通过，业务模型仅存在于游戏层。
+- [x] 2.1 先编写 RPG 组合测试：跨场景状态、资源作用域、UI、输入与存档协作；场景切换后持有状态可恢复、场景 A 独有资源被释放；负向断言框架无角色/技能/任务模型。（`tests/framework/foundation/game-rpg-fixture.test.ts` 锁定目标契约：`assets/game_rpg/assembly.ts` 导出 `createRpgFixture`（无 cc/fgui 依赖）；统一生命周期驱动 id="rpg"；模块清单只含已声明能力、不含音频；注入受控 provider/activateScene 驱动跨场景状态恢复与场景 A 独有资源释放；navigator 打开/关闭 route；输入上下文路由类型化 action 采样；玩家状态经版本化存档往返；负向扫描框架层无角色/技能/任务等业务模型类型。红期确认：1 fail（契约文件未实现）+ 6 skip（行为测试因模块缺失跳过）+ 1 pass（负向边界断言），符合预期；探针验证核心协作断言基于真实框架能力成立。）
+- [x] 2.2 建立 `assets/game_rpg` 最小夹具：跨场景状态持有、代表性资源作用域、一个 FairyGUI route/ViewModel、输入上下文与版本化存档，使 2.1 测试通过。（`assets/game_rpg/`：`assembly.ts` 导出 `createRpgFixture` 组合根（注入 provider/storage/activateScene/inputSource，缺省内存兜底），`models.ts` 业务模型（RpgAction/RpgPlayerState/RpgCharacter/RpgSkill/RpgQuest/RPG_STATUS_ROUTE/RpgStatusViewModel），`state.ts` 跨场景状态持有，`scene.ts` SceneFlow 模块，`resource.ts` 品类资源作用域模块，`ui.ts` UiNavigator route 模块，`input.ts` 可控输入源模块，`save.ts` 版本化存档模块（基于注入 PlatformStorage 自持版本号）；夹具层只经框架根入口导入，无 cc/fgui 依赖。验证：game-rpg-fixture 8 pass / 0 fail（红期转绿），public-boundary 33 pass、task68 9 pass、Foundation 全量 682 pass / 0 fail，game_rpg 独立 strict 类型检查 EXIT=0，`test:foundation:types` EXIT=0。）
+- [x] 2.3 收口 RPG 夹具边界：依赖边界检查通过，业务模型仅存在于游戏层。（登记 `gameFixtureRegistry`：`assets/game/fixture/registry.ts` 增 `rpg: createRpgFixture`（task 1.3 约定五类由 2.x-6.x 登记）；`runFixtureSmoke("rpg", gameFixtureRegistry)` 真实冒烟全链路通过（fixture-found/start/pause/resume/failRollback/dispose 全 ok）。依赖边界：public-boundary 33 pass / 0 fail（全量扫描 `findProjectImportViolations` 无违规，game→game 层内依赖允许）、task68 9 pass；业务模型仅存在于游戏层：`game_rpg/models.ts` 承载 RpgCharacter/RpgSkill/RpgQuest/RPG_STATUS_ROUTE/RpgStatusViewModel，2.1 负向断言确认框架层无对应类型；`core`+`contracts` diff 为空。验证：Foundation 全量 682 pass / 0 fail、`test:foundation:types` EXIT=0、game_rpg 独立 strict 类型检查 EXIT=0。）
 
 ## 3. 回合制卡牌组合夹具
 
