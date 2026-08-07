@@ -15,8 +15,8 @@
 
 ## 1. 夹具公共契约与多品类装配
 
-- [ ] 1.1 先编写夹具公共契约测试：`GameFixture` 暴露模块装配清单与 `start/pause/resume/failRollback/dispose` 接缝，可被统一测试无差异驱动；未声明能力不参与装配。
-- [ ] 1.2 实现 `GameFixture` 契约与最小装配基础设施（`assets/game/` 下公共类型与辅助），使 1.1 测试通过，不依赖 `cc`/`fgui`。
+- [x] 1.1 先编写夹具公共契约测试：`GameFixture` 暴露模块装配清单与 `start/pause/resume/failRollback/dispose` 接缝，可被统一测试无差异驱动；未声明能力不参与装配。（`tests/framework/foundation/game-fixture-contract.test.ts` 锁定目标契约：`assets/game/fixture/GameFixture.ts` 导出 `GameFixture` 接口（`id`/`modules`/可选 `scope` + 五个生命周期接缝）与 `createGameFixture` 装配工厂；统一驱动 `driveHappyPath`/`driveWithFailRollback` 以同一序列驱动任意夹具，模块清单只含已声明模块、未声明能力不参与装配。红期确认：1 fail / 1 error，`Cannot find module '../../../assets/game/fixture/GameFixture'`——契约文件尚未实现，符合预期。）
+- [x] 1.2 实现 `GameFixture` 契约与最小装配基础设施（`assets/game/` 下公共类型与辅助），使 1.1 测试通过，不依赖 `cc`/`fgui`。（`assets/game/fixture/GameFixture.ts`：导出 `GameFixture` 接口（`id`/`modules`/可选 `scope` + `start/pause/resume/failRollback/dispose`）与 `createGameFixture` 装配工厂；工厂按显式模块清单构造框架 `Application` 并委托生命周期接缝，缺省静默日志、可选注入；`failRollback` 用一次性探针（本夹具模块 + 哨兵失败模块）驱动注定失败的启动，验证逆序回滚后进入 disposed 终态，不改动夹具自身 app 状态；依赖仅经框架根入口 `../../framework`，无 `cc`/`fgui`。验证：game-fixture-contract 6 pass / 0 fail，Foundation 全量 664 pass / 0 fail（基线 658 + 6），strict 类型检查 EXIT=0、STATUS=0。）
 - [ ] 1.3 扩展 `boot/AppRoot` 提供按品类装配的冒烟入口（如 URL `?fixture=<品类>`），组合逻辑留在游戏层夹具，AppRoot 只做薄转发。
 - [ ] 1.4 更新 `public-boundary.test.ts`：`assets/game_*` 作为外部消费者只能经框架根入口导入，游戏层不得导入 `fgui`，禁止深层导入。
 
