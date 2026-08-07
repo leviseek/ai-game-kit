@@ -34,9 +34,9 @@
 
 ## 4. 放置挂机组合夹具
 
-- [ ] 4.1 先编写挂机组合测试：wall clock、暂停恢复、调度与版本化存档协作；暂停（离线）后恢复按 wall clock 结算离线收益并持久化；负向断言离线公式在游戏层。
-- [ ] 4.2 建立 `assets/game_idle` 最小夹具：wall clock 累计离线时长、生命周期暂停恢复衔接、调度驱动、版本化存档写入离线收益，使 4.1 测试通过。
-- [ ] 4.3 收口挂机夹具边界：依赖边界检查通过，离线收益与成长公式仅存在于游戏层。
+- [x] 4.1 先编写挂机组合测试：wall clock、暂停恢复、调度与版本化存档协作；暂停（离线）后恢复按 wall clock 结算离线收益并持久化；负向断言离线公式在游戏层。（`tests/framework/foundation/game-idle-fixture.test.ts` 锁定目标契约：`assets/game_idle/assembly.ts` 导出 `createIdleFixture`（无 cc/fgui 依赖）；统一生命周期驱动 id="idle"；模块清单只含已声明能力、不含音频；注入受控 clock/storage 驱动离线收益结算与持久化；暂停（离线）后恢复按墙钟累计离线时长结算并写入版本化存档；调度器 tick 驱动在线收益；离线收益随成长等级放大；负向扫描框架层无离线收益/成长公式类型。红期确认：1 fail（契约文件未实现）+ 9 skip（行为测试因模块缺失跳过）+ 1 pass（负向边界断言），符合预期。）
+- [x] 4.2 建立 `assets/game_idle` 最小夹具：wall clock 累计离线时长、生命周期暂停恢复衔接、调度驱动、版本化存档写入离线收益，使 4.1 测试通过。（`assets/game_idle/`：`assembly.ts` 导出 `createIdleFixture` 组合根（注入 clock/storage，缺省内存兜底；pause 先记录离线起点再推进应用状态，resume 恢复后按墙钟结算离线收益并写存档，dispose 统一释放调度器与进度控制器），`models.ts` 业务模型（IdleProgressState/IdleOfflineSettlement/IdleSaveRecord），`clock.ts` 可控墙钟（实现框架 `TimeSource` 契约——根入口白名单不含 WallClock，故夹具层自实现），`scheduler.ts` 被动调度器（根入口白名单不含 PassiveScheduler，夹具层自实现 schedule/tick/dispose，在线收益任务 repeat 注册），`progress.ts` 成长进度控制器（`offlineGoldFor` 离线收益公式按离线分钟 × 等级结算，`applyOnlineTick` 只结算墙钟正常推进一个间隔的在线收益、大幅跳变跳过），`save.ts` 版本化存档模块（基于注入 PlatformStorage 自持版本号）；夹具层只经框架根入口导入，无 cc/fgui 依赖。验证：game-idle-fixture 11 pass / 0 fail（红期转绿），Foundation 全量 713 pass / 0 fail（基线 696 + 新增 17，其中 game-idle-fixture 11 pass），public-boundary 33 pass、task68 9 pass、game-fixture-smoke 5 pass、`test:foundation:types` EXIT=0、game_idle 独立 strict 类型检查 EXIT=0。）
+- [x] 4.3 收口挂机夹具边界：依赖边界检查通过，离线收益与成长公式仅存在于游戏层。（登记 `gameFixtureRegistry`：`assets/game/fixture/registry.ts` 增 `idle: createIdleFixture`（task 1.3 约定五类由 2.x-6.x 登记）；`runFixtureSmoke("idle", gameFixtureRegistry)` 真实冒烟全链路通过（fixture-found/start/pause/resume/failRollback/dispose 全 ok）。依赖边界：public-boundary 33 pass / 0 fail（全量扫描 `findProjectImportViolations` 无违规，game→game 层内依赖允许）、task68 9 pass；业务模型仅存在于游戏层：`game_idle/models.ts` 承载 IdleProgressState/IdleOfflineSettlement/IdleSaveRecord、`progress.ts` 承载 `offlineGoldFor` 离线收益与成长公式，4.1 负向断言确认框架层无对应类型；`core`+`contracts` diff 为空。验证：Foundation 全量 713 pass / 0 fail、`test:foundation:types` EXIT=0、game_idle 独立 strict 类型检查 EXIT=0。）
 
 ## 5. 模拟经营组合夹具
 
