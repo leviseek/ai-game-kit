@@ -145,7 +145,23 @@ export async function runCdpProbe(
             const response = (await send("Runtime.evaluate", {
               expression,
               returnByValue: true,
-            })) as { result?: { value?: unknown } };
+            })) as {
+              result?: { value?: unknown };
+              exceptionDetails?: {
+                text?: string;
+                exception?: { description?: string };
+              };
+            };
+            // 页面内求值异常必须上报，否则吞错会让交互断言建立在假阳性上
+            if (
+              response?.exceptionDetails !== undefined &&
+              response?.exceptionDetails !== null
+            ) {
+              const detail = response.exceptionDetails;
+              const message =
+                detail.exception?.description ?? detail.text ?? "未知求值异常";
+              throw new Error(`页面求值失败: ${message}`);
+            }
             return response?.result?.value;
           },
           async click(x, y) {

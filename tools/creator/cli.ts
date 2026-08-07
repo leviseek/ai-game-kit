@@ -34,7 +34,7 @@ const COMMANDS: Record<string, Command> = {
   },
   "ui-modal-click": {
     run: runUiModalClick,
-    usage: "ui-modal-click [--debug true] 模态遮罩真实点击验证：构建 → headless Chrome 注入真实点击断言模态拦截/解除恢复",
+    usage: "ui-modal-click [--debug true] 模态遮罩命中验证：构建 → headless Chrome 应用内 fgui 触摸注入，断言模态拦截/解除恢复",
   },
 };
 

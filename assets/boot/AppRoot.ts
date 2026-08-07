@@ -5,6 +5,7 @@ import {
   EventTouch,
   Node,
   Touch,
+  Vec3,
 } from "cc";
 import {
   Application,
@@ -449,6 +450,8 @@ export class AppRoot extends Component {
       report("under-mounted", false, "normal layer container not ready");
       return;
     }
+    // 冒烟一次性下层视图：直接挂 normal 层容器，不进 adapter pages 登记
+    // （无 route 管理需求），随容器在 AppRoot 销毁时一并释放
     const under = createClickableFairyGuiView(() => {
       underHits += 1;
       console.log(`[modal-click] under-hit (${underHits})`);
@@ -463,30 +466,54 @@ export class AppRoot extends Component {
     });
     report("modal-active", opened?.ok === true && this.navigator?.modal === true);
 
-    // 5. 暴露 CDP 交互钩子：轮询模态状态、解除模态、读取下层命中数、注入触摸
+    // 5. 暴露 CDP 交互钩子：轮询模态状态、解除模态、读取下层命中数、注入触摸。
+    //    tap 与 hitIsUnder 均取 GRoot 中心（rootSize 坐标系），坐标由钩子内部
+    //    计算，避免调用方猜测屏幕/设计分辨率映射
     if (typeof window !== "undefined") {
+      const center = (): { x: number; y: number } => ({
+        x: Math.round((this.uiRoot?.root?.width ?? 0) / 2),
+        y: Math.round((this.uiRoot?.root?.height ?? 0) / 2),
+      });
       (window as unknown as Record<string, unknown>).__modalClick = {
         active: () => this.navigator?.modal === true,
         clear: () => this.navigator?.close(),
         underHits: () => underHits,
-        // 点击是否命中下层页面：fgui 真实命中测试（含遮罩拦截后的结果）
-        hitIsUnder: (x: number, y: number) => {
-          const rootForHit = this.uiRoot?.root as unknown as {
+        // 点击是否命中下层页面：与 fgui InputProcessor 相同坐标转换
+        // （screenToWorld + rootSize 高度翻转）后命中测试，等价"点击不穿透"
+        hitIsUnder: () => {
+          const grNode = (this.uiRoot?.root as unknown as {
+            node?: Node;
+          }).node;
+          const rootG = this.uiRoot?.root as unknown as {
+            height?: number;
             hitTest?: (ax: number, ay: number, forTouch?: boolean) => unknown;
           };
-          return rootForHit.hitTest?.(x, y, true) === under;
+          const c = center();
+          if (grNode === undefined) {
+            return false;
+          }
+          let hit: unknown;
+          const camera = director.root?.batcher2D?.getFirstRenderCamera?.(grNode);
+          if (camera !== undefined && camera !== null) {
+            const world = new Vec3();
+            camera.screenToWorld(world, new Vec3(c.x, c.y, 0));
+            hit = rootG.hitTest?.(world.x, (rootG.height ?? 960) - world.y, true);
+          } else {
+            hit = rootG.hitTest?.(c.x, c.y, true);
+          }
+          return hit === under;
         },
         // 应用内触摸注入：向 GRoot.node 派发 cc 触摸流（TOUCH_START + TOUCH_END），
-        // 经 fgui InputProcessor 真实命中/遮罩拦截逻辑处理。坐标取屏幕坐标
-        // （左下原点），fgui 经 screenToWorld + rootSize 翻转转换后命中
-        tap: (x: number, y: number) => {
+        // 经 fgui InputProcessor 真实命中/遮罩拦截逻辑处理。返回是否注入成功。
+        tap: () => {
           const grNode = (this.uiRoot?.root as unknown as {
             node?: Node;
           }).node;
           if (grNode === undefined) {
             return false;
           }
-          const touch = new Touch(x, y);
+          const c = center();
+          const touch = new Touch(c.x, c.y);
           const all = [touch];
           grNode.emit(
             Node.EventType.TOUCH_START,
@@ -548,9 +575,17 @@ export class AppRoot extends Component {
   onDestroy(): void {
     this.resizeUnsubscribe?.();
     this.resizeUnsubscribe = undefined;
+    // 清理冒烟交互钩子：闭包持有本组件，常驻根销毁时一并释放
+    if (typeof window !== "undefined") {
+      delete (window as unknown as Record<string, unknown>).__modalClick;
+    }
     this.adapter?.unbind();
     this.sceneFlow?.dispose();
     this.pageAdapter?.dispose();
+    // 适配器 dispose 已恢复导航器原始方法，再释放导航器本身（组合根创建的
+    // 生命周期随组合根收尾）
+    this.navigator?.dispose();
+    this.navigator = undefined;
     this.resourceProvider?.dispose();
     this.app?.dispose().catch(() => {
       // dispose 失败已由 Application 内部通过 context.logger 记录

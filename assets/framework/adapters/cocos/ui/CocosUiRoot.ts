@@ -22,7 +22,8 @@ export interface CocosUiRootOptions {
   readonly getRoot?: () => GRootLike;
   /**
    * 窗口尺寸变化订阅接缝：注册回调并返回退订。缺省订阅真实浏览器 window resize，
-   * 非浏览器环境 no-op；测试可注入受控触发源。
+   * 回调携带 GRoot 当前尺寸（fgui 已按设计分辨率 rootSize 更新），非浏览器环境
+   * no-op；测试可注入受控触发源。
    */
   readonly subscribeResize?: (
     callback: (width: number, height: number) => void,
@@ -67,7 +68,10 @@ export function createCocosUiRoot(
     }
   });
 
-  // 缺省订阅真实窗口 resize；非浏览器环境（Bun 测试）no-op。
+  // 缺省订阅真实窗口 resize；非浏览器环境（Bun 测试）no-op。回调携带 GRoot
+  // 当前尺寸而非 window 物理像素：Cocos 引擎 View 先于本监听处理 window resize
+  // 并驱动 fgui GRoot 按设计分辨率（rootSize）更新尺寸，物理像素 ≠ rootSize 时
+  // 若以其 setSize 会覆盖 rootSize，导致布局/命中错乱。
   const subscribeResize =
     options.subscribeResize ??
     ((callback: (width: number, height: number) => void) => {
@@ -75,7 +79,15 @@ export function createCocosUiRoot(
         return () => {};
       }
       const onWindowResize = () => {
-        callback(window.innerWidth, window.innerHeight);
+        let current: GRootLike | undefined;
+        try {
+          current = GRoot.inst;
+        } catch {
+          current = undefined;
+        }
+        if (current !== undefined) {
+          callback(current.width, current.height);
+        }
       };
       window.addEventListener("resize", onWindowResize);
       return () => {
@@ -125,6 +137,10 @@ export function createCocosUiRoot(
       }
       root = next;
       initialized = true;
+      // dispose 后 re-init 重建尺寸订阅（dispose 已退订并清空引用）
+      if (unsubscribeResize === undefined) {
+        unsubscribeResize = subscribeResize(handleResize);
+      }
     },
     onResize(callback): () => void {
       resizeListeners.add(callback);

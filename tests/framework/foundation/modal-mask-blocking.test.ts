@@ -261,6 +261,8 @@ describe("modal mask visibility and input blocking", () => {
       }),
     });
     adapter.init();
+    // 下层页面挂到 system 层仅为验证"同一容器内遮罩遮挡顺序"（业务页面通常
+    // 在 normal 层；遮罩 addChild 在页面之后保证遮挡优先）
     const page = adapter.createPage("under", "system", {
       packageName: "ui",
       resName: "Under",

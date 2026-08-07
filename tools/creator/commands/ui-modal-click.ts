@@ -9,13 +9,10 @@ import { getProjectRoot } from "../lib/env";
 import { sleep } from "../lib/log";
 
 export const help =
-  "ui-modal-click —— 模态遮罩真实点击验证：构建 → headless Chrome 加载 ?smoke=modal-click，注入真实点击断言模态期间遮罩拦截、解除后下层恢复";
+  "ui-modal-click —— 模态遮罩命中验证：构建 → headless Chrome 加载 ?smoke=modal-click，应用内 fgui 触摸注入，断言模态期间遮罩拦截（下层不响应）、解除后下层恢复";
 
-// 遮罩区域点击坐标（屏幕中心，OpenGL 左下原点）。遮罩与下层页面均为全屏尺寸，
-// 中心点落在覆盖区域内；fgui 经 screenToWorld + rootSize 翻转转换后命中。
-const TAP_X = 640;
-const TAP_Y = 480;
-
+// tap/hitIsUnder 均取 GRoot 中心（rootSize 坐标系），坐标由 AppRoot 钩子内部
+// 计算，调用方不猜测屏幕/设计分辨率映射。
 async function waitForActive(
   cdp: CdpSession,
   expectActive: boolean,
@@ -38,9 +35,19 @@ async function waitForActive(
 
 async function hitIsUnder(cdp: CdpSession): Promise<boolean> {
   const value = (await cdp.evaluate(
-    `window.__modalClick ? window.__modalClick.hitIsUnder(${TAP_X}, ${TAP_Y}) : null`,
+    "window.__modalClick ? window.__modalClick.hitIsUnder() : null",
   )) as boolean | null;
   return value === true;
+}
+
+/** 应用内触摸注入并校验成功（tap 内部未就绪时返回 false）。 */
+async function injectTap(cdp: CdpSession): Promise<void> {
+  const ok = (await cdp.evaluate(
+    "window.__modalClick ? window.__modalClick.tap() : false",
+  )) as boolean | null;
+  if (ok !== true) {
+    throw new Error("应用内触摸注入失败（tap 返回非 true）");
+  }
 }
 
 /**
@@ -83,7 +90,7 @@ export async function run(argv: readonly string[]): Promise<number> {
       return buildCode;
     }
 
-    console.log("[ccc:ui-modal-click] 3/3 headless Chrome 真实点击验证...");
+    console.log("[ccc:ui-modal-click] 3/3 headless Chrome 模态命中验证...");
     const buildRoot = join(getProjectRoot(), "build", "web-desktop");
     const server = await serveDir(buildRoot);
     try {
@@ -106,8 +113,7 @@ export async function run(argv: readonly string[]): Promise<number> {
           console.log("[ccc:ui-modal-click] 模态已生效");
 
           // 模态期间应用内触摸：fgui 命中遮罩，下层页面不响应（不穿透）
-          await cdp.evaluate(`window.__modalClick.tap(${TAP_X}, ${TAP_Y})`);
-          await sleep(300);
+          await injectTap(cdp);
           if (await hitIsUnder(cdp)) {
             throw new Error("模态期间点击穿透到下层页面，遮罩未拦截");
           }
@@ -118,8 +124,7 @@ export async function run(argv: readonly string[]): Promise<number> {
           console.log("[ccc:ui-modal-click] 模态已解除");
 
           // 解除后应用内触摸：fgui 命中下层页面，恢复响应
-          await cdp.evaluate(`window.__modalClick.tap(${TAP_X}, ${TAP_Y})`);
-          await sleep(300);
+          await injectTap(cdp);
           if (!(await hitIsUnder(cdp))) {
             throw new Error("解除后点击未命中下层页面，未恢复响应");
           }
@@ -137,7 +142,7 @@ export async function run(argv: readonly string[]): Promise<number> {
       }
 
       if (interactError !== undefined) {
-        console.error(`[ccc:ui-modal-click] 真实点击断言失败: ${interactError}`);
+        console.error(`[ccc:ui-modal-click] 命中断言失败: ${interactError}`);
         return 1;
       }
       if (result.errors.length > 0) {
@@ -168,7 +173,7 @@ export async function run(argv: readonly string[]): Promise<number> {
         return 1;
       }
 
-      console.log("[ccc:ui-modal-click] 模态遮罩真实点击验证通过");
+      console.log("[ccc:ui-modal-click] 模态遮罩命中验证通过");
       return 0;
     } finally {
       await server.close();

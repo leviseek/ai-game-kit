@@ -151,8 +151,8 @@ describe("6.8 scope review: AppRoot.ts", () => {
 
     expect(source).toContain("export function createModules");
     // new Error/URLSearchParams 是通用构造，不属于 Module 实例化；WallClock 是
-    // 注册表演示服务而非 Module，与既有豁免词并列排除；Touch/EventTouch 为 cc
-    // 引擎输入对象（冒烟触摸注入用），同样非业务 Module
-    expect(source).not.toMatch(/\bnew\s+(?!ConsoleLogger|CocosApplicationAdapter|Application|Error|URLSearchParams|WallClock|Touch|EventTouch)\w+\b/);
+    // 注册表演示服务而非 Module，与既有豁免词并列排除；Touch/EventTouch/Vec3
+    // 为 cc 引擎输入/向量对象（冒烟触摸注入用），同样非业务 Module
+    expect(source).not.toMatch(/\bnew\s+(?!ConsoleLogger|CocosApplicationAdapter|Application|Error|URLSearchParams|WallClock|Touch|EventTouch|Vec3)\w+\b/);
   });
 });

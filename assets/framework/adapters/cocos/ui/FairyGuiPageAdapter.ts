@@ -35,8 +35,9 @@ export interface FairyGuiPageAdapterOptions {
     resName: string,
   ) => FairyGuiViewLike;
   /**
-   * 遮罩创建接缝：按 GRoot 尺寸创建模态遮罩对象。缺省用 GComponent 并设
-   * `opaque`/`touchable` 保证命中阻断；测试可注入记录型 mock 观察遮罩属性。
+   * 遮罩创建接缝：按 GRoot 尺寸创建模态遮罩对象。缺省用 GGraph 画半透明填充
+   * （对齐 `GRoot._modalLayer`）并设 `opaque`/`touchable` 保证可见与命中阻断；
+   * 测试可注入记录型 mock 观察遮罩属性。
    */
   readonly createMask?: (width: number, height: number) => unknown;
   /**
@@ -86,8 +87,8 @@ export function createFairyGuiView(
 }
 
 /**
- * 冒烟专用：创建全屏可点击的下层页面视图（不依赖 package 资源），用于 CDP
- * 真实点击验证模态遮罩拦截。opaque 使空 GComponent 命中自身、touchable 放行
+ * 冒烟专用：创建全屏可点击的下层页面视图（不依赖 package 资源），用于模态遮罩
+ * 命中验证（点击不穿透下层）。opaque 使空 GComponent 命中自身、touchable 放行
  * 命中，点击经 fgui click 事件回调 onHit。只存在于 Adapter 边界，组合根不
  * 直接 import fgui 类型。
  */
@@ -95,7 +96,6 @@ export function createClickableFairyGuiView(
   onHit: () => void,
   width: number,
   height: number,
-  onTouch?: () => void,
 ): FairyGuiViewLike {
   const view = new GComponent();
   view.name = "modal-click-under";
@@ -105,9 +105,6 @@ export function createClickableFairyGuiView(
   view.setSize(width, height);
   // fgui 事件经 Event 常量（值如 "fui_click"）派发，GObject.on 直接透传事件名
   view.on(Event.CLICK, onHit, view);
-  if (onTouch !== undefined) {
-    view.on(Event.TOUCH_BEGIN, onTouch, view);
-  }
   return view;
 }
 
@@ -240,6 +237,12 @@ export function createFairyGuiPageAdapter(
   }
 
   if (navigator !== undefined) {
+    // 边界限制（记录，当前组合根单实例场景无影响）：
+    // - 包装以闭包调用原始方法（未 bind navigator），依赖原始实现为闭包、不依赖
+    //   this（createUiNavigator 满足）；自定义 this 依赖的导航器实现会破坏
+    // - 同 navigator 被多个 adapter 包装会形成包装链，dispose 只恢复一层
+    // - navigator 先 dispose 而 adapter 未 dispose 时，adapter 仍持有其闭包直到
+    //   自身 dispose
     navigatorOriginalOpen = navigator.open;
     navigatorOriginalClose = navigator.close;
     navigatorOriginalBack = navigator.back;

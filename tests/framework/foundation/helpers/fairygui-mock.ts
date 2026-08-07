@@ -118,10 +118,25 @@ export function createFairyGuiMock(): {
       height = 0;
       touchable = false;
       opaque = false;
+      node = {
+        activeInHierarchy: true,
+        on() {},
+        off() {},
+        emit() {},
+      };
       setSize(width: number, height: number) {
         this.width = width;
         this.height = height;
       }
+      on(_type: string, _callback: () => void, _target?: unknown) {}
+      off(_type: string, _callback: () => void, _target?: unknown) {}
+      addChild(_child: unknown): unknown {
+        return _child;
+      }
+      removeChild(_child: unknown): unknown {
+        return _child;
+      }
+      removeChildren() {}
     },
     GGraph: class {
       name = "";
@@ -159,7 +174,18 @@ export interface FairyGuiGComponentMock {
   height: number;
   touchable: boolean;
   opaque: boolean;
+  node: {
+    activeInHierarchy: boolean;
+    on(type: string, callback: () => void, target?: unknown): void;
+    off(type: string, callback: () => void, target?: unknown): void;
+    emit(type: string, arg?: unknown): void;
+  };
   setSize(width: number, height: number): void;
+  on(type: string, callback: () => void, target?: unknown): void;
+  off(type: string, callback: () => void, target?: unknown): void;
+  addChild(child: unknown): unknown;
+  removeChild(child: unknown): unknown;
+  removeChildren(): void;
 }
 
 export interface FairyGuiColorMock {

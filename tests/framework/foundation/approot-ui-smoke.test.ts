@@ -33,6 +33,7 @@ mock.module("cc", () => ({
   },
   EventTouch: class {},
   Touch: class {},
+  Vec3: class {},
 }));
 
 interface GRootLike {
