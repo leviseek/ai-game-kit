@@ -28,9 +28,9 @@
 
 ## 3. 回合制卡牌组合夹具
 
-- [ ] 3.1 先编写卡牌组合测试：可控模拟时间、状态机、配置、输入与 UI 协作；相同输入序列产生确定性回合结果；负向断言框架无卡组/回合规则。
-- [ ] 3.2 建立 `assets/game_card` 最小夹具：模拟时钟驱动回合、状态机表达回合流、配置驱动数值、输入与 UI 联动出牌，使 3.1 测试通过。
-- [ ] 3.3 收口卡牌夹具边界：依赖边界检查通过，卡组/回合/效果结算仅存在于游戏层。
+- [x] 3.1 先编写卡牌组合测试：可控模拟时间、状态机、配置、输入与 UI 协作；相同输入序列产生确定性回合结果；负向断言框架无卡组/回合规则。（`tests/framework/foundation/game-card-fixture.test.ts` 锁定目标契约：`assets/game_card/assembly.ts` 导出 `createCardFixture`（无 cc/fgui 依赖）；统一生命周期驱动 id="card"；模块清单只含已声明能力、不含音频；注入受控 clock/configContent/inputSource 驱动确定性回合与配置数值；状态机 phase 转移表达回合流；输入 action 联动出牌；UI route 打开/关闭；负向扫描框架层无卡组/回合规则类型。红期确认：1 fail（契约文件未实现）+ 9 skip（行为测试因模块缺失跳过）+ 1 pass（负向边界断言），符合预期；负向词表排除 Hand/Play 通用前缀（框架有 HandleState/PlayScopeState 等命名），避免误判框架通用概念。）
+- [x] 3.2 建立 `assets/game_card` 最小夹具：模拟时钟驱动回合、状态机表达回合流、配置驱动数值、输入与 UI 联动出牌，使 3.1 测试通过。（`assets/game_card/`：`assembly.ts` 导出 `createCardFixture` 组合根（注入 clock/configContent/inputSource，缺省内建时钟与缺省配置），`models.ts` 业务模型（CardAction/CardConfig/CardBattleState/CardTurnPhase/CARD_BATTLE_ROUTE/CardBattleViewModel），`clock.ts` 可控模拟时钟（实现框架 `TimeSource` 契约——根入口白名单不含 SimulationClock，故夹具层自实现），`config.ts` 配置句柄（createConfigTable 不可变装载卡牌数值/回合时长/HP/mana），`battle.ts` 回合流控制器（createStateMachine 表达 player/enemy/over 阶段转移，enemy 阶段经时钟超时自动回 player 并重置 mana），`input.ts` 可控输入源模块，`ui.ts` UiNavigator route 模块；夹具层只经框架根入口导入，无 cc/fgui 依赖。验证：game-card-fixture 11 pass / 0 fail（红期转绿），Foundation 全量 696 pass / 0 fail，public-boundary 33 pass / 0 fail，game_card 独立 strict 类型检查 EXIT=0。）
+- [x] 3.3 收口卡牌夹具边界：依赖边界检查通过，卡组/回合/效果结算仅存在于游戏层。（登记 `gameFixtureRegistry`：`assets/game/fixture/registry.ts` 增 `card: createCardFixture`（task 1.3 约定五类由 2.x-6.x 登记）；`runFixtureSmoke("card", gameFixtureRegistry)` 真实冒烟全链路通过（fixture-found/start/pause/resume/failRollback/dispose 全 ok）。依赖边界：public-boundary 33 pass / 0 fail（全量扫描 `findProjectImportViolations` 无违规，game→game 层内依赖允许）、task68 9 pass、game-fixture-smoke 5 pass 保持通过；业务模型仅存在于游戏层：`game_card/models.ts` 承载 CardAction/CardConfig/CardBattleState/CardTurnPhase/CARD_BATTLE_ROUTE/CardBattleViewModel，3.1 负向断言确认框架层无对应类型；`core`+`contracts` diff 为空。验证：Foundation 全量 696 pass / 0 fail、`test:foundation:types` EXIT=0、game_card 独立 strict 类型检查 EXIT=0。）
 
 ## 4. 放置挂机组合夹具
 
