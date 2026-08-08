@@ -22,8 +22,6 @@ import {
   createTycoonEconomy,
   createTycoonEconomyModule,
   type TycoonEconomyHandle,
-} from "./production";
-import {
   createTycoonProduction,
   createTycoonProductionModule,
   type TycoonProductionHandle,
@@ -38,7 +36,7 @@ import {
   createTycoonSchedulerModule,
   type TycoonScheduler,
 } from "./scheduler";
-import { createTycoonUiModule } from "./ui";
+import { createTycoonUiModule, createTycoonUiViewModels } from "./ui";
 
 /** 生产 tick 间隔：调度器每次 tick 结算一次生产推进的固定节拍。 */
 export const PRODUCTION_TICK_MS = 1000;
@@ -113,6 +111,19 @@ export interface TycoonFixture extends GameFixture {
   };
   /** UI 导航器：分层 UI 经不同层级 route 呈现经营状态。 */
   readonly navigator: UiNavigator;
+  /** 分层 UI 呈现钩子：经 live 状态派生各层 ViewModel，供导航 route 消费。 */
+  readonly ui: {
+    /** normal 层总览：现金与库存快照。 */
+    readonly hubViewModel: {
+      readonly cash: number;
+      readonly inventory: Readonly<Record<string, number>>;
+    };
+    /** popup 层生产详情：当前生产任务与进度。 */
+    readonly factoryViewModel: {
+      readonly activeProductId: string | null;
+      readonly progress: number;
+    };
+  };
 }
 
 /** 缺省内存平台存储：实现 PlatformStorage，供测试与非 Cocos 环境使用。 */
@@ -156,6 +167,11 @@ export function createTycoonFixture(
     options.storage ?? new MemoryStorage(),
   );
   const navigator: UiNavigator = createUiNavigator();
+  // 分层 UI ViewModel：经 live 状态派生，供导航 route 消费
+  const uiViewModels = createTycoonUiViewModels({
+    economyState: () => economy.state,
+    productionState: () => production.state,
+  });
 
   // 生产任务经调度器推进：每个 tick 结算一次生产进度，按配置时长完成入库存
   scheduler.schedule(() => production.applyTick(), PRODUCTION_TICK_MS, {
@@ -216,6 +232,16 @@ export function createTycoonFixture(
       startCash: config.startCash,
     },
     navigator,
+    ui: {
+      get hubViewModel() {
+        // normal 层总览：现金与库存快照，经 live 经济状态派生
+        return uiViewModels.hubViewModel;
+      },
+      get factoryViewModel() {
+        // popup 层生产详情：当前任务与进度，经 live 生产状态派生
+        return uiViewModels.factoryViewModel;
+      },
+    },
     dispose: async () => {
       if (disposed) {
         return;

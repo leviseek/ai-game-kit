@@ -95,6 +95,19 @@ interface TycoonFixtureHooks {
   };
   /** UI 导航器：分层 UI 经不同层级 route 呈现经营状态。 */
   readonly navigator: UiNavigator;
+  /** 分层 UI 呈现钩子：经 live 状态派生各层 ViewModel，供导航 route 消费。 */
+  readonly ui: {
+    /** normal 层总览：现金与库存快照。 */
+    readonly hubViewModel: {
+      readonly cash: number;
+      readonly inventory: Readonly<Record<string, number>>;
+    };
+    /** popup 层生产详情：当前生产任务与进度。 */
+    readonly factoryViewModel: {
+      readonly activeProductId: string | null;
+      readonly progress: number;
+    };
+  };
 }
 
 type TycoonFixture = GameFixture & TycoonFixtureHooks;
@@ -344,6 +357,17 @@ describe.skipIf(!assemblyExists)(
       ]);
       expect(fixture.navigator.top?.route).toBe("tycoon/factory");
 
+      // 呈现联动：route 打开后经 ui 钩子读取各层 ViewModel，
+      // 总览反映初始现金、详情反映空闲产线
+      expect(fixture.ui.hubViewModel.cash).toBe(100);
+      expect(fixture.ui.hubViewModel.inventory).toEqual({});
+      expect(fixture.ui.factoryViewModel.activeProductId).toBeNull();
+
+      // 驱动生产：总览现金扣除成本、详情显示生产任务
+      expect(fixture.production.start("widget")).toBe(true);
+      expect(fixture.ui.hubViewModel.cash).toBe(95);
+      expect(fixture.ui.factoryViewModel.activeProductId).toBe("widget");
+
       // 关闭 popup 回到下层 normal 总览
       const closed = fixture.navigator.close();
       expect(closed.ok).toBe(true);
@@ -386,7 +410,7 @@ describe.skipIf(!assemblyExists)(
       await fixture.dispose();
 
       // 释放后：调度不再推进生产、导航拒绝新请求，重复释放幂等
-      fixture.production.start("gadget");
+      expect(fixture.production.start("gadget")).toBe(false);
       fixture.clock.advance(2000);
       fixture.scheduler.tick();
       expect(fixture.economy.inventory["gadget"]).toBeUndefined();
@@ -395,6 +419,180 @@ describe.skipIf(!assemblyExists)(
         false,
       );
 
+      await fixture.dispose();
+    });
+
+    test("start rejects when cash is insufficient", async () => {
+      const createTycoonFixture = await loadCreateTycoonFixture();
+      // 初始现金 3，低于任一产品成本（widget cost 5 / gadget cost 8）
+      const fixture = createTycoonFixture({
+        configContent: { startCash: 3, products: [] },
+      });
+      await fixture.start();
+
+      expect(fixture.production.start("widget")).toBe(false);
+      expect(fixture.production.state.activeProductId).toBeNull();
+      expect(fixture.economy.cash).toBe(3);
+
+      await fixture.dispose();
+    });
+
+    test("start rejects while the production line is busy", async () => {
+      const createTycoonFixture = await loadCreateTycoonFixture();
+      const fixture = createTycoonFixture();
+      await fixture.start();
+
+      expect(fixture.production.start("widget")).toBe(true);
+
+      // 产线占用中再次 start 被拒绝，经济状态不变
+      const cash = fixture.economy.cash;
+      expect(fixture.production.start("gadget")).toBe(false);
+      expect(fixture.production.state.activeProductId).toBe("widget");
+      expect(fixture.economy.cash).toBe(cash);
+
+      await fixture.dispose();
+    });
+
+    test("start and sell reject an unknown product", async () => {
+      const createTycoonFixture = await loadCreateTycoonFixture();
+      const fixture = createTycoonFixture();
+      await fixture.start();
+
+      expect(fixture.production.start("unknown")).toBe(false);
+      expect(fixture.production.state.activeProductId).toBeNull();
+
+      expect(fixture.economy.sell("unknown")).toBe(false);
+      expect(fixture.economy.cash).toBe(100);
+
+      await fixture.dispose();
+    });
+
+    test("a zero-duration product completes on the first tick after start", async () => {
+      const createTycoonFixture = await loadCreateTycoonFixture();
+      const fixture = createTycoonFixture({
+        configContent: {
+          startCash: 100,
+          products: [{ id: "free", name: "Free", cost: 0, price: 0, durationMs: 0 }],
+        },
+      });
+      await fixture.start();
+
+      expect(fixture.production.start("free")).toBe(true);
+      // 未推进时钟：0 时长产品进度恒为 0（durationMs<=0 分支），
+      // 但未 tick 前库存未入、任务仍占用产线
+      expect(fixture.production.state.progress).toBe(0);
+      expect(fixture.production.state.activeProductId).toBe("free");
+      expect(fixture.economy.inventory["free"]).toBeUndefined();
+
+      // 首个到期 tick 立即完成（elapsed >= durationMs 0）
+      fixture.clock.advance(1000);
+      fixture.scheduler.tick();
+      expect(fixture.economy.inventory["free"]).toBe(1);
+      expect(fixture.production.state.activeProductId).toBeNull();
+
+      await fixture.dispose();
+    });
+
+    test("progress clamps to 1 but inventory settles only on tick", async () => {
+      // 惰性推导 + tick 结算语义的关键契约：时钟超过时长后，state.progress
+      // 显示已完成（clamp 到 1），但 activeProductId 仍非 null、库存未入，
+      // 只有调度器 tick 才完成入库存并回到空闲。
+      const createTycoonFixture = await loadCreateTycoonFixture();
+      const fixture = createTycoonFixture();
+      await fixture.start();
+
+      expect(fixture.production.start("widget")).toBe(true);
+
+      // 时钟推进 2000 > durationMs 1000，但未 tick
+      fixture.clock.advance(2000);
+      expect(fixture.production.state.progress).toBe(1);
+      expect(fixture.production.state.activeProductId).toBe("widget");
+      expect(fixture.economy.inventory["widget"]).toBeUndefined();
+
+      // tick 完成结算：入库存并回到空闲
+      fixture.scheduler.tick();
+      expect(fixture.economy.inventory["widget"]).toBe(1);
+      expect(fixture.production.state.activeProductId).toBeNull();
+
+      await fixture.dispose();
+    });
+
+    test("clock advance rejects negative values", async () => {
+      const createTycoonFixture = await loadCreateTycoonFixture();
+      const fixture = createTycoonFixture();
+      await fixture.start();
+
+      // 时钟只应正向推进：负值推进会破坏生产时长判定
+      expect(() => fixture.clock.advance(-1)).toThrow();
+
+      await fixture.dispose();
+    });
+
+    test("a failing storage write rejects the save without swallowing the error", async () => {
+      const createTycoonFixture = await loadCreateTycoonFixture();
+      const failingStorage: PlatformStorage = {
+        async get(key: string): Promise<string | null> {
+          return null;
+        },
+        async set(): Promise<void> {
+          throw new Error("storage write failed");
+        },
+        async delete(): Promise<void> {},
+      };
+
+      const fixture = createTycoonFixture({ storage: failingStorage });
+      await fixture.start();
+
+      // 存档写入失败向上抛，不吞错、不静默
+      await expect(
+        fixture.storage.save("tycoon", "economy", {
+          cash: 95,
+          inventory: { widget: 1 },
+        }),
+      ).rejects.toThrow("storage write failed");
+
+      await fixture.dispose();
+    });
+
+    test("load rejects a corrupt economy record via the shape guard", async () => {
+      const createTycoonFixture = await loadCreateTycoonFixture();
+      const storage = new MemoryPlatform();
+      const fixture = createTycoonFixture({ storage });
+      await fixture.start();
+
+      // 版本号合法但 data 形状畸形：cash 为字符串、inventory 含负值——守卫拒绝
+      await storage.set(
+        "tycoon:ns:bad",
+        JSON.stringify({ version: fixture.storage.currentVersion, data: { cash: "abc", inventory: { widget: -1 } } }),
+      );
+      expect(await fixture.storage.load("ns", "bad")).toBeNull();
+
+      // 合法经济记录仍可往返（守卫放行）
+      await fixture.storage.save("ns", "good", { cash: 100, inventory: {} });
+      expect(await fixture.storage.load("ns", "good")).toEqual({
+        version: fixture.storage.currentVersion,
+        data: { cash: 100, inventory: {} },
+      });
+
+      await fixture.dispose();
+    });
+
+    test("production advances independently of the Application pause state", async () => {
+      // 设计决定固化：生产推进由测试驱动的调度 tick 结算，不随 Application
+      // 暂停绑定（夹具层不强制"暂停即停产"，取决于真实游戏设计）
+      const createTycoonFixture = await loadCreateTycoonFixture();
+      const fixture = createTycoonFixture();
+      await fixture.start();
+
+      await fixture.pause();
+
+      // 暂停后仍可经时钟推进 + 调度 tick 完成生产
+      expect(fixture.production.start("widget")).toBe(true);
+      fixture.clock.advance(1000);
+      fixture.scheduler.tick();
+      expect(fixture.economy.inventory["widget"]).toBe(1);
+
+      await fixture.resume();
       await fixture.dispose();
     });
   },

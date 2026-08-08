@@ -58,6 +58,11 @@ export function createTycoonSave(storage: PlatformStorage): TycoonSave {
         return null;
       }
 
+      // data 形状不符视为无效：避免调用方拿到畸形记录后按经济状态使用
+      if (!isTycoonEconomicState(record.data)) {
+        return null;
+      }
+
       return { version: record.version, data: record.data };
     },
   };
