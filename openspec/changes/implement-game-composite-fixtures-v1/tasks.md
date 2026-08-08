@@ -41,9 +41,9 @@
 
 ## 5. 模拟经营组合夹具
 
-- [ ] 5.1 先编写经营组合测试：调度、配置、存档与分层 UI 协作；生产任务经调度器推进、经济状态存档一致；负向断言生产链/经济模型在游戏层。
-- [ ] 5.2 建立 `assets/game_tycoon` 最小夹具：调度器驱动生产任务、配置与数值来源分离、版本化存档、分层 UI 呈现经营状态，使 5.1 测试通过。
-- [ ] 5.3 收口经营夹具边界：依赖边界检查通过，生产链与经济模型仅存在于游戏层。
+- [x] 5.1 先编写经营组合测试：调度、配置、存档与分层 UI 协作；生产任务经调度器推进、经济状态存档一致；负向断言生产链/经济模型在游戏层。（`tests/framework/foundation/game-tycoon-fixture.test.ts` 锁定目标契约：`assets/game_tycoon/assembly.ts` 导出 `createTycoonFixture`（无 cc/fgui 依赖）；统一生命周期驱动 id="tycoon"；模块清单只含已声明能力、不含音频；注入受控 clock/configContent/storage 驱动确定性生产推进与经济结算；生产任务经调度器 tick 固定节拍推进、按配置时长完成入库存；经济模型出售库存按配置售价入账、空库存拒绝；经济状态经版本化存档往返一致；分层 UI 经 normal（hub）与 popup（factory）两层 route 呈现经营状态，popup 关闭回到 normal；负向扫描框架层无生产链/经济模型类型。红期确认：1 fail（契约文件未实现）+ 10 skip（行为测试因模块缺失跳过）+ 1 pass（负向边界断言），符合预期。）
+- [x] 5.2 建立 `assets/game_tycoon` 最小夹具：调度器驱动生产任务、配置与数值来源分离、版本化存档、分层 UI 呈现经营状态，使 5.1 测试通过。（`assets/game_tycoon/`：`assembly.ts` 导出 `createTycoonFixture` 组合根（注入 clock/configContent/storage，缺省内存兜底），`models.ts` 业务模型（TycoonProduct/TycoonProductionState/TycoonEconomicState/TYCOON_HUB_ROUTE/TYCOON_FACTORY_ROUTE/TycoonHubViewModel/TycoonFactoryViewModel），`clock.ts` 可控模拟时钟（实现框架 `TimeSource` 契约——根入口白名单不含 SimulationClock，故夹具层自实现），`scheduler.ts` 被动调度器（根入口白名单不含 PassiveScheduler，夹具层自实现 schedule/tick/dispose），`config.ts` 配置句柄（createConfigTable 不可变装载产品数值/初始现金，数值与来源分离），`production.ts` 生产与经济控制器（`applyTick` 按时钟流逝惰性推导进度、超过配置时长完成入库存，`sell` 按配置售价入账、空库存拒绝；经济模型只依赖注入配置），`save.ts` 版本化存档模块（基于注入 PlatformStorage 自持版本号，含 isTycoonEconomicState 守卫），`ui.ts` 分层 UI 模块（navigator 承载 normal/popup 两层 route）；夹具层只经框架根入口导入，无 cc/fgui 依赖，避开 ES2015 目标之外的 `Object.fromEntries`/`Object.values`。验证：game-tycoon-fixture 12 pass / 0 fail（红期转绿），Foundation 全量 730 pass / 0 fail（基线 718 + 新增 12），public-boundary 33 pass、task68 9 pass、`test:foundation:types` EXIT=0、game_tycoon 独立 strict 类型检查 EXIT=0。）
+- [x] 5.3 收口经营夹具边界：依赖边界检查通过，生产链与经济模型仅存在于游戏层。（登记 `gameFixtureRegistry`：`assets/game/fixture/registry.ts` 增 `tycoon: createTycoonFixture`（task 1.3 约定五类由 2.x-6.x 登记）；`runFixtureSmoke("tycoon", gameFixtureRegistry)` 真实冒烟全链路通过（fixture-found/start/pause/resume/failRollback/dispose 全 ok）。依赖边界：public-boundary 33 pass / 0 fail（全量扫描 `findProjectImportViolations` 无违规，game→game 层内依赖允许）、task68 9 pass；业务模型仅存在于游戏层：`game_tycoon/models.ts` 承载 TycoonProduct/TycoonProductionState/TycoonEconomicState 与分层 route，`production.ts` 承载生产推进与经济结算规则，5.1 负向断言确认框架层无对应类型；`core`+`contracts` diff 为空。验证：Foundation 全量 730 pass / 0 fail、`test:foundation:types` EXIT=0、game_tycoon 独立 strict 类型检查 EXIT=0。）
 
 ## 6. 横板格斗组合夹具
 
