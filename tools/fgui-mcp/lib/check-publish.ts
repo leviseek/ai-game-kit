@@ -27,6 +27,8 @@ export interface PublishSignal {
     readonly packages: string[];
     readonly exportPath: string;
     readonly isSuccess: boolean;
+    /** 插件侧记录发布是否重定向到 .objs（未触碰真实产物） */
+    readonly redirectToScratch?: boolean;
 }
 
 export interface CheckPublishResult {
