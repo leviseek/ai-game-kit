@@ -17,6 +17,11 @@ import {
   createGameFixture,
   type GameFixture,
 } from "../game/fixture/GameFixture";
+import {
+  createRpgClockModule,
+  createRpgSimClock,
+  type RpgSimClock,
+} from "./clock";
 import type { RpgAction } from "./models";
 import { createRpgInputSource, createRpgInputModule } from "./input";
 import { createRpgResourceModule } from "./resource";
@@ -30,6 +35,8 @@ import { createRpgUiModule } from "./ui";
  * 缺省项由夹具内部以引擎无关实现兜底，不依赖 cc/fgui。
  */
 export interface RpgFixtureOptions {
+  /** 可控模拟时钟：缺省为内建时钟（从 0 开始，测试经 fixture.clock.advance 推进）。 */
+  readonly clock?: RpgSimClock;
   /** 资源提供者：缺省为内存资源提供者；观察跨场景资源按作用域释放。 */
   readonly provider?: IResourceProvider;
   /** 平台存储后端：缺省为内存存储；观察版本化存档写入/读取。 */
@@ -49,6 +56,8 @@ export interface RpgFixture extends GameFixture {
   };
   /** 场景流转：驱动跨场景切换并观察资源作用域释放。 */
   readonly sceneFlow: SceneFlow;
+  /** 可控模拟时钟：now() 供输入采样时间戳，advance 驱动确定性。 */
+  readonly clock: RpgSimClock;
   /** UI 导航器：route 打开/关闭。 */
   readonly navigator: UiNavigator;
   /** 输入上下文：切换激活上下文并路由类型化 action 采样。 */
@@ -113,6 +122,9 @@ export function createRpgFixture(
   const activated: string[] = [];
   const activateScene = options.activateScene ?? createRecordingActivateScene(activated);
 
+  // 可控模拟时钟：输入采样时间戳统一经它取得，消除真实时钟确定性偏差（task 7.4）
+  const clock = options.clock ?? createRpgSimClock();
+
   // 跨场景状态持有：闭包持有，场景切换不重建
   const stateStore = createRpgStateStore();
 
@@ -129,7 +141,7 @@ export function createRpgFixture(
   const inputHandle = createRpgInputSource();
   const samples: InputSample<RpgAction>[] = [];
   const inputMapper = createInputMapper<RpgAction>({
-    timeSource: { now: () => Date.now() },
+    timeSource: clock,
     activeContext: "gameplay",
     mappings: {
       gameplay: {
@@ -148,6 +160,7 @@ export function createRpgFixture(
   const save = createRpgSave(storage);
 
   const modules: Module[] = [
+    createRpgClockModule(clock),
     createRpgStateModule(stateStore),
     createRpgSceneModule(sceneFlow),
     createRpgResourceModule(provider, scope),
@@ -171,6 +184,7 @@ export function createRpgFixture(
       set: (state) => stateStore.set(state),
     },
     sceneFlow,
+    clock,
     navigator,
     input: {
       get activeContext() {

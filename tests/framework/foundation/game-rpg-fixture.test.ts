@@ -33,6 +33,8 @@ interface RpgPlayerState {
  * 缺省项由夹具内部以引擎无关实现兜底，不强制依赖 cc/fgui。
  */
 interface RpgFixtureOptions {
+  /** 可控模拟时钟：缺省为内建时钟（从 0 开始，测试经 fixture.clock.advance 推进）。 */
+  readonly clock?: { now(): number; advance(milliseconds: number): void };
   /** 资源提供者：观察跨场景资源按作用域释放。 */
   readonly provider?: IResourceProvider;
   /** 平台存储后端：观察版本化存档写入/读取。 */
@@ -52,6 +54,8 @@ interface RpgFixtureHooks {
   };
   /** 场景流转：驱动场景切换并观察资源作用域释放。 */
   readonly sceneFlow: SceneFlow;
+  /** 可控模拟时钟：now() 供输入采样时间戳，advance 驱动确定性。 */
+  readonly clock: { now(): number; advance(milliseconds: number): void };
   /** UI 导航器：route/ViewModel 协作。 */
   readonly navigator: UiNavigator;
   /** 输入上下文：切换激活上下文并路由类型化 action 采样。 */
@@ -149,9 +153,10 @@ describe.skipIf(!assemblyExists)(
       const createRpgFixture = await loadCreateRpgFixture();
       const fixture = createRpgFixture();
 
-      // 精确断言装配清单：跨场景状态、场景流转、资源作用域、UI、输入、存档
-      // 六类能力模块；未声明能力（音频）不参与装配
+      // 精确断言装配清单：可控时钟、跨场景状态、场景流转、资源作用域、UI、
+      // 输入、存档七类能力模块；未声明能力（音频）不参与装配
       expect(fixture.modules.map((m) => m.id)).toEqual([
+        "rpg.clock",
         "rpg.state",
         "rpg.scene",
         "rpg.resource",
@@ -248,6 +253,30 @@ describe.skipIf(!assemblyExists)(
       const current = fixture.input.activeContext;
       fixture.input.setActiveContext(current === "gameplay" ? "ui" : "gameplay");
       expect(fixture.input.samples.length).toBe(before + 2);
+
+      await fixture.dispose();
+    });
+
+    test("input sampling timestamps come from the controllable clock deterministically", async () => {
+      const createRpgFixture = await loadCreateRpgFixture();
+
+      // 注入替身时钟：now() 固定返回受控值，采样时间戳必须取注入时钟而非真实时钟
+      const clock = {
+        now: () => 12345,
+        advance: () => {},
+      };
+
+      const fixture = createRpgFixture({ clock });
+      await fixture.start();
+
+      fixture.input.push("keyboard.space", true);
+      fixture.input.push("keyboard.space", false);
+
+      // 采样时间戳来自可控时钟：注入时钟返回 12345，断言所有采样均取该值
+      expect(fixture.input.samples.length).toBeGreaterThanOrEqual(2);
+      for (const sample of fixture.input.samples) {
+        expect(sample.timestamp).toBe(12345);
+      }
 
       await fixture.dispose();
     });

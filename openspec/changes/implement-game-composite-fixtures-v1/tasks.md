@@ -54,10 +54,10 @@
 
 ## 7. 统一生命周期测试
 
-- [ ] 7.1 编写统一生命周期测试：以同一驱动对五个夹具执行启动、暂停、恢复、失败回滚与释放，断言全部通过且无需修改 `core`/`contracts`。
-- [ ] 7.2 覆盖失败回滚：夹具启动中某模块失败时已启动模块逆序回滚、应用进入 disposed 终态或可重建，不残留半启动状态。
-- [ ] 7.3 记录 8.6 验收口径：`core`+`contracts` diff 为空、`adapters/cocos/ui` 修补与 `boot/AppRoot` 扩展装配可追溯。
-- [ ] 7.4 统一夹具输入采样时间源（phase 2 遗留）：`game_rpg/assembly.ts` 的 InputMapper `timeSource` 用 `Date.now()`（真实时钟），与 `game_card` 注入可控时钟不一致。7.x 统一生命周期阶段把 RPG 改用可控时钟（内建模拟时钟或注入替身），消除输入采样时间戳的确定性偏差；改后回归 RPG 契约测试与统一生命周期测试。
+- [x] 7.1 编写统一生命周期测试：以同一驱动对五个夹具执行启动、暂停、恢复、失败回滚与释放，断言全部通过且无需修改 `core`/`contracts`。（`tests/framework/foundation/game-fixture-unified-lifecycle.test.ts` 新增 9 条：登记表恰含 rpg/card/idle/tycoon/fight 五类、每类经 `driveUniformLifecycle`（start→pause→resume→failRollback→dispose）全部通过、失败回滚不残留半启动、可重建、五类真实夹具探针后自身 app 不受扰动；统一驱动不针对任何品类分支。验证：game-fixture-unified-lifecycle 9 pass / 0 fail，Foundation 全量 763 pass / 0 fail（基线 753 + 9），`test:foundation:types` EXIT=0。）
+- [x] 7.2 覆盖失败回滚：夹具启动中某模块失败时已启动模块逆序回滚、应用进入 disposed 终态或可重建，不残留半启动状态。（`game-fixture-unified-lifecycle.test.ts` 三组断言：启动中失败模块触发 start reject 且已启动模块逆序回滚（后启动的 beta 先于 alpha stop/dispose）；disposed 终态下重复 dispose 幂等；失败后新建实例可完整走统一生命周期；五类真实夹具 failRollback 探针（复用同一批模块实例、独立状态机）后 pause/resume 仍可驱动、自身 app 不受扰动。验证：9 pass / 0 fail；框架层逆序回滚顺序另有 `module-runner-start-failure.test.ts` 覆盖，夹具层测试不重复框架细节。）
+- [x] 7.3 记录 8.6 验收口径：`core`+`contracts` diff 为空、`adapters/cocos/ui` 修补与 `boot/AppRoot` 扩展装配可追溯。（`git diff --name-only d61f91c~1..HEAD -- assets/framework/core assets/framework/contracts` → 空，五类夹具建设中内核零改动；`adapters/cocos/ui` 仅修补 `CocosUiRoot.ts`（resize 订阅/onResize/dispose）与 `FairyGuiPageAdapter.ts`（navigator 模态同步/GGraph 遮罩/`resize`/`createClickableFairyGuiView`）对应阶段 0 四项遗留缺口；`boot/AppRoot.ts` 扩展 `?fixture=` 薄转发与 `?smoke=modal-click` 冒烟入口；`public-boundary.test.ts`/`task68-scope-review.test.ts` 同步锁定该边界。核心口径对齐 design decision 4。）
+- [x] 7.4 统一夹具输入采样时间源（phase 2 遗留）：`game_rpg/assembly.ts` 的 InputMapper `timeSource` 用 `Date.now()`（真实时钟），与 `game_card` 注入可控时钟不一致。7.x 统一生命周期阶段把 RPG 改用可控时钟（内建模拟时钟或注入替身），消除输入采样时间戳的确定性偏差；改后回归 RPG 契约测试与统一生命周期测试。（新增 `assets/game_rpg/clock.ts`：`RpgSimClock`（实现框架 `TimeSource` 契约 + `advance`）与 `createRpgSimClock`，拒绝负值推进保证单调；`assembly.ts` 增 `clock` 注入选项（缺省内建）、InputMapper `timeSource` 改取可控时钟、模块清单前置 `rpg.clock`、fixture 暴露 `clock` 钩子；RPG 契约测试模块清单断言同步更新（七模块）并新增确定性测试：注入替身时钟 `now()` 返回固定值，断言全部采样时间戳取注入时钟而非真实时钟。验证：game-rpg-fixture 12 pass / 0 fail（含新增确定性测试）、game-fixture-unified-lifecycle 9 pass、Foundation 全量 763 pass / 0 fail、`test:foundation:types` EXIT=0、game_rpg 独立 strict 类型检查 EXIT=0。）
 
 ## 8. 收口验证与同步
 
