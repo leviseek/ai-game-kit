@@ -343,6 +343,78 @@ describe("AppRoot Component", () => {
     });
 });
 
+describe("AppRoot lobby host", () => {
+    test("exposes GameLobbyHost methods and default list entry trigger", async () => {
+        const { AppRoot } = await loadAppRoot();
+
+        const instance = new AppRoot();
+        instance.onLoad();
+
+        expect(typeof instance.openEntryPage).toBe("function");
+        expect(typeof instance.closeEntryPage).toBe("function");
+
+        const source = readFileSync(appRootFile, "utf8");
+        // 默认入口：无 URL 参数时打开列表页（替代空白启动）
+        expect(source).toMatch(/openListPageWithRetry\(\)/);
+        expect(source).toMatch(/LOBBY_LIST_ENTRY/);
+        expect(source).toMatch(/lobbyItemNodeName/);
+    });
+
+    test("openEntryPage is safe before the page adapter is ready", async () => {
+        const { AppRoot } = await loadAppRoot();
+
+        const instance = new AppRoot();
+        instance.onLoad();
+
+        await expect(
+            instance.openEntryPage({
+                route: "card/battle",
+                packageName: "CardGame",
+                resName: "BattleView",
+            }),
+        ).rejects.toThrow(/page adapter not ready/);
+    });
+
+    test("closeEntryPage is idempotent before any entry page is open", async () => {
+        const { AppRoot } = await loadAppRoot();
+
+        const instance = new AppRoot();
+        instance.onLoad();
+
+        await expect(
+            instance.closeEntryPage({} as unknown as { node(): unknown; onClose(): void }),
+        ).resolves.toBeUndefined();
+        await expect(
+            instance.closeEntryPage({} as unknown as { node(): unknown; onClose(): void }),
+        ).resolves.toBeUndefined();
+    });
+
+    test("loads shared ui dependency Common before opening any package page", async () => {
+        const source = readFileSync(appRootFile, "utf8");
+
+        // Demo/CardGame 跨包引用通用资源包 Common（按钮/进度条组件）；fgui
+        // loadPackage 不自动加载依赖包，若 Common 未先注册则组件退化为空、点击
+        // 不触发。契约要求 ensureSharedUiDependencies（加载 Common）先于入口页
+        // /列表页 package 加载。
+        expect(source).toMatch(/ensureSharedUiDependencies/);
+        expect(source).toMatch(/Common\/Common/);
+
+        // 调用点顺序：openEntryPage 与 openListPage 内部都先调依赖再加载目标包，
+        // 保证"依赖先注册"语义（源码顺序 = 执行顺序的强契约）
+        const ensureCall = source.indexOf("ensureSharedUiDependencies()");
+        expect(ensureCall).toBeGreaterThan(-1);
+
+        const listPackage = source.indexOf(
+            "const pkgPath = `${LOBBY_LIST_ENTRY.packageName}",
+        );
+        const entryPackage = source.indexOf(
+            "const pkgPath = `${entry.packageName}/${entry.packageName}`",
+        );
+        expect(entryPackage).toBeGreaterThan(ensureCall);
+        expect(listPackage).toBeGreaterThan(ensureCall);
+    });
+});
+
 describe("startup.scene", () => {
     const sceneFile = resolve(projectRoot, "assets/boot/startup.scene");
 

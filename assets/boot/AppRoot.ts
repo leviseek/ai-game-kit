@@ -43,6 +43,16 @@ import {
 import { runFixtureSmoke, runCardBattleSmoke } from "../game/fixture/smoke";
 import { runFixturePerf, type PerfSample } from "../game/fixture/perf";
 import {
+    LOBBY_LIST_ENTRY,
+    createGameLobby,
+    gameTypeCatalog,
+    lobbyItemNodeName,
+    type EntryPageHandle,
+    type GameEntryInfo,
+    type GameLobby,
+    type GameLobbyHost,
+} from "../game/fixture/lobby";
+import {
     createFairyGuiPageAdapter,
     createFairyGuiView,
     createClickableFairyGuiView,
@@ -152,6 +162,9 @@ export class AppRoot extends Component {
     private resizeUnsubscribe?: () => void;
     private logger?: Logger;
     private validateAssembly?: () => void;
+    private lobby?: GameLobby;
+    private lobbyPage?: FairyGuiPageHandle;
+    private lobbyScope?: ResourceScope;
 
     onLoad(): void {
         const {
@@ -252,6 +265,10 @@ export class AppRoot extends Component {
                         },
                     );
                 }, 1000);
+            } else {
+                // 默认入口：无任何启动参数时打开游戏列表页（各类游戏类型主入口）。
+                // UI 根未就绪时经 smokeUiReady 检测并幂等重试，不依赖固定延时。
+                this.openListPageWithRetry();
             }
         }
     }
@@ -683,9 +700,11 @@ export class AppRoot extends Component {
             return;
         }
 
-        // 2. 加载 CardGame package（assets/ui/CardGame/CardGame.bin → bundle "ui"）
+        // 2. 加载 CardGame package（assets/ui/CardGame/CardGame.bin → bundle "ui"）；
+        //    该包跨包引用 Basic，先确保依赖已注册，使按钮组件可解析
         let packageLoaded = false;
         try {
+            await this.ensureSharedUiDependencies();
             const handle = await this.smokeUiLoadPackage("ui", "CardGame/CardGame");
             packageLoaded = handle.state === "ready";
             report("package-load", packageLoaded, String(handle.state));
@@ -719,6 +738,217 @@ export class AppRoot extends Component {
         this.smokeUiRelease();
 
         console.log("[card-battle] complete");
+    }
+
+    /** 惰性装配品类会话编排：AppRoot 作为 GameLobbyHost，组合逻辑留在游戏层。 */
+    private ensureLobby(): GameLobby {
+        if (this.lobby === undefined) {
+            this.lobby = createGameLobby(this);
+        }
+        return this.lobby;
+    }
+
+    /**
+     * 加载共享 UI 依赖包并注册进全局作用域常驻。Demo/CardGame 等品类包跨包
+     * 引用通用资源包 Common（如按钮/进度条组件），而 fgui loadPackage 不自动
+     * 加载依赖包：若 Common 未注册，跨包组件解析失败退化为空组件，按钮无命中、
+     * 点击事件不触发。本方法先加载 Common 使引用可解析；Common 常驻全局作用域，
+     * 退出品类会话不受影响。重复调用幂等（加载协调器按 key 缓存终态）。
+     */
+    private async ensureSharedUiDependencies(): Promise<void> {
+        const provider = this.resourceProvider;
+        if (provider === undefined) {
+            return;
+        }
+        if (this.uiScope === undefined) {
+            this.uiScope = provider.createScope();
+        }
+        const handle = provider.loadPackage("ui", "Common/Common");
+        this.uiScope.retain(handle);
+        const loaded = await handle.done;
+        if (loaded.state !== "ready") {
+            throw new Error(
+                `lobby: shared ui dependency load failed for "Common/Common" (${loaded.state})`,
+            );
+        }
+    }
+
+    /**
+     * GameLobbyHost.openEntryPage：为品类会话建立独立资源作用域（持有品类
+     * package），打开并挂载真实入口页，暴露节点解析器与"页面关闭 → 会话退出"
+     * 联动登记。返回句柄供 closeEntryPage 逆序释放；重复打开同 route 由导航
+     * 器 duplicate 策略保护（此处 default reject）。
+     */
+    async openEntryPage(entry: GameEntryInfo): Promise<EntryPageHandle> {
+        if (
+            this.resourceProvider === undefined ||
+            !this.ensurePageAdapter() ||
+            this.pageAdapter === undefined
+        ) {
+            throw new Error("lobby host: page adapter not ready");
+        }
+
+        // 品类包跨包引用共享 Basic（如 BattleView 按钮），先确保其已注册
+        await this.ensureSharedUiDependencies();
+
+        // 会话级资源作用域：仅持有本次会话的品类包，退出时全量释放，不影响
+        // 列表包（全局 uiScope 常驻）。这是 MVP 单会话的必要隔离（design D3）。
+        const scope = this.resourceProvider.createScope();
+        const pkgPath = `${entry.packageName}/${entry.packageName}`;
+        const pkgHandle = this.resourceProvider.loadPackage("ui", pkgPath);
+        scope.retain(pkgHandle);
+        const loaded = await pkgHandle.done;
+        if (loaded.state !== "ready") {
+            scope.release();
+            throw new Error(
+                `lobby host: package load failed for "${pkgPath}" (${loaded.state})`,
+            );
+        }
+
+        const page = this.pageAdapter.createPage(entry.route, "normal", {
+            packageName: entry.packageName,
+            resName: entry.resName,
+        });
+        if (page.disposed || page.view === undefined) {
+            scope.release();
+            throw new Error(
+                `lobby host: create page failed for "${entry.resName}"`,
+            );
+        }
+        this.pageAdapter.mount(page);
+
+        // 打开导航页并登记"退出会话"disposable：导航关闭该页面（如返回键）时
+        // 经 UiPage 作用域自然触发会话清理，不遗留运行中的夹具（design D4）。
+        const navResult = this.navigator?.open(entry.route, { layer: "normal" });
+        const navPage = navResult?.ok === true ? navResult.page : undefined;
+
+        // 节点解析器：渲染器与游戏层只消费 ViewModelNode 契约，fgui 类型不出
+        // 组合根（design decision 7 边界）
+        const node = createFairyGuiViewHandle(page.view as never);
+
+        let handle: EntryPageHandle;
+        handle = {
+            node,
+            onClose: (callback: () => void) => {
+                // 登记到导航页作用域：导航关闭页面时触发一次（幂等）
+                navPage?.addDisposable({ dispose: callback });
+            },
+        };
+        this.lobbyPage = page;
+        this.lobbyScope = scope;
+        return handle;
+    }
+
+    /**
+     * GameLobbyHost.closeEntryPage：关闭导航页（触发登记的退出回调，幂等）、
+     * 销毁入口页、释放会话资源作用域。重复关闭幂等。
+     */
+    async closeEntryPage(_handle: EntryPageHandle): Promise<void> {
+        const page = this.lobbyPage;
+        const scope = this.lobbyScope;
+        this.lobbyPage = undefined;
+        this.lobbyScope = undefined;
+        if (page === undefined) {
+            return;
+        }
+        if (this.navigator !== undefined) {
+            // 关闭导航页触发登记在 UiPage 的"退出会话"回调；已关闭时幂等
+            const top = this.navigator.top;
+            if (top !== undefined) {
+                this.navigator.close(top.id);
+            }
+        }
+        this.pageAdapter?.destroy(page);
+        scope?.release();
+    }
+
+    /**
+     * 默认入口：无启动参数时打开游戏列表页。每次重试重新触发 UI 根初始化
+     * （init 幂等）：GRoot 首帧后才可用，早期失败保持未初始化，若只轮询
+     * smokeUiReady 就绪状态将永远为 false；重试 init 使 GRoot 就绪后即成功
+     * （对齐 runUiSmoke 经 smokeUiInit 重试初始化的路径），不依赖固定时长。
+     */
+    private openListPageWithRetry(retryLeft = 20): void {
+        if (!this.smokeUiInit()) {
+            if (retryLeft > 0) {
+                setTimeout(() => this.openListPageWithRetry(retryLeft - 1), 100);
+            } else {
+                this.logger?.error("[lobby] list page open timed out: UI root not ready");
+            }
+            return;
+        }
+        this.openListPage().catch((error) => {
+            this.logger?.error(
+                "[lobby] list page open failed",
+                undefined,
+                error instanceof Error ? error : undefined,
+            );
+        });
+    }
+
+    /**
+     * 打开游戏列表页并装配列表项点击回调：可玩品类经 lobby.enter 进入真实页面，
+     * 不可玩项（playable=false）不登记点击（列表呈现占位）。列表包加载进全局
+     * uiScope 常驻，退出品类会话时不受影响。
+     */
+    private async openListPage(): Promise<void> {
+        if (
+            this.resourceProvider === undefined ||
+            !this.ensurePageAdapter() ||
+            this.pageAdapter === undefined
+        ) {
+            throw new Error("lobby list: page adapter not ready");
+        }
+
+        // 列表页跨包引用共享 Basic（btn_* 按钮组件），先确保其已注册
+        await this.ensureSharedUiDependencies();
+
+        const pkgPath = `${LOBBY_LIST_ENTRY.packageName}/${LOBBY_LIST_ENTRY.packageName}`;
+        const handle = this.resourceProvider.loadPackage("ui", pkgPath);
+        if (this.uiScope === undefined) {
+            this.uiScope = this.resourceProvider.createScope();
+        }
+        this.uiScope.retain(handle);
+        const loaded = await handle.done;
+        if (loaded.state !== "ready") {
+            throw new Error(
+                `lobby list: package load failed for "${pkgPath}" (${loaded.state})`,
+            );
+        }
+
+        const page = this.pageAdapter.createPage(
+            LOBBY_LIST_ENTRY.route,
+            "normal",
+            {
+                packageName: LOBBY_LIST_ENTRY.packageName,
+                resName: LOBBY_LIST_ENTRY.resName,
+            },
+        );
+        if (page.disposed || page.view === undefined) {
+            throw new Error(
+                `lobby list: create page failed for "${LOBBY_LIST_ENTRY.resName}"`,
+            );
+        }
+        this.pageAdapter.mount(page);
+
+        // 列表项点击：按 catalog 可玩品类登记进入回调（节点名 btn_<id>）
+        const node = createFairyGuiViewHandle(page.view as never);
+        const lobby = this.ensureLobby();
+        for (const info of gameTypeCatalog) {
+            if (!info.playable) {
+                continue;
+            }
+            const item = node(lobbyItemNodeName(info.id));
+            item?.onClick(() => {
+                lobby.enter(info.id).catch((error) => {
+                    this.logger?.error(
+                        "[lobby] enter failed",
+                        undefined,
+                        error instanceof Error ? error : undefined,
+                    );
+                });
+            });
+        }
     }
 
     /**
@@ -797,6 +1027,14 @@ export class AppRoot extends Component {
         // 生命周期随组合根收尾）
         this.navigator?.dispose();
         this.navigator = undefined;
+        // 会话级作用域与列表页全局作用域随组合根释放；品类夹具由 lobby exit
+        // 负责，若残留会话在此兜底关闭（页面关闭联动已触发过则为幂等 no-op）
+        this.lobbyScope?.release();
+        this.lobbyScope = undefined;
+        this.uiScope?.release();
+        this.uiScope = undefined;
+        this.lobbyPage = undefined;
+        this.lobby = undefined;
         this.resourceProvider?.dispose();
         this.app?.dispose().catch(() => {
             // dispose 失败已由 Application 内部通过 context.logger 记录
