@@ -3,6 +3,7 @@ import { createRpgFixture } from "../../game_rpg/assembly";
 import { createCardFixture } from "../../game_card/assembly";
 import { createIdleFixture } from "../../game_idle/assembly";
 import { createTycoonFixture } from "../../game_tycoon/assembly";
+import { createFightFixture } from "../../game_fight/assembly";
 
 /** 品类夹具工厂：无参构造一个 GameFixture。 */
 export type GameFixtureFactory = () => GameFixture;
@@ -15,7 +16,8 @@ export type GameFixtureRegistry = Readonly<Record<string, GameFixtureFactory>>;
 
 /**
  * 品类夹具登记表：由各品类 change 在 2.x-6.x 阶段登记
- * （RPG 由 task 2.3、卡牌由 task 3.3、挂机由 task 4.3、经营由 task 5.3 登记）。
+ * （RPG 由 task 2.3、卡牌由 task 3.3、挂机由 task 4.3、经营由 task 5.3、
+ * 格斗由 task 6.3 登记）。
  * 装配入口（boot/AppRoot）只经此表做薄转发，组合逻辑留在游戏层夹具内。
  */
 export const gameFixtureRegistry: GameFixtureRegistry = Object.freeze({
@@ -23,4 +25,5 @@ export const gameFixtureRegistry: GameFixtureRegistry = Object.freeze({
   card: createCardFixture,
   idle: createIdleFixture,
   tycoon: createTycoonFixture,
+  fight: createFightFixture,
 });
