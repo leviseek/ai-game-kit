@@ -2,7 +2,6 @@ import FairyEditor = CS.FairyEditor;
 import { listToArray, type MailboxHandler } from "./server";
 
 const App = FairyEditor.App;
-
 /** 返回工程所有包（name/id/opened）。 */
 export const handleListPackages: MailboxHandler = () => {
     const project = App.project;
@@ -100,4 +99,233 @@ export const handleGetActiveContext: MailboxHandler = () => {
             : null,
         activeFolder: activeFolder ? { url: activeFolder.GetURL(), name: activeFolder.name, path: activeFolder.path } : null,
     };
+};
+
+/** 工程设置的可读字段（按 SettingsBase 子类公开属性读取；Publish 已在 handlers-publish 覆盖）。 */
+const SETTINGS_FIELDS: Record<string, string[]> = {
+    Adaptation: ["scaleMode", "screenMathMode", "designResolutionX", "designResolutionY"],
+    Common: ["font", "fontSize", "textColor", "fontAdjustment", "pivot", "listClearOnPublish", "buttonClickSound", "tipsRes"],
+    I18n: ["langFiles", "lang"],
+    PackageGroup: ["groups"],
+};
+
+/** 返回工程设置快照（Adaptation/Common/I18n/PackageGroup）。 */
+export const handleReadProjectSettings: MailboxHandler = (params) => {
+    const project = App.project;
+    if (!project) throw new Error("无打开工程");
+    const section = params["section"] as string | undefined;
+    const sections = section ? [section] : Object.keys(SETTINGS_FIELDS);
+    const result: Record<string, unknown> = {};
+    for (const key of sections) {
+        const fields = SETTINGS_FIELDS[key];
+        if (!fields) {
+            throw new Error(`未知设置段: ${key}（可用: ${Object.keys(SETTINGS_FIELDS).join(",")}）`);
+        }
+        const settings = safeGetSettings(project, key);
+        if (!settings) {
+            result[key] = null;
+            continue;
+        }
+        const snapshot: Record<string, unknown> = {};
+        for (const field of fields) {
+            const value = settings[field];
+            // 嵌套对象/列表需序列化为可 JSON 结构（Puerts 直接引用 C# 对象会 JSON.stringify 失败）
+            snapshot[field] = serializeSettingValue(value);
+        }
+        result[key] = snapshot;
+    }
+    return { projectType: project.type, sections: result };
+};
+
+/** GetSettings 对不存在的设置段会抛异常（如无 I18n 的工程），容错返回 null。 */
+function safeGetSettings(project: any, key: string): any {
+    try {
+        return project.GetSettings(key);
+    } catch {
+        return null;
+    }
+}
+
+/** 把设置字段值转为可 JSON 序列化的结构。 */
+function serializeSettingValue(value: unknown): unknown {
+    if (value == null) return value;
+    if (typeof value !== "object") return value;
+    const anyValue = value as any;
+    // List$1<T>：Count + get_Item
+    if (typeof anyValue.Count === "number" && typeof anyValue.get_Item === "function") {
+        return listToArray(anyValue).map(serializeSettingValue);
+    }
+    // 简单对象：枚举自身可读属性（递归一层防环）
+    const out: Record<string, unknown> = {};
+    try {
+        for (const key of Object.keys(anyValue)) {
+            const v = anyValue[key];
+            if (typeof v === "function") continue;
+            out[key] = typeof v === "object" && v != null ? serializeSettingValue(v) : v;
+        }
+    } catch {
+        return String(value);
+    }
+    return out;
+}
+
+/** 返回未使用/重复资源报告（只读，不删除）。deferred：Start 异步完成后回写。 */
+export function createFindResourcesHandler(
+    kind: "unused" | "duplicate",
+    server: import("./server").MailboxServer,
+): MailboxHandler {
+    return (params): { deferred: true; id: string } => {
+        const project = App.project;
+        if (!project) throw new Error("无打开工程");
+        const packageName = params["package"] as string | undefined;
+        const pkgs = packageName
+            ? [project.GetPackageByName(packageName)].filter(Boolean) as FairyEditor.FPackage[]
+            : listToArray(project.allPackages);
+        if (pkgs.length === 0) throw new Error(`包不存在: ${packageName}`);
+
+        const reqId = params["__requestId"] as string;
+        if (!reqId) throw new Error("缺少请求 id（内部错误）");
+
+        const finder = kind === "unused"
+            ? new FairyEditor.FindUnusedResource()
+            : new FairyEditor.FindDuplicateResource() as any;
+        const started: { fired: boolean } = { fired: false };
+        const report = (): void => {
+            const rows: unknown[] = [];
+            if (kind === "duplicate") {
+                // 重复资源按组输出：GetGroup 分组
+                const finderAny = finder as any;
+                const result = finderAny.result as any;
+                const count = result ? result.Count : 0;
+                for (let g = 0; g < count; g++) {
+                    const group: FairyEditor.FPackageItem[] = [];
+                    finderAny.GetGroup(g, group as any);
+                    rows.push({ group: g, items: group.map((item) => ({
+                        id: item.id, name: item.name, path: item.path, pkg: item.owner ? (item.owner as any).name : null,
+                    })) });
+                }
+            } else {
+                const result = (finder as any).result as any;
+                const list = result && typeof result.Count === "number" ? listToArray(result) : [];
+                for (const raw of list) {
+                    const item = raw as FairyEditor.FPackageItem;
+                    rows.push({ id: item.id, name: item.name, path: item.path, pkg: item.owner ? (item.owner as any).name : null });
+                }
+            }
+            server.writeResponse(reqId, {
+                ok: true,
+                result: { kind, count: rows.length, items: rows },
+            });
+        };
+        try {
+            (finder as any).Start(pkgs, () => { /* onProgress：记录进度已触发 */ }, () => {
+                started.fired = true;
+                report();
+            });
+        } catch (e: any) {
+            server.writeResponse(reqId, { ok: false, error: String(e && e.message ? e.message : e) });
+        }
+        return { deferred: true, id: reqId };
+    };
+}
+
+/** 返回全工程资源搜索（FullSearch）。 */
+export const handleFullSearch: MailboxHandler = (params) => {
+    const project = App.project;
+    if (!project) throw new Error("无打开工程");
+    const keyword = params["keyword"] as string | undefined;
+    if (!keyword) throw new Error("缺少参数 keyword");
+    const maxResults = params["maxResults"] as number | undefined;
+    const search = maxResults ? new FairyEditor.FullSearch(maxResults) : new FairyEditor.FullSearch();
+    search.Start(keyword, "", true);
+    const rows = listToArray(search.result).map((item) => ({
+        id: item.id,
+        name: item.name,
+        path: item.path,
+        pkg: item.owner ? (item.owner as any).name : null,
+    }));
+    return { keyword, count: rows.length, results: rows };
+};
+
+/** 返回已打开文档的结构快照（子对象/控制器/关系/过渡）。 */
+export const handleReadDocument: MailboxHandler = (params) => {    const project = App.project;
+    if (!project) throw new Error("无打开工程");
+    const packageName = params["package"] as string | undefined;
+    const componentName = params["component"] as string | undefined;
+    if (!packageName) throw new Error("缺少参数 package");
+    if (!componentName) throw new Error("缺少参数 component");
+
+    const pkg = project.GetPackageByName(packageName);
+    if (!pkg) throw new Error(`包不存在: ${packageName}`);
+    const item = pkg.FindItemByName(componentName) || pkg.FindItemByName(`${componentName}.xml`);
+    if (!item) throw new Error(`组件不存在: ${packageName}/${componentName}`);
+    const url = item.GetURL();
+
+    const doc = App.docView.FindDocument(url) || App.docView.OpenDocument(url, false);
+    if (!doc) throw new Error(`打开文档失败: ${url}`);
+    const content = (doc as any).content as any;
+    if (!content) throw new Error(`文档无 content: ${url}`);
+
+    const children = listToArray(content.children).map((obj: any) => ({
+        id: obj.id,
+        name: obj.name,
+        objectType: obj.objectType,
+        x: obj.x,
+        y: obj.y,
+        width: obj.width,
+        height: obj.height,
+    }));
+
+    const controllers = listToArray(content.controllers).map((c: any) => ({
+        name: c.name,
+        pages: listToArray(c.GetPages()).map((p: any) => ({ id: p.id, name: p.name })),
+        selectedIndex: c.selectedIndex,
+    }));
+
+    const relations = listToArray(content.relations ? content.relations.items : null).map((r: any) => ({
+        targetId: r ? (r.target ? (r.target as any).id : null) : null,
+        desc: r ? r.desc : null,
+    }));
+
+    const transitions = content.transitions && content.transitions.items
+        ? listToArray(content.transitions.items).map((t: any) => ({ name: t.name, autoPlay: t.autoPlay }))
+        : [];
+
+    return {
+        url,
+        size: { width: content.width, height: content.height },
+        children,
+        controllers,
+        relations,
+        transitions,
+    };
+};
+
+/** 返回组件控制器列表（名称/页面/选中索引）。与 read_document 的 controllers 段同源，独立暴露便于快速查询。 */
+export const handleListControllers: MailboxHandler = (params) => {
+    const project = App.project;
+    if (!project) throw new Error("无打开工程");
+    const packageName = params["package"] as string | undefined;
+    const componentName = params["component"] as string | undefined;
+    if (!packageName) throw new Error("缺少参数 package");
+    if (!componentName) throw new Error("缺少参数 component");
+
+    const pkg = project.GetPackageByName(packageName);
+    if (!pkg) throw new Error(`包不存在: ${packageName}`);
+    const item = pkg.FindItemByName(componentName) || pkg.FindItemByName(`${componentName}.xml`);
+    if (!item) throw new Error(`组件不存在: ${packageName}/${componentName}`);
+    const url = item.GetURL();
+
+    const doc = App.docView.FindDocument(url) || App.docView.OpenDocument(url, false);
+    if (!doc) throw new Error(`打开文档失败: ${url}`);
+    const content = (doc as any).content as any;
+    if (!content) throw new Error(`文档无 content: ${url}`);
+
+    const controllers = listToArray(content.controllers).map((c: any) => ({
+        name: c.name,
+        pages: listToArray(c.GetPages()).map((p: any) => ({ id: p.id, name: p.name })),
+        selectedIndex: c.selectedIndex,
+        selectedPage: c.selectedPage,
+    }));
+    return { package: packageName, component: componentName, count: controllers.length, controllers };
 };

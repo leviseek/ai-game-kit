@@ -28,11 +28,31 @@ MCP 客户端经 stdio 拉起（`opencode.json` 已配置）：
 
 | 类别 | 工具 | 通道 |
 | --- | --- | --- |
-| 读 | `fgui_list_packages` / `fgui_list_resources` / `fgui_query_dependencies` / `fgui_read_publish_settings` / `fgui_get_active_context` | 编辑器桥 |
+| 读 | `fgui_list_packages` / `fgui_list_resources` / `fgui_query_dependencies` / `fgui_read_publish_settings` / `fgui_get_active_context` / `fgui_read_project_settings` / `fgui_full_search` / `fgui_read_document` / `fgui_list_controllers` / `fgui_find_unused_resources` / `fgui_find_duplicate_resources` | 编辑器桥 |
 | 校验 | `fgui_validate_package` | fgui CLI |
-| 写 | `fgui_switch_publish_settings` / `fgui_restore_publish_settings` / `fgui_refresh_project` / `fgui_insert_component` | 编辑器桥 |
+| 保存 | `fgui_save_documents`（写闭环：发布前自动强制保存） | 编辑器桥 |
+| 刷新 | `fgui_reload_package`（pkg.Touch + item.Touch 精准刷新；full=true 走全量）/ `fgui_refresh_project` | 编辑器桥 |
+| 资源 | `fgui_import_resource` / `fgui_create_component` / `fgui_create_folder` / `fgui_rename_resource` / `fgui_move_resource` / `fgui_delete_resource` / `fgui_copy_items` / `fgui_create_package` / `fgui_delete_package` | 编辑器桥 |
+| 结构编辑 | `fgui_add_child` / `fgui_delete_child` / `fgui_set_object_property`（graph 禁止） | 编辑器桥 |
+| 控制器 | `fgui_add_controller` / `fgui_update_controller` / `fgui_remove_controller` / `fgui_switch_page` | 编辑器桥 |
+| 关系 | `fgui_set_relation` / `fgui_remove_relation`（sidePair ≤2 内置校验） | 编辑器桥 |
+| 分支 | `fgui_list_branches` / `fgui_switch_branch` | 编辑器桥 |
+| 截图 | `fgui_capture_preview`（OS 级窗口截图，供视觉验证 subagent） | 编辑器桥 |
 | 发布 | `fgui_trigger_publish`（全自动，deferred 异步响应） | 编辑器桥 |
 | 检测 | `fgui_check_publish`（三重证据：信号 + 产物 mtime + validate） | 外部 |
+
+## 写工具通用约定
+
+- **内存态操作需持久化**：`add_child`/`set_object_property`/控制器/关系等修改编辑器内存态文档，需 `fgui_save_documents` 落盘；发布流程会自动先保存全部未保存文档。
+- **破坏性操作二次确认**：`delete_package`/`delete_resource` 先返回影响范围，调用方传 `confirm: true` 才执行。
+- **项目禁令在 handler 层屏蔽**：创建/修改 `graph` 对象返回结构化错误；transition XML 写入不暴露（动画由 TS 推进 controller）。
+- **跨包复制**：`fgui_copy_items` 走 `CopyHandler` 带依赖复制，跨包引用需遵循「只指向 Common 通用包」约定。
+
+## 视觉验证
+
+- `fgui_capture_preview` 截图后，交 `.opencode/agent/fgui-visual-verifier.md`（绑定 `codexapis/gpt-5.6-sol` 多模态）核对布局/像素/预览。
+- 截图走 FairyGUI 官方路径（探针实机验证）：`doc.content.displayObject.GetScreenShot` + `UnityEngine.ImageConversion.EncodeToPNG`。`ScreenCapture.CaptureScreenshot`/`Application.CaptureScreenshot` 在 Puerts 不可调用；OS 级 PowerShell 截图在 Unity 内 `Process.Start` 受限。
+- **Puerts 序列化陷阱**：C# `long`（如 `FileInfo.Length`）映射为 BigInt，`JSON.stringify` 会抛错致响应丢失，所有序列化字段必须 `Number()` 转换。
 
 ## 平台约束
 
@@ -52,4 +72,5 @@ bun run tools/fgui-mcp/test/smoke-stdio.ts                  # stdio 握手 + 工
 ## 未来扩展
 
 - HTTP 增强通道（`HttpListener`，回调线程可读编辑器 API 已探针验证；`runInBackground` 解决后台问题后必要性降低）。
-- 更多写工具（资源移动/删除、控制器切换、截图验证）。
+- 实机探针验证回填：`ImportResource`/`CopyHandler`/`AddController`/截图四类新探针待编辑器实机运行，汇总结论将固化到工具描述的能力受限标注。
+- 组件模板（`ComponentTemplates`）暂缓工具化（骨架依赖官方库图片约定，与调色板锁定约定可能冲突）。

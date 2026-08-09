@@ -1,6 +1,7 @@
 import FairyEditor = CS.FairyEditor;
 import type { MailboxServer, MailboxHandler } from "./server";
 import { writePublishSignal } from "./publish-signal";
+import { saveAllDocuments } from "./handlers-write";
 
 const App = FairyEditor.App;
 
@@ -19,6 +20,17 @@ export function createTriggerPublishHandler(server: MailboxServer): MailboxHandl
         if (!packageName) throw new Error("缺少参数 package");
         const pkg = project.GetPackageByName(packageName);
         if (!pkg) throw new Error(`包不存在: ${packageName}`);
+
+        // 发布前强制保存全部未保存文档：保证内存态修改落盘，避免产物与源 XML 失配（写闭环）
+        let savedInfo: { saved: number; hadUnsaved: boolean };
+        try {
+            savedInfo = saveAllDocuments();
+        } catch (e: any) {
+            const error = `发布前保存文档失败，已中止发布: ${e && e.message ? e.message : e}`;
+            const reqId = params["__requestId"] as string;
+            if (reqId) server.writeResponse(reqId, { ok: false, error });
+            throw new Error(error);
+        }
 
         // 分支参数：默认取 activeBranch（空串合法）；显式传入时校验 ∈ allBranches
         let branch = project.activeBranch as string;
@@ -74,6 +86,7 @@ export function createTriggerPublishHandler(server: MailboxServer): MailboxHandl
                     fileName: handler.fileName,
                     elapsedMs: Date.now() - t0,
                     packages: [packageName],
+                    savedBeforePublish: savedInfo.hadUnsaved,
                 },
             });
         });

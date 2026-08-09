@@ -18,13 +18,36 @@ function joinTempDir(): string {
 }
 
 describe("写工具注册表", () => {
-    it("注册 5 个写工具且描述非空", () => {
+    it("注册 28 个写工具且描述非空", () => {
         expect(Object.keys(WRITE_TOOLS).sort()).toEqual([
+            "fgui_add_child",
+            "fgui_add_controller",
+            "fgui_capture_preview",
+            "fgui_copy_items",
+            "fgui_create_component",
+            "fgui_create_folder",
+            "fgui_create_package",
+            "fgui_delete_child",
+            "fgui_delete_package",
+            "fgui_delete_resource",
+            "fgui_import_resource",
             "fgui_insert_component",
+            "fgui_list_branches",
+            "fgui_move_resource",
             "fgui_refresh_project",
+            "fgui_reload_package",
+            "fgui_remove_controller",
+            "fgui_remove_relation",
+            "fgui_rename_resource",
             "fgui_restore_publish_settings",
+            "fgui_save_documents",
+            "fgui_set_object_property",
+            "fgui_set_relation",
+            "fgui_switch_branch",
+            "fgui_switch_page",
             "fgui_switch_publish_settings",
             "fgui_trigger_publish",
+            "fgui_update_controller",
         ]);
         for (const tool of Object.values(WRITE_TOOLS)) {
             expect(tool.description.length).toBeGreaterThan(0);
@@ -42,6 +65,8 @@ describe("写工具注册表", () => {
         expectMethod("fgui_restore_publish_settings", "回滚");
         expectMethod("fgui_refresh_project", "刷新");
         expectMethod("fgui_insert_component", "插入");
+        expectMethod("fgui_save_documents", "保存");
+        expectMethod("fgui_import_resource", "导入");
     });
 });
 

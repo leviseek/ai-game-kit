@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.handleGetActiveContext = exports.handleReadPublishSettings = exports.handleQueryDependencies = exports.handleListResources = exports.handleListPackages = void 0;
+exports.handleListControllers = exports.handleReadDocument = exports.handleFullSearch = exports.handleReadProjectSettings = exports.handleGetActiveContext = exports.handleReadPublishSettings = exports.handleQueryDependencies = exports.handleListResources = exports.handleListPackages = void 0;
+exports.createFindResourcesHandler = createFindResourcesHandler;
 var FairyEditor = CS.FairyEditor;
 const server_1 = require("./server");
 const App = FairyEditor.App;
@@ -100,4 +101,230 @@ const handleGetActiveContext = () => {
     };
 };
 exports.handleGetActiveContext = handleGetActiveContext;
+const SETTINGS_FIELDS = {
+    Adaptation: ["scaleMode", "screenMathMode", "designResolutionX", "designResolutionY"],
+    Common: ["font", "fontSize", "textColor", "fontAdjustment", "pivot", "listClearOnPublish", "buttonClickSound", "tipsRes"],
+    I18n: ["langFiles", "lang"],
+    PackageGroup: ["groups"],
+};
+const handleReadProjectSettings = (params) => {
+    const project = App.project;
+    if (!project)
+        throw new Error("无打开工程");
+    const section = params["section"];
+    const sections = section ? [section] : Object.keys(SETTINGS_FIELDS);
+    const result = {};
+    for (const key of sections) {
+        const fields = SETTINGS_FIELDS[key];
+        if (!fields) {
+            throw new Error(`未知设置段: ${key}（可用: ${Object.keys(SETTINGS_FIELDS).join(",")}）`);
+        }
+        const settings = safeGetSettings(project, key);
+        if (!settings) {
+            result[key] = null;
+            continue;
+        }
+        const snapshot = {};
+        for (const field of fields) {
+            const value = settings[field];
+            snapshot[field] = serializeSettingValue(value);
+        }
+        result[key] = snapshot;
+    }
+    return { projectType: project.type, sections: result };
+};
+exports.handleReadProjectSettings = handleReadProjectSettings;
+function safeGetSettings(project, key) {
+    try {
+        return project.GetSettings(key);
+    }
+    catch {
+        return null;
+    }
+}
+function serializeSettingValue(value) {
+    if (value == null)
+        return value;
+    if (typeof value !== "object")
+        return value;
+    const anyValue = value;
+    if (typeof anyValue.Count === "number" && typeof anyValue.get_Item === "function") {
+        return (0, server_1.listToArray)(anyValue).map(serializeSettingValue);
+    }
+    const out = {};
+    try {
+        for (const key of Object.keys(anyValue)) {
+            const v = anyValue[key];
+            if (typeof v === "function")
+                continue;
+            out[key] = typeof v === "object" && v != null ? serializeSettingValue(v) : v;
+        }
+    }
+    catch {
+        return String(value);
+    }
+    return out;
+}
+function createFindResourcesHandler(kind, server) {
+    return (params) => {
+        const project = App.project;
+        if (!project)
+            throw new Error("无打开工程");
+        const packageName = params["package"];
+        const pkgs = packageName
+            ? [project.GetPackageByName(packageName)].filter(Boolean)
+            : (0, server_1.listToArray)(project.allPackages);
+        if (pkgs.length === 0)
+            throw new Error(`包不存在: ${packageName}`);
+        const reqId = params["__requestId"];
+        if (!reqId)
+            throw new Error("缺少请求 id（内部错误）");
+        const finder = kind === "unused"
+            ? new FairyEditor.FindUnusedResource()
+            : new FairyEditor.FindDuplicateResource();
+        const started = { fired: false };
+        const report = () => {
+            const rows = [];
+            if (kind === "duplicate") {
+                const finderAny = finder;
+                const result = finderAny.result;
+                const count = result ? result.Count : 0;
+                for (let g = 0; g < count; g++) {
+                    const group = [];
+                    finderAny.GetGroup(g, group);
+                    rows.push({ group: g, items: group.map((item) => ({
+                            id: item.id, name: item.name, path: item.path, pkg: item.owner ? item.owner.name : null,
+                        })) });
+                }
+            }
+            else {
+                const result = finder.result;
+                const list = result && typeof result.Count === "number" ? (0, server_1.listToArray)(result) : [];
+                for (const raw of list) {
+                    const item = raw;
+                    rows.push({ id: item.id, name: item.name, path: item.path, pkg: item.owner ? item.owner.name : null });
+                }
+            }
+            server.writeResponse(reqId, {
+                ok: true,
+                result: { kind, count: rows.length, items: rows },
+            });
+        };
+        try {
+            finder.Start(pkgs, () => { }, () => {
+                started.fired = true;
+                report();
+            });
+        }
+        catch (e) {
+            server.writeResponse(reqId, { ok: false, error: String(e && e.message ? e.message : e) });
+        }
+        return { deferred: true, id: reqId };
+    };
+}
+const handleFullSearch = (params) => {
+    const project = App.project;
+    if (!project)
+        throw new Error("无打开工程");
+    const keyword = params["keyword"];
+    if (!keyword)
+        throw new Error("缺少参数 keyword");
+    const maxResults = params["maxResults"];
+    const search = maxResults ? new FairyEditor.FullSearch(maxResults) : new FairyEditor.FullSearch();
+    search.Start(keyword, "", true);
+    const rows = (0, server_1.listToArray)(search.result).map((item) => ({
+        id: item.id,
+        name: item.name,
+        path: item.path,
+        pkg: item.owner ? item.owner.name : null,
+    }));
+    return { keyword, count: rows.length, results: rows };
+};
+exports.handleFullSearch = handleFullSearch;
+const handleReadDocument = (params) => {
+    const project = App.project;
+    if (!project)
+        throw new Error("无打开工程");
+    const packageName = params["package"];
+    const componentName = params["component"];
+    if (!packageName)
+        throw new Error("缺少参数 package");
+    if (!componentName)
+        throw new Error("缺少参数 component");
+    const pkg = project.GetPackageByName(packageName);
+    if (!pkg)
+        throw new Error(`包不存在: ${packageName}`);
+    const item = pkg.FindItemByName(componentName) || pkg.FindItemByName(`${componentName}.xml`);
+    if (!item)
+        throw new Error(`组件不存在: ${packageName}/${componentName}`);
+    const url = item.GetURL();
+    const doc = App.docView.FindDocument(url) || App.docView.OpenDocument(url, false);
+    if (!doc)
+        throw new Error(`打开文档失败: ${url}`);
+    const content = doc.content;
+    if (!content)
+        throw new Error(`文档无 content: ${url}`);
+    const children = (0, server_1.listToArray)(content.children).map((obj) => ({
+        id: obj.id,
+        name: obj.name,
+        objectType: obj.objectType,
+        x: obj.x,
+        y: obj.y,
+        width: obj.width,
+        height: obj.height,
+    }));
+    const controllers = (0, server_1.listToArray)(content.controllers).map((c) => ({
+        name: c.name,
+        pages: (0, server_1.listToArray)(c.GetPages()).map((p) => ({ id: p.id, name: p.name })),
+        selectedIndex: c.selectedIndex,
+    }));
+    const relations = (0, server_1.listToArray)(content.relations ? content.relations.items : null).map((r) => ({
+        targetId: r ? (r.target ? r.target.id : null) : null,
+        desc: r ? r.desc : null,
+    }));
+    const transitions = content.transitions && content.transitions.items
+        ? (0, server_1.listToArray)(content.transitions.items).map((t) => ({ name: t.name, autoPlay: t.autoPlay }))
+        : [];
+    return {
+        url,
+        size: { width: content.width, height: content.height },
+        children,
+        controllers,
+        relations,
+        transitions,
+    };
+};
+exports.handleReadDocument = handleReadDocument;
+const handleListControllers = (params) => {
+    const project = App.project;
+    if (!project)
+        throw new Error("无打开工程");
+    const packageName = params["package"];
+    const componentName = params["component"];
+    if (!packageName)
+        throw new Error("缺少参数 package");
+    if (!componentName)
+        throw new Error("缺少参数 component");
+    const pkg = project.GetPackageByName(packageName);
+    if (!pkg)
+        throw new Error(`包不存在: ${packageName}`);
+    const item = pkg.FindItemByName(componentName) || pkg.FindItemByName(`${componentName}.xml`);
+    if (!item)
+        throw new Error(`组件不存在: ${packageName}/${componentName}`);
+    const url = item.GetURL();
+    const doc = App.docView.FindDocument(url) || App.docView.OpenDocument(url, false);
+    if (!doc)
+        throw new Error(`打开文档失败: ${url}`);
+    const content = doc.content;
+    if (!content)
+        throw new Error(`文档无 content: ${url}`);
+    const controllers = (0, server_1.listToArray)(content.controllers).map((c) => ({
+        name: c.name,
+        pages: (0, server_1.listToArray)(c.GetPages()).map((p) => ({ id: p.id, name: p.name })),
+        selectedIndex: c.selectedIndex,
+        selectedPage: c.selectedPage,
+    }));
+    return { package: packageName, component: componentName, count: controllers.length, controllers };
+};
+exports.handleListControllers = handleListControllers;
 //# sourceMappingURL=handlers.js.map

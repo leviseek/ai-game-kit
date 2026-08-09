@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.createTriggerPublishHandler = createTriggerPublishHandler;
 var FairyEditor = CS.FairyEditor;
 const publish_signal_1 = require("./publish-signal");
+const handlers_write_1 = require("./handlers-write");
 const App = FairyEditor.App;
 function createTriggerPublishHandler(server) {
     return (params) => {
@@ -15,6 +16,17 @@ function createTriggerPublishHandler(server) {
         const pkg = project.GetPackageByName(packageName);
         if (!pkg)
             throw new Error(`包不存在: ${packageName}`);
+        let savedInfo;
+        try {
+            savedInfo = (0, handlers_write_1.saveAllDocuments)();
+        }
+        catch (e) {
+            const error = `发布前保存文档失败，已中止发布: ${e && e.message ? e.message : e}`;
+            const reqId = params["__requestId"];
+            if (reqId)
+                server.writeResponse(reqId, { ok: false, error });
+            throw new Error(error);
+        }
         let branch = project.activeBranch;
         const branchArg = params["branch"];
         if (branchArg !== undefined && branchArg !== "") {
@@ -63,6 +75,7 @@ function createTriggerPublishHandler(server) {
                     fileName: handler.fileName,
                     elapsedMs: Date.now() - t0,
                     packages: [packageName],
+                    savedBeforePublish: savedInfo.hadUnsaved,
                 },
             });
         });

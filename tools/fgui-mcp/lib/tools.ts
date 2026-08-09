@@ -62,6 +62,35 @@ export const READ_TOOLS: Record<string, { description: string; run: (bridge: Mai
         description: "返回活动文档（url/isModified/title）与活动文件夹。",
         run: (bridge, params) => bridgeResult(bridge, "get_active_context", params),
     },
+    fgui_read_project_settings: {
+        description:
+            "读取工程设置快照（Adaptation/Common/I18n/PackageGroup）。参数: 可选 section（指定段，默认全部）。",
+        run: (bridge, params) => bridgeResult(bridge, "read_project_settings", params),
+    },
+    fgui_full_search: {
+        description: "全工程资源搜索。参数: keyword（必填）、可选 maxResults（结果上限）。",
+        run: (bridge, params) => bridgeResult(bridge, "full_search", params),
+    },
+    fgui_read_document: {
+        description:
+            "读取已打开文档的结构快照（子对象/控制器/关系/过渡列表）。参数: package、component。",
+        run: (bridge, params) => bridgeResult(bridge, "read_document", params),
+    },
+    fgui_list_controllers: {
+        description:
+            "列出组件的控制器（名称/页面/选中页）。参数: package、component。",
+        run: (bridge, params) => bridgeResult(bridge, "list_controllers", params),
+    },
+    fgui_find_unused_resources: {
+        description:
+            "未使用资源检查（只读报告，不删除）。参数: 可选 package（默认全部包）。deferred：异步完成后返回。",
+        run: (bridge, params) => bridgeResult(bridge, "find_unused_resources", params),
+    },
+    fgui_find_duplicate_resources: {
+        description:
+            "重复资源检查（只读报告，不删除）。参数: 可选 package（默认全部包）。deferred：异步完成后返回。",
+        run: (bridge, params) => bridgeResult(bridge, "find_duplicate_resources", params),
+    },
     fgui_validate_package: {
         description: "用 tools/fgui validate 校验包引用完整性与语义（默认跳过官方库，--strict 全量）。参数: package, 可选 strict/component。",
         run: (_bridge, params) => {
@@ -112,6 +141,123 @@ export const WRITE_TOOLS: Record<string, { description: string; run: (bridge: Ma
     fgui_refresh_project: {
         description: "刷新工程（App.RefreshProject），供写操作（如源 XML/PNG 变更）后编辑器感知变更。",
         run: (bridge, params) => bridgeResult(bridge, "refresh_project", params),
+    },
+    fgui_reload_package: {
+        description:
+            "刷新包内容（FairyGUI-MCP reload 方案）：pkg.Touch() + 遍历 item.Touch() + 延迟 Touch，" +
+            "让编辑器感知源 XML/PNG 变更，比全量刷新更精准。参数: package；传 full=true 走 App.RefreshProject 全量。",
+        run: (bridge, params) => bridgeResult(bridge, "reload_package", params),
+    },
+    fgui_save_documents: {
+        description:
+            "保存活动文档或全部未保存文档（写闭环：内存态修改落盘）。参数: mode（active 保存活动文档，默认 all 保存全部未保存）。" +
+            "发布流程会自动先保存，无需单独调用。",
+        run: (bridge, params) => bridgeResult(bridge, "save_documents", params),
+    },
+    fgui_import_resource: {
+        description:
+            "导入外部文件（如 sprite CLI 生成的 PNG）到包内并登记为资源。参数: package（目标包）、files（文件路径数组）、" +
+            "可选 path（目标目录，默认 /）、可选 resName。批量语义，部分失败项列出不整体回滚。",
+        run: (bridge, params) => bridgeResult(bridge, "import_resource", params),
+    },
+    fgui_add_child: {
+        description:
+            "在组件内创建并添加子对象。参数: package、doc（目标文档组件名）、type（image/text/component 等；graph 禁止）、" +
+            "可选 name、可选 src（资源 id/组件名）、可选 index。返回新对象 id 与 childrenDelta；内存态操作需 fgui_save_documents 持久化。",
+        run: (bridge, params) => bridgeResult(bridge, "add_child", params),
+    },
+    fgui_delete_child: {
+        description:
+            "删除文档中的对象。参数: package、doc、target（对象 id 或 name）。返回 childrenDelta 与引用警告（relation/gear 引用对象）。",
+        run: (bridge, params) => bridgeResult(bridge, "delete_child", params),
+    },
+    fgui_set_object_property: {
+        description:
+            "修改已打开文档中对象的属性。参数: package、doc、target（对象 id 或 name）、properties（键值对象，白名单：xy/width/height/scale/rotation/alpha/visible/name/text 等）。" +
+            "graph 对象拒绝；非法/只读属性在 rejected 列出。内存态操作需 fgui_save_documents 持久化。",
+        run: (bridge, params) => bridgeResult(bridge, "set_object_property", params),
+    },
+    fgui_add_controller: {
+        description:
+            "新增控制器。参数: package、doc、name、pages（页面名数组）、可选 selected（默认 0）。" +
+            "页面与 selected 合法性在 handler 层校验。内存态操作需 fgui_save_documents 持久化。",
+        run: (bridge, params) => bridgeResult(bridge, "add_controller", params),
+    },
+    fgui_update_controller: {
+        description:
+            "更新控制器（整体替换页面/选中页）。参数: package、doc、name、可选 pages、可选 selected。",
+        run: (bridge, params) => bridgeResult(bridge, "update_controller", params),
+    },
+    fgui_remove_controller: {
+        description:
+            "删除控制器。参数: package、doc、name。被 gearDisplay/gearXY 等引用的控制器返回引用警告，不静默破坏。",
+        run: (bridge, params) => bridgeResult(bridge, "remove_controller", params),
+    },
+    fgui_switch_page: {
+        description:
+            "切换控制器页面。参数: package、doc、name、index（目标页索引）或 page（目标页名）。目标页不存在返回结构化错误。",
+        run: (bridge, params) => bridgeResult(bridge, "switch_page", params),
+    },
+    fgui_set_relation: {
+        description:
+            "设置对象关系。参数: package、doc、target（对象 id 或 name）、targetRelation（目标对象 id/name 或空=父级）、sidePair。" +
+            "内置 sidePair ≤2 项与合法取值校验。内存态操作需 fgui_save_documents 持久化。",
+        run: (bridge, params) => bridgeResult(bridge, "set_relation", params),
+    },
+    fgui_remove_relation: {
+        description:
+            "删除对象关系。参数: package、doc、target、targetRelation（目标对象 id/name 或空=父级）。",
+        run: (bridge, params) => bridgeResult(bridge, "remove_relation", params),
+    },
+    fgui_create_package: {
+        description: "新建包。参数: name（包名）。返回包 id/name。",
+        run: (bridge, params) => bridgeResult(bridge, "create_package", params),
+    },
+    fgui_delete_package: {
+        description:
+            "删除包（破坏性）：先返回影响范围，调用方传 confirm: true 二次确认后才执行。参数: package、可选 confirm。",
+        run: (bridge, params) => bridgeResult(bridge, "delete_package", params),
+    },
+    fgui_create_folder: {
+        description: "在包内创建文件夹。参数: package、name、可选 path（父目录，默认 /）。",
+        run: (bridge, params) => bridgeResult(bridge, "create_folder", params),
+    },
+    fgui_rename_resource: {
+        description: "重命名资源。参数: package、name（原资源名）、newName。",
+        run: (bridge, params) => bridgeResult(bridge, "rename_resource", params),
+    },
+    fgui_move_resource: {
+        description: "移动资源到目标路径。参数: package、name、path（目标目录）。",
+        run: (bridge, params) => bridgeResult(bridge, "move_resource", params),
+    },
+    fgui_delete_resource: {
+        description:
+            "删除资源（破坏性）：被其他组件引用时返回清单并拒绝，调用方传 confirm: true 二次确认。参数: package、name、可选 confirm。",
+        run: (bridge, params) => bridgeResult(bridge, "delete_resource", params),
+    },
+    fgui_create_component: {
+        description:
+            "创建空组件资源。参数: package、name、可选 width/height（默认 100x100）、可选 path。资源 id 走前缀续编语义。",
+        run: (bridge, params) => bridgeResult(bridge, "create_component", params),
+    },
+    fgui_copy_items: {
+        description:
+            "跨包复制组件（带依赖，CopyHandler 语义）。参数: sourcePackage、name、targetPackage、可选 targetPath。返回 id 映射。",
+        run: (bridge, params) => bridgeResult(bridge, "copy_items", params),
+    },
+    fgui_list_branches: {
+        description: "返回分支清单与活动分支。",
+        run: (bridge, params) => bridgeResult(bridge, "list_branches", params),
+    },
+    fgui_switch_branch: {
+        description: "切换活动分支。参数: branch（目标分支名，动态取自 allBranches，禁止硬编码）。",
+        run: (bridge, params) => bridgeResult(bridge, "switch_branch", params),
+    },
+    fgui_capture_preview: {
+        description:
+            "截图采集当前编辑器窗口为 PNG（OS 级窗口截图，编辑器无公开截图 API），返回文件路径供 fgui-visual-verifier 视觉核对。" +
+            "编辑器不可达/截图失败返回结构化错误，不产生半截图像。",
+        run: (bridge, params) => bridgeResult(bridge, "capture_preview", params),
     },
     fgui_insert_component: {
         description:

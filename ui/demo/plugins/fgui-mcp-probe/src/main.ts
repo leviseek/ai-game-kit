@@ -7,6 +7,10 @@ import { runPublishHandlerProbe } from "./probes/publish-handler";
 import { runHttpListenerProbe, runFileMailboxProbe } from "./probes/http-listener";
 import { runPkgOpenProbe } from "./probes/pkg-open";
 import { runSetTimeoutProbe } from "./probes/settimeout";
+import { runImportResourceProbe } from "./probes/import-resource";
+import { runCopyHandlerProbe } from "./probes/copy-handler";
+import { runControllerProbe } from "./probes/controller";
+import { runCaptureProbe } from "./probes/capture";
 import { MailboxServer } from "./mailbox/server";
 import {
     handleGetActiveContext,
@@ -14,12 +18,40 @@ import {
     handleListResources,
     handleQueryDependencies,
     handleReadPublishSettings,
+    handleReadProjectSettings,
+    handleFullSearch,
+    handleReadDocument,
+    handleListControllers,
+    createFindResourcesHandler,
 } from "./mailbox/handlers";
 import {
+    handleAddChild,
+    handleDeleteChild,
     handleInsertComponent,
     handleRefreshProject,
     handleRestorePublishSettings,
+    handleSaveDocuments,
+    handleSetObjectProperty,
     handleSwitchPublishSettings,
+    handleAddController,
+    handleUpdateController,
+    handleRemoveController,
+    handleSwitchPage,
+    handleSetRelation,
+    handleRemoveRelation,
+    handleCreatePackage,
+    handleDeletePackage,
+    handleCreateFolder,
+    handleRenameResource,
+    handleMoveResource,
+    handleDeleteResource,
+    handleCreateComponent,
+    handleCopyItems,
+    handleListBranches,
+    handleSwitchBranch,
+    handleReloadPackage,
+    createImportResourceHandler,
+    createCapturePreviewHandler,
 } from "./mailbox/handlers-write";
 import { writePublishSignal } from "./mailbox/publish-signal";
 import { createTriggerPublishHandler } from "./mailbox/handlers-publish";
@@ -85,9 +117,38 @@ function buildMailboxServer(objsPath: string): void {
     mailboxServer.register("query_dependencies", handleQueryDependencies);
     mailboxServer.register("read_publish_settings", handleReadPublishSettings);
     mailboxServer.register("get_active_context", handleGetActiveContext);
+    mailboxServer.register("read_project_settings", handleReadProjectSettings);
+    mailboxServer.register("full_search", handleFullSearch);
+    mailboxServer.register("read_document", handleReadDocument);
+    mailboxServer.register("list_controllers", handleListControllers);
+    mailboxServer.register("find_unused_resources", createFindResourcesHandler("unused", mailboxServer));
+    mailboxServer.register("find_duplicate_resources", createFindResourcesHandler("duplicate", mailboxServer));
     mailboxServer.register("switch_publish_settings", handleSwitchPublishSettings);
     mailboxServer.register("restore_publish_settings", handleRestorePublishSettings);
     mailboxServer.register("refresh_project", handleRefreshProject);
+    mailboxServer.register("save_documents", handleSaveDocuments);
+    mailboxServer.register("import_resource", createImportResourceHandler(mailboxServer));
+    mailboxServer.register("add_child", handleAddChild);
+    mailboxServer.register("delete_child", handleDeleteChild);
+    mailboxServer.register("set_object_property", handleSetObjectProperty);
+    mailboxServer.register("add_controller", handleAddController);
+    mailboxServer.register("update_controller", handleUpdateController);
+    mailboxServer.register("remove_controller", handleRemoveController);
+    mailboxServer.register("switch_page", handleSwitchPage);
+    mailboxServer.register("set_relation", handleSetRelation);
+    mailboxServer.register("remove_relation", handleRemoveRelation);
+    mailboxServer.register("create_package", handleCreatePackage);
+    mailboxServer.register("delete_package", handleDeletePackage);
+    mailboxServer.register("create_folder", handleCreateFolder);
+    mailboxServer.register("rename_resource", handleRenameResource);
+    mailboxServer.register("move_resource", handleMoveResource);
+    mailboxServer.register("delete_resource", handleDeleteResource);
+    mailboxServer.register("create_component", handleCreateComponent);
+    mailboxServer.register("copy_items", handleCopyItems);
+    mailboxServer.register("list_branches", handleListBranches);
+    mailboxServer.register("switch_branch", handleSwitchBranch);
+    mailboxServer.register("reload_package", handleReloadPackage);
+    mailboxServer.register("capture_preview", createCapturePreviewHandler(mailboxServer));
     mailboxServer.register("insert_component", handleInsertComponent);
     mailboxServer.register("trigger_publish", createTriggerPublishHandler(mailboxServer));
     const server = mailboxServer;
@@ -158,6 +219,10 @@ function registerMenu(): void {
     probeMenu.AddItem("文件邮箱", "file-mailbox", () => runFileMailboxProbe());
     probeMenu.AddItem("setTimeout", "settimeout", () => runSetTimeoutProbe());
     probeMenu.AddItem("pkg.Open", "pkg-open", () => runPkgOpenProbe());
+    probeMenu.AddItem("ImportResource", "import-resource", () => runImportResourceProbe());
+    probeMenu.AddItem("CopyHandler", "copy-handler", () => runCopyHandlerProbe());
+    probeMenu.AddItem("Controller", "controller", () => runControllerProbe());
+    probeMenu.AddItem("截图采集", "capture", () => runCaptureProbe());
     probeMenu.AddSeperator();
     probeMenu.AddItem("启动邮箱服务器", "mailbox-start", () => startMailboxServer());
     probeMenu.AddItem("运行全部探针", "run-all", () => {
@@ -168,6 +233,10 @@ function registerMenu(): void {
         runFileMailboxProbe();
         runPkgOpenProbe();
         runSetTimeoutProbe();
+        runImportResourceProbe();
+        runCopyHandlerProbe();
+        runControllerProbe();
+        runCaptureProbe();
         probeLog(`全部探针执行完毕，结果见 ${ProbeResultWriter.getResultsFile()}`);
     });
 
