@@ -327,6 +327,19 @@ describe("AppRoot Component", () => {
     // 组合根不再暴露手动 setModal：遮罩由适配器消费导航器模态状态自动同步
     expect(instance.smokeUiSetModal).toBeUndefined();
   });
+
+  test("exposes scene flow smoke method and wires smoke=scene-flow to it", async () => {
+    const { AppRoot } = await loadAppRoot();
+
+    const instance = new AppRoot();
+    instance.onLoad();
+
+    expect(typeof instance.runSceneFlowSmoke).toBe("function");
+
+    const source = readFileSync(appRootFile, "utf8");
+    expect(source).toMatch(/params\.get\("smoke"\) === "scene-flow"/);
+    expect(source).toMatch(/this\.runSceneFlowSmoke\(\)/);
+  });
 });
 
 describe("startup.scene", () => {

@@ -60,6 +60,56 @@ describe("game fixture smoke runner", () => {
     expect(markers.some((line) => line.includes(": FAIL"))).toBe(false);
   });
 
+  test("reports audio-degraded marker when the fixture exposes a degraded audio backend", async () => {
+    const base = createGameFixture({ id: "fight", modules: [] });
+    const registry: GameFixtureRegistry = {
+      fight: () =>
+        Object.assign(base, {
+          audio: { degraded: true },
+        }),
+    };
+
+    const markers = await captureFixtureSmoke("fight", registry);
+
+    expect(
+      markers.some((line) => line.includes("audio-degraded: ok")),
+    ).toBe(true);
+    expect(
+      markers.some((line) => line.includes("degraded=true")),
+    ).toBe(true);
+  });
+
+  test("reports audio-degraded FAIL when the fixture audio backend is available", async () => {
+    const base = createGameFixture({ id: "fight", modules: [] });
+    const registry: GameFixtureRegistry = {
+      fight: () =>
+        Object.assign(base, {
+          audio: { degraded: false },
+        }),
+    };
+
+    const markers = await captureFixtureSmoke("fight", registry);
+
+    expect(
+      markers.some((line) => line.includes("audio-degraded: FAIL")),
+    ).toBe(true);
+    expect(
+      markers.some((line) => line.includes("degraded=false")),
+    ).toBe(true);
+  });
+
+  test("does not emit audio-degraded marker for fixtures without the audio capability", async () => {
+    const registry: GameFixtureRegistry = {
+      rpg: () => createGameFixture({ id: "rpg", modules: [] }),
+    };
+
+    const markers = await captureFixtureSmoke("rpg", registry);
+
+    expect(
+      markers.some((line) => line.includes("audio-degraded")),
+    ).toBe(false);
+  });
+
   test("reports a lifecycle failure without throwing", async () => {
     const failingFixture: GameFixture = {
       id: "broken",

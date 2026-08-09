@@ -200,7 +200,7 @@ export class AppRoot extends Component {
     // 冒烟驱动：URL 带 smoke=fairygui-ui 时延迟到引擎 ready 后执行完整序列。
     // 延迟用 setTimeout 让 GRoot 在首帧后可用（spike 已验证此窗口），
     // 仅在浏览器环境生效；纯 TS 测试不触发。
-    // 优先级：smoke=fairygui-ui > smoke=modal-click > fixture=<品类>，
+    // 优先级：smoke=fairygui-ui > smoke=scene-flow > smoke=modal-click > fixture=<品类>，
     // else-if 互斥保证一次请求只跑一种冒烟序列，不会叠加执行。
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
@@ -208,6 +208,12 @@ export class AppRoot extends Component {
         setTimeout(() => {
           this.runUiSmoke().catch((error) => {
             console.error("[ui-smoke] sequence error", error);
+          });
+        }, 1000);
+      } else if (params.get("smoke") === "scene-flow") {
+        setTimeout(() => {
+          this.runSceneFlowSmoke().catch((error) => {
+            console.error("[scene-smoke] sequence error", error);
           });
         }, 1000);
       } else if (params.get("smoke") === "modal-click") {
@@ -346,6 +352,103 @@ export class AppRoot extends Component {
     }
     this.uiScope.release();
     this.uiScope = undefined;
+  }
+
+  /**
+   * 冒烟触发：运行场景流转冒烟序列（引擎集成冒烟驱动）。覆盖预加载、
+   * 成功切换、失败保留当前场景、重试与资源释放闭环。每步经 console 输出
+   * `[scene-smoke]` 标记，由 headless Chrome + CDP 采集验证（对齐 runUiSmoke）。
+   * 构建产物已含 `game` 场景（main Bundle 已注册），单向冒烟 startup → game
+   * 安全；回切 startup 会实例化第二个 AppRoot，本序列只做单向。
+   */
+  async runSceneFlowSmoke(): Promise<void> {
+    const report = (step: string, ok: boolean, detail = "") => {
+      console.log(
+        `[scene-smoke] ${step}: ${ok ? "ok" : "FAIL"}${detail ? ` (${detail})` : ""}`,
+      );
+    };
+
+    // 1. 入口：初始场景 startup，ui Bundle 尚无持有（可卸载）
+    const initialScene = director.getScene()?.name ?? "";
+    report("entry", initialScene === "startup", initialScene);
+    report("initial-can-unload-ui", this.smokeCanUnload("ui"));
+
+    // 2. 预加载：ui 被流转作用域持有（不可卸载）
+    let preloadHolds = false;
+    try {
+      await this.smokePreload("game", { bundle: "ui", paths: ["placeholder"] });
+      preloadHolds = !this.smokeCanUnload("ui");
+      report("preload", true);
+      report("preload-holds-ui", preloadHolds);
+    } catch (error) {
+      report("preload", false, error instanceof Error ? error.message : String(error));
+      return;
+    }
+
+    // 3. 释放闭环：对第二个目标（common）预加载触发前一次流转作用域释放 →
+    //    ui 归零可卸载，common 被新流转作用域持有。
+    let releaseLoop = false;
+    try {
+      await this.smokePreload("game", {
+        bundle: "common",
+        paths: ["placeholder"],
+      });
+      releaseLoop = this.smokeCanUnload("ui");
+      report("release-loop", releaseLoop);
+    } catch (error) {
+      report("release-loop", false, error instanceof Error ? error.message : String(error));
+      return;
+    }
+
+    // 4. 成功切换：启动 game 场景，ui 所有权转移给 sceneScope（仍不可卸载）
+    let switched = false;
+    try {
+      const result = await this.smokeSwitchTo("game", {
+        bundle: "ui",
+        paths: ["placeholder"],
+      });
+      switched = result.ok === true && result.sceneId === "game";
+      report("switch", switched, String(result.reason ?? ""));
+      report(
+        "switch-scene",
+        director.getScene()?.name === "game",
+        director.getScene()?.name ?? "",
+      );
+      report("switch-holds-ui", !this.smokeCanUnload("ui"));
+    } catch (error) {
+      report("switch", false, error instanceof Error ? error.message : String(error));
+    }
+
+    // 5. 资源链失败：不存在的 Bundle 加载失败，场景保留 game、可重试
+    let failKeeps = false;
+    try {
+      const result = await this.smokeSwitchTo("game", {
+        bundle: "no-such-bundle",
+        paths: ["placeholder"],
+      });
+      failKeeps = result.ok === false;
+      report("fail-keeps-scene", failKeeps, String(result.reason ?? ""));
+    } catch (error) {
+      report("fail-keeps-scene", false, error instanceof Error ? error.message : String(error));
+    }
+
+    // 6. 失败后重试：切回正常资源再次成功
+    let retried = false;
+    try {
+      const result = await this.smokeSwitchTo("game", {
+        bundle: "ui",
+        paths: ["placeholder"],
+      });
+      retried = result.ok === true && result.sceneId === "game";
+      report("retry", retried, String(result.reason ?? ""));
+    } catch (error) {
+      report("retry", false, error instanceof Error ? error.message : String(error));
+    }
+
+    // 7. 未加载 Bundle 卸载 no-op：canUnload 查询不崩溃且为 true
+    report("missing-bundle-noop", this.smokeCanUnload("no-such-bundle"));
+
+    console.log("[scene-smoke] complete");
   }
 
   /**

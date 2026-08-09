@@ -82,7 +82,24 @@
 - [x] 9.1 审查每个模块的公开入口，移除不必要的实现导出，并用依赖检查证明其他模块没有深层导入。（完成：根入口 `assets/framework/index.ts` 仅 re-export 稳定契约与核心工厂；`public-boundary.test.ts` 锁定 `expectedRootExports` 白名单、禁止 `export *` 与内部符号（`forbiddenInternals` 拦截 ModuleGraph/ScopedLogger/Cocos* 适配器等）、禁止外部深层导入（只能经根入口）与框架内反向/跨层依赖；`findProjectImportViolations()` 扫描全部 assets TS 证明无深层导入。审查未发现多余导出，无需移除。）
 - [x] 9.2 审查全局状态，确认除唯一应用组合根外不存在静态单例、未释放事件订阅、跨场景泄漏节点或无所有者调度任务。（完成：除 `AppRoot`（组合根，`@ccclass` + `addPersistRootNode` 唯一常驻根）外无静态单例，全仓 grep `getInstance|singleton|ServiceLocator|globalThis|window` 无匹配且 `public-boundary.test.ts` 对 core/ui、config、resource、platform/time/scheduling 层有持续断言；所有 `let` 可变状态均在工厂闭包内、无模块级状态；事件订阅全部对称解绑——`CocosApplicationAdapter.bind/unbind`、`CocosInputAdapter.subscribe` 返回退订且 `InputMapper.dispose` 解除、`AudioService`/`SaveCoordinator` 在 dispose 时退订 visibility；`PassiveScheduler.dispose` 清空任务、任务经 `DisposeHandle` 取消，`ModuleRunner` 逆序 stop/dispose 模块，`SceneFlow.dispose` 清理作用域与取消切换；`AppRoot.onDestroy` 逆序释放 adapter→sceneFlow→pageAdapter→resourceProvider→app。审查未发现泄漏项。）
 - [x] 9.3 运行完整 Bun 单元测试和 strict TypeScript 检查，记录测试数量和零失败结果。（完成：`bun test ./tests/framework/foundation` 641 pass / 0 fail（64 文件、2033 expect 调用，含 public-boundary 边界检查），`bun ./tests/scripts/check-foundation-contracts.ts` EXIT=0、0 diagnostics。）
-- [ ] 9.4 运行 Cocos Creator 3.8.8 Web Desktop 构建与启动冒烟测试，验证启动、场景、UI、输入、音频和退出路径。
+- [x] 9.4 运行 Cocos Creator 3.8.8 Web Desktop 构建与启动冒烟测试，验证启动、场景、UI、输入、音频和退出路径。
+  - 新增冒烟工具与入口：
+    - `assets/boot/AppRoot.ts` 新增 `runSceneFlowSmoke` 场景流转冒烟序列（`?smoke=scene-flow` 触发，优先级 ui > scene-flow > modal-click > fixture），覆盖入口 startup、预加载持有、释放闭环（第二目标 common 触发前作用域释放→ui 归零）、成功切换 game、失败保留当前场景、失败后重试、未加载 Bundle no-op，每步输出 `[scene-smoke]` 标记（对齐 runUiSmoke 模式，单向冒烟 startup → game 安全）。
+    - `assets/game/fixture/smoke.ts` 的 `runFixtureSmoke` 增加音频降级路径探测：夹具暴露 `audio.degraded` 时输出 `[fixture-smoke] audio-degraded` 标记（fight 夹具缺省不可用后端，degraded=true），未暴露能力的夹具不输出。
+    - `tools/creator/commands/scene-smoke.ts` 新命令：校验 → 构建（startup+game 场景）→ headless Chrome 加载 `?smoke=scene-flow` 断言标记完整；预期失败路径产生的 404 资源加载错误（Log 级 `Failed to load resource`）与真实脚本异常区分，仅后者判失败。
+    - `tools/creator/commands/fixture-smoke.ts` 新命令：校验 → 构建 → headless Chrome 逐类加载 `?fixture=<品类>`（rpg/card/idle/tycoon/fight）断言统一生命周期全 ok，fight 额外断言 `audio-degraded: ok`；覆盖退出路径（dispose 逆序释放）。
+    - `tools/creator/cli.ts` 注册 `scene-smoke`/`fixture-smoke` 命令；`tools/creator` strict 类型检查 EXIT=0。
+  - 配套测试：`approot-composition.test.ts` 增 runSceneFlowSmoke 存在性与 `?smoke=scene-flow` 转发源码锁定；`game-fixture-smoke.test.ts` 增 audio-degraded ok/FAIL/无能力夹具不输出 3 个测试。
+  - 六路径引擎冒烟结果（Cocos Creator 3.8.8 Web Desktop 构建 64s 成功，headless Chrome + CDP）：
+    - 启动：`ccc smoke` 页面加载无 console error（startup 场景初始化、AppRoot 挂载）。
+    - 场景：`ccc scene-smoke` 全标记 ok（entry/initial-can-unload-ui/preload/preload-holds-ui/release-loop/switch/switch-scene/switch-holds-ui/fail-keeps-scene/retry/missing-bundle-noop/complete）。
+    - UI：`ccc ui-smoke` 全标记 ok（ui-root-init/package-load/page-open/modal-show/modal-hide/page-close/resource-release/missing-package-noop）。
+    - 输入：`ccc ui-modal-click` 模态期间命中遮罩（下层不响应）、解除后命中下层（恢复）。
+    - 音频：`ccc fixture-smoke --fixture fight` `audio-degraded: ok (degraded=true)`，降级 no-op 路径成立。
+    - 退出：`ccc fixture-smoke` 五类夹具 `start/pause/resume/failRollback/dispose` 全 ok，dispose 逆序释放。
+  - 门禁：`bun run test:foundation` 767 pass / 0 fail（75 文件，含本任务新增 4 测试）、`test:foundation:types` EXIT=0、public-boundary 33 pass、task68 9 pass、tools/creator strict 类型检查 EXIT=0。
+  - 说明：音频真实播放引擎冒烟未接线（CocosAudioAdapter 未接入 AppRoot，assets/audio 无真实音频资源），降级路径由 fight 夹具不可用后端在构建产物上验证；真实音频适配器接线作为后续 change 候选（详见 doc/framework-guide.md 后续候选列表）。
+  - ADR 检查：本次仅新增冒烟工具与 AppRoot 冒烟方法（`runSceneFlowSmoke`），未改变框架契约、公开入口白名单（`framework/index.ts` 未改，public-boundary 33 pass）或运行期行为，属纯验证工具扩展，不构成新架构决策，无需新增 ADR；9.8 已明确本阶段无新增 ADR。
 - [ ] 9.5 使用 Cocos Profiler 对五类组合夹具执行基础性能检查，只对有数据证明的热点保留池化或缓存。
 - [x] 9.6 更新框架使用与扩展说明，记录依赖规则、模块组合、资源所有权、错误处理以及新增平台/玩法能力需要创建独立 OpenSpec change 的流程。（完成：新建 `doc/framework-guide.md`，覆盖目录与依赖规则（root index 白名单、core 禁 cc/fgui、game 禁 fgui/深层导入、boot 薄转发、内核边界口径）、模块组合（`Module` 契约与生命周期、`ApplicationContext` 无服务解析、ServiceRegistry 类型化 token 与组合根装配、`GameFixture` 统一接缝）、资源所有权（`ResourceScope` retain/release、引用计数与 Bundle 卸载接缝、View→package→Bundle 逆序释放、配置常驻）、错误处理（`FrameworkError` 基类与可恢复性分类、类型化领域错误、cause 保留、redact 过滤）、新增能力 OpenSpec change 闭环（propose→apply→ADR→sync/archive）与后续候选列表；与 ADR-005/007/012/015/018 配套引用。）
 - [x] 9.7 执行最终代码审查，确认 v1 没有实现联网、热更新、ECS 或五类具体玩法，并记录剩余风险和后续 change 候选。（完成：全仓 `assets` + `tests` 扫描——联网（`WebSocket`/`XMLHttpRequest`/`fetch(`/`cc.network`/`HttpRequest`/`downloadFile`/`assetManager.download`/`SocketIO`）、热更新（`hot.update`/`HotUpdate`）、ECS（`\bECS\b`/`EntityComponentSystem`/`SystemManager`/`ecs.`）全部零命中；`package.json` 零第三方依赖；框架层（`assets/framework`）对五类业务模型标识符（`RpgCharacter`/`RpgSkill`/`RpgQuest`/`CardBattleState`/`CardTurnPhase`/`offlineGoldFor`/`TycoonProduct`/`FightHitbox`/`FightFrameData` 及通用词 `character/skill/quest/deck/hitbox/combo/offline/frameData/tycoon/card`）零命中，负向断言另由五类夹具测试锁定（8.1-8.5）。剩余风险与后续 change 候选已记录于 `doc/framework-guide.md`：逐帧战斗内核（超出通用时钟替换边界）、联网校时与防作弊（本地时钟非可信）、热更新、ECS、支付/广告/账号/分享等平台能力、FairyGUI Runtime 或 Cocos 版本升级需独立 change 验证。）

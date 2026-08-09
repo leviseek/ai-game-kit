@@ -6,6 +6,8 @@ import { run as runCheckImportMap } from "./commands/check-import-map";
 import { run as runSmoke } from "./commands/smoke";
 import { run as runUiSmoke } from "./commands/ui-smoke";
 import { run as runUiModalClick } from "./commands/ui-modal-click";
+import { run as runSceneSmoke } from "./commands/scene-smoke";
+import { run as runFixtureSmoke } from "./commands/fixture-smoke";
 
 interface Command {
   readonly run: (argv: readonly string[]) => Promise<number>;
@@ -35,6 +37,14 @@ const COMMANDS: Record<string, Command> = {
   "ui-modal-click": {
     run: runUiModalClick,
     usage: "ui-modal-click [--debug true] 模态遮罩命中验证：构建 → headless Chrome 应用内 fgui 触摸注入，断言模态拦截/解除恢复",
+  },
+  "scene-smoke": {
+    run: runSceneSmoke,
+    usage: "scene-smoke [--debug true] 场景流转冒烟：构建（startup+game）→ headless Chrome 加载 ?smoke=scene-flow 验证预加载/切换/失败保留/重试/资源释放",
+  },
+  "fixture-smoke": {
+    run: runFixtureSmoke,
+    usage: "fixture-smoke [--fixture <品类>|all] [--debug true] 品类夹具冒烟：构建 → headless Chrome 逐类驱动统一生命周期与音频降级路径",
   },
 };
 

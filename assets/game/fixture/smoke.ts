@@ -43,6 +43,14 @@ export async function runFixtureSmoke(
 
   report("fixture-found", true, fixtureId);
 
+  // 音频降级路径探测（可选能力）：夹具若暴露 `audio.degraded`（如格斗夹具
+  // 缺省不可用后端），报告降级状态成立（true=后端不可用、服务整体 no-op）。
+  // 未暴露该能力的夹具不输出此标记，保持驱动不依赖具体品类能力。
+  const audio = (fixture as { audio?: { readonly degraded?: boolean } }).audio;
+  if (audio !== undefined) {
+    report("audio-degraded", audio.degraded === true, `degraded=${String(audio.degraded)}`);
+  }
+
   const steps: ReadonlyArray<[string, (f: GameFixture) => Promise<void>]> = [
     ["start", (f) => f.start()],
     ["pause", (f) => f.pause()],
