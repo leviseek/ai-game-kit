@@ -1,12 +1,13 @@
-import type {
-    IResourceProvider,
-    ResourceHandle,
-    SceneFlow,
-    SceneResources,
-    SceneSwitchResult,
-    UiLayer,
+import {
+    lookupBundle,
+    type IResourceProvider,
+    type ResourceHandle,
+    type SceneFlow,
+    type SceneResources,
+    type SceneSwitchResult,
+    type UiLayer,
 } from "../../framework";
-import { runFixtureSmoke } from "../../game/fixture/smoke";
+import { profiler } from "cc";
 import type { GameLobbyHostImpl } from "../host/GameLobbyHostImpl";
 import type { UiHost } from "../host/UiHost";
 import {
@@ -19,8 +20,46 @@ import {
     clearModalClickHook,
     runModalClickSmoke,
 } from "./modal-click";
-import { runCardBattleSmoke } from "./card-battle";
-import { runFixturePerfSmoke } from "./perf";
+import type { PerfSample } from "../../game/fixture/perf";
+
+/** game bundle 冒烟模块的结构性子集（经全局注册桥读取，运行时经 lookupBundle）。 */
+interface GameSmokeModule {
+    readonly smokes?: {
+        readonly fixture: (fixtureId: string) => Promise<void>;
+        readonly perf: (fixtureId: string, sample: () => PerfSample | null) => Promise<void>;
+    };
+}
+
+/** samples bundle 冒烟模块的结构性子集（cardBattle 宿主为 boot 侧 UiHost 结构）。 */
+interface SamplesSmokeModule {
+    readonly smokes?: {
+        readonly cardBattle: (
+            host: unknown,
+            ensureSharedDependencies: () => Promise<void>,
+        ) => Promise<void>;
+    };
+}
+
+/**
+ * 性能采样器：读取 Cocos Profiler 当前帧的引擎运行状态。stats 未就绪时
+ * 返回 null（由游戏层 runFixturePerf 跳过本次采样）。每项为引擎计时器或
+ * 渲染统计的实时值；纹理/缓冲区内存单位为 MB。采样器是唯一允许依赖 cc 的
+ * 装配层职责，游戏层 runner 保持引擎无关。
+ */
+function sampleProfilerStats(): PerfSample | null {
+    const stats = profiler.stats;
+    if (stats === null) {
+        return null;
+    }
+    return {
+        fps: stats.fps.counter.value,
+        frameMs: stats.frame.counter.value,
+        logicMs: stats.logic.counter.value,
+        draws: stats.draws.counter.value,
+        textureMemoryMB: stats.textureMemory.counter.value,
+        bufferMemoryMB: stats.bufferMemory.counter.value,
+    };
+}
 
 /**
  * 冒烟代理依赖：由组合根把已装配的宿主（UiHost/GameLobbyHostImpl）与引擎接缝
@@ -37,8 +76,10 @@ export interface SmokeProxyDeps {
 /**
  * 冒烟代理：把 AppRoot 的冒烟触发/观察方法与 URL 冒烟分派收敛为单一入口。
  * 组合根仅经 createSmokeProxy 初始化，内部再创建 SmokeRouter 供 BootFlow 消费；
- * 页面打开/关闭、场景切换与资源释放观察均委托对应宿主。dispose 清理冒烟
- * 交互钩子（闭包持有组件与宿主），常驻根销毁时一并释放。
+ * 页面打开/关闭、场景切换与资源释放观察均委托对应宿主。依赖 game/samples 的
+ * 冒烟（fixture/perf/card-battle）经全局注册桥动态加载执行，boot 不再静态
+ * import game 代码。dispose 清理冒烟交互钩子（闭包持有组件与宿主），常驻根
+ * 销毁时一并释放。
  */
 export class SmokeProxy {
     private readonly uiHost: UiHost;
@@ -134,19 +175,52 @@ export class SmokeProxy {
         return runModalClickSmoke(this.uiHost);
     }
 
+    /** 加载 game bundle 使游戏模块注册就绪（bundle 内任一资源加载触发整包脚本执行）。 */
+    private async loadGameBundle(): Promise<void> {
+        const handle = this.resourceProvider.load("game", "game");
+        await handle.done;
+    }
+
+    /** 加载 samples bundle 使样本模块注册就绪。 */
+    private async loadSamplesBundle(): Promise<void> {
+        const handle = this.resourceProvider.load("samples", "placeholder");
+        await handle.done;
+    }
+
     /** 卡牌对战真实可玩冒烟序列；先确保共享 UI 依赖（Common）已注册。 */
-    runCardBattleSmoke(): Promise<void> {
-        return runCardBattleSmoke(this.uiHost, () => this.lobbyHost.ensureSharedUiDependencies());
+    async runCardBattleSmoke(): Promise<void> {
+        await this.loadSamplesBundle();
+        const samplesModule = lookupBundle("samples") as SamplesSmokeModule | undefined;
+        const smoke = samplesModule?.smokes?.cardBattle;
+        if (smoke === undefined) {
+            throw new Error(`[smoke] samples module has no cardBattle smoke`);
+        }
+        await smoke(this.uiHost, () => this.lobbyHost.ensureSharedUiDependencies());
     }
 
     /** 游戏层品类夹具冒烟序列。 */
-    runFixtureSmoke(fixtureId: string): Promise<void> {
-        return runFixtureSmoke(fixtureId);
+    async runFixtureSmoke(fixtureId: string): Promise<void> {
+        // 冒烟分叉运行在 startup，未切 game 场景：先加载 game+samples 使注册就绪
+        await this.loadGameBundle();
+        await this.loadSamplesBundle();
+        const gameModule = lookupBundle("game") as GameSmokeModule | undefined;
+        const smoke = gameModule?.smokes?.fixture;
+        if (smoke === undefined) {
+            throw new Error(`[smoke] game module has no fixture smoke`);
+        }
+        await smoke(fixtureId);
     }
 
     /** 品类夹具性能检查序列（注入 Cocos Profiler 采样器）。 */
-    runFixturePerf(perfFixtureId: string): Promise<void> {
-        return runFixturePerfSmoke(perfFixtureId);
+    async runFixturePerf(perfFixtureId: string): Promise<void> {
+        await this.loadGameBundle();
+        await this.loadSamplesBundle();
+        const gameModule = lookupBundle("game") as GameSmokeModule | undefined;
+        const smoke = gameModule?.smokes?.perf;
+        if (smoke === undefined) {
+            throw new Error(`[smoke] game module has no perf smoke`);
+        }
+        await smoke(perfFixtureId, sampleProfilerStats);
     }
 
     /** 释放：清理冒烟交互钩子（闭包持有组件与宿主）。幂等。 */

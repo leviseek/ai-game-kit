@@ -201,14 +201,24 @@ describe("game fixture perf runner", () => {
 });
 
 describe("boot fixture perf module", () => {
-    test("dispatches the game-layer perf runner with a Cocos profiler sampler", () => {
-        const perfFile = resolve(projectRoot, "assets/boot/smoke/perf.ts");
+    test("dispatches the game-layer perf runner via the bridge with a Cocos profiler sampler", () => {
+        const smokeProxyFile = resolve(projectRoot, "assets/boot/smoke/smoke-proxy.ts");
+        expect(existsSync(smokeProxyFile)).toBe(true);
+
+        const source = readFileSync(smokeProxyFile, "utf8");
+        // Task 7 后 perf.ts 已删除：采样器迁入 smoke-proxy，boot 不再静态 import
+        // game/fixture/perf（仅类型），perf 运行器经注册桥读取
+        expect(source).toMatch(/sampleProfilerStats/);
+        expect(source).toMatch(/profiler\.stats/);
+        expect(source).toMatch(/lookupBundle\("game"\)/);
+        expect(source).toMatch(/smokes\?\.perf/);
+    });
+
+    test("keeps the perf runner in the game layer", () => {
+        const perfFile = resolve(projectRoot, "assets/game/fixture/perf.ts");
         expect(existsSync(perfFile)).toBe(true);
 
         const source = readFileSync(perfFile, "utf8");
-
         expect(source).toMatch(/runFixturePerf/);
-        expect(source).toMatch(/sampleProfilerStats/);
-        expect(source).toMatch(/profiler\.stats/);
     });
 });

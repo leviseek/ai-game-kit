@@ -5,6 +5,7 @@ import { createIdleFixture } from "./game_idle/assembly";
 import { createRpgFixture } from "./game_rpg/assembly";
 import { createTycoonFixture } from "./game_tycoon/assembly";
 import { createCardBattlePresenter } from "./game_card/view/presenter";
+import { runCardBattleSmoke } from "./game_card/smoke";
 
 // samples bundle 顶层副作用：单点合并登记品类模块描述符，避免多文件各自
 // register 互相覆盖。各 game_*/assembly.ts 不自行 registerBundle。
@@ -17,4 +18,5 @@ registerBundle("samples", {
         fight: createFightFixture,
     },
     presenters: { card: createCardBattlePresenter },
+    smokes: { cardBattle: runCardBattleSmoke },
 });

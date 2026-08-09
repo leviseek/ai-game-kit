@@ -210,10 +210,10 @@ describe("6.8 scope review: AppRoot.ts", () => {
 });
 
 describe("6.8 scope review: boot bundle boundary", () => {
-    test("boot (non-smoke) does not statically import the game bundle at runtime", () => {
-        // 冒烟模块（boot/smoke/**）仍静态 import game，由 Task 7 迁移进 game/samples
-        // bundle（已知中间态），本断言仅覆盖非冒烟的 boot 模块
-        const bootSources = collectSources(resolve(projectRoot, "assets/boot"), "smoke");
+    test("boot does not statically import the game bundle at runtime", () => {
+        // Task 7 后冒烟路径（boot/smoke/**）也改经注册桥执行，boot 全目录仅允许
+        // `import type`（编译期擦除）引用 game bundle
+        const bootSources = collectSources(resolve(projectRoot, "assets/boot"));
         expect(bootSources.length).toBeGreaterThan(0);
 
         for (const { file, source } of bootSources) {
