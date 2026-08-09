@@ -1,4 +1,5 @@
 import FairyEditor = CS.FairyEditor;
+import FairyGUI = CS.FairyGUI;
 import { ProbeResultWriter, probeLog } from "./common/result";
 import { runEnvProbe } from "./probes/env";
 import { runInsertObjectProbe } from "./probes/insert-object";
@@ -35,7 +36,23 @@ function buildMailboxServer(objsPath: string): void {
     mailboxServer.register("query_dependencies", handleQueryDependencies);
     mailboxServer.register("read_publish_settings", handleReadPublishSettings);
     mailboxServer.register("get_active_context", handleGetActiveContext);
-    App.add_onUpdate(() => mailboxServer?.tick());
+    const server = mailboxServer;
+
+    // 双驱动轮询：add_onUpdate（有帧时响应）与 Timers.inst（真实时间调度）。
+    // 哪个可用都能驱动 tick；tick 内部有 300ms 时间门控，双驱动天然去重。
+    // 背景：编辑器空闲时 add_onUpdate 可能停帧，Timers.inst 若被编辑器驱动则按时间触发；
+    // 无法确定两者在目标版本的行为，双挂提高命中率。
+    App.add_onUpdate(() => server?.tick());
+    try {
+        const tickOnce = (): void => {
+            server.tick();
+            FairyGUI.Timers.inst.Add(0.3, 1, tickOnce);
+        };
+        FairyGUI.Timers.inst.Add(0.3, 1, tickOnce);
+    } catch (e: any) {
+        probeLog(`Timers 驱动不可用（回退 add_onUpdate）: ${e}`);
+    }
+
     // 全局守卫携带实例与绑定目录，第二个模块实例据此跳过
     g.__fguiMcpProbe_mailboxServer = mailboxServer;
     g.__fguiMcpProbe_mailboxObjsPath = objsPath;

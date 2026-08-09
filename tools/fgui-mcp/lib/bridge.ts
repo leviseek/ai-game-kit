@@ -31,7 +31,7 @@ export interface MailboxResponse {
 }
 
 export interface BridgeOptions {
-    /** 单次请求超时（ms），默认 10s */
+    /** 单次请求超时（ms），默认 30s——编辑器空闲时帧率可低至数秒一帧，需留足轮询窗口 */
     readonly timeoutMs?: number;
     /** 轮询间隔（ms），默认 50ms */
     readonly pollMs?: number;
@@ -58,7 +58,7 @@ export class MailboxBridge {
         this.mailboxDir = mailboxDir;
         this.requestsDir = join(mailboxDir, "requests");
         this.responsesDir = join(mailboxDir, "responses");
-        this.timeoutMs = options.timeoutMs ?? 10_000;
+        this.timeoutMs = options.timeoutMs ?? 30_000;
         this.pollMs = options.pollMs ?? 50;
     }
 
@@ -96,8 +96,12 @@ export class MailboxBridge {
         rmSync(reqPath, { force: true });
         rmSync(tmpPath, { force: true });
         rmSync(join(this.responsesDir, `${id}.json`), { force: true });
+        // 平台约束提示：FairyGUI 编辑器（Unity 内核）窗口失焦/后台时会暂停主循环，
+        // 插件侧 add_onUpdate/Timers 均不驱动，邮箱轮询自然停摆——请保持编辑器窗口前台。
+        const focusHint =
+            "若编辑器窗口当前不在前台，请将鼠标焦点切回 FairyGUI 编辑器窗口后重试（后台运行时主循环暂停，插件不轮询邮箱）。";
         const detail = reqStillExists
-            ? `插件从未读取请求文件（${reqPath} 仍存在）：邮箱服务器未运行或 tick 未触发。请确认已重启编辑器加载含 mailbox server 的插件，且控制台出现"邮箱服务器启动"日志。`
+            ? `插件从未读取请求文件（${reqPath} 仍存在）：邮箱服务器未运行、tick 未触发，或编辑器窗口在后台。${focusHint} 若已确认编辑器前台仍失败，请重启编辑器并确认控制台出现"邮箱服务器启动"日志。`
             : `插件已读走请求但未写响应：handler 抛错或响应写入失败。请查看编辑器控制台"[fgui-mcp-probe] 处理请求...异常"日志。`;
         return {
             reached: false,

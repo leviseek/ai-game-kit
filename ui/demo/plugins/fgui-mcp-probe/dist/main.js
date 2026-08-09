@@ -5,6 +5,7 @@ exports.onPublish = onPublish;
 exports.onPublishEnd = onPublishEnd;
 exports.onDestroy = onDestroy;
 var FairyEditor = CS.FairyEditor;
+var FairyGUI = CS.FairyGUI;
 const result_1 = require("./common/result");
 const env_1 = require("./probes/env");
 const insert_object_1 = require("./probes/insert-object");
@@ -24,7 +25,18 @@ function buildMailboxServer(objsPath) {
     mailboxServer.register("query_dependencies", handlers_1.handleQueryDependencies);
     mailboxServer.register("read_publish_settings", handlers_1.handleReadPublishSettings);
     mailboxServer.register("get_active_context", handlers_1.handleGetActiveContext);
-    App.add_onUpdate(() => mailboxServer?.tick());
+    const server = mailboxServer;
+    App.add_onUpdate(() => server?.tick());
+    try {
+        const tickOnce = () => {
+            server.tick();
+            FairyGUI.Timers.inst.Add(0.3, 1, tickOnce);
+        };
+        FairyGUI.Timers.inst.Add(0.3, 1, tickOnce);
+    }
+    catch (e) {
+        (0, result_1.probeLog)(`Timers 驱动不可用（回退 add_onUpdate）: ${e}`);
+    }
     g.__fguiMcpProbe_mailboxServer = mailboxServer;
     g.__fguiMcpProbe_mailboxObjsPath = objsPath;
     (0, result_1.probeLog)(`FGUI MCP 邮箱服务器启动: ${CS.System.IO.Path.Combine(objsPath, "fgui-mcp-probe", "mailbox")}`);

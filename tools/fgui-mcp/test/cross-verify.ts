@@ -16,7 +16,7 @@ const packageName = process.argv.includes("--package") ? process.argv[process.ar
 
 async function main(): Promise<void> {
     const project = locateProject();
-    const bridge = new MailboxBridge(project.mailboxDir, { timeoutMs: 10_000 });
+    const bridge = new MailboxBridge(project.mailboxDir, { timeoutMs: 30_000 });
 
     console.log(`== 交叉验证（包: ${packageName}）==`);
 
@@ -48,8 +48,13 @@ async function main(): Promise<void> {
     }
 
     // 3. 对比：按 id → {kind,name,exported} 建映射
-    const bridgeMap = new Map(bridgeRows.map((r) => [r.id, r]));
-    const cliMap = new Map(cliRows.map((r) => [r.id, r]));
+    // 归一化差异：
+    //   - 编辑器桥的 name 不带扩展名（item.name，如 LobbyView），CLI 来自 package.xml 是文件名（LobbyView.xml）
+    //   - 编辑器桥含 folder 类型（id=/component/ 等），CLI 不列为资源 → 跳过
+    const normalizeName = (name: string): string => name.replace(/\.(xml|png|jpg|jpeg|webp|gif|svg|mp3|wav)$/i, "");
+    const bridgeRowsFiltered = bridgeRows.filter((r) => r.kind !== "folder");
+    const bridgeMap = new Map(bridgeRowsFiltered.map((r) => [r.id, { kind: r.kind, name: normalizeName(r.name), exported: r.exported }]));
+    const cliMap = new Map(cliRows.map((r) => [r.id, { kind: r.kind, name: normalizeName(r.name), exported: r.exported }]));
     const allIds = new Set([...bridgeMap.keys(), ...cliMap.keys()]);
     let mismatches = 0;
     for (const id of allIds) {

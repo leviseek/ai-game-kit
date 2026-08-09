@@ -71,6 +71,7 @@ MCP server（`tools/fgui-mcp/`，标准 MCP SDK devDependency，**已实现**：
 - [activeDoc.InsertObject 插入可能落在非前台文档（探针 v1 实测陷阱）] → 已复测：本工程 `OpenDocument(url, true)` 同步激活，`App.activeDoc === 操作对象` 成立；实现时仍保留引用相等性校验与 `docView.activeDoc = doc` 兜底，规避跨版本激活语义差异。
 - [工程为无分支形态，branch 空串发布已实测合法] → MCP 工具显式支持空分支（发布到主干）。
 - [pkg.Open() 刷新会让编辑区闪烁（实测确认"是"）] → 工具返回中显式提示副作用。
+- [**编辑器窗口失焦/后台时主循环暂停（已实测）**：插件侧 add_onUpdate/Timers 均不驱动 → 邮箱服务器不轮询 → MCP 请求超时。cross-verify 在编辑器前台稳定可达、后台必不可达] → 调用 MCP 工具前保持编辑器前台；MCP 侧错误信息提示焦点约束。**对阶段 4 的决策影响**：若需无人值守全自动，文件邮箱主通道受此约束，HTTP 通道（回调线程不依赖主循环）可能是更优解，需在阶段 4 复测其后台可用性。
 - [插件崩溃可能拖累编辑器] → 插件代码最小化、只做确定性操作；MCP 方案失败不影响现有 `tools/fgui` 工作流。
 
 ## Migration Plan
