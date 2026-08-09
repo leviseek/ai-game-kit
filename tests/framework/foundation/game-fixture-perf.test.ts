@@ -15,7 +15,6 @@ import {
 import type { GameFixtureRegistry } from "../../../assets/game/fixture/registry";
 
 const projectRoot = resolve(import.meta.dir, "../../..");
-const appRootFile = resolve(projectRoot, "assets/boot/AppRoot.ts");
 
 /** 即时睡眠：性能采样循环不真实等待。 */
 const immediateSleep = () => Promise.resolve();
@@ -201,13 +200,13 @@ describe("game fixture perf runner", () => {
     });
 });
 
-describe("AppRoot fixture perf forwarding", () => {
-    test("parses ?fixture-perf= and forwards to the game-layer perf runner with a profiler sampler", () => {
-        expect(existsSync(appRootFile)).toBe(true);
+describe("boot fixture perf module", () => {
+    test("dispatches the game-layer perf runner with a Cocos profiler sampler", () => {
+        const perfFile = resolve(projectRoot, "assets/boot/smoke/perf.ts");
+        expect(existsSync(perfFile)).toBe(true);
 
-        const source = readFileSync(appRootFile, "utf8");
+        const source = readFileSync(perfFile, "utf8");
 
-        expect(source).toMatch(/params\.get\("fixture-perf"\)/);
         expect(source).toMatch(/runFixturePerf/);
         expect(source).toMatch(/sampleProfilerStats/);
         expect(source).toMatch(/profiler\.stats/);

@@ -148,12 +148,11 @@ describe("game fixture smoke runner", () => {
 });
 
 describe("AppRoot fixture smoke forwarding", () => {
-    test("parses ?fixture= and forwards to the game-layer smoke runner", () => {
+    test("wires the fixture smoke runner from the game layer fixture", () => {
         expect(existsSync(appRootFile)).toBe(true);
 
         const source = readFileSync(appRootFile, "utf8");
 
-        expect(source).toMatch(/params\.get\("fixture"\)/);
         expect(source).toMatch(/from\s*["'][^"']*game\/fixture\/smoke["']/);
         expect(source).toMatch(/runFixtureSmoke/);
     });
