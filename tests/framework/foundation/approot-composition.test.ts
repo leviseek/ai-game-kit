@@ -33,6 +33,7 @@ mock.module("cc", () => ({
     Touch: class { },
     Vec3: class { },
     profiler: { stats: null },
+    sys: { isNative: false },
 }));
 
 // AppRoot 经 createCocosUiRoot 工厂间接依赖 fairygui-cc；测试不加载真实运行时，
@@ -336,6 +337,25 @@ describe("AppRoot Component", () => {
         instance.onLoad();
 
         expect(typeof instance.runSceneFlowSmoke).toBe("function");
+    });
+
+    test("delegates default startup orchestration to BootFlow", () => {
+        expect(existsSync(appRootFile)).toBe(true);
+
+        const source = readFileSync(appRootFile, "utf8");
+
+        // 组合根装配 BootFlow 并委托启动编排（logo → 热更 → 预加载 → 分派）
+        expect(source).toMatch(/createBootFlow/);
+        expect(source).toMatch(/\.launch\(\)/);
+    });
+
+    test("default startup defers UI root init to game first presentation", () => {
+        const source = readFileSync(appRootFile, "utf8");
+
+        // 默认流程不再在 startup 初始化 GRoot：AppRoot 无 initializeUiRoot 直接调用，
+        // 列表页打开也经 BootFlow → GameLobbyHostImpl（GRoot 推迟到 game 首次呈现）
+        expect(source).not.toMatch(/initializeUiRoot/);
+        expect(source).not.toMatch(/openListPageWithRetry/);
     });
 });
 

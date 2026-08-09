@@ -2,6 +2,7 @@ import {
     _decorator,
     Component,
     director,
+    sys,
 } from "cc";
 import {
     Application,
@@ -33,6 +34,7 @@ import {
 } from "../framework/adapters/cocos/ui/CocosUiRoot";
 import { runFixtureSmoke } from "../game/fixture/smoke";
 import {
+    sceneMap,
     type EntryPageHandle,
     type GameEntryInfo,
 } from "../game/fixture/lobby";
@@ -44,6 +46,10 @@ import {
     createGameLobbyHost,
     type GameLobbyHostImpl,
 } from "./host/GameLobbyHostImpl";
+import {
+    createBootFlow,
+    type BootFlow,
+} from "./flow/BootFlow";
 import {
     createSmokeRouter,
     type SmokeRouter,
@@ -63,9 +69,8 @@ export function createModules(): readonly Module[] {
     return [];
 }
 
-// 装配前 token 校验：对组合根声明的必需服务逐一 resolve。缺失 token 或解析期
-// 依赖循环抛 ServiceResolutionError（继承 FrameworkError），使非法装配在
-// Application.start 前失败、不进入 running。
+// 装配前 token 校验：缺失 token 或解析期依赖循环抛 ServiceResolutionError，
+// 使非法装配在 Application.start 前失败、不进入 running。
 function validateRequiredTokens(
     registry: ServiceRegistry,
     requiredTokens: readonly ServiceToken<unknown>[],
@@ -110,9 +115,9 @@ export function assembleApp(): AppAssembly {
         validateRequiredTokens(registry, [appTimeSourceToken]);
     };
 
-    // 场景流转冒烟组合：真实引擎接缝（cc.assetManager / cc.director）的整链路
-    // 组装点。场景名与资源的映射属于游戏层组合，这里只提供最小组装与触发入口；
-    // 编排行为已由 Bun 测试（scene-flow / cocos-resource-provider / cocos-scene-adapter）兜底。
+    // 场景流转冒烟组合：真实引擎接缝（cc.assetManager / cc.director）的整链路组装点。
+    // 场景名与资源的映射属于游戏层组合，这里只提供最小组装与触发入口；编排行为已由
+    // Bun 测试（scene-flow / cocos-resource-provider / cocos-scene-adapter）兜底。
     const resourceProvider = createCocosResourceProvider();
     const sceneFlow = createSceneFlow({
         provider: resourceProvider,
@@ -129,8 +134,8 @@ export function assembleApp(): AppAssembly {
         },
     });
 
-    // UI 根宿主经 Adapter 工厂接入：fgui 类型不进入组合根，初始化时机由
-    // 启动流程（当前 AppRoot.start，后续 BootFlow）在引擎 ready 后触发。
+    // UI 根宿主经 Adapter 工厂接入：fgui 类型不进入组合根，初始化时机由 BootFlow
+    // 在引擎 ready 后（默认流程切 game 首次呈现 / 冒烟路径 startup）触发。
     const uiRoot = createCocosUiRoot();
 
     return {
@@ -146,9 +151,9 @@ export function assembleApp(): AppAssembly {
 }
 
 /**
- * 组合根组件：装配 Application 与宿主模块（UiHost/GameLobbyHostImpl/SmokeRouter），
- * 并把冒烟触发、会话打开/关闭收敛为薄代理。启动编排、UI 根初始化时机与默认
- * 列表页打开逻辑分别委托 host/smoke/flow 模块（本 Change 阶段 1 零行为拆解）。
+ * 组合根组件：装配 Application 与宿主模块（UiHost/GameLobbyHostImpl/SmokeRouter/
+ * BootFlow），并把冒烟触发、会话打开/关闭收敛为薄代理。启动编排、UI 根初始化时机
+ * 与默认列表页打开逻辑委托 BootFlow + 宿主模块（本 Change 阶段 2）。
  */
 @ccclass("AppRoot")
 export class AppRoot extends Component {
@@ -159,6 +164,7 @@ export class AppRoot extends Component {
     private uiHost?: UiHost;
     private lobbyHost?: GameLobbyHostImpl;
     private smokeRouter?: SmokeRouter;
+    private bootFlow?: BootFlow;
     private logger?: Logger;
     private validateAssembly?: () => void;
 
@@ -187,23 +193,46 @@ export class AppRoot extends Component {
         this.smokeRouter = createSmokeRouter({
             runUiSmoke: () => this.runUiSmoke(),
             runSceneFlowSmoke: () => this.runSceneFlowSmoke(),
-            runModalClickSmoke: () => this.runModalClickSmoke(),
-            runCardBattleSmoke: () => this.runCardBattleSmoke(),
+            runModalClickSmoke: () => {
+                const host = this.uiHost;
+                return host === undefined
+                    ? Promise.resolve()
+                    : runModalClickSmoke(host);
+            },
+            runCardBattleSmoke: () => {
+                const host = this.uiHost;
+                if (host === undefined) {
+                    return Promise.resolve();
+                }
+                return runCardBattleSmoke(
+                    host,
+                    () => this.lobbyHost?.ensureSharedUiDependencies() ?? Promise.resolve(),
+                );
+            },
             runFixtureSmoke: (fixtureId) => runFixtureSmoke(fixtureId),
             runFixturePerf: (perfFixtureId) => runFixturePerfSmoke(perfFixtureId),
+        });
+        // 启动编排器：场景映射清单来自游戏层 fixture（game/fixture 薄转发）；
+        // isNative 探测原生平台（Web 静默跳过热更阶段）；getSearch 供 URL 冒烟分派。
+        this.bootFlow = createBootFlow({
+            sceneFlow,
+            uiHost: this.uiHost,
+            lobbyHost: this.lobbyHost,
+            smokeRouter: this.smokeRouter,
+            sceneMap,
+            logger,
+            isNative: () => sys.isNative === true,
+            getSearch: () => (typeof window === "undefined" ? "" : window.location.search),
         });
         director.addPersistRootNode(this.node);
     }
 
     start(): void {
-        // 装配前 token 校验先于 adapter.bind/initializeUiRoot：校验失败时不留
-        // 已绑定/已初始化的全局状态，应用保持 created 不进入 running。
+        // 装配前 token 校验先于 adapter.bind：校验失败时不留已绑定/已初始化的全局状态，
+        // 应用保持 created 不进入 running。
         const launch = async (): Promise<void> => {
-            // 缺失/循环在此抛 ServiceResolutionError，与启动失败共用下方既有
-            // app.start().catch 失败路径。
             this.validateAssembly?.();
             this.adapter?.bind();
-            this.initializeUiRoot();
             await this.app?.start();
         };
         launch().catch((error) => {
@@ -222,38 +251,24 @@ export class AppRoot extends Component {
             }
         });
 
-        // 冒烟/默认入口分派：URL 带 smoke/fixture 参数时经 SmokeRouter 优先执行
-        // 对应冒烟序列（延迟到引擎 ready 后，setTimeout 让 GRoot 在首帧后可用）；
-        // 无参数走默认列表页打开。仅在浏览器环境生效；纯 TS 测试不触发。
+        // 启动编排委托 BootFlow：默认无参流程 GRoot 推迟到 game 首次呈现（阶段 2），
+        // 冒烟分叉（URL 带 smoke/fixture）在 startup 立即初始化后执行。仅浏览器环境
+        // 触发；纯 TS 测试不触发。
         if (typeof window !== "undefined") {
-            const action = this.smokeRouter?.resolve(window.location.search) ?? null;
-            if (action === null) {
-                this.lobbyHost?.openListPageWithRetry();
-            } else {
-                const { tag, run } = action;
-                setTimeout(() => {
-                    run().catch((error) => {
-                        console.error(`[${tag}] sequence error`, error);
-                    });
-                }, 1000);
-            }
+            this.bootFlow?.launch().catch((error) => {
+                this.logger?.error(
+                    "[boot] flow launch failed",
+                    undefined,
+                    error instanceof Error ? error : undefined,
+                );
+            });
         }
     }
 
-    /**
-     * 引擎 ready 后初始化 UI 根宿主。GRoot 未就绪时 init 抛错，UiHost 仅上报
-     * 且保持未初始化；init 幂等可由后续显式调用再次触发。
-     */
-    private initializeUiRoot(): void {
-        this.uiHost?.init();
-    }
-
-    /** 冒烟触发：后台预加载目标场景资源，不切换当前场景。 */
     smokePreload(sceneId: string, resources: SceneResources): Promise<void> {
         return this.sceneFlow?.preload(sceneId, resources) ?? Promise.resolve();
     }
 
-    /** 冒烟触发：完整场景切换（预加载 → 激活 → 所有权转移）。 */
     smokeSwitchTo(
         sceneId: string,
         resources: SceneResources,
@@ -264,22 +279,18 @@ export class AppRoot extends Component {
         );
     }
 
-    /** 冒烟观察：查询 Bundle 是否已无作用域持有（可卸载）。 */
     smokeCanUnload(bundle: string): boolean {
         return this.resourceProvider?.canUnload(bundle) ?? false;
     }
 
-    /** 冒烟触发：初始化 UI 根宿主与页面适配器。返回是否就绪。 */
     smokeUiInit(): boolean {
         return this.uiHost?.smokeUiInit() ?? false;
     }
 
-    /** 冒烟观察：页面适配器是否已就绪（GRoot 已初始化）。 */
     smokeUiReady(): boolean {
         return this.uiHost?.smokeUiReady() ?? false;
     }
 
-    /** 冒烟触发：加载 FairyGUI package 并登记到全局作用域，返回加载结果标识。 */
     smokeUiLoadPackage(bundle: string, path: string): Promise<ResourceHandle> {
         const host = this.uiHost;
         if (host === undefined) {
@@ -298,12 +309,6 @@ export class AppRoot extends Component {
         return host.loadPackage(bundle, path);
     }
 
-    /** 冒烟触发：释放 UI 冒烟作用域，触发 package → Bundle 逆序释放。 */
-    smokeUiRelease(): void {
-        this.uiHost?.release();
-    }
-
-    /** 冒烟触发：打开页面。pageAdapter 未就绪时返回 false。 */
     smokeUiOpenPage(
         route: string,
         layer: UiLayer,
@@ -313,18 +318,15 @@ export class AppRoot extends Component {
         return this.uiHost?.openPage(route, layer, packageName, resName) ?? false;
     }
 
-    /** 冒烟触发：关闭页面（先卸载挂载再销毁 View）。返回是否关闭。 */
     smokeUiClosePage(route: string): boolean {
         return this.uiHost?.closePage(route) ?? false;
     }
 
-    /** 冒烟触发：运行 FairyGUI UI 冒烟序列（引擎集成冒烟驱动）。 */
     runUiSmoke(): Promise<void> {
         const host = this.uiHost;
         return host === undefined ? Promise.resolve() : runUiSmoke(host);
     }
 
-    /** 冒烟触发：运行场景流转冒烟序列（引擎集成冒烟驱动）。 */
     runSceneFlowSmoke(): Promise<void> {
         const sceneFlow = this.sceneFlow;
         const resourceProvider = this.resourceProvider;
@@ -338,25 +340,6 @@ export class AppRoot extends Component {
         });
     }
 
-    /** 冒烟触发：运行模态遮罩真实交互点击验证序列（引擎集成冒烟驱动）。 */
-    runModalClickSmoke(): Promise<void> {
-        const host = this.uiHost;
-        return host === undefined ? Promise.resolve() : runModalClickSmoke(host);
-    }
-
-    /** 冒烟触发：运行卡牌对战真实可玩冒烟（引擎集成冒烟驱动）。 */
-    runCardBattleSmoke(): Promise<void> {
-        const host = this.uiHost;
-        if (host === undefined) {
-            return Promise.resolve();
-        }
-        return runCardBattleSmoke(
-            host,
-            () => this.lobbyHost?.ensureSharedUiDependencies() ?? Promise.resolve(),
-        );
-    }
-
-    /** GameLobbyHost.openEntryPage 薄代理：会话建立与释放由 lobby host 承载。 */
     openEntryPage(entry: GameEntryInfo): Promise<EntryPageHandle> {
         const lobbyHost = this.lobbyHost;
         if (lobbyHost === undefined) {
@@ -365,7 +348,6 @@ export class AppRoot extends Component {
         return lobbyHost.openEntryPage(entry);
     }
 
-    /** GameLobbyHost.closeEntryPage 薄代理。 */
     closeEntryPage(handle: EntryPageHandle): Promise<void> {
         const lobbyHost = this.lobbyHost;
         if (lobbyHost === undefined) {
@@ -379,6 +361,8 @@ export class AppRoot extends Component {
         // 清理冒烟交互钩子：闭包持有组件，常驻根销毁时一并释放
         clearModalClickHook();
         this.smokeRouter = undefined;
+        this.bootFlow?.dispose();
+        this.bootFlow = undefined;
         this.uiHost?.dispose();
         this.uiHost = undefined;
         this.sceneFlow?.dispose();

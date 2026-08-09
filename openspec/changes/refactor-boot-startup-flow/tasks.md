@@ -14,15 +14,15 @@
 
 ## 2. 阶段 2：BootFlow 启动编排（AppRoot → ~250 行）
 
-- [ ] 2.1 新建 `assets/game/fixture/scene.ts`：显式场景映射清单（sceneId → bundle/paths），登记 `game` 场景的 `ui` bundle 资源；经 `assets/game/fixture/lobby.ts` 薄重导出，AppRoot/BootFlow 经 `game/fixture` 消费。
-- [ ] 2.2 新建 `assets/boot/flow/BootFlow.ts`：状态机编排 `logo → hotupdate(占位) → framework-preload → dispatch`；默认分支经 `sceneFlow.switchTo("game", sceneMap.game)` 单向切换，game 激活后触发 `UiHost.init` + 打开默认列表页（`openListPageWithRetry` 语义保留）；不提供回切 startup。
-- [ ] 2.3 BootFlow 框架级预加载：logo 期后台经 `ensureSharedUiDependencies` 模式加载 `Common/Common` 与框架配置到全局 `uiScope` 常驻（不走 SceneFlow）；game 场景资源经 `sceneFlow.preload`（单槽位）预加载、`switchTo` 复用。
-- [ ] 2.4 热更阶段占位：原生平台探测（Web no-op 静默跳过）+ 纯原生进度 UI 呈现占位（不依赖 fgui/Common）；下载引擎不实现（留待独立 change）。
-- [ ] 2.5 默认流程 GRoot 推迟：AppRoot 默认启动不再在 startup `initializeUiRoot`，UI 初始化推迟到 game 首次呈现；冒烟路径经 SmokeRouter 保持 startup 立即初始化（dev 分叉）。
-- [ ] 2.6 AppRoot 收尾：`onLoad/start/onDestroy` 改为委托 BootFlow + UiHost + GameLobbyHostImpl 薄代理；`openListPageWithRetry`/`openListPage` 移入 BootFlow 或 host 模块；AppRoot 收敛至 ~250 行，import 白名单不违反 task68。
-- [ ] 2.7 新增 BootFlow 单测（memory 适配器驱动）：默认无参启动走 logo → 预加载 → switchTo game → 打开列表页；URL smoke 参数优先；热更阶段 Web 跳过；GRoot 默认推迟到 game 首次呈现。
-- [ ] 2.8 同步修改 `game-lobby`/`fairygui-ui-adapter` delta 相关测试断言（默认入口打开时机、UI 根初始化时机分叉）。
-- [ ] 2.9 验证门禁：`bun run test:foundation`、`typecheck`、`public-boundary`、`task68-scope-review`、`openspec validate --specs --strict`；CDP 冒烟全通过。
+- [x] 2.1 新建 `assets/game/fixture/scene.ts`：显式场景映射清单（sceneId → bundle/paths），登记 `game` 场景的 `ui` bundle 资源；经 `assets/game/fixture/lobby.ts` 薄重导出，AppRoot/BootFlow 经 `game/fixture` 消费。
+- [x] 2.2 新建 `assets/boot/flow/BootFlow.ts`：状态机编排 `logo → hotupdate(占位) → framework-preload → dispatch`；默认分支经 `sceneFlow.switchTo("game", sceneMap.game)` 单向切换，game 激活后触发 `UiHost.init` + 打开默认列表页（`openListPageWithRetry` 语义保留）；不提供回切 startup。
+- [x] 2.3 BootFlow 框架级预加载：logo 期后台经 `ensureSharedUiDependencies` 模式加载 `Common/Common` 与框架配置到全局 `uiScope` 常驻（不走 SceneFlow）；game 场景资源经 `sceneFlow.preload`（单槽位）预加载、`switchTo` 复用。
+- [x] 2.4 热更阶段占位：原生平台探测（Web no-op 静默跳过）+ 纯原生进度 UI 呈现占位（不依赖 fgui/Common）；下载引擎不实现（留待独立 change）。
+- [x] 2.5 默认流程 GRoot 推迟：AppRoot 默认启动不再在 startup `initializeUiRoot`，UI 初始化推迟到 game 首次呈现；冒烟路径经 SmokeRouter 保持 startup 立即初始化（dev 分叉）。
+- [x] 2.6 AppRoot 收尾：`onLoad/start/onDestroy` 改为委托 BootFlow + UiHost + GameLobbyHostImpl 薄代理；`openListPageWithRetry`/`openListPage` 移入 BootFlow 或 host 模块；AppRoot 收敛至 ~250 行，import 白名单不违反 task68。
+- [x] 2.7 新增 BootFlow 单测（memory 适配器驱动）：默认无参启动走 logo → 预加载 → switchTo game → 打开列表页；URL smoke 参数优先；热更阶段 Web 跳过；GRoot 默认推迟到 game 首次呈现。
+- [x] 2.8 同步修改 `game-lobby`/`fairygui-ui-adapter` delta 相关测试断言（默认入口打开时机、UI 根初始化时机分叉）。
+- [x] 2.9 验证门禁：`bun run test:foundation`、`typecheck`、`public-boundary`、`task68-scope-review`、`openspec validate --specs --strict`；CDP 冒烟全通过。
 
 ## 3. 阶段 3：预加载分层与回归（可选，依赖阶段 2）
 

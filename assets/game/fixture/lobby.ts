@@ -19,3 +19,4 @@ export {
     type GameTypeInfo,
 } from "../lobby/catalog";
 export type { GamePresenter, GamePresenterFactory } from "../lobby/presenter";
+export { sceneMap } from "./scene";

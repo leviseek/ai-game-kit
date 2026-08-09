@@ -35,6 +35,7 @@ mock.module("cc", () => ({
     Touch: class { },
     Vec3: class { },
     profiler: { stats: null },
+    sys: { isNative: false },
 }));
 
 interface GRootLike {

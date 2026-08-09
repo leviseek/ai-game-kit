@@ -36,6 +36,7 @@ mock.module("cc", () => ({
     Touch: class { },
     Vec3: class { },
     profiler: { stats: null },
+    sys: { isNative: false },
 }));
 
 // AppRoot 经 createCocosUiRoot 工厂间接依赖 fairygui-cc；测试不加载真实运行时，
