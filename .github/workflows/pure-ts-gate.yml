@@ -1,0 +1,48 @@
+# Layer 1 纯 TS 门禁：零 Creator 授权、零引擎依赖的确定性检查，PR 硬门禁。
+# 覆盖 typecheck + lint + foundation/fgui 测试 + fgui 源工程校验 + openspec specs。
+# Creator 构建/smoke（ccc）不在本层，走自托管 runner 手动触发（layer3）。
+name: pure-ts-gate
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.x
+
+      - name: Cache Bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ hashFiles('bun.lock') }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Test (foundation + fgui)
+        run: bun run test
+
+      - name: Validate FGUI packages
+        run: |
+          bun run fgui validate --package Demo --strict
+          bun run fgui validate --package Common --strict
+          bun run fgui validate --package CardGame --strict
+
+      - name: Validate OpenSpec specs
+        run: |
+          bun add --global @fission-ai/openspec
+          openspec validate --specs --strict

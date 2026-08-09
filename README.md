@@ -33,6 +33,10 @@ bun run test
 
 测试计数会随代码演进，以实际输出为准。
 
+## CI
+
+`.github/workflows/pure-ts-gate.yml` 提供纯 TypeScript 门禁层（Layer 1）：`push` / `pull_request` 自动运行，覆盖 typecheck、lint、foundation/fgui 测试、FGUI 源工程校验（`fgui validate --strict`）与 OpenSpec specs 校验。零 Creator 授权、零引擎依赖，可在 `ubuntu-latest` 全跑。依赖 Cocos Creator 的构建/smoke（`ccc`）不在本层。
+
 ## 目录地图
 
 ```
