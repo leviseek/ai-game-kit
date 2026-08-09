@@ -1,5 +1,4 @@
 import type { InputEvent, InputSource, Module } from "../framework";
-import type { FightAction } from "./models";
 
 /**
  * 输入上下文：组合根创建 InputMapper，按激活上下文把底层输入源事件
@@ -47,6 +46,3 @@ export function createFightInputModule(handle: FightInputSource): Module {
     },
   };
 }
-
-/** 供组合根使用的 action 路由回调：输入采样联动出招。 */
-export type FightInputLink = (action: FightAction) => void;

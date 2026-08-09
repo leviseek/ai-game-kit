@@ -253,10 +253,10 @@ describe.skipIf(!assemblyExists)(
       // 确定性：两次独立运行结果逐字段一致
       expect(first).toEqual(second);
 
-      // 输入序列产生确定伤害与连招
+      // 输入序列产生确定伤害与连招：punch 命中一次，enemyHp 100-10=90、combo=1
       expect(first.playerHp).toBe(100);
-      expect(first.enemyHp).toBeLessThan(100);
-      expect(first.combo).toBeGreaterThan(0);
+      expect(first.enemyHp).toBe(90);
+      expect(first.combo).toBe(1);
       expect(first.frame).toBe(30);
     });
 
@@ -281,6 +281,42 @@ describe.skipIf(!assemblyExists)(
       }
       expect(fixture.battle.state.combo).toBeGreaterThan(0);
       expect(fixture.pool.created).toBeLessThanOrEqual(4);
+
+      await fixture.dispose();
+    });
+
+    test("repeated hits borrow and return pool objects across full move cycles", async () => {
+      const createFightFixture = await loadCreateFightFixture();
+      const fixture = createFightFixture();
+      await fixture.start();
+
+      const overflowLogs: string[] = [];
+      const originalError = console.error;
+      console.error = (message?: unknown) => {
+        overflowLogs.push(String(message));
+      };
+
+      try {
+        // 连续 5 次 punch：每次招式 6 帧（startup 1 + active 2 + recovery 3）
+        // 结束归还命中特效。若借还成对，created 稳定在容量内且无溢出。
+        for (let round = 0; round < 5; round += 1) {
+          fixture.input.push("keyboard.j", true);
+          fixture.input.push("keyboard.j", false);
+          for (let index = 0; index < 6; index += 1) {
+            fixture.battle.tick();
+          }
+        }
+
+        expect(fixture.battle.state.combo).toBe(5);
+        expect(fixture.battle.state.enemyHp).toBe(50);
+        // 借还成对：特效对象被复用，工厂创建不随命中线性增长、不溢出
+        expect(fixture.pool.created).toBeLessThanOrEqual(4);
+        expect(overflowLogs.filter((line) => line.includes("overflow"))).toEqual(
+          [],
+        );
+      } finally {
+        console.error = originalError;
+      }
 
       await fixture.dispose();
     });
@@ -447,7 +483,7 @@ describe("Fight fixture framework boundary", () => {
     // 词表排除 Handle/Play/Scope 等通用前缀（框架有 HandleState/PlayScopeState 等命名），
     // 只保留无歧义的格斗业务词，避免把框架通用概念误判为业务模型。
     const modelPattern =
-      /\b(?:interface|class|type|enum)\s+(?:(?:Fight|Fighter|Hitbox|Combo|FrameData|Attack|Impact|Strike|Punch|Kick|Round)\w*)\b/;
+      /\b(?:interface|class|type|enum)\s+(?:(?:Fight|Fighter|Battle|Hitbox|Combo|FrameData|Attack|Impact|Strike|Punch|Kick|Round)\w*)\b/;
 
     const offenders: string[] = [];
     const collect = (directory: string): void => {

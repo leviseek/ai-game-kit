@@ -4,6 +4,7 @@ import type {
   FightFrameData,
   FightHitbox,
 } from "./models";
+import type { FightEffect } from "./pool";
 import type { FightEffectPool } from "./pool";
 
 /** 敌人判定区域：战斗结算使用的固定命中目标，与招式判定盒做相交检测。 */
@@ -49,6 +50,8 @@ interface ActiveMoveState {
   frameInMove: number;
   /** 本次招式是否已命中：每个招式在活动帧窗口内至多结算一次伤害。 */
   hitApplied: boolean;
+  /** 命中时从对象池借出的特效：招式结束时归还，保证借还成对。 */
+  effect: FightEffect | undefined;
 }
 
 /** 矩形相交判定：判定盒与敌人判定区域是否重叠。 */
@@ -95,6 +98,7 @@ export function createFightBattle(
   let enemyHp = ENEMY_START_HP;
   let combo = 0;
   let activeMove: ActiveMoveState | undefined;
+  let disposed = false;
 
   function state(): FightBattleState {
     return {
@@ -112,17 +116,20 @@ export function createFightBattle(
     },
     moves: MOVES,
     startMove(action: string) {
-      if (activeMove !== undefined) {
+      if (disposed || activeMove !== undefined) {
         return false;
       }
       const move = MOVES.find((candidate) => candidate.id === action);
       if (move === undefined) {
         return false;
       }
-      activeMove = { move, frameInMove: 0, hitApplied: false };
+      activeMove = { move, frameInMove: 0, hitApplied: false, effect: undefined };
       return true;
     },
     tick() {
+      if (disposed) {
+        return;
+      }
       frame += 1;
       const current = activeMove;
       if (current === undefined) {
@@ -142,8 +149,9 @@ export function createFightBattle(
         current.hitApplied = true;
         enemyHp = Math.max(0, enemyHp - move.damage);
         combo += 1;
-        const effect = pool.acquire();
-        reportHit(effect);
+        // 借出命中特效：招式结束归还，保证借还成对、对象被复用
+        current.effect = pool.acquire();
+        reportHit(current.effect);
       }
 
       // 招式结束：startup + active + recovery 帧后回到空闲，归还命中特效
@@ -151,11 +159,21 @@ export function createFightBattle(
         current.frameInMove >=
         move.startupFrames + move.activeFrames + move.recoveryFrames
       ) {
+        if (current.effect !== undefined) {
+          pool.release(current.effect);
+        }
         activeMove = undefined;
       }
     },
     dispose() {
-      // 战斗控制器无自有资源；未归还的特效由对象池在夹具 dispose 统一释放
+      if (disposed) {
+        return;
+      }
+      disposed = true;
+      // 归还未完成招式仍持有的命中特效，避免对象池遗留借出对象
+      if (activeMove?.effect !== undefined) {
+        pool.release(activeMove.effect);
+      }
       activeMove = undefined;
     },
   };

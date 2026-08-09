@@ -33,9 +33,3 @@ export interface FightBattleState {
   readonly combo: number;
   readonly activeMoveId: string | null;
 }
-
-/** 连招：连续命中累加的计数与累计伤害。 */
-export interface FightCombo {
-  readonly count: number;
-  readonly damage: number;
-}

@@ -1,4 +1,4 @@
-import type { AudioBackend, AudioGroup, Module } from "../framework";
+import type { AudioBackend, Module } from "../framework";
 import { createAudioService, type AudioService } from "../framework";
 
 /**
@@ -57,6 +57,3 @@ export function createFightAudioModule(audio: FightAudioHandle): Module {
     },
   };
 }
-
-/** 供组合根引用的音频分组常量（模块内直接使用字面量即可）。 */
-export type { AudioGroup };
