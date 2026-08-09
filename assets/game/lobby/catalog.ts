@@ -1,4 +1,4 @@
-import { CARD_BATTLE_ROUTE } from "../../game_card/models";
+import { CARD_BATTLE_ROUTE } from "../../samples/game_card/models";
 
 /**
  * 品类入口描述：route 与 FGUI 资源定位（包名/组件名）。列表页与宿主据此

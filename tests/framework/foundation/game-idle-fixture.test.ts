@@ -11,7 +11,7 @@ import type {
 import { MemoryPlatform } from "../../../assets/framework/adapters/memory/MemoryPlatform";
 
 const projectRoot = resolve(import.meta.dir, "../../..");
-const assemblyFile = resolve(projectRoot, "assets/game_idle/assembly.ts");
+const assemblyFile = resolve(projectRoot, "assets/samples/game_idle/assembly.ts");
 const assemblyExists = existsSync(assemblyFile);
 const frameworkRoot = resolve(projectRoot, "assets/framework");
 

@@ -1,9 +1,9 @@
 import type { GameFixture } from "./GameFixture";
-import { createRpgFixture } from "../../game_rpg/assembly";
-import { createCardFixture } from "../../game_card/assembly";
-import { createIdleFixture } from "../../game_idle/assembly";
-import { createTycoonFixture } from "../../game_tycoon/assembly";
-import { createFightFixture } from "../../game_fight/assembly";
+import { createRpgFixture } from "../../samples/game_rpg/assembly";
+import { createCardFixture } from "../../samples/game_card/assembly";
+import { createIdleFixture } from "../../samples/game_idle/assembly";
+import { createTycoonFixture } from "../../samples/game_tycoon/assembly";
+import { createFightFixture } from "../../samples/game_fight/assembly";
 
 /** 品类夹具工厂：无参构造一个 GameFixture。 */
 export type GameFixtureFactory = () => GameFixture;

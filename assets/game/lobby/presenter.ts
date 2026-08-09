@@ -1,12 +1,12 @@
 import type { ViewModelNode } from "../../framework";
 import { createViewModelRenderer } from "../../framework";
 import type { GameFixture } from "../fixture/GameFixture";
-import type { CardFixture } from "../../game_card/assembly";
+import type { CardFixture } from "../../samples/game_card/assembly";
 import {
     createCardBattleBindings,
     createCardBattleViewModel,
     type CardBattleCommands,
-} from "../../game_card/view/view";
+} from "../../samples/game_card/view/view";
 
 /**
  * 品类呈现器：把夹具状态渲染到真实页面节点。引擎无关——消费 ViewModelNode

@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import { gameFixtureRegistry } from "../../../assets/game/fixture/registry";
 import { gameTypeCatalog } from "../../../assets/game/lobby/catalog";
-import { CARD_BATTLE_ROUTE } from "../../../assets/game_card/models";
+import { CARD_BATTLE_ROUTE } from "../../../assets/samples/game_card/models";
 
 describe("game lobby catalog", () => {
     test("every catalog id aligns with the fixture registry", () => {

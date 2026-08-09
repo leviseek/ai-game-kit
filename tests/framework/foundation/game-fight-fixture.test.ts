@@ -16,7 +16,7 @@ import type {
 } from "../../../assets/framework";
 
 const projectRoot = resolve(import.meta.dir, "../../..");
-const assemblyFile = resolve(projectRoot, "assets/game_fight/assembly.ts");
+const assemblyFile = resolve(projectRoot, "assets/samples/game_fight/assembly.ts");
 const assemblyExists = existsSync(assemblyFile);
 const frameworkRoot = resolve(projectRoot, "assets/framework");
 

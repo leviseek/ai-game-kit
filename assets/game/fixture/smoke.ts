@@ -5,11 +5,11 @@ import {
 } from "./registry";
 import type { ViewModelNode } from "../../framework";
 import { createViewModelRenderer } from "../../framework";
-import { createCardFixture } from "../../game_card/assembly";
+import { createCardFixture } from "../../samples/game_card/assembly";
 import {
     createCardBattleBindings,
     createCardBattleViewModel,
-} from "../../game_card/view/view";
+} from "../../samples/game_card/view/view";
 
 /**
  * 按品类夹具驱动一次完整生命周期冒烟：构造夹具并依次执行
