@@ -23,3 +23,5 @@
 - **validate 语义**：除引用完整性外还校验 controller 配对、gear 一致性、Slider/ProgressBar/ComboBox/Button 骨架、image 误用 fill、fileName 一致、transition 禁令、资源 id 续编冲突。**Basic/Builder 为官方库默认豁免**，需 `--strict` 才全量检查。
 - **relation 约束**：单个 `<relation>` 的 `sidePair` 最多 2 项；不得把第三个约束叠加到同一 relation。创建或编辑后必须由 `validate --strict` 检查，并在 FGUI 编辑器中刷新目标组件确认可读取。
 - **调色板锁定**：sprite 生成的颜色必须 ⊆ `ui/demo/palette.json` 允许集合；新色先加入该文件。资源 id 采用前缀续编（`next-id --prefix`）。
+- **跨资源包引用只允许指向通用资源包 `Common`/`Common_xxx`**：禁止业务包（Demo/CardGame 等）跨包引用其它业务包，也禁止跨包引用 FairyGUI 编辑器官方库包 `Basic`/`Builder`（只能作参考示例，不得使用）。共享按钮/进度条等通用组件统一承载于 `ui/demo/assets/Common/`；打开业务页面 package 前必须先注册 Common（fgui loadPackage 不自动加载依赖包），否则跨包组件退化为空组件、点击事件不触发（见 `.ai/instructions.md` 第 13 条）。
+- **发布产物由 FGUI 编辑器生成**：`assets/ui/*/*.bin` 与 atlas 禁止手改；修改源 XML/PNG 后需在 FGUI 编辑器中重新发布对应包，不得提交陈旧 bin（见 `.ai/instructions.md` 第 14 条）。

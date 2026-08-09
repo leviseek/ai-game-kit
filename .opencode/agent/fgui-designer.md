@@ -67,6 +67,7 @@ FGUI 项目位于 `D:\ai-work\ai-game-kit\ui\demo\`：
 - **图片文件命名** `{用途}_{状态}.png`：如 `btn_primary_up.png`、`panel_bg.png`、`input_bg.png`。
 - **组件命名**：整屏/弹窗 `XxxView`/`XxxPopup`，可复用组件 `XxxCom` 或控件词（如 `VolumeSliderCom`）。
 - 改动已绑定子元件名会破坏 TS 绑定，非必要不改。
+- **跨资源包引用只允许指向通用资源包 `Common`/`Common_xxx`**：禁止业务包（Demo/CardGame 等）跨包引用其它业务包；禁止跨包引用 FairyGUI 编辑器官方库包 `Basic`/`Builder`（只能作为参考示例，不得使用）。共享按钮/进度条等通用组件统一承载于 `ui/demo/assets/Common/`；业务包跨包引用一律指向 Common。打开业务页面 package 前必须确保 Common 已加载注册（fgui loadPackage 不自动加载依赖包，组合根 AppRoot 负责先加载 Common），否则跨包组件退化为空组件、点击事件不触发。`pkg="cmn00001"` 即 Common 包 id。
 
 # 确定性工具（优先于手工读取）
 
