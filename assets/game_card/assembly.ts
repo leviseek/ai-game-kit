@@ -14,19 +14,19 @@ import {
     createCardBattle,
     createCardBattleModule,
     type CardBattleHandle,
-} from "./battle";
+} from "./logic/battle";
 import {
     createCardClockModule,
     createCardSimClock,
     type CardSimClock,
-} from "./clock";
+} from "./logic/clock";
 import {
     createCardConfig,
     createCardConfigModule,
     type CardConfigHandle,
-} from "./config";
-import { createCardInputModule, createCardInputSource } from "./input";
-import { createCardUiModule } from "./ui";
+} from "./logic/config";
+import { createCardInputModule, createCardInputSource } from "./logic/input";
+import { createCardUiModule } from "./view/ui";
 
 /** 缺省卡牌配置：回合时长与卡牌数值在夹具层内建，测试可注入覆盖。 */
 const DEFAULT_CARD_CONFIG_CONTENT: Record<string, unknown> = {

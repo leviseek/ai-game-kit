@@ -6,7 +6,7 @@ import {
     createGameFixture,
     type GameFixture,
 } from "../game/fixture/GameFixture";
-import { createIdleClock, createIdleClockModule, type IdleClock } from "./clock";
+import { createIdleClock, createIdleClockModule, type IdleClock } from "./logic/clock";
 import type {
     IdleOfflineSettlement,
     IdleProgressState,
@@ -16,17 +16,17 @@ import {
     createIdleProgressModule,
     ONLINE_TICK_MS,
     type IdleProgressHandle,
-} from "./progress";
+} from "./logic/progress";
 import {
     createIdleSave,
     createIdleSaveModule,
     type IdleSave,
-} from "./save";
+} from "./logic/save";
 import {
     createIdleScheduler,
     createIdleSchedulerModule,
     type IdleScheduler,
-} from "./scheduler";
+} from "./logic/scheduler";
 
 /**
  * 挂机组合夹具的注入选项：测试可注入受控替身驱动协作行为；

@@ -10,13 +10,13 @@ import {
     createGameFixture,
     type GameFixture,
 } from "../game/fixture/GameFixture";
-import { createFightAudio, createFightAudioModule, type FightAudioHandle } from "./audio";
-import { createFightBattle, createFightBattleModule, type FightBattleHandle } from "./battle";
-import { createFightClock, createFightClockModule, type FightClock } from "./clock";
-import { createFightInputModule, createFightInputSource } from "./input";
+import { createFightAudio, createFightAudioModule, type FightAudioHandle } from "./logic/audio";
+import { createFightBattle, createFightBattleModule, type FightBattleHandle } from "./logic/battle";
+import { createFightClock, createFightClockModule, type FightClock } from "./logic/clock";
+import { createFightInputModule, createFightInputSource } from "./logic/input";
 import type { FightAction, FightFrameData } from "./models";
-import { createFightEffectPool, createFightPoolModule, type FightEffectPool } from "./pool";
-import { createFightResourceModule } from "./resource";
+import { createFightEffectPool, createFightPoolModule, type FightEffectPool } from "./logic/pool";
+import { createFightResourceModule } from "./logic/resource";
 
 /**
  * 格斗组合夹具的注入选项：测试可注入受控替身驱动协作行为；

@@ -21,14 +21,14 @@ import {
     createRpgClockModule,
     createRpgSimClock,
     type RpgSimClock,
-} from "./clock";
+} from "./logic/clock";
 import type { RpgAction } from "./models";
-import { createRpgInputSource, createRpgInputModule } from "./input";
-import { createRpgResourceModule } from "./resource";
-import { createRpgSave, createRpgSaveModule } from "./save";
-import { createRpgSceneModule } from "./scene";
-import { createRpgStateModule, createRpgStateStore } from "./state";
-import { createRpgUiModule } from "./ui";
+import { createRpgInputSource, createRpgInputModule } from "./logic/input";
+import { createRpgResourceModule } from "./logic/resource";
+import { createRpgSave, createRpgSaveModule } from "./logic/save";
+import { createRpgSceneModule } from "./logic/scene";
+import { createRpgStateModule, createRpgStateStore } from "./logic/state";
+import { createRpgUiModule } from "./view/ui";
 
 /**
  * RPG 组合夹具的注入选项：测试可注入受控替身驱动协作行为；

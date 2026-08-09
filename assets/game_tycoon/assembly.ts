@@ -12,12 +12,12 @@ import {
     createTycoonClock,
     createTycoonClockModule,
     type TycoonClock,
-} from "./clock";
+} from "./logic/clock";
 import {
     createTycoonConfig,
     createTycoonConfigModule,
     type TycoonConfigHandle,
-} from "./config";
+} from "./logic/config";
 import {
     createTycoonEconomy,
     createTycoonEconomyModule,
@@ -25,18 +25,21 @@ import {
     createTycoonProduction,
     createTycoonProductionModule,
     type TycoonProductionHandle,
-} from "./production";
+} from "./logic/production";
 import {
     createTycoonSave,
     createTycoonSaveModule,
     type TycoonSave,
-} from "./save";
+} from "./logic/save";
 import {
     createTycoonScheduler,
     createTycoonSchedulerModule,
     type TycoonScheduler,
-} from "./scheduler";
-import { createTycoonUiModule, createTycoonUiViewModels } from "./ui";
+} from "./logic/scheduler";
+import {
+    createTycoonUiModule,
+    createTycoonUiViewModels,
+} from "./view/ui";
 
 /** 生产 tick 间隔：调度器每次 tick 结算一次生产推进的固定节拍。 */
 export const PRODUCTION_TICK_MS = 1000;
