@@ -1,5 +1,6 @@
 import { flagString, flagBool, hasHelp, parseArgs, requireFlag } from "../lib/args";
 import {
+    findExportedComponentNameConflicts,
     findResourceIdConflicts,
     locateProject,
     readComponent,
@@ -10,7 +11,7 @@ import {
     validatePackageManifest,
 } from "../lib/fgui";
 
-export const help = "validate —— 校验包/组件引用完整性与语义（默认跳过官方库 Basic/Builder，--strict 全量）";
+export const help = "validate —— 校验包/组件引用完整性与语义（默认跳过官方库 Basic/Builder，--strict 全量）；同时跨包查重导出组件名";
 
 /** 默认豁免的官方库包（含 graph/空页名/transition 等官方原样内容，不修复）。 */
 const OFFICIAL_PACKAGES = new Set(["Basic", "Builder"]);
@@ -35,6 +36,14 @@ export async function run(argv: readonly string[]): Promise<number> {
     }
 
     let exitCode = 0;
+
+    // 0. 跨包查重导出组件名：同名组件按「包+组件名」复合键定位不会运行时冲突，
+    //    但会为未来按名全局生成绑定埋下冲突，故全工程强制唯一。
+    const nameConflicts = findExportedComponentNameConflicts(project);
+    for (const [name, packages] of nameConflicts) {
+        console.error(`[error] 导出组件名跨包重复: "${name}"（${packages.join(", ")}）`);
+        exitCode = 1;
+    }
 
     // 1. 包级校验：资源 id 冲突 + 登记文件存在 + 包清单
     const dupIds = findResourceIdConflicts(pkg);

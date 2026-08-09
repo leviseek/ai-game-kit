@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import {
+    findExportedComponentNameConflicts,
     findResourceIdConflicts,
     locateProject,
     nextResourceId,
@@ -48,6 +49,72 @@ describe("findResourceIdConflicts", () => {
     test("真实 Demo 包无冲突", () => {
         const pkg = readPackage(REAL_DEMO, "Demo");
         expect(findResourceIdConflicts(pkg)).toEqual([]);
+    });
+});
+
+describe("findExportedComponentNameConflicts", () => {
+    function setupPkg(dir: string, pkgName: string, id: string, compName: string, exported: boolean): void {
+        const pkgDir = join(dir, "assets", pkgName);
+        mkdirSync(pkgDir, { recursive: true });
+        writeFileSync(
+            join(pkgDir, "package.xml"),
+            `<?xml version="1.0" encoding="utf-8"?>
+<packageDescription id="${id}">
+  <resources>
+    <component id="aa11" name="${compName}.xml" path="/" exported="${exported}"/>
+  </resources>
+</packageDescription>`,
+        );
+        writeFileSync(
+            join(pkgDir, `${compName}.xml`),
+            `<?xml version="1.0" encoding="utf-8"?>
+<component size="200,100">
+  <displayList>
+    <text id="n1" name="title" text="页面"/>
+  </displayList>
+</component>`,
+        );
+    }
+
+    test("跨包同名导出组件返回冲突清单", () => {
+        const dir = mkdtempSync(join(tmpdir(), "fgui-"));
+        try {
+            writeFileSync(join(dir, "demo.fairy"), `<?xml version="1.0" encoding="utf-8"?>\n<projectDescription id="t" type="CocosCreator" version="5.0"/>`);
+            setupPkg(dir, "CardGame", "pkgcard1", "BattleView", true);
+            setupPkg(dir, "AutoBattle", "pkgauto1", "BattleView", true);
+            const project = locateProject(dir);
+            const conflicts = findExportedComponentNameConflicts(project);
+            expect(Array.from(conflicts.keys())).toEqual(["BattleView"]);
+            expect(conflicts.get("BattleView")?.sort()).toEqual(["AutoBattle", "CardGame"]);
+        } finally {
+            rmSync(dir, { recursive: true, force: true });
+        }
+    });
+
+    test("不同名导出组件无冲突", () => {
+        const dir = mkdtempSync(join(tmpdir(), "fgui-"));
+        try {
+            writeFileSync(join(dir, "demo.fairy"), `<?xml version="1.0" encoding="utf-8"?>\n<projectDescription id="t" type="CocosCreator" version="5.0"/>`);
+            setupPkg(dir, "CardGame", "pkgcard1", "CardBattleView", true);
+            setupPkg(dir, "AutoBattle", "pkgauto1", "AutoBattleView", true);
+            const project = locateProject(dir);
+            expect(findExportedComponentNameConflicts(project).size).toBe(0);
+        } finally {
+            rmSync(dir, { recursive: true, force: true });
+        }
+    });
+
+    test("非导出组件不参与查重", () => {
+        const dir = mkdtempSync(join(tmpdir(), "fgui-"));
+        try {
+            writeFileSync(join(dir, "demo.fairy"), `<?xml version="1.0" encoding="utf-8"?>\n<projectDescription id="t" type="CocosCreator" version="5.0"/>`);
+            setupPkg(dir, "CardGame", "pkgcard1", "BattleView", false);
+            setupPkg(dir, "AutoBattle", "pkgauto1", "BattleView", false);
+            const project = locateProject(dir);
+            expect(findExportedComponentNameConflicts(project).size).toBe(0);
+        } finally {
+            rmSync(dir, { recursive: true, force: true });
+        }
     });
 });
 

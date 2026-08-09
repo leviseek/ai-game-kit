@@ -141,6 +141,35 @@ export function findResourceIdConflicts(pkg: FguiPackage): string[] {
 }
 
 /**
+ * 跨包查重导出组件名：枚举工程全部包，收集 exported="true" 的组件 name，
+ * 返回「组件名 → 所在包列表」的重名映射。运行时绑定按「包+组件名」复合键
+ * 定位，同名组件会为未来按名全局生成绑定埋下冲突，故全工程强制唯一。
+ */
+export function findExportedComponentNameConflicts(
+    project: FguiProject,
+): ReadonlyMap<string, string[]> {
+    const owners = new Map<string, string[]>();
+    for (const packageName of listPackages(project)) {
+        const pkg = readPackage(project, packageName);
+        for (const resource of pkg.resources) {
+            if (resource.kind !== "component" || !resource.exported) continue;
+            const name = resource.name.replace(/\.xml$/i, "");
+            const existing = owners.get(name);
+            if (existing) {
+                existing.push(packageName);
+            } else {
+                owners.set(name, [packageName]);
+            }
+        }
+    }
+    const conflicts = new Map<string, string[]>();
+    for (const [name, packages] of owners) {
+        if (packages.length > 1) conflicts.set(name, packages);
+    }
+    return conflicts;
+}
+
+/**
  * 读取组件 XML 并建立对象索引。
  * componentName 可传文件名（Foo.xml）或不带扩展名（Foo）。
  * 组件文件可能位于包内子目录（package.xml 的 path 属性），按名称递归定位。
