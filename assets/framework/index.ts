@@ -99,6 +99,25 @@ export type {
 } from "./contracts/ui/Navigation";
 export { UI_LAYER_ORDER } from "./contracts/ui/Navigation";
 
+export type {
+    Bindable,
+    Binding,
+    CommandBinding,
+    ProgressBinding,
+    TextBinding,
+    ViewModelNode,
+    VisibleBinding,
+} from "./contracts/ui/ViewModel";
+
+export type {
+    ViewModelRenderer,
+    ViewModelRendererOptions,
+} from "./core/ui/ViewModelRenderer";
+export {
+    createBindable,
+    createViewModelRenderer,
+} from "./core/ui/ViewModelRenderer";
+
 export type { UiNavigator, UiNavigatorOptions } from "./core/ui/UiNavigator";
 export { createUiNavigator } from "./core/ui/UiNavigator";
 
