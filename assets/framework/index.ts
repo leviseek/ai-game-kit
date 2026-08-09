@@ -169,3 +169,10 @@ export type {
     AudioTrackRef,
 } from "./contracts/audio/Audio";
 export { createAudioService } from "./core/audio/AudioService";
+
+export type { BundleModuleRegistry } from "./core/module/BundleModuleRegistry";
+export {
+    getBundleModuleRegistry,
+    registerBundle,
+    lookupBundle,
+} from "./core/module/BundleModuleRegistry";
