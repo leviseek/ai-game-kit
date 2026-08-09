@@ -24,32 +24,37 @@ describe("GameLobbyHostImpl source contract", () => {
         // Demo/CardGame 跨包引用通用资源包 Common（按钮/进度条组件）；fgui
         // loadPackage 不自动加载依赖包，若 Common 未先注册则组件退化为空、点击
         // 不触发。契约要求 ensureSharedUiDependencies（加载 Common）先于入口页
-        // /列表页 package 加载。
+        // /全局页 package 加载。
         expect(source).toMatch(/ensureSharedUiDependencies/);
         expect(source).toMatch(/Common\/Common/);
 
-        // 调用点顺序：openEntryPage 与 openListPage 内部都先调依赖再加载目标包，
+        // 调用点顺序：openEntryPage 与 openGlobalPage 内部都先调依赖再加载目标包，
         // 保证"依赖先注册"语义（源码顺序 = 执行顺序的强契约）
         const ensureCall = source.indexOf("ensureSharedUiDependencies()");
         expect(ensureCall).toBeGreaterThan(-1);
 
-        const listPackage = source.indexOf(
-            "const pkgPath = `${LOBBY_LIST_ENTRY.packageName}",
-        );
-        const entryPackage = source.indexOf(
-            "const pkgPath = `${entry.packageName}/${entry.packageName}`",
-        );
-        expect(entryPackage).toBeGreaterThan(ensureCall);
-        expect(listPackage).toBeGreaterThan(ensureCall);
+        // 入口页与全局页共用通用包加载路径（`${entry.packageName}/...`），各一次
+        const pkgLoads = [
+            ...source.matchAll(/const pkgPath = `\$\{entry\.packageName\}/g),
+        ].map((match) => match.index ?? -1);
+        expect(pkgLoads.length).toBe(2);
+        for (const index of pkgLoads) {
+            expect(index).toBeGreaterThan(ensureCall);
+        }
     });
 
-    test("exposes the default list entry opening path", () => {
+    test("exposes host primitives openGlobalPage / ensureUiReady / loadBundle", () => {
         const source = readFileSync(lobbyHostFile, "utf8");
 
-        // 默认入口：无 URL 参数时打开列表页（替代空白启动）
-        expect(source).toMatch(/openListPageWithRetry/);
-        expect(source).toMatch(/LOBBY_LIST_ENTRY/);
-        expect(source).toMatch(/lobbyItemNodeName/);
+        // 列表页编排已迁至 game bundle（lobby/list.ts），宿主只保留原语能力：
+        // 全局页打开、UI 就绪查询与 Bundle 加载（哨兵资源触发脚本执行）
+        expect(source).toMatch(/openGlobalPage/);
+        expect(source).toMatch(/ensureUiReady/);
+        expect(source).toMatch(/loadBundle/);
+        expect(source).toMatch(/resourceProvider\.load\(bundle, "placeholder"\)/);
+        // 列表编排不再残留在宿主
+        expect(source).not.toMatch(/openListPageWithRetry/);
+        expect(source).not.toMatch(/gameTypeCatalog/);
     });
 });
 
@@ -90,7 +95,7 @@ describe("GameLobbyHostImpl session resource scope (release loop)", () => {
             logger: new MemoryLogger(),
         });
 
-        // 列表页经全局 uiScope 常驻：GameLobbyHostImpl.openListPage 走 host.loadPackage
+        // 列表页经全局 uiScope 常驻：GameLobbyHostImpl.openGlobalPage 走 host.loadPackage
         const listHandle = await host.loadPackage("ui", "Demo/Demo");
         expect(listHandle.state).toBe("ready");
         expect(provider.canUnload("ui")).toBe(false);

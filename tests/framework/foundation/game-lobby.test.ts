@@ -51,6 +51,16 @@ function createRecordingHost(log: string[]): {
             closeEntryPage: async () => {
                 log.push("close");
             },
+            openGlobalPage: async (entry) => {
+                log.push(`open-global:${entry.route}`);
+                return {
+                    node: () => undefined,
+                    onClose: () => {},
+                };
+            },
+            loadBundle: async () => {},
+            ensureUiReady: () => true,
+            ensureSharedUiDependencies: async () => {},
         },
         closeCallbacks,
     };

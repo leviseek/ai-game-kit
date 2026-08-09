@@ -22,7 +22,6 @@ import { MemoryLogger } from "../support/MemoryLogger";
 
 interface RecordingLobbyHost {
     ensureSharedUiDependencies: () => Promise<void>;
-    openListPageWithRetry: () => void;
 }
 
 interface RecordingUiHost {
@@ -98,9 +97,6 @@ function createHarness(search: string, isNative: boolean): Harness {
         ensureSharedUiDependencies: async () => {
             events.push("ensure-shared");
         },
-        openListPageWithRetry: () => {
-            events.push("open-list");
-        },
     };
 
     let hotUpdateCalls = 0;
@@ -115,7 +111,7 @@ function createHarness(search: string, isNative: boolean): Harness {
         uiHost,
         lobbyHost,
         smokeRouter,
-        sceneMap,
+        getSceneMap: () => sceneMap,
         logger: new MemoryLogger(),
         isNative: () => isNative,
         getSearch: () => search,
@@ -124,6 +120,10 @@ function createHarness(search: string, isNative: boolean): Harness {
             events.push("hotupdate");
         },
         scheduleSmoke: (callback) => callback(),
+        // 组合根经此回调在 game 激活后装配列表流（本测试以记录事件替代）
+        onGameSceneActive: () => {
+            events.push("open-list");
+        },
     };
 
     const bootFlow = createBootFlow(deps);
@@ -187,14 +187,14 @@ describe("BootFlow default startup flow", () => {
             uiHost: { init: () => events.push("ui-init") },
             lobbyHost: {
                 ensureSharedUiDependencies: async () => events.push("ensure-shared"),
-                openListPageWithRetry: () => events.push("open-list"),
             },
             smokeRouter: createSmokeRouterRecording(events).router,
-            sceneMap: {},
+            getSceneMap: () => ({}),
             logger: new MemoryLogger(),
             isNative: () => false,
             getSearch: () => "",
             scheduleSmoke: (callback) => callback(),
+            onGameSceneActive: () => events.push("open-list"),
         });
 
         await bootFlow.launch();
@@ -294,17 +294,17 @@ describe("BootFlow preload layering (L0 resident + L1 scene preload)", () => {
             uiHost: { init: () => events.push("ui-init") },
             lobbyHost: {
                 ensureSharedUiDependencies: async () => events.push("ensure-shared"),
-                openListPageWithRetry: () => events.push("open-list"),
             },
             smokeRouter: createSmokeRouterRecording(events).router,
-            sceneMap: {
+            getSceneMap: () => ({
                 game: Object.freeze({ bundle: "ui", paths: ["placeholder"] }),
-            },
+            }),
             logger: new MemoryLogger(),
             isNative: () => false,
             getSearch: () => "",
             preloadFrameworkConfig: async () => events.push("framework-config"),
             scheduleSmoke: (callback) => callback(),
+            onGameSceneActive: () => events.push("open-list"),
         });
 
         await bootFlow.launch();
@@ -339,16 +339,16 @@ describe("BootFlow preload layering (L0 resident + L1 scene preload)", () => {
             uiHost: { init: () => { } },
             lobbyHost: {
                 ensureSharedUiDependencies: async () => { },
-                openListPageWithRetry: () => { },
             },
             smokeRouter: createSmokeRouterRecording([]).router,
-            sceneMap: {
+            getSceneMap: () => ({
                 game: Object.freeze({ bundle: "ui", paths: ["placeholder"] }),
-            },
+            }),
             logger: new MemoryLogger(),
             isNative: () => false,
             getSearch: () => "",
             scheduleSmoke: (callback) => callback(),
+            onGameSceneActive: () => { },
         });
 
         await bootFlow.launch();

@@ -9,10 +9,12 @@ import {
     createSceneFlow,
     createServiceRegistry,
     createServiceToken,
+    lookupBundle,
     type IResourceProvider,
     type Logger,
     type Module,
     type SceneFlow,
+    type SceneResources,
     ServiceResolutionError,
     type ServiceRegistry,
     type ServiceToken,
@@ -28,11 +30,12 @@ import {
     createCocosUiRoot,
     type CocosUiRoot,
 } from "../framework/adapters/cocos/ui/CocosUiRoot";
-import {
-    sceneMap,
-    type EntryPageHandle,
-    type GameEntryInfo,
-} from "../game/fixture/lobby";
+import type { GameEntryInfo } from "../game/lobby/catalog";
+import type {
+    EntryPageHandle,
+    GameLobbyHost,
+} from "../game/lobby/host";
+import type { GameListFlow } from "../game/lobby/list";
 import {
     createUiHost,
     type UiHost,
@@ -42,6 +45,7 @@ import {
     type GameLobbyHostImpl,
 } from "./host/GameLobbyHostImpl";
 import {
+    BOOTSTRAP_SCENE,
     createBootFlow,
     type BootFlow,
 } from "./flow/BootFlow";
@@ -51,6 +55,15 @@ import {
 } from "./smoke/smoke-proxy";
 
 const { ccclass } = _decorator;
+
+/**
+ * game bundle 模块描述符（boot 侧窄接口）：组合根只经注册桥读取，不做运行时
+ * 依赖。sceneResources 供场景映射覆盖入口场景；createListFlow 装配列表页流。
+ */
+interface GameModule {
+    readonly sceneResources?: Readonly<Record<string, SceneResources>>;
+    readonly createListFlow?: (host: GameLobbyHost, logger: Logger) => GameListFlow;
+}
 
 export function createModules(): readonly Module[] {
     return [];
@@ -151,6 +164,7 @@ export class AppRoot extends Component {
     private resourceProvider?: IResourceProvider;
     private uiHost?: UiHost;
     private lobbyHost?: GameLobbyHostImpl;
+    private listFlow?: GameListFlow;
     private smoke?: SmokeProxy;
     private bootFlow?: BootFlow;
     private logger?: Logger;
@@ -186,17 +200,26 @@ export class AppRoot extends Component {
             resourceProvider,
             lobbyHost: this.lobbyHost,
         });
-        // 启动编排器：场景映射清单来自游戏层 fixture（game/fixture 薄转发）；
-        // isNative 探测原生平台（Web 静默跳过热更阶段）；getSearch 供 URL 冒烟分派。
+        // 启动编排器：场景映射经 getSceneMap 闭包动态读取（BOOTSTRAP_SCENE 为
+        // 静态引导，game bundle 加载后其 sceneResources 可覆盖/扩展）；game 场景
+        // 激活后经 onGameSceneActive 装配 game 模块列表流。isNative 探测原生平台
+        // （Web 静默跳过热更阶段）；getSearch 供 URL 冒烟分派。
         this.bootFlow = createBootFlow({
             sceneFlow,
             uiHost: this.uiHost,
             lobbyHost: this.lobbyHost,
             smokeRouter: this.smoke.router,
-            sceneMap,
+            getSceneMap: () => {
+                const gameModule = lookupBundle("game") as GameModule | undefined;
+                return {
+                    ...BOOTSTRAP_SCENE,
+                    ...(gameModule?.sceneResources ?? {}),
+                };
+            },
             logger,
             isNative: () => sys.isNative === true,
             getSearch: () => (typeof window === "undefined" ? "" : window.location.search),
+            onGameSceneActive: () => this.openGameListPage(),
         });
         director.addPersistRootNode(this.node);
     }
@@ -239,6 +262,19 @@ export class AppRoot extends Component {
         }
     }
 
+    /** game 场景激活后经注册桥装配列表页流：组合根无 game 运行时依赖。 */
+    private openGameListPage(): void {
+        const gameModule = lookupBundle("game") as GameModule | undefined;
+        if (gameModule?.createListFlow === undefined) {
+            return;
+        }
+        if (this.lobbyHost === undefined || this.logger === undefined) {
+            return;
+        }
+        this.listFlow = gameModule.createListFlow(this.lobbyHost, this.logger);
+        this.listFlow.openListPageWithRetry();
+    }
+
     openEntryPage(entry: GameEntryInfo): Promise<EntryPageHandle> {
         const lobbyHost = this.lobbyHost;
         if (lobbyHost === undefined) {
@@ -262,6 +298,8 @@ export class AppRoot extends Component {
         this.smoke = undefined;
         this.bootFlow?.dispose();
         this.bootFlow = undefined;
+        this.listFlow?.dispose();
+        this.listFlow = undefined;
         this.uiHost?.dispose();
         this.uiHost = undefined;
         this.sceneFlow?.dispose();

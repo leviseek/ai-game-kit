@@ -5,6 +5,14 @@ import {
 } from "../../framework";
 import type { SmokeAction } from "./SmokeRouter";
 
+/**
+ * 入口场景静态引导：main 必须知道首个 bundle 的入口场景才能加载它（配置非
+ * 代码）。game bundle 加载后其场景资源经注册桥可扩展/覆盖本表。
+ */
+export const BOOTSTRAP_SCENE: Readonly<Record<string, SceneResources>> = Object.freeze({
+    game: Object.freeze({ bundle: "game", paths: ["game"] }),
+});
+
 export type BootFlowState =
     | "logo"
     | "hotupdate"
@@ -19,10 +27,9 @@ export interface BootFlowUiHost {
     init(): void;
 }
 
-/** BootFlow 消费的大厅宿主能力：框架级预加载（Common）与默认列表页打开（含 GRoot 未就绪重试）。 */
+/** BootFlow 消费的大厅宿主能力：框架级预加载（Common）。列表页打开经 onGameSceneActive 委托组合根。 */
 export interface BootFlowLobbyHost {
     ensureSharedUiDependencies(): Promise<void>;
-    openListPageWithRetry(): void;
 }
 
 /** BootFlow 消费的冒烟分派能力：仅需 URL 解析，由 SmokeProxy 的 router 满足。 */
@@ -32,16 +39,17 @@ export interface BootFlowSmokeRouter {
 
 /**
  * BootFlow 依赖：由组合根注入装配对象（真实 UiHost/GameLobbyHostImpl 满足上述
- * 能力接口）与运行环境接缝。场景映射（sceneMap）显式注入，保证编排器可被 memory
- * 适配器驱动测试（不依赖真实引擎/fgui）。
+ * 能力接口）与运行环境接缝。场景映射经 getSceneMap 闭包动态读取（默认 BOOTSTRAP_SCENE，
+ * game bundle 加载后其 sceneResources 可覆盖/扩展），保证编排器可被 memory 适配器
+ * 驱动测试（不依赖真实引擎/fgui）。
  */
 export interface BootFlowDeps {
     readonly sceneFlow: SceneFlow;
     readonly uiHost: BootFlowUiHost;
     readonly lobbyHost: BootFlowLobbyHost;
     readonly smokeRouter: BootFlowSmokeRouter;
-    /** 场景映射清单：game 场景资源（bundle/paths），供 preload 与 switchTo 复用。 */
-    readonly sceneMap: Readonly<Record<string, SceneResources>>;
+    /** 场景映射清单动态源：game 场景资源（bundle/paths），供 preload 与 switchTo 复用。 */
+    readonly getSceneMap: () => Readonly<Record<string, SceneResources>>;
     readonly logger: Logger;
     /** 原生平台探测：Web 返回 false（热更阶段静默跳过）。 */
     readonly isNative: () => boolean;
@@ -53,6 +61,8 @@ export interface BootFlowDeps {
     readonly preloadFrameworkConfig?: () => Promise<void>;
     /** 冒烟序列调度器：缺省延迟 1000ms 执行（对齐既有冒烟路径的引擎 ready 等待）。 */
     readonly scheduleSmoke?: (callback: () => void) => void;
+    /** game 场景激活回调：默认流程激活 game 后触发，组合根经此装配 game 模块列表流。 */
+    readonly onGameSceneActive?: () => void;
 }
 
 export interface BootFlow {
@@ -80,7 +90,7 @@ const transitions: StateTransitionTable<BootFlowState, BootFlowEvent> = {
  * 不提供回切 startup（design D6）。
  */
 export function createBootFlow(deps: BootFlowDeps): BootFlow {
-    const { sceneFlow, uiHost, lobbyHost, smokeRouter, sceneMap, logger } = deps;
+    const { sceneFlow, uiHost, lobbyHost, smokeRouter, logger } = deps;
 
     const fsm = createStateMachine<BootFlowState, BootFlowEvent>({
         initial: "logo",
@@ -104,7 +114,7 @@ export function createBootFlow(deps: BootFlowDeps): BootFlow {
 
     /** L1 场景流转：game 场景资源经 SceneFlow.preload（单槽位）预加载，switchTo 复用。 */
     async function preloadGameScene(): Promise<void> {
-        const game = sceneMap["game"];
+        const game = deps.getSceneMap()["game"];
         if (game === undefined) {
             return;
         }
@@ -135,9 +145,9 @@ export function createBootFlow(deps: BootFlowDeps): BootFlow {
         });
     }
 
-    /** 默认分支：单向 switchTo game，激活后首次初始化 UI 根并打开默认列表页。 */
+    /** 默认分支：单向 switchTo game，激活后首次初始化 UI 根并通知组合根装配列表流。 */
     async function runDefault(): Promise<void> {
-        const game = sceneMap["game"];
+        const game = deps.getSceneMap()["game"];
         if (game === undefined) {
             logger.error('[boot] missing scene mapping for "game"');
             fsm.send("fail");
@@ -153,9 +163,10 @@ export function createBootFlow(deps: BootFlowDeps): BootFlow {
             fsm.send("fail");
             return;
         }
-        // game 场景激活后首次呈现：初始化 UI 根 + 打开默认列表页（openListPageWithRetry 语义保留）
+        // game 场景激活后首次呈现：初始化 UI 根，随后组合根经回调装配 game 模块
+        // 列表流（打开列表页含 GRoot 未就绪重试语义，见 game/lobby/list.ts）
         uiHost.init();
-        lobbyHost.openListPageWithRetry();
+        deps.onGameSceneActive?.();
         fsm.send("done");
     }
 

@@ -2,16 +2,11 @@ import type { Logger, ResourceScope } from "../../framework";
 import type { IResourceProvider } from "../../framework";
 import type { FairyGuiPageHandle } from "../../framework/adapters/cocos/ui/FairyGuiPageAdapter";
 import { createFairyGuiViewHandle } from "../../framework/adapters/cocos/ui/FairyGuiViewHandle";
-import {
-    createGameLobby,
-    gameTypeCatalog,
-    lobbyItemNodeName,
-    LOBBY_LIST_ENTRY,
-    type EntryPageHandle,
-    type GameEntryInfo,
-    type GameLobby,
-    type GameLobbyHost,
-} from "../../game/fixture/lobby";
+import type { GameEntryInfo } from "../../game/lobby/catalog";
+import type {
+    EntryPageHandle,
+    GameLobbyHost,
+} from "../../game/lobby/host";
 import type { UiHost } from "./UiHost";
 
 /**
@@ -24,16 +19,15 @@ export interface GameLobbyHostDeps {
 }
 
 /**
- * GameLobbyHost 宿主实现：打开/关闭品类入口页、加载共享 UI 依赖（Common）与
- * 默认列表页打开。AppRoot 作为薄代理转发 openEntryPage/closeEntryPage；会话
- * 进入/退出编排（夹具生命周期、呈现器装配）留在游戏层 lobby。品类包走会话
- * 作用域按需加载、退出全量释放；列表包与 Common 走全局 uiScope 常驻。
+ * GameLobbyHost 宿主实现：纯宿主原语，只提供打开/关闭页面、Bundle 加载与 UI
+ * 就绪查询能力，不含游戏层编排。会话编排（夹具生命周期、呈现器装配）与默认
+ * 列表页打开逻辑已迁至 game bundle 的 lobby 模块（列表流经注册桥注入本宿主）。
+ * 品类包走会话作用域按需加载、退出全量释放；列表包与 Common 走全局 uiScope 常驻。
  */
 export class GameLobbyHostImpl implements GameLobbyHost {
     private readonly host: UiHost;
     private readonly resourceProvider: IResourceProvider;
     private readonly logger: Logger;
-    private lobby?: GameLobby;
     private lobbyPage?: FairyGuiPageHandle;
     private lobbyScope?: ResourceScope;
 
@@ -147,104 +141,73 @@ export class GameLobbyHostImpl implements GameLobbyHost {
         scope?.release();
     }
 
-    /** 惰性装配品类会话编排：组合逻辑留在游戏层 lobby，宿主只提供打开/关闭能力。 */
-    private ensureLobby(): GameLobby {
-        if (this.lobby === undefined) {
-            this.lobby = createGameLobby(this);
-        }
-        return this.lobby;
-    }
-
     /**
-     * 默认入口：无启动参数时打开游戏列表页。每次重试重新触发 UI 根初始化
-     * （init 幂等）：GRoot 首帧后才可用，早期失败保持未初始化，若只轮询
-     * smokeUiReady 就绪状态将永远为 false；重试 init 使 GRoot 就绪后即成功
-     * （对齐 runUiSmoke 经 smokeUiInit 重试初始化的路径），不依赖固定时长。
+     * GameLobbyHost.openGlobalPage：打开全局常驻页（列表页）。包经全局 uiScope
+     * 加载常驻、不建立会话资源作用域（不占用会话槽位），返回句柄供游戏层列表
+     * 流装配列表项点击；页面关闭/释放由组合根与全局作用域管理。
      */
-    openListPageWithRetry(retryLeft = 20): void {
-        if (!this.host.smokeUiInit()) {
-            if (retryLeft > 0) {
-                setTimeout(() => this.openListPageWithRetry(retryLeft - 1), 100);
-            } else {
-                this.logger.error("[lobby] list page open timed out: UI root not ready");
-            }
-            return;
-        }
-        this.openListPage().catch((error) => {
-            this.logger.error(
-                "[lobby] list page open failed",
-                undefined,
-                error instanceof Error ? error : undefined,
-            );
-        });
-    }
-
-    /**
-     * 打开游戏列表页并装配列表项点击回调：可玩品类经 lobby.enter 进入真实页面，
-     * 不可玩项（playable=false）不登记点击（列表呈现占位）。列表包加载进全局
-     * uiScope 常驻，退出品类会话时不受影响。
-     */
-    private async openListPage(): Promise<void> {
+    async openGlobalPage(entry: GameEntryInfo): Promise<EntryPageHandle> {
         if (!this.host.ensurePageAdapter()) {
-            throw new Error("lobby list: page adapter not ready");
+            throw new Error("lobby host: page adapter not ready");
         }
         const adapter = this.host.pageAdapter;
         if (adapter === undefined) {
-            throw new Error("lobby list: page adapter not ready");
+            throw new Error("lobby host: page adapter not ready");
         }
 
-        // 列表页跨包引用共享 Common（btn_* 按钮组件），先确保其已注册
+        // 全局页跨包引用共享 Common（如列表页按钮组件），先确保其已注册
         await this.ensureSharedUiDependencies();
 
-        const pkgPath = `${LOBBY_LIST_ENTRY.packageName}/${LOBBY_LIST_ENTRY.packageName}`;
+        const pkgPath = `${entry.packageName}/${entry.packageName}`;
         const handle = await this.host.loadPackage("ui", pkgPath);
         if (handle.state !== "ready") {
             throw new Error(
-                `lobby list: package load failed for "${pkgPath}" (${handle.state})`,
+                `lobby host: global page package load failed for "${pkgPath}" (${handle.state})`,
             );
         }
 
-        const page = adapter.createPage(
-            LOBBY_LIST_ENTRY.route,
-            "normal",
-            {
-                packageName: LOBBY_LIST_ENTRY.packageName,
-                resName: LOBBY_LIST_ENTRY.resName,
-            },
-        );
+        const page = adapter.createPage(entry.route, "normal", {
+            packageName: entry.packageName,
+            resName: entry.resName,
+        });
         if (page.disposed || page.view === undefined) {
             throw new Error(
-                `lobby list: create page failed for "${LOBBY_LIST_ENTRY.resName}"`,
+                `lobby host: create global page failed for "${entry.resName}"`,
             );
         }
         adapter.mount(page);
 
-        // 列表项点击：按 catalog 可玩品类登记进入回调（节点名 btn_<id>）
+        // 节点解析器：与入口页一致，供游戏层按名解析 fgui 节点（如 btn_<id>）
         const node = createFairyGuiViewHandle(page.view as never);
-        const lobby = this.ensureLobby();
-        for (const info of gameTypeCatalog) {
-            if (!info.playable) {
-                continue;
-            }
-            const item = node(lobbyItemNodeName(info.id));
-            item?.onClick(() => {
-                lobby.enter(info.id).catch((error) => {
-                    this.logger.error(
-                        "[lobby] enter failed",
-                        undefined,
-                        error instanceof Error ? error : undefined,
-                    );
-                });
-            });
+        // 全局页无会话联动：onClose 保持 no-op，满足 EntryPageHandle 契约
+        return { node, onClose: () => {} };
+    }
+
+    /**
+     * GameLobbyHost.loadBundle：经 provider.load 哨兵资源触发 Bundle 脚本执行
+     * （脚本副作用完成注册桥登记）。samples 用哨兵 placeholder；game 用场景资源。
+     * 幂等（加载协调器按 key 缓存终态）。
+     */
+    async loadBundle(bundle: string): Promise<void> {
+        const handle = this.resourceProvider.load(bundle, "placeholder");
+        const loaded = await handle.done;
+        if (loaded.state !== "ready") {
+            throw new Error(
+                `lobby host: bundle load failed for "${bundle}" (${loaded.state})`,
+            );
         }
     }
 
-    /** 释放会话级作用域与列表页引用（随组合根销毁）。幂等。 */
+    /** GameLobbyHost.ensureUiReady：初始化 UI 根并返回是否就绪（GRoot 可用）。幂等。 */
+    ensureUiReady(): boolean {
+        return this.host.smokeUiInit();
+    }
+
+    /** 释放会话级作用域与入口页引用（随组合根销毁）。幂等。 */
     dispose(): void {
         this.lobbyScope?.release();
         this.lobbyScope = undefined;
         this.lobbyPage = undefined;
-        this.lobby = undefined;
     }
 }
 

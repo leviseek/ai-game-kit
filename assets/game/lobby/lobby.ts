@@ -107,8 +107,8 @@ export function createGameLobby(
 
             // 先确保 samples bundle 脚本已执行（登记完成），再解析运行时登记表。
             // 解析放在 enter 调用时而非 createGameLobby 构造时，避免 samples 未
-            // 加载前固化空表（host.loadBundle 幂等，未实现时以 `?.()` 空转）。
-            await host.loadBundle?.("samples");
+            // 加载前固化空表（host.loadBundle 幂等，Task 6 起为宿主必选能力）。
+            await host.loadBundle("samples");
             const registry = options.registry ?? gameFixtureRegistry();
             const presenters = options.presenters ?? gamePresenterRegistry();
 

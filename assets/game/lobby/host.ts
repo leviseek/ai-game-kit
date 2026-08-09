@@ -17,11 +17,14 @@ export interface GameLobbyHost {
     openEntryPage(entry: GameEntryInfo): Promise<EntryPageHandle>;
     /** 关闭入口页并释放会话作用域。重复关闭幂等。 */
     closeEntryPage(handle: EntryPageHandle): Promise<void>;
-    /**
-     * 确保某 Bundle 已加载（经 provider.load 哨兵资源触发脚本执行）；幂等。
-     * 可选：boot 宿主在 Task 6 落地实现前，game bundle 内以 `?.()` 调用。
-     */
-    loadBundle?(bundle: string): Promise<void>;
+    /** 打开全局常驻页（列表页），持有于全局作用域，不占用会话槽位。 */
+    openGlobalPage(entry: GameEntryInfo): Promise<EntryPageHandle>;
+    /** 确保某 Bundle 已加载（经 provider.load 哨兵资源触发脚本执行）；幂等。 */
+    loadBundle(bundle: string): Promise<void>;
+    /** UI 根初始化并返回是否就绪（fgui GRoot 可用）；幂等重试语义。 */
+    ensureUiReady(): boolean;
+    /** 加载共享 UI 依赖包（Common）到全局作用域常驻；幂等。 */
+    ensureSharedUiDependencies(): Promise<void>;
 }
 
 /**

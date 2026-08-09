@@ -367,9 +367,11 @@ describe("AppRoot Component", () => {
         const source = readFileSync(appRootFile, "utf8");
 
         // 默认流程不再在 startup 初始化 GRoot：AppRoot 无 initializeUiRoot 直接调用，
-        // 列表页打开也经 BootFlow → GameLobbyHostImpl（GRoot 推迟到 game 首次呈现）
+        // GRoot 初始化由 BootFlow 推迟到 game 首次呈现；随后经 onGameSceneActive 从
+        // 注册桥装配 game 模块列表流（openListPageWithRetry 在 game bundle 内实现）
         expect(source).not.toMatch(/initializeUiRoot/);
-        expect(source).not.toMatch(/openListPageWithRetry/);
+        expect(source).toMatch(/onGameSceneActive/);
+        expect(source).toMatch(/createListFlow/);
     });
 });
 

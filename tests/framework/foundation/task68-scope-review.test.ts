@@ -1,10 +1,58 @@
-import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { resolve, sep } from "node:path";
 import { describe, expect, test } from "bun:test";
 
 const projectRoot = resolve(import.meta.dir, "../../..");
 const sceneFile = resolve(projectRoot, "assets/boot/startup.scene");
 const appRootFile = resolve(projectRoot, "assets/boot/AppRoot.ts");
+
+/** 递归收集目录下的 .ts 文件。 */
+function collectTypeScriptFiles(dir: string): string[] {
+    const files: string[] = [];
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const full = resolve(dir, entry.name);
+        if (entry.isDirectory()) {
+            files.push(...collectTypeScriptFiles(full));
+        } else if (entry.name.endsWith(".ts")) {
+            files.push(full);
+        }
+    }
+    return files;
+}
+
+/** 收集目录下（可排除子目录）的全部 .ts 文件源码。 */
+function collectSources(
+    dir: string,
+    excludeSubdir?: string,
+): Array<{ file: string; source: string }> {
+    return collectTypeScriptFiles(dir)
+        .filter((file) => !excludeSubdir || !file.includes(`${sep}${excludeSubdir}${sep}`))
+        .map((file) => ({ file, source: readFileSync(file, "utf8") }));
+}
+
+/**
+ * 断言源码对 game bundle 的 import 全部为 `import type`（编译期擦除，无运行时
+ * bundle 依赖）。逐语句跟踪 import 声明起点，兼容多行 `import type { ... }`。
+ */
+function assertTypeOnlyGameImports(source: string, file: string): void {
+    let importStart = "";
+    for (const rawLine of source.split("\n")) {
+        const line = rawLine.trim();
+        if (line.startsWith("import ")) {
+            importStart = line;
+        }
+        if (importStart !== "" && /from\s+["'][^"']*game[^"']*["']/.test(line)) {
+            expect(
+                importStart.startsWith("import type"),
+                `${file} 不允许运行时 import game bundle: ${line}`,
+            ).toBe(true);
+            importStart = "";
+        }
+        if (line.endsWith(";")) {
+            importStart = "";
+        }
+    }
+}
 
 describe("6.8 scope review: startup.scene", () => {
     test("contains no business UI components", () => {
@@ -95,14 +143,14 @@ describe("6.8 scope review: startup.scene", () => {
 });
 
 describe("6.8 scope review: AppRoot.ts", () => {
-    test("does not import Game business logic", () => {
+    test("does not import the game bundle at runtime (type-only imports allowed)", () => {
         const source = readFileSync(appRootFile, "utf8");
 
-        // 组合根允许薄转发到游戏层公共装配入口（game/fixture，design decision 3/4），
-        // 但不得导入品类业务模型目录（game_*），业务规则留在游戏层夹具内
-        expect(source).not.toMatch(/from\s+["']\.\.\/game_[^/]+/);
+        // 组合根不得有 game bundle 的运行时 import（game 已是独立 Asset Bundle，
+        // 静态运行时 import 会把 game 代码打进 main）；`import type` 编译期擦除、
+        // 不产生 bundle 依赖，允许。业务规则留在 game bundle 内，组合根经注册桥访问。
+        assertTypeOnlyGameImports(source, appRootFile);
         expect(source).not.toMatch(/from\s+["']@game/);
-        expect(source).not.toMatch(/from\s+["']\.\.\/game\/(?!fixture\/)/);
         // AppRoot 只经框架适配器工厂组装资源提供者，不直接引用引擎资源/场景对象；
         // director 用于 Cocos 官方推荐的持久化根节点 API（game.addPersistRootNode 已废弃），
         // 但 director.loadScene / assetManager 等场景切换与资源加载仍经适配器，见下方断言
@@ -130,14 +178,12 @@ describe("6.8 scope review: AppRoot.ts", () => {
         expect(source).not.toMatch(/game\.(on|off)\s*\(\s*Game\./);
     });
 
-    test("imports only framework, game fixture assembly and engine modules", () => {
+    test("imports only framework and engine modules (no game bundle)", () => {
         const source = readFileSync(appRootFile, "utf8");
 
-        // 组合根只允许导入框架、游戏层公共装配入口（game/fixture）与引擎模块；
-        // 品类业务目录（game_*）与 fgui 不允许进入组合根
+        // 组合根只允许导入框架与引擎模块；game bundle 与 fgui 不允许进入组合根
+        // （game 经注册桥运行时读取，类型经 `import type` 在编译期擦除）
         const forbiddenImports = [
-            "/game_",
-            "/game/",
             "/boot/",
             "fairygui",
         ];
@@ -146,10 +192,6 @@ describe("6.8 scope review: AppRoot.ts", () => {
             const lines = source.split("\n");
             for (const line of lines) {
                 if (line.startsWith("import ") && line.includes(pattern)) {
-                    // game/fixture 是薄转发的公共装配入口，允许
-                    if (pattern === "/game/" && line.includes("game/fixture")) {
-                        continue;
-                    }
                     throw new Error(`Forbidden import found: ${line.trim()}`);
                 }
             }
@@ -164,5 +206,32 @@ describe("6.8 scope review: AppRoot.ts", () => {
         // 注册表演示服务而非 Module，与既有豁免词并列排除；Touch/EventTouch/Vec3
         // 为 cc 引擎输入/向量对象（冒烟触摸注入用），同样非业务 Module
         expect(source).not.toMatch(/\bnew\s+(?!ConsoleLogger|CocosApplicationAdapter|Application|Error|URLSearchParams|WallClock|Touch|EventTouch|Vec3)\w+\b/);
+    });
+});
+
+describe("6.8 scope review: boot bundle boundary", () => {
+    test("boot (non-smoke) does not statically import the game bundle at runtime", () => {
+        // 冒烟模块（boot/smoke/**）仍静态 import game，由 Task 7 迁移进 game/samples
+        // bundle（已知中间态），本断言仅覆盖非冒烟的 boot 模块
+        const bootSources = collectSources(resolve(projectRoot, "assets/boot"), "smoke");
+        expect(bootSources.length).toBeGreaterThan(0);
+
+        for (const { file, source } of bootSources) {
+            assertTypeOnlyGameImports(source, file);
+        }
+    });
+
+    test("game/samples bundles do not statically import the boot host", () => {
+        // game/samples 只经注册桥（lookupBundle/registerBundle）与 `import type` 访问
+        // 宿主能力，静态 import boot 会形成宿主依赖倒置并破坏 bundle 边界
+        const gameSources = collectSources(resolve(projectRoot, "assets/game"));
+        const samplesSources = collectSources(resolve(projectRoot, "assets/samples"));
+
+        for (const { file, source } of [...gameSources, ...samplesSources]) {
+            const bootImportLines = source
+                .split("\n")
+                .filter((line) => /from\s+["'][^"']*\/boot\//.test(line));
+            expect(bootImportLines, `${file} 不允许静态 import boot 宿主`).toHaveLength(0);
+        }
     });
 });
