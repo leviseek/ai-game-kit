@@ -26,11 +26,11 @@
 
 ## 3. 阶段 3：预加载分层与回归（可选，依赖阶段 2）
 
-- [ ] 3.1 确认 L0 常驻（Common/config）与 L1 场景流转（game 资源 preload）加载时机与进度上报体验，必要时调整 logo 期预加载顺序。
-- [ ] 3.2 验证资源释放闭环：默认流程切 game 后 startup 场景资源作用域已释放（canUnload 断言）；退出品类后品类包可卸载、列表包常驻。
-- [ ] 3.3 全量回归：`bun run test:foundation`、`typecheck`、`public-boundary`、`task68-scope-review`、CDP 冒烟（默认 + smoke + fixture）全绿。
+- [x] 3.1 确认 L0 常驻（Common/config）与 L1 场景流转（game 资源 preload）加载时机与进度上报体验，必要时调整 logo 期预加载顺序。
+- [x] 3.2 验证资源释放闭环：默认流程切 game 后 startup 场景资源作用域已释放（canUnload 断言）；退出品类后品类包可卸载、列表包常驻。
+- [x] 3.3 全量回归：`bun run test:foundation`、`typecheck`、`public-boundary`、`task68-scope-review`、CDP 冒烟（默认 + smoke + fixture）全绿。
 
 ## 4. ADR 检查与归档
 
-- [ ] 4.1 ADR 检查：检查本次重构是否产生新的架构决策（如"启动编排器放 boot 层"、"GRoot 初始化时机分叉"）；如有，按 `doc/decisions/ADR-NNN-<slug>.md` 约定创建 ADR；如无，在归档说明中明确记录无需 ADR。
+- [x] 4.1 ADR 检查：检查本次重构是否产生新的架构决策（如"启动编排器放 boot 层"、"GRoot 初始化时机分叉"）；如有，按 `doc/decisions/ADR-NNN-<slug>.md` 约定创建 ADR；如无，在归档说明中明确记录无需 ADR。
 - [ ] 4.2 归档：`openspec archive-change`（或按 `openspec/config.yaml` 的 archive operations 执行），同步 delta specs 到主 specs，`openspec validate --specs --strict` 通过后归档。
