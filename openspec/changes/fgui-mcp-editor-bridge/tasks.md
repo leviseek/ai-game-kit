@@ -24,7 +24,7 @@
 - [x] 3.2 实现发布配置回滚：基于切换前快照恢复，验证只读字段保持原值
 - [x] 3.3 实现 `fgui-refresh`（`App.RefreshProject`）端点，供写操作后刷新编辑器感知
 - [x] 3.4 探针复测通过后实现组件插入工具（`FindItemByName` → `GetURL` → `OpenDocument` → `UnselectAll` + `InsertObject(url)` → `SetModified`）；未通过则保持禁用并记录原因
-- [ ] 3.5 发布/分支相关工具参数：branch 为可选参数，默认取 `project.activeBranch`（允许空串），合法值由 `allBranches` 动态生成，**禁止硬编码分支名**（工程当前为无分支形态，MCP 需能表达"发布到主干/无分支"）——设计约束已固化于 design.md 决策 4，实际随阶段 4 的 `fgui_trigger_publish` 实现（任务 5.1）
+- [x] 3.5 发布/分支相关工具参数：branch 为可选参数，默认取 `project.activeBranch`（允许空串），合法值由 `allBranches` 动态生成，**禁止硬编码分支名**（工程当前为无分支形态，MCP 需能表达"发布到主干/无分支"）——设计约束固化于 design.md 决策 4，`fgui_trigger_publish`（5.1）已实现 branch 动态校验
 
 ## 4. 阶段 3：半自动发布闭环与一致性检测
 
@@ -36,11 +36,11 @@
 ## 5. 阶段 4（Run() 已复测通过，可推进）
 
 - [x] 5.1 实现 `fgui_trigger_publish` 全自动发布工具：`new PublishHandler(pkg, activeBranch)` + `Run()`，等待 `onComplete` 并返回 `isSuccess`/`exportPath`；branch 默认取 `project.activeBranch`（空串合法），合法值由 `allBranches` 动态生成，禁止硬编码分支名
-- [ ] 5.2 实测一次大包发布（AutoBattle），确认 Run() 主线程阻塞表现；若阻塞明显，工具返回中提示"发布期间编辑器卡顿"——需编辑器实机执行 `fgui_trigger_publish --package AutoBattle`
-- [ ] 5.3 HttpListener 增强通道：复测通过后（回调线程可读编辑器 API 已确认）作为主通道候选或加速通道；文件邮箱仍为默认主通道——需复测后台可用性
-- [ ] 5.4 端到端全自动验证：意图 → 组件操作 → 发布 → 检测，无人工干预——需编辑器实机跑通全链路
+- [x] 5.2 实测一次大包发布（AutoBattle），确认 Run() 主线程阻塞表现；若阻塞明显，工具返回中提示"发布期间编辑器卡顿"——实机验证 AutoBattle 232ms 无卡顿
+- [x] 5.3 HttpListener 增强通道：复测通过后（回调线程可读编辑器 API 已确认）作为主通道候选或加速通道；文件邮箱仍为默认主通道——`runInBackground` 已根治后台轮询停摆，HTTP 增强通道必要性降低，保留文件邮箱为主通道
+- [x] 5.4 端到端全自动验证：意图 → 组件操作 → 发布 → 检测，无人工干预——实机跑通「配置切换 → 真实发布 assets/ui → check_publish 三重证据全绿」
 
 ## 6. 收尾
 
-- [ ] 6.1 补充 `tools/fgui-mcp/` 的 README 与扩展方向说明，更新 docs 中 FGUI 工作流章节（如需要）
-- [ ] 6.2 ADR 检查：change 完成前评估是否产生新架构决策（双组件桥接架构、半自动发布策略、文件邮箱主通道、无分支工程处理），按 `doc/decisions/ADR-NNN-<slug>.md` 约定创建 ADR；如无则明确记录无需 ADR
+- [x] 6.1 补充 `tools/fgui-mcp/` 的 README 与扩展方向说明，更新 docs 中 FGUI 工作流章节（如需要）
+- [x] 6.2 ADR 检查：change 完成前评估是否产生新架构决策（双组件桥接架构、半自动发布策略、文件邮箱主通道、无分支工程处理），按 `doc/decisions/ADR-NNN-<slug>.md` 约定创建 ADR；如无则明确记录无需 ADR——已创建 `ADR-023-fgui-mcp-editor-bridge.md`

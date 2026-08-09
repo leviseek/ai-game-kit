@@ -87,5 +87,5 @@ MCP server（`tools/fgui-mcp/`，标准 MCP SDK devDependency，**已实现**：
 2. 阶段 1：MCP server 骨架 + 读工具（包/资源/依赖/发布配置/活动文档），主桥接通道为文件邮箱，与 `tools/fgui` CLI 输出交叉验证。**已完成**。
 3. 阶段 2：写工具——发布配置切换（复用 `MenuMain_Publish` 链路）+ 组件插入（v2 复测通过后，按决策 6 固化）。**已完成**（4 写工具 + 单测）。
 4. 阶段 3：半自动发布闭环（改源 → 配置切换 → 用户点击发布 → 邮箱检测 → validate）。**已完成**（发布信号 + 三重证据检测 + 单测）。
-5. 阶段 4（可选）：`Run()` 复测通过、HttpListener 增强通道就绪后开放全自动发布。
+5. 阶段 4（可选）：`Run()` 复测通过、HttpListener 增强通道就绪后开放全自动发布。**已完成**——`fgui_trigger_publish` 全自动发布工具实机验证通过（AutoBattle 232ms 无卡顿、端到端「配置切换 → 真实发布 → 检测」闭环全绿）；HTTP 增强通道因 `runInBackground` 已解决后台问题而必要性降低。
 回滚：新组件全部独立于 `tools/fgui` 与运行时，回滚即删除 `tools/fgui-mcp/` 与插件目录，现有确定性工作流零影响。
