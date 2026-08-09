@@ -27,8 +27,8 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Typecheck
-        run: bun run typecheck
+      - name: Typecheck (engine-agnostic)
+        run: bun run typecheck:ci
 
       - name: Lint
         run: bun run lint
@@ -41,6 +41,7 @@ jobs:
           bun run fgui validate --package Demo --strict
           bun run fgui validate --package Common --strict
           bun run fgui validate --package CardGame --strict
+          bun run fgui validate --package AutoBattle --strict
 
       - name: Validate OpenSpec specs
         run: |

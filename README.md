@@ -23,7 +23,8 @@ bun run test
 
 | 命令 | 内容 | 需要 Cocos |
 | --- | --- | --- |
-| `bun run typecheck` | 三个 TS 工程（根 / `tools/creator` / `tools/fgui`）严格类型检查 | 否 |
+| `bun run typecheck` | 三个 TS 工程（根 / `tools/creator` / `tools/fgui`）严格类型检查（含 Cocos 边界层，需本机 Creator 生成的 `temp/tsconfig.cocos.json`） | 是 |
+| `bun run typecheck:ci` | 引擎无关类型检查：`tsconfig.ci.json`（framework 除 cocos 适配层、game、samples）+ 两个 tools 工程 | 否 |
 | `bun run lint` | ESLint（typescript-eslint recommended，非 type-aware）全仓检查 | 否 |
 | `bun run test` | `test:foundation`（843）+ `test:fgui`（76） | 否 |
 | `bun run test:all` | 追加 `test:foundation:types`（framework 契约 + fairygui 接入类型检查） | 是 |
@@ -40,7 +41,7 @@ bun run test
 
 ## CI
 
-`.github/workflows/pure-ts-gate.yml` 提供纯 TypeScript 门禁层（Layer 1）：`push` / `pull_request` 自动运行，覆盖 typecheck、lint、foundation/fgui 测试、FGUI 源工程校验（`fgui validate --strict`）与 OpenSpec specs 校验。零 Creator 授权、零引擎依赖，可在 `ubuntu-latest` 全跑。依赖 Cocos Creator 的构建/smoke（`ccc`）不在本层。
+`.github/workflows/pure-ts-gate.yml` 提供纯 TypeScript 门禁层（Layer 1）：`push` / `pull_request` 自动运行，覆盖引擎无关 typecheck（`typecheck:ci`，Cocos 边界层由本机 Creator 环境校验）、lint、foundation/fgui 测试、FGUI 源工程校验（`fgui validate --strict`）与 OpenSpec specs 校验。零 Creator 授权、零引擎依赖，可在 `ubuntu-latest` 全跑。依赖 Cocos Creator 的构建/smoke（`ccc`）不在本层。
 
 ## 目录地图
 

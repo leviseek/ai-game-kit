@@ -17,6 +17,7 @@
     "lint": "eslint .",
     "verify": "bun run typecheck && bun run lint && bun run test",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tools/creator/tsconfig.json && tsc --noEmit -p tools/fgui/tsconfig.json",
+    "typecheck:ci": "tsc --noEmit -p tsconfig.ci.json && tsc --noEmit -p tools/creator/tsconfig.json && tsc --noEmit -p tools/fgui/tsconfig.json",
     "ccc": "bun ./tools/creator/cli.ts",
     "fgui": "bun ./tools/fgui/cli.ts"
   },

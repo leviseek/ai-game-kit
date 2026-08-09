@@ -1,0 +1,23 @@
+{
+  /* 纯 TS 门禁专用 tsconfig：不依赖 Cocos Creator 生成的 temp/tsconfig.cocos.json。
+     CI（pure-ts-gate）用它对引擎无关核心（framework 除 cocos 适配层、game、samples）
+     做严格类型检查；含 cc/fairygui 的边界层（boot、adapters/cocos、libs/fairygui）
+     由本机 Cocos 环境下的 `bun run typecheck` 与 test:foundation:types 覆盖。 */
+  "compilerOptions": {
+    "target": "ES2015",
+    "module": "ES2015",
+    "moduleResolution": "node",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "experimentalDecorators": true,
+    "isolatedModules": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["assets/**/*.ts"],
+  "exclude": [
+    "assets/boot",
+    "assets/framework/adapters/cocos",
+    "assets/framework/libs/fairygui"
+  ]
+}
