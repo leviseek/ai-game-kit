@@ -65,6 +65,7 @@ function createTriggerPublishHandler(server) {
                 packages: [packageName],
                 exportPath: handler.exportPath,
                 isSuccess: handler.isSuccess,
+                redirectToScratch: redirect,
             };
             (0, publish_signal_1.writePublishSignal)(payload);
             server.writeResponse(reqId, {
@@ -135,6 +136,7 @@ function createPublishAllHandler(server) {
                     packages: results.map((r) => r.package),
                     exportPath: results[results.length - 1]?.exportPath ?? "",
                     isSuccess: failedCount === 0,
+                    redirectToScratch: redirect,
                 };
                 (0, publish_signal_1.writePublishSignal)(payload);
                 server.writeResponse(reqId, {

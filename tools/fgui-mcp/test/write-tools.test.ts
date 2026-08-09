@@ -9,12 +9,13 @@
 import { describe, expect, it } from "bun:test";
 import { WRITE_TOOLS, wrapToolRun } from "../lib/tools";
 import { MailboxBridge } from "../lib/bridge";
+import { tempMailboxDir } from "./helpers";
 
 /** 指向一个不可达的邮箱目录（不存在 → isBridgeReachable 仍会创建目录并返回 true，故用超时极短来模拟"无响应"）。 */
 const unreachableBridge = new MailboxBridge(joinTempDir(), { timeoutMs: 80, pollMs: 10 });
 
 function joinTempDir(): string {
-    return (import.meta.dir, "unused-mailbox-write");
+    return tempMailboxDir("unused-mailbox-write");
 }
 
 describe("写工具注册表", () => {

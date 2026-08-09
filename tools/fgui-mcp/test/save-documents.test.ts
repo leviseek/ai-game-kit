@@ -7,9 +7,10 @@
 import { describe, expect, it } from "bun:test";
 import { WRITE_TOOLS, wrapToolRun } from "../lib/tools";
 import { MailboxBridge } from "../lib/bridge";
+import { tempMailboxDir } from "./helpers";
 
 function joinTempDir(): string {
-    return (import.meta.dir, "unused-mailbox-save");
+    return tempMailboxDir("unused-mailbox-save");
 }
 
 describe("fgui_save_documents 注册", () => {

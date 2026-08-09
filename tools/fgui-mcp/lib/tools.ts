@@ -252,7 +252,7 @@ export const WRITE_TOOLS: Record<string, { description: string; run: (bridge: Ma
     },
     fgui_create_component: {
         description:
-            "创建空组件资源。参数: package、name、可选 width/height（默认 100x100）、可选 path。资源 id 走前缀续编语义。",
+            "创建空组件资源（编辑器 FPackage.CreateComponentItem，id 由编辑器分配）。参数: package、name、可选 width/height（默认 100x100）、可选 path。",
         run: (bridge, params) => bridgeResult(bridge, "create_component", params),
     },
     fgui_copy_items: {

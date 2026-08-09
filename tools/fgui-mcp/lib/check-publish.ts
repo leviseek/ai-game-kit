@@ -128,6 +128,25 @@ export function checkPackageArtifacts(
     return { ok: mismatches.length === 0, mismatches };
 }
 
+/**
+ * 逐包 validate --strict 聚合：CLI 的 --package 仅接受单包，多包 join 会抛"包不存在"，
+ * 故对每个包单独校验并聚合。返回通过与否与失败明细。
+ */
+export function runValidateAggregated(packages: string[], runCli: (args: string[]) => { exitCode: number; stdout: string; stderr: string }): { passed: boolean; details: string } {
+    const failures: string[] = [];
+    for (const pkg of packages) {
+        const result = runCli(["validate", "--package", pkg, "--strict"]);
+        if (result.exitCode !== 0) {
+            const detail = (result.stdout.trim() || result.stderr.trim()).split("\n").slice(0, 3).join(" | ");
+            failures.push(`${pkg}: ${detail}`);
+        }
+    }
+    return {
+        passed: failures.length === 0,
+        details: failures.length === 0 ? "全部目标包 validate --strict 通过" : failures.join("\n"),
+    };
+}
+
 /** 全量检测：信号 + 产物新鲜度 + validate --strict。 */
 export function checkPublish(project: FguiProjectInfo, options: { signalPath: string; packages?: string[] }): CheckPublishResult {
     const nowMs = Date.now();
@@ -139,6 +158,7 @@ export function checkPublish(project: FguiProjectInfo, options: { signalPath: st
         packages: signal ? signal.packages : [],
         isSuccess: signal ? signal.isSuccess : false,
         ts: signal ? signal.ts : undefined,
+        redirectToScratch: signal ? signal.redirectToScratch : undefined,
     };
 
     const artifactsDir = resolveArtifactsDir();
@@ -157,10 +177,10 @@ export function checkPublish(project: FguiProjectInfo, options: { signalPath: st
         artifactsMismatches.push(...result.mismatches);
     }
 
-    // validate --strict 全量（对目标包逐个校验；聚合 stdout 判定通过）
-    const validate = runFguiCli(["validate", "--package", targetPkgs.join(","), "--strict"]);
-    const validatePassed = validate.exitCode === 0;
-    const validateDetails = validate.stdout.trim() || validate.stderr.trim();
+    // validate --strict 全量：CLI 的 --package 仅接受单包，逐包校验并聚合退出码（多包 join 会抛"包不存在"）
+    const validate = runValidateAggregated(targetPkgs, (args) => runFguiCli(args));
+    const validatePassed = validate.passed;
+    const validateDetails = validate.details;
 
     const mismatches: string[] = [];
     if (!signal || !signalFresh || !signal.isSuccess) {
@@ -173,6 +193,10 @@ export function checkPublish(project: FguiProjectInfo, options: { signalPath: st
     if (artifactsMismatches.length > 0) mismatches.push(...artifactsMismatches);
     if (!validatePassed) {
         mismatches.push(`validate --strict 未通过：${validateDetails.split("\n").slice(0, 3).join(" | ")}`);
+    }
+    // scratch 重定向警示：信号标记发布重定向到 .objs，真实产物未被更新，一致性判定应降级提示
+    if (signalEvidence.redirectToScratch === true) {
+        mismatches.push("发布信号标记 redirectToScratch=true（发布重定向到 .objs 未触碰真实产物）：若需验证真实产物一致性，请在编辑器真实发布（redirectToScratch:false）后重试");
     }
 
     return {

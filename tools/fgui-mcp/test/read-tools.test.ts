@@ -8,9 +8,10 @@
 import { describe, expect, it } from "bun:test";
 import { READ_TOOLS, wrapToolRun } from "../lib/tools";
 import { MailboxBridge } from "../lib/bridge";
+import { tempMailboxDir } from "./helpers";
 
 function joinTempDir(): string {
-    return (import.meta.dir, "unused-mailbox-read");
+    return tempMailboxDir("unused-mailbox-read");
 }
 
 const emptyBridge = new MailboxBridge(joinTempDir(), { timeoutMs: 50 });

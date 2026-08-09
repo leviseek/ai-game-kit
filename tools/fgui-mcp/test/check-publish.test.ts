@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { checkPackageArtifacts, readSignal } from "../lib/check-publish";
+import { checkPackageArtifacts, readSignal, runValidateAggregated } from "../lib/check-publish";
 
 let root: string;
 let artifactsDir: string;
@@ -74,5 +74,38 @@ describe("checkPackageArtifacts（产物新鲜度）", () => {
         const result = checkPackageArtifacts(artifactsDir, sourcesDir, "Demo");
         expect(result.ok).toBe(false);
         expect(result.mismatches.some((m) => m.includes("无发布产物"))).toBe(true);
+    });
+});
+
+describe("runValidateAggregated（逐包 validate 聚合，多包不 join）", () => {
+    it("全部包通过 → passed", () => {
+        const cli = (_args: string[]): { exitCode: number; stdout: string; stderr: string } => ({ exitCode: 0, stdout: "校验通过", stderr: "" });
+        const result = runValidateAggregated(["Demo", "Common"], cli);
+        expect(result.passed).toBe(true);
+        expect(result.details).toContain("全部目标包");
+    });
+
+    it("单个包失败 → 聚合明细含包名", () => {
+        const cli = (args: string[]): { exitCode: number; stdout: string; stderr: string } =>
+            args.includes("Bad")
+                ? { exitCode: 1, stdout: "Bad 校验失败", stderr: "" }
+                : { exitCode: 0, stdout: "校验通过", stderr: "" };
+        const result = runValidateAggregated(["Demo", "Bad"], cli);
+        expect(result.passed).toBe(false);
+        expect(result.details).toContain("Bad");
+    });
+
+    it("每个包单独调用 CLI（不 join 多包为一个 --package）", () => {
+        const calls: string[][] = [];
+        const cli = (args: string[]): { exitCode: number; stdout: string; stderr: string } => {
+            calls.push(args);
+            return { exitCode: 0, stdout: "", stderr: "" };
+        };
+        runValidateAggregated(["Demo", "Common"], cli);
+        expect(calls).toHaveLength(2);
+        for (const call of calls) {
+            expect(call.filter((a) => a === "Demo" || a === "Common").length).toBe(1);
+            expect(call.join(" ")).not.toContain("Demo,Common");
+        }
     });
 });

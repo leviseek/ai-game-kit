@@ -103,10 +103,13 @@ export class MailboxBridge {
         const detail = reqStillExists
             ? `插件从未读取请求文件（${reqPath} 仍存在）：邮箱服务器未运行、tick 未触发，或编辑器窗口在后台。${focusHint} 若已确认编辑器前台仍失败，请重启编辑器并确认控制台出现"邮箱服务器启动"日志。`
             : `插件已读走请求但未写响应：handler 抛错或响应写入失败。请查看编辑器控制台"[fgui-mcp-probe] 处理请求...异常"日志。`;
+        // 写工具超时警示：deferred 写操作（发布/导入等）触发后不可取消，超时不代表操作未发生，勿盲目重试
+        const sideEffectHint =
+            "注意：若请求是写操作（发布/导入/结构编辑等），超时仅代表响应未在期限内返回，操作可能已在编辑器执行。请勿盲目重试，应先通过编辑器状态或 fgui_check_publish 确认实际结果。";
         return {
             reached: false,
             ok: false,
-            error: `编辑器桥接超时（${this.timeoutMs}ms）: ${method} 未在期限内完成。${detail}`,
+            error: `编辑器桥接超时（${this.timeoutMs}ms）: ${method} 未在期限内完成。${detail} ${sideEffectHint}`,
         };
     }
 

@@ -74,6 +74,6 @@ bun run tools/fgui-mcp/test/smoke-stdio.ts                  # stdio 握手 + 工
 ## 未来扩展
 
 - HTTP 增强通道（`HttpListener`，回调线程可读编辑器 API 已探针验证；`runInBackground` 解决后台问题后必要性降低）。
-- 实机探针验证回填：`ImportResource`/`CopyHandler`/`AddController`/截图四类新探针待编辑器实机运行，汇总结论将固化到工具描述的能力受限标注。
 - 组件模板（`ComponentTemplates`）暂缓工具化（骨架依赖官方库图片约定，与调色板锁定约定可能冲突）。
 - FairyGUI-MCP 未移植项（因风险/不适配，见 design.md）：F5 预览测试（`start_test`/`stop_test` 覆盖 runInBackground）、设备切换（`switch_device` 依赖 testView 内部状态）、窗口激活（Win32，非编辑器 API）、插件重载（FairyGUI-MCP 自身仍在探测 API）。
+- 已实机验证项：`ImportResource`/`CopyHandler`/`AddController`/截图四类探针均已编辑器实机运行并回填（probe-results.json，pass/partial），结论固化于工具描述与 tasks.md 1.5。

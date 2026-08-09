@@ -4,6 +4,7 @@ exports.handleClearLogs = exports.handleCloseDocument = exports.handleSelectElem
 exports.assertForbiddenObjectType = assertForbiddenObjectType;
 exports.saveAllDocuments = saveAllDocuments;
 exports.createImportResourceHandler = createImportResourceHandler;
+exports.isValidSidePair = isValidSidePair;
 exports.createCapturePreviewHandler = createCapturePreviewHandler;
 var FairyEditor = CS.FairyEditor;
 const App = FairyEditor.App;
@@ -514,7 +515,7 @@ const handleSetObjectProperty = (params) => {
     doc.SetModified(true);
     if (applied["x"] !== undefined || applied["y"] !== undefined || applied["width"] !== undefined || applied["height"] !== undefined) {
         try {
-            obj.UpdateGears(0);
+            obj.UpdateGear(0);
         }
         catch {
         }
@@ -534,11 +535,13 @@ const SIDE_PAIR_BASE = new Set([
     "leftext", "rightext", "topext", "bottomext",
 ]);
 function isValidSidePair(pair) {
-    const match = /^([a-z]+?)(%)?-([a-z]+?)(%)?$/.exec(pair.trim());
-    if (!match)
+    const trimmed = pair.trim();
+    const normalized = trimmed.endsWith("%") ? trimmed.slice(0, -1) : trimmed;
+    const parts = normalized.split("-");
+    if (parts.length !== 2)
         return false;
-    const targetSide = match[1];
-    const selfSide = match[3];
+    const targetSide = parts[0];
+    const selfSide = parts[1];
     return SIDE_PAIR_BASE.has(targetSide) && SIDE_PAIR_BASE.has(selfSide);
 }
 function validateSidePair(sidePair) {
@@ -549,7 +552,7 @@ function validateSidePair(sidePair) {
         throw new Error(`sidePair 最多 2 项（单个 relation 最多两个约束），收到 ${pairs.length} 项: ${sidePair}`);
     for (const pair of pairs) {
         if (!isValidSidePair(pair)) {
-            throw new Error(`非法 sidePair 项: ${pair}（合法值: left/right/top/bottom/middle/center/width/height + ext 后缀 + % 百分比）`);
+            throw new Error(`非法 sidePair 项: ${pair}（格式 目标side-自身side，自身侧可加 % 百分比；合法 side: left/right/top/bottom/middle/center/width/height + ext 后缀）`);
         }
     }
 }
@@ -557,8 +560,12 @@ function buildControllerXml(name, pages, selected) {
     if (pages.length === 0)
         throw new Error("控制器页面不能为空");
     const flat = [];
-    for (let i = 0; i < pages.length; i++)
-        flat.push(String(i), pages[i] ?? "");
+    for (let i = 0; i < pages.length; i++) {
+        const pageName = pages[i] ?? "";
+        if (!pageName.trim())
+            throw new Error(`控制器页面 ${i} 名称为空，validate --strict 会拒绝（项目要求非空页面名）`);
+        flat.push(String(i), pageName);
+    }
     const xml = CS.FairyGUI.Utils.XML.Create("controller");
     xml.SetAttribute("name", name);
     xml.SetAttribute("pages", flat.join(","));
@@ -1074,6 +1081,9 @@ const handleCopyItems = (params) => {
         existsItemCount: handler.existsItemCount,
         dependencyCount: handler.resultList ? handler.resultList.Count : 0,
         note: copied ? "复制成功，需 fgui_save_documents 持久化" : "依赖项已复制但主组件未在目标包枚举到，请人工确认",
+        crossPackageNote: targetPackage.startsWith("Common")
+            ? "目标包为 Common 通用包，符合跨包引用约定"
+            : "警告：目标包非 Common 通用包，跨包引用应只指向 Common/Common_xxx，请复核是否符合项目约定",
     };
 };
 exports.handleCopyItems = handleCopyItems;

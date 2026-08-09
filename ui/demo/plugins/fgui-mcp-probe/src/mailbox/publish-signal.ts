@@ -12,6 +12,8 @@ export interface PublishSignalPayload {
     readonly packages: string[];
     readonly exportPath: string;
     readonly isSuccess: boolean;
+    /** 发布是否重定向到 scratch（true=未触碰真实产物，check_publish 应提示真实产物可能陈旧） */
+    readonly redirectToScratch?: boolean;
 }
 
 /** 写入发布信号文件（内容先写 tmp 再改名，避免 MCP 侧读到半写文件）。 */

@@ -6,9 +6,10 @@
 import { describe, expect, it } from "bun:test";
 import { WRITE_TOOLS, wrapToolRun } from "../lib/tools";
 import { MailboxBridge } from "../lib/bridge";
+import { tempMailboxDir } from "./helpers";
 
 function joinTempDir(): string {
-    return (import.meta.dir, "unused-mailbox-import");
+    return tempMailboxDir("unused-mailbox-import");
 }
 
 describe("fgui_import_resource 注册", () => {

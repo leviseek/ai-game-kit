@@ -7,9 +7,10 @@
 import { describe, expect, it } from "bun:test";
 import { READ_TOOLS, WRITE_TOOLS, wrapToolRun } from "../lib/tools";
 import { MailboxBridge } from "../lib/bridge";
+import { tempMailboxDir } from "./helpers";
 
 function joinTempDir(): string {
-    return (import.meta.dir, "unused-mailbox-fgui-mcp");
+    return tempMailboxDir("unused-mailbox-fgui-mcp");
 }
 
 describe("FairyGUI-MCP 移植工具注册表", () => {

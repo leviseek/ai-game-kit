@@ -14,9 +14,21 @@ import { locateProject } from "./lib/paths";
 import { CHECK_PUBLISH_TOOL, READ_TOOLS, WRITE_TOOLS, wrapToolRun, type ToolResult } from "./lib/tools";
 import { join } from "node:path";
 
+/** deferred 长耗时工具：等待异步完成（发布/批量导入/资源检查/截图），超时放宽到 180s。 */
+const DEFERRED_TOOLS = new Set([
+    "fgui_trigger_publish",
+    "fgui_publish_all",
+    "fgui_import_resource",
+    "fgui_find_unused_resources",
+    "fgui_find_duplicate_resources",
+    "fgui_capture_preview",
+]);
+
 async function main(): Promise<void> {
     const project = locateProject();
+    // 默认 30s 桥；deferred 工具用 180s 长超时桥（发布/批量操作异步完成可能超过 30s）
     const bridge = new MailboxBridge(project.mailboxDir);
+    const longBridge = new MailboxBridge(project.mailboxDir, { timeoutMs: 180_000, pollMs: 200 });
     const server = new McpServer({ name: "fgui-mcp", version: "0.1.0" });
 
     // 读工具（含 fgui_validate_package 走 CLI）
@@ -77,10 +89,14 @@ async function main(): Promise<void> {
                 confirm: z.boolean().optional().describe("破坏性操作二次确认"),
                 targetPath: z.string().optional().describe("复制/移动目标路径"),
                 exclude: z.array(z.string()).optional().describe("publish_all 跳过包名数组"),
+                src: z.string().optional().describe("add_child 资源 id/name/文件名（image/component/loader 用）"),
+                full: z.boolean().optional().describe("reload_package 全量刷新（true 走 App.RefreshProject）"),
+                page: z.string().optional().describe("switch_page 目标页名（与 index 二选一）"),
             },
         }, async (args) => {
-            // 写工具均为编辑器侧操作，先做桥可达性检查
-            const wrapped = wrapToolRun(true, project.mailboxDir, bridge, tool.run);
+            // 写工具均为编辑器侧操作，先做桥可达性检查；deferred 工具走长超时桥
+            const useLong = DEFERRED_TOOLS.has(name);
+            const wrapped = wrapToolRun(true, project.mailboxDir, useLong ? longBridge : bridge, tool.run);
             const result: ToolResult = await wrapped(args);
             return {
                 content: [{ type: "text", text: JSON.stringify(result, null, 2) }],

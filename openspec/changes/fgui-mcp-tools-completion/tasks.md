@@ -10,6 +10,7 @@
   - **copy-handler**（实机 partial→confirmed）：`CopyHandler.InitWithObject` 调用成功、依赖项复制**实际生效**（scratch 目标包中出现 StartButton、start_btn_up/down、background 等 zr7s0-zr7s3）；但主组件 DemoView.xml 未在目标包枚举中出现（命名/主项复制差异，属探针取证问题）。结论：**依赖复制可用**，`copy_items` handler 保留；`InitWithItems` 的 IList 互操作在 Puerts 不可用，故 handler 用 InitWithObject（doc.Serialize XML）实现。
   - **capture**（实机 pass）：`doc.content.displayObject.GetScreenShot(null,1)` + `UnityEngine.ImageConversion.EncodeToPNG` 可用（参考 FairyGUI-MCP 路径）；`ScreenCapture.CaptureScreenshot`/`Application.CaptureScreenshot` 在 Puerts 不可调用，已弃用 OS 级 PowerShell 备选（Unity 内 Process.Start 受限）→ handler 用 GetScreenShot 实现。
   - **通用经验**：Puerts 中 C# `long`（如 `FileInfo.Length`）映射为 BigInt，`JSON.stringify` 会抛错致响应丢失，所有序列化字段必须 `Number()` 转换。
+  - **ai-sensei 审查 P0-2 回应**：审查曾担忧 import_resource 的 `ResourceImportQueue.Process` 回调可能在后台线程执行复刻「后台线程访问 JS 闭包 → 闪退」高危模式。实机证据反驳：探针（pass）与闭环验证（import_resource 导入成功、`pkg.Save()`/`writeResponse` 均正常、无闪退）确认回调路径安全。四探针均已实机运行回填（probe-results.json ts=19:41）。
 
 ## 2. 读侧查询工具（无破坏性，先行）
 

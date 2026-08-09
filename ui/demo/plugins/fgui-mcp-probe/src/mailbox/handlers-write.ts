@@ -552,7 +552,7 @@ export const handleSetObjectProperty: MailboxHandler = (params) => {
 
     if (applied["x"] !== undefined || applied["y"] !== undefined || applied["width"] !== undefined || applied["height"] !== undefined) {
         try {
-            obj.UpdateGears(0);
+            obj.UpdateGear(0);
         } catch {
             /* gear 同步失败不影响属性写入 */
         }
@@ -568,29 +568,35 @@ export const handleSetObjectProperty: MailboxHandler = (params) => {
     };
 };
 
-/** sidePair 两侧合法值（与 tools/fgui validate 一致）：基础 side + ext 后缀 + 百分比标记。 */
+/** sidePair 两侧合法值（与 tools/fgui validate 一致）：基础 side + ext 后缀。 */
 const SIDE_PAIR_BASE = new Set([
     "left", "right", "top", "bottom", "middle", "center", "width", "height",
     "leftext", "rightext", "topext", "bottomext",
 ]);
 
-/** 校验单个 sidePair 片段（目标side-自身side），合法则返回 true。 */
-function isValidSidePair(pair: string): boolean {
-    const match = /^([a-z]+?)(%)?-([a-z]+?)(%)?$/.exec(pair.trim());
-    if (!match) return false;
-    const targetSide = match[1];
-    const selfSide = match[3];
+/**
+ * 校验单个 sidePair 项（如 "width-width%" / "leftext-right"），合法返回 true。
+ * 语义与 tools/fgui validate 一致：仅当 pair 以 % 结尾时去掉末尾 %（百分比只允许在自身 side），
+ * 然后按 "-" split；两侧都必须在合法集合内。target side 带 %（如 "width%-width"）非法。
+ */
+export function isValidSidePair(pair: string): boolean {
+    const trimmed = pair.trim();
+    const normalized = trimmed.endsWith("%") ? trimmed.slice(0, -1) : trimmed;
+    const parts = normalized.split("-");
+    if (parts.length !== 2) return false;
+    const targetSide = parts[0]!;
+    const selfSide = parts[1]!;
     return SIDE_PAIR_BASE.has(targetSide) && SIDE_PAIR_BASE.has(selfSide);
 }
 
-/** 校验 sidePair 描述串：以逗号分隔的 1-2 项，每项合法。 */
+/** 校验 sidePair 描述串：以逗号分隔的 1-2 项，每项合法（同 CLI validate 语义）。 */
 function validateSidePair(sidePair: string): void {
     const pairs = sidePair.split(",").map((s) => s.trim()).filter((s) => s.length > 0);
     if (pairs.length === 0) throw new Error("sidePair 不能为空");
     if (pairs.length > 2) throw new Error(`sidePair 最多 2 项（单个 relation 最多两个约束），收到 ${pairs.length} 项: ${sidePair}`);
     for (const pair of pairs) {
         if (!isValidSidePair(pair)) {
-            throw new Error(`非法 sidePair 项: ${pair}（合法值: left/right/top/bottom/middle/center/width/height + ext 后缀 + % 百分比）`);
+            throw new Error(`非法 sidePair 项: ${pair}（格式 目标side-自身side，自身侧可加 % 百分比；合法 side: left/right/top/bottom/middle/center/width/height + ext 后缀）`);
         }
     }
 }
@@ -604,9 +610,13 @@ function validateSidePair(sidePair: string): void {
 /** 构造控制器 XML（name + pages 扁平串 + selected）。 */
 function buildControllerXml(name: string, pages: string[], selected: number): any {
     if (pages.length === 0) throw new Error("控制器页面不能为空");
-    // pages 扁平串：索引,名称 成对；页面名可留空（项目允许空 page name，validate 对空 id 报错——此处空名合法，id 由编辑器生成）
+    // pages 扁平串：索引,名称 成对。页面名不能为空（tools/fgui validate 对空 page name 报错，见 fgui.ts validateControllerSemantics）
     const flat: string[] = [];
-    for (let i = 0; i < pages.length; i++) flat.push(String(i), pages[i] ?? "");
+    for (let i = 0; i < pages.length; i++) {
+        const pageName = pages[i] ?? "";
+        if (!pageName.trim()) throw new Error(`控制器页面 ${i} 名称为空，validate --strict 会拒绝（项目要求非空页面名）`);
+        flat.push(String(i), pageName);
+    }
     const xml = CS.FairyGUI.Utils.XML.Create("controller");
     xml.SetAttribute("name", name);
     xml.SetAttribute("pages", flat.join(","));
@@ -1078,11 +1088,15 @@ export const handleCopyItems: MailboxHandler = (params) => {
         existsItemCount: handler.existsItemCount,
         dependencyCount: handler.resultList ? handler.resultList.Count : 0,
         note: copied ? "复制成功，需 fgui_save_documents 持久化" : "依赖项已复制但主组件未在目标包枚举到，请人工确认",
+        crossPackageNote: targetPackage.startsWith("Common")
+            ? "目标包为 Common 通用包，符合跨包引用约定"
+            : "警告：目标包非 Common 通用包，跨包引用应只指向 Common/Common_xxx，请复核是否符合项目约定",
     };
 };
 
 /** 返回分支清单（读侧能力，与 read 工具集一致但随写工具返回可编程上下文）。 */
-export const handleListBranches: MailboxHandler = () => {    const project = App.project;
+export const handleListBranches: MailboxHandler = () => {
+    const project = App.project;
     if (!project) throw new Error("无打开工程");
     const branches: string[] = [];
     const all = project.allBranches;

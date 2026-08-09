@@ -74,6 +74,7 @@ export function createTriggerPublishHandler(server: MailboxServer): MailboxHandl
                 packages: [packageName],
                 exportPath: handler.exportPath,
                 isSuccess: handler.isSuccess,
+                redirectToScratch: redirect,
             };
             // 同步写发布信号，供 fgui_check_publish 复用
             writePublishSignal(payload);
@@ -154,6 +155,7 @@ export function createPublishAllHandler(server: MailboxServer): MailboxHandler {
                     packages: results.map((r) => r.package),
                     exportPath: results[results.length - 1]?.exportPath ?? "",
                     isSuccess: failedCount === 0,
+                    redirectToScratch: redirect,
                 };
                 writePublishSignal(payload);
                 server.writeResponse(reqId, {

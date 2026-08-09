@@ -7,12 +7,13 @@
 import { describe, expect, it } from "bun:test";
 import { READ_TOOLS } from "../lib/tools";
 import { MailboxBridge } from "../lib/bridge";
+import { tempMailboxDir } from "./helpers";
 
 /** 空的 MailboxBridge 占位（validate 工具不经过 bridge）。 */
 const emptyBridge = new MailboxBridge(joinTempDir(), { timeoutMs: 50 });
 
 function joinTempDir(): string {
-    return (import.meta.dir, "unused-mailbox");
+    return tempMailboxDir("unused-mailbox");
 }
 
 describe("fgui_validate_package 工具（透传 fgui CLI）", () => {

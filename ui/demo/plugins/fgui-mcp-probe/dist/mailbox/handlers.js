@@ -142,14 +142,16 @@ function safeGetSettings(project, key) {
         return null;
     }
 }
-function serializeSettingValue(value) {
+function serializeSettingValue(value, depth = 0) {
     if (value == null)
         return value;
+    if (depth > 6)
+        return "[深度超限]";
     if (typeof value !== "object")
         return value;
     const anyValue = value;
     if (typeof anyValue.Count === "number" && typeof anyValue.get_Item === "function") {
-        return (0, server_1.listToArray)(anyValue).map(serializeSettingValue);
+        return (0, server_1.listToArray)(anyValue).map((item) => serializeSettingValue(item, depth + 1));
     }
     const out = {};
     try {
@@ -157,7 +159,7 @@ function serializeSettingValue(value) {
             const v = anyValue[key];
             if (typeof v === "function")
                 continue;
-            out[key] = typeof v === "object" && v != null ? serializeSettingValue(v) : v;
+            out[key] = typeof v === "object" && v != null ? serializeSettingValue(v, depth + 1) : v;
         }
     }
     catch {
@@ -182,7 +184,6 @@ function createFindResourcesHandler(kind, server) {
         const finder = kind === "unused"
             ? new FairyEditor.FindUnusedResource()
             : new FairyEditor.FindDuplicateResource();
-        const started = { fired: false };
         const report = () => {
             const rows = [];
             if (kind === "duplicate") {
@@ -212,7 +213,6 @@ function createFindResourcesHandler(kind, server) {
         };
         try {
             finder.Start(pkgs, () => { }, () => {
-                started.fired = true;
                 report();
             });
         }
@@ -385,13 +385,21 @@ const handleGetLogs = (params) => {
     try {
         const IO = CS.System.IO;
         const stream = new IO.FileStream(path, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite);
-        const reader = new IO.StreamReader(stream);
-        const raw = reader.ReadToEnd();
-        reader.Close();
-        stream.Close();
-        const parts = raw.split("\n");
-        const tail = parts.slice(Math.max(0, parts.length - lines));
-        return { logs: tail, count: tail.length, source: path };
+        try {
+            const reader = new IO.StreamReader(stream);
+            const raw = reader.ReadToEnd();
+            reader.Close();
+            const parts = raw.split("\n");
+            const tail = parts.slice(Math.max(0, parts.length - lines));
+            return { logs: tail, count: tail.length, source: path };
+        }
+        finally {
+            try {
+                stream.Close();
+            }
+            catch {
+            }
+        }
     }
     catch (e) {
         throw new Error(`读取控制台日志失败: ${e && e.message ? e.message : e}`);

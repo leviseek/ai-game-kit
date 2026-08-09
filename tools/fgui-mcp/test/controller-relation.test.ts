@@ -1,27 +1,30 @@
 /**
  * 控制器与关系工具测试：验证注册表存在性、sidePair 校验语义、错误路径。
  * 编辑器侧真实行为由 cross-verify 实机验证；本测试覆盖 MCP 侧注册与可静态验证的校验逻辑。
- * sidePair 校验语义从 handlers-write 以纯函数形式复刻验证（与 tools/fgui validate 一致）。
+ * sidePair 校验语义与 handlers-write/isValidSidePair 保持一致（复刻，因插件依赖 Puerts 无法直接导入）。
  */
 
 import { describe, expect, it } from "bun:test";
 import { READ_TOOLS, WRITE_TOOLS, wrapToolRun } from "../lib/tools";
 import { MailboxBridge } from "../lib/bridge";
+import { tempMailboxDir } from "./helpers";
 
 function joinTempDir(): string {
-    return (import.meta.dir, "unused-mailbox-controller");
+    return tempMailboxDir("unused-mailbox-controller");
 }
 
-/** 与 handlers-write 同构的 sidePair 校验纯函数（便于无编辑器测试）。 */
+/** 与 handlers-write 的 isValidSidePair 同构（CLI 语义：仅末尾 % 合法，target side 带 % 非法）。 */
 const SIDE_PAIR_BASE = new Set([
     "left", "right", "top", "bottom", "middle", "center", "width", "height",
     "leftext", "rightext", "topext", "bottomext",
 ]);
 
 function isValidSidePair(pair: string): boolean {
-    const match = /^([a-z]+?)(%)?-([a-z]+?)(%)?$/.exec(pair.trim());
-    if (!match) return false;
-    return SIDE_PAIR_BASE.has(match[1]) && SIDE_PAIR_BASE.has(match[3]);
+    const trimmed = pair.trim();
+    const normalized = trimmed.endsWith("%") ? trimmed.slice(0, -1) : trimmed;
+    const parts = normalized.split("-");
+    if (parts.length !== 2) return false;
+    return SIDE_PAIR_BASE.has(parts[0]!) && SIDE_PAIR_BASE.has(parts[1]!);
 }
 
 function validateSidePair(sidePair: string): void {
@@ -57,7 +60,7 @@ describe("控制器/关系工具注册表", () => {
     });
 });
 
-describe("sidePair 校验语义（与 handlers-write/validate 一致）", () => {
+describe("sidePair 校验语义（与 handlers-write/CLI validate 一致）", () => {
     it("合法 2 项通过", () => {
         expect(() => validateSidePair("width-width,height-height")).not.toThrow();
     });
@@ -66,12 +69,17 @@ describe("sidePair 校验语义（与 handlers-write/validate 一致）", () => 
         expect(() => validateSidePair("center-center")).not.toThrow();
     });
 
-    it("百分比合法", () => {
+    it("末尾 %（自身侧百分比）合法", () => {
         expect(() => validateSidePair("width-width%")).not.toThrow();
     });
 
     it("ext 后缀合法", () => {
         expect(() => validateSidePair("leftext-right")).not.toThrow();
+    });
+
+    it("target side 带 % 非法（CLI 只允许末尾 %）", () => {
+        expect(() => validateSidePair("width%-width")).toThrow("非法");
+        expect(() => validateSidePair("width%-width%")).toThrow("非法");
     });
 
     it("3 项被拒", () => {

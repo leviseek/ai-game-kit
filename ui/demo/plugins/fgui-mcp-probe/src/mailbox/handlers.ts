@@ -146,22 +146,23 @@ function safeGetSettings(project: any, key: string): any {
     }
 }
 
-/** 把设置字段值转为可 JSON 序列化的结构。 */
-function serializeSettingValue(value: unknown): unknown {
+/** 把设置字段值转为可 JSON 序列化的结构（限制递归深度防循环引用栈溢出）。 */
+function serializeSettingValue(value: unknown, depth = 0): unknown {
     if (value == null) return value;
+    if (depth > 6) return "[深度超限]";
     if (typeof value !== "object") return value;
     const anyValue = value as any;
     // List$1<T>：Count + get_Item
     if (typeof anyValue.Count === "number" && typeof anyValue.get_Item === "function") {
-        return listToArray(anyValue).map(serializeSettingValue);
+        return listToArray(anyValue).map((item) => serializeSettingValue(item, depth + 1));
     }
-    // 简单对象：枚举自身可读属性（递归一层防环）
+    // 简单对象：枚举自身可读属性（递归，带深度上限防环）
     const out: Record<string, unknown> = {};
     try {
         for (const key of Object.keys(anyValue)) {
             const v = anyValue[key];
             if (typeof v === "function") continue;
-            out[key] = typeof v === "object" && v != null ? serializeSettingValue(v) : v;
+            out[key] = typeof v === "object" && v != null ? serializeSettingValue(v, depth + 1) : v;
         }
     } catch {
         return String(value);
@@ -189,7 +190,6 @@ export function createFindResourcesHandler(
         const finder = kind === "unused"
             ? new FairyEditor.FindUnusedResource()
             : new FairyEditor.FindDuplicateResource() as any;
-        const started: { fired: boolean } = { fired: false };
         const report = (): void => {
             const rows: unknown[] = [];
             if (kind === "duplicate") {
@@ -219,7 +219,6 @@ export function createFindResourcesHandler(
         };
         try {
             (finder as any).Start(pkgs, () => { /* onProgress：记录进度已触发 */ }, () => {
-                started.fired = true;
                 report();
             });
         } catch (e: any) {
@@ -393,13 +392,20 @@ export const handleGetLogs: MailboxHandler = (params) => {
             IO.FileAccess.Read,
             IO.FileShare.ReadWrite,
         );
-        const reader = new IO.StreamReader(stream);
-        const raw: string = reader.ReadToEnd();
-        reader.Close();
-        stream.Close();
-        const parts = raw.split("\n");
-        const tail = parts.slice(Math.max(0, parts.length - lines));
-        return { logs: tail, count: tail.length, source: path };
+        try {
+            const reader = new IO.StreamReader(stream);
+            const raw: string = reader.ReadToEnd();
+            reader.Close();
+            const parts = raw.split("\n");
+            const tail = parts.slice(Math.max(0, parts.length - lines));
+            return { logs: tail, count: tail.length, source: path };
+        } finally {
+            try {
+                stream.Close();
+            } catch {
+                /* 句柄释放失败忽略 */
+            }
+        }
     } catch (e: any) {
         throw new Error(`读取控制台日志失败: ${e && e.message ? e.message : e}`);
     }

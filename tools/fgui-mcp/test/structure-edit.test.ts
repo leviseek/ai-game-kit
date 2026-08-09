@@ -9,9 +9,10 @@
 import { describe, expect, it } from "bun:test";
 import { WRITE_TOOLS, wrapToolRun } from "../lib/tools";
 import { MailboxBridge } from "../lib/bridge";
+import { tempMailboxDir } from "./helpers";
 
 function joinTempDir(): string {
-    return (import.meta.dir, "unused-mailbox-structure");
+    return tempMailboxDir("unused-mailbox-structure");
 }
 
 describe("结构编辑工具注册表", () => {
