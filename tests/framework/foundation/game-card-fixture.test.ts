@@ -35,6 +35,8 @@ interface CardBattleState {
     readonly enemyHp: number;
     readonly mana: number;
     readonly hand: readonly CardConfig[];
+    /** 终局结果：战斗结束后的胜败标记；未终局为 undefined。 */
+    readonly result: "win" | "lose" | undefined;
 }
 
 /** 可控模拟时钟：now() 返回当前模拟时间，只经 advance 推进，与真实时钟无关。 */
@@ -63,6 +65,8 @@ interface CardFixtureHooks {
         readonly state: CardBattleState;
         playCard(index: number): boolean;
         endTurn(): boolean;
+        /** 重置对局到初始状态（重开按钮命令）。 */
+        restart(): void;
     };
     /** 可控模拟时钟：推进回合，结果与真实时钟无关。 */
     readonly clock: CardSimClock;
@@ -79,6 +83,16 @@ interface CardFixtureHooks {
     readonly config: {
         readonly cards: readonly CardConfig[];
         readonly turnDurationMs: number;
+    };
+    /** 战场页 ViewModel 渲染钩子：观察 VM 反映战斗状态。 */
+    readonly viewModel: {
+        readonly node: (name: string) => {
+            text: string | undefined;
+            progress: number | undefined;
+            visible: boolean | undefined;
+            clickHandler: (() => void) | undefined;
+        };
+        render(): void;
     };
 }
 
@@ -211,7 +225,8 @@ describe.skipIf(!assemblyExists)(
             expect(first.turn).toBe(2);
             expect(first.phase).toBe("player");
             expect(first.enemyHp).toBe(2); // 初始 8 - 2 - 4
-            expect(first.playerHp).toBe(10);
+            // 敌方阶段 1500ms 内按默认配置攻击 3 次（500ms 间隔 * 2 伤害）
+            expect(first.playerHp).toBe(4); // 初始 10 - 3 * 2
         });
 
         test("the state machine expresses the turn flow via phase transitions", async () => {
@@ -465,6 +480,169 @@ describe.skipIf(!assemblyExists)(
             // 边界语义：达到时长即超时（>=），返回 player 且回合数 +1
             expect(fixture.battle.state.phase).toBe("player");
             expect(fixture.battle.state.turn).toBe(2);
+
+            await fixture.dispose();
+        });
+
+        test("enemy phase attacks the player at the configured interval", async () => {
+            const createCardFixture = await loadCreateCardFixture();
+            // 默认配置：enemyDamage 2 / enemyAttackIntervalMs 500 / turnDurationMs 1000
+            const fixture = createCardFixture();
+            await fixture.start();
+
+            fixture.battle.endTurn(); // -> enemy，phaseEnteredAt = 0
+            fixture.clock.advance(600); // 跨过 1 个攻击间隔（500ms）
+
+            // 敌方已攻击一次：玩家 HP 10 -> 8
+            expect(fixture.battle.state.playerHp).toBe(8);
+
+            await fixture.dispose();
+        });
+
+        test("enemy attacks settle multiple hits at once when the clock jumps", async () => {
+            const createCardFixture = await loadCreateCardFixture();
+            const fixture = createCardFixture();
+            await fixture.start();
+
+            fixture.battle.endTurn(); // -> enemy
+            fixture.clock.advance(1600); // 跨过 3 个攻击间隔（3 * 500ms），仍超时前
+
+            // 跳帧一次性结算 3 次攻击：玩家 HP 10 - 3 * 2 = 4
+            expect(fixture.battle.state.playerHp).toBe(4);
+
+            await fixture.dispose();
+        });
+
+        test("player HP never goes below zero from enemy attacks", async () => {
+            const createCardFixture = await loadCreateCardFixture();
+            // 玩家 HP 4，敌人每击 3 伤害：一击后归零，过量不产生负值
+            const fixture = createCardFixture({
+                configContent: {
+                    cards: [{ id: "strike", name: "Strike", cost: 1, damage: 1 }],
+                    turnDurationMs: 5000,
+                    playerHp: 4,
+                    enemyHp: 8,
+                    startMana: 3,
+                    enemyDamage: 3,
+                    enemyAttackIntervalMs: 500,
+                },
+            });
+            await fixture.start();
+
+            fixture.battle.endTurn();
+            fixture.clock.advance(600); // 一击 3 伤害 -> 玩家 HP 1
+            expect(fixture.battle.state.playerHp).toBe(1);
+
+            fixture.clock.advance(600); // 第二击 -> 玩家 HP 0（clamp）
+            expect(fixture.battle.state.playerHp).toBe(0);
+
+            await fixture.dispose();
+        });
+
+        test("enemy attacks drive a losing end with result lose", async () => {
+            const createCardFixture = await loadCreateCardFixture();
+            const fixture = createCardFixture({
+                configContent: {
+                    cards: [{ id: "strike", name: "Strike", cost: 1, damage: 1 }],
+                    turnDurationMs: 5000,
+                    playerHp: 2,
+                    enemyHp: 8,
+                    startMana: 3,
+                    enemyDamage: 2,
+                    enemyAttackIntervalMs: 500,
+                },
+            });
+            await fixture.start();
+
+            fixture.battle.endTurn();
+            fixture.clock.advance(600); // 一击 2 伤害 -> 玩家 HP 0，战败终局
+
+            expect(fixture.battle.state.phase).toBe("over");
+            expect(fixture.battle.state.result).toBe("lose");
+            expect(fixture.battle.state.playerHp).toBe(0);
+
+            await fixture.dispose();
+        });
+
+        test("a finishing blow on the enemy ends with result win", async () => {
+            const createCardFixture = await loadCreateCardFixture();
+            const fixture = createCardFixture({
+                configContent: {
+                    cards: [{ id: "strike", name: "Strike", cost: 1, damage: 4 }],
+                    turnDurationMs: 1000,
+                    playerHp: 10,
+                    enemyHp: 4,
+                    startMana: 2,
+                    enemyDamage: 2,
+                    enemyAttackIntervalMs: 500,
+                },
+            });
+            await fixture.start();
+
+            expect(fixture.battle.playCard(0)).toBe(true); // enemyHp 4 -> 0
+            expect(fixture.battle.state.phase).toBe("over");
+            expect(fixture.battle.state.result).toBe("win");
+
+            await fixture.dispose();
+        });
+
+        test("restart resets the battle to its initial state", async () => {
+            const createCardFixture = await loadCreateCardFixture();
+            const fixture = createCardFixture();
+            await fixture.start();
+
+            // 打出一张牌改变状态
+            expect(fixture.battle.playCard(0)).toBe(true);
+            expect(fixture.battle.state.enemyHp).toBe(6);
+
+            // 重开：战斗回到初始状态（phase player / turn 1 / HP 满）
+            fixture.battle.restart();
+            expect(fixture.battle.state.phase).toBe("player");
+            expect(fixture.battle.state.turn).toBe(1);
+            expect(fixture.battle.state.playerHp).toBe(10);
+            expect(fixture.battle.state.enemyHp).toBe(8);
+
+            await fixture.dispose();
+        });
+
+        test("ViewModel render reflects the battle state on the view nodes", async () => {
+            const createCardFixture = await loadCreateCardFixture();
+            const fixture = createCardFixture();
+            await fixture.start();
+
+            fixture.viewModel.render();
+
+            // 初始战斗状态映射到页面节点：HP / mana / 进度（默认 playerHp 10 / enemyHp 8 / mana 3）
+            const playerHpNode = fixture.viewModel.node("txt_player_hp");
+            expect(playerHpNode.text).toBe("HP 10");
+            const enemyHpNode = fixture.viewModel.node("txt_enemy_hp");
+            expect(enemyHpNode.text).toBe("HP 8");
+            expect(fixture.viewModel.node("txt_mana").text).toBe("3");
+            expect(fixture.viewModel.node("bar_enemy_hp").progress).toBe(1);
+            // 胜负提示初始隐藏
+            expect(fixture.viewModel.node("txt_result").visible).toBe(false);
+
+            await fixture.dispose();
+        });
+
+        test("ViewModel command bindings drive battle actions", async () => {
+            const createCardFixture = await loadCreateCardFixture();
+            const fixture = createCardFixture();
+            await fixture.start();
+
+            fixture.viewModel.render();
+            // 触发绑定到出牌的点击回调：卡牌 0 结算伤害
+            fixture.viewModel.node("btn_card_0").clickHandler?.();
+            expect(fixture.battle.state.enemyHp).toBe(6); // 8 - damage 2
+
+            // 触发结束回合：进入敌方阶段
+            fixture.viewModel.node("btn_end_turn").clickHandler?.();
+            expect(fixture.battle.state.phase).toBe("enemy");
+
+            // 触发重开：对局回到初始状态
+            fixture.viewModel.node("btn_restart").clickHandler?.();
+            expect(fixture.battle.state.phase).toBe("player");
+            expect(fixture.battle.state.enemyHp).toBe(8);
 
             await fixture.dispose();
         });

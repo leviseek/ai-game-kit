@@ -40,7 +40,7 @@ import {
     createCocosUiRoot,
     type CocosUiRoot,
 } from "../framework/adapters/cocos/ui/CocosUiRoot";
-import { runFixtureSmoke } from "../game/fixture/smoke";
+import { runFixtureSmoke, runCardBattleSmoke } from "../game/fixture/smoke";
 import { runFixturePerf, type PerfSample } from "../game/fixture/perf";
 import {
     createFairyGuiPageAdapter,
@@ -49,6 +49,7 @@ import {
     type FairyGuiPageAdapter,
     type FairyGuiPageHandle,
 } from "../framework/adapters/cocos/ui/FairyGuiPageAdapter";
+import { createFairyGuiViewHandle } from "../framework/adapters/cocos/ui/FairyGuiViewHandle";
 
 const { ccclass } = _decorator;
 
@@ -222,6 +223,13 @@ export class AppRoot extends Component {
                 setTimeout(() => {
                     this.runModalClickSmoke().catch((error) => {
                         console.error("[modal-click] sequence error", error);
+                    });
+                }, 1000);
+            } else if (params.get("smoke") === "card-battle") {
+                // 卡牌对战真实可玩冒烟：装配渲染器 + BattleView，驱动完整对局
+                setTimeout(() => {
+                    this.runCardBattleSmoke().catch((error) => {
+                        console.error("[card-battle] sequence error", error);
                     });
                 }, 1000);
             } else if (params.get("fixture") !== null) {
@@ -656,6 +664,61 @@ export class AppRoot extends Component {
             };
         }
         console.log("[modal-click] ready");
+    }
+
+    /**
+     * 冒烟触发：卡牌对战真实可玩冒烟。加载 CardGame 包并打开 BattleView 页面，
+     * 经 fgui 接缝把视图节点解析器注入游戏层 runCardBattleSmoke，驱动完整对局。
+     * 每步经 console 输出 `[card-battle]` 标记，由 headless Chrome + CDP 采集验证。
+     */
+    async runCardBattleSmoke(): Promise<void> {
+        const report = (step: string, ok: boolean, detail = "") => {
+            console.log(`[card-battle] ${step}: ${ok ? "ok" : "FAIL"}${detail ? ` (${detail})` : ""}`);
+        };
+
+        // 1. UI 根与页面适配器初始化
+        const ready = this.smokeUiInit();
+        report("ui-root-init", ready);
+        if (!ready) {
+            return;
+        }
+
+        // 2. 加载 CardGame package（assets/ui/CardGame/CardGame.bin → bundle "ui"）
+        let packageLoaded = false;
+        try {
+            const handle = await this.smokeUiLoadPackage("ui", "CardGame/CardGame");
+            packageLoaded = handle.state === "ready";
+            report("package-load", packageLoaded, String(handle.state));
+        } catch (error) {
+            report("package-load", false, error instanceof Error ? error.message : String(error));
+            return;
+        }
+        if (!packageLoaded || this.pageAdapter === undefined) {
+            report("battle-open", false, "package not loaded or adapter missing");
+            return;
+        }
+
+        // 3. 打开 BattleView 页面并拿真实视图（fgui GComponent）
+        const page = this.pageAdapter.createPage("card/battle", "normal", {
+            packageName: "CardGame",
+            resName: "BattleView",
+        });
+        if (page.disposed || page.view === undefined) {
+            report("battle-open", false, String(page.error ?? "no view"));
+            return;
+        }
+        this.pageAdapter.mount(page);
+        report("battle-open", true);
+
+        // 4. 注入 fgui 视图节点解析器，驱动游戏层完整对局
+        const node = createFairyGuiViewHandle(page.view as never);
+        await runCardBattleSmoke(node, report);
+
+        // 5. 释放：关闭页面、释放作用域
+        this.pageAdapter.destroy(page);
+        this.smokeUiRelease();
+
+        console.log("[card-battle] complete");
     }
 
     /**

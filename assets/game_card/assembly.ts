@@ -25,8 +25,17 @@ import {
     createCardConfigModule,
     type CardConfigHandle,
 } from "./logic/config";
-import { createCardInputModule, createCardInputSource } from "./logic/input";
+import {
+    createCardInputModule,
+    createCardInputSource,
+} from "./logic/input";
 import { createCardUiModule } from "./view/ui";
+import {
+    createCardBattleBindings,
+    createCardBattleViewModel,
+    type CardBattleCommands,
+} from "./view/view";
+import { createViewModelRenderer, type ViewModelNode } from "../framework";
 
 /** 缺省卡牌配置：回合时长与卡牌数值在夹具层内建，测试可注入覆盖。 */
 const DEFAULT_CARD_CONFIG_CONTENT: Record<string, unknown> = {
@@ -39,6 +48,8 @@ const DEFAULT_CARD_CONFIG_CONTENT: Record<string, unknown> = {
     playerHp: 10,
     enemyHp: 8,
     startMana: 3,
+    enemyAttackIntervalMs: 500,
+    enemyDamage: 2,
 };
 
 /**
@@ -65,9 +76,12 @@ export interface CardFixture extends GameFixture {
             readonly enemyHp: number;
             readonly mana: number;
             readonly hand: readonly CardConfig[];
+            readonly result: "win" | "lose" | undefined;
         };
         playCard(index: number): boolean;
         endTurn(): boolean;
+        /** 重置对局到初始状态（重开按钮命令）。 */
+        restart(): void;
     };
     /** 可控模拟时钟：推进回合，结果与真实时钟无关。 */
     readonly clock: {
@@ -88,6 +102,15 @@ export interface CardFixture extends GameFixture {
         readonly cards: readonly CardConfig[];
         readonly turnDurationMs: number;
     };
+    /**
+     * 战场页 ViewModel 渲染：暴露内存记录型视图节点，供测试断言 VM 反映
+     * 战斗状态（真实页面经 Cocos 冒烟装配 fgui 接缝）。
+     */
+    readonly viewModel: {
+        readonly node: (name: string) => CardBattleViewNode;
+        /** 按当前战斗状态渲染 VM 到记录型节点。 */
+        render(): void;
+    };
 }
 
 /**
@@ -95,6 +118,36 @@ export interface CardFixture extends GameFixture {
  * 钩子暴露给测试驱动。组合逻辑留在游戏层夹具内，AppRoot 只做薄转发
  * （design decision 3/4）。可控时间、回合流、配置、输入、UI 五类能力协作。
  */
+
+/** 内存记录型视图节点：记录 setter 与点击回调，供测试断言 VM 渲染。 */
+export interface CardBattleViewNode {
+    text: string | undefined;
+    progress: number | undefined;
+    visible: boolean | undefined;
+    clickHandler: (() => void) | undefined;
+}
+
+/**
+ * 把记录转换为渲染器消费的 ViewModelNode 实现，并附加 recording 引用：
+ * 测试经 clickHandler 触发命令绑定回调（渲染器 onClick 时写入）。
+ */
+function toViewModelNode(recording: CardBattleViewNode): ViewModelNode {
+    return {
+        setText: (value: string) => {
+            recording.text = value;
+        },
+        setProgress: (value: number) => {
+            recording.progress = value;
+        },
+        setVisible: (value: boolean) => {
+            recording.visible = value;
+        },
+        onClick: (handler: () => void) => {
+            recording.clickHandler = handler;
+        },
+    };
+}
+
 export function createCardFixture(
     options: CardFixtureOptions = {},
 ): CardFixture {
@@ -152,6 +205,40 @@ export function createCardFixture(
         modules,
     });
 
+    // 战场页 ViewModel：内存记录型视图节点（测试环境无 fgui），绑定声明把
+    // VM 映射到节点；render() 按当前战斗状态派生 VM 并全量刷新。真实页面由
+    // Cocos 冒烟经 FairyGuiViewHandle 接缝装配同名节点。
+    const viewNodes = new Map<string, CardBattleViewNode>();
+    // 惰性登记记录型节点：首次访问创建，renderer 与查询共用
+    const ensureViewNode = (name: string): CardBattleViewNode => {
+        let recording = viewNodes.get(name);
+        if (recording === undefined) {
+            recording = {
+                text: undefined,
+                progress: undefined,
+                visible: undefined,
+                clickHandler: undefined,
+            };
+            viewNodes.set(name, recording);
+        }
+        return recording;
+    };
+    const viewModelRenderer = createViewModelRenderer({
+        // 渲染器消费 ViewModelNode 包装，测试经 viewModel.node 读回 recording
+        node: (name: string) => toViewModelNode(ensureViewNode(name)),
+        bindings: createCardBattleBindings({
+            playCard: (index) => {
+                battle.playCard(index);
+            },
+            endTurn: () => {
+                battle.endTurn();
+            },
+            restart: () => {
+                battle.restart();
+            },
+        } satisfies CardBattleCommands),
+    });
+
     let disposed = false;
 
     return {
@@ -162,6 +249,7 @@ export function createCardFixture(
             },
             playCard: (index: number) => battle.playCard(index),
             endTurn: () => battle.endTurn(),
+            restart: () => battle.restart(),
         },
         clock: {
             now: () => clock.now(),
@@ -187,6 +275,16 @@ export function createCardFixture(
             cards: config.cards,
             turnDurationMs: config.turnDurationMs,
         },
+        viewModel: {
+            node: ensureViewNode,
+            render: () => {
+                // 按当前战斗状态派生 VM 并全量刷新记录型节点
+                const state = battle.state;
+                viewModelRenderer.setViewModel(
+                    createCardBattleViewModel(state, config.enemyHp),
+                );
+            },
+        },
         dispose: async () => {
             if (disposed) {
                 return;
@@ -194,6 +292,7 @@ export function createCardFixture(
             disposed = true;
             // 统一释放组合根持有的共享能力：模块 dispose 保持无副作用，
             // 避免 failRollback 探针复用模块实例时提前销毁夹具自身能力
+            viewModelRenderer.dispose();
             inputMapper.dispose();
             navigator.dispose();
             battle.dispose();

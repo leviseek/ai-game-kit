@@ -29,6 +29,8 @@ export interface CardBattleState {
     readonly enemyHp: number;
     readonly mana: number;
     readonly hand: readonly CardConfig[];
+    /** 终局结果：战斗结束后的胜败标记；未终局为 undefined。 */
+    readonly result: "win" | "lose" | undefined;
 }
 
 /** 代表性 FairyGUI route：路由标识由游戏层定义，呈现由适配层完成。 */

@@ -24,6 +24,7 @@ export function createFairyGuiMock(): {
         createObject(_pkg: string, _res: string): null;
     };
     GComponent: new () => FairyGuiGComponentMock;
+    GObject: new () => FairyGuiGComponentMock;
     GGraph: new () => FairyGuiGGraphMock;
     UIConfig: {
         modalLayerColor: FairyGuiColorMock;
@@ -137,6 +138,13 @@ export function createFairyGuiMock(): {
                 return _child;
             }
             removeChildren() { }
+        },
+        // GObject 基类别名：FairyGuiViewHandle 等边界仅经类型使用其符号
+        GObject: class {
+            name = "";
+            width = 0;
+            height = 0;
+            on(_type: string, _callback: () => void, _target?: unknown) { }
         },
         GGraph: class {
             name = "";

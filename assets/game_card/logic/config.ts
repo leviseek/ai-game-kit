@@ -14,6 +14,10 @@ export interface CardConfigHandle {
     readonly playerHp: number;
     readonly enemyHp: number;
     readonly startMana: number;
+    /** 敌方攻击间隔：敌方阶段每经过该时长攻击一次玩家。 */
+    readonly enemyAttackIntervalMs: number;
+    /** 敌方单次攻击伤害。 */
+    readonly enemyDamage: number;
 }
 
 /** 类型守卫：校验配置条目是合法的卡牌数值。 */
@@ -59,6 +63,8 @@ export function createCardConfig(content: Record<string, unknown>): CardConfigHa
         playerHp: table.read("playerHp", configNumber, 10),
         enemyHp: table.read("enemyHp", configNumber, 8),
         startMana: table.read("startMana", configNumber, 3),
+        enemyAttackIntervalMs: table.read("enemyAttackIntervalMs", configNumber, 500),
+        enemyDamage: table.read("enemyDamage", configNumber, 2),
     };
 }
 

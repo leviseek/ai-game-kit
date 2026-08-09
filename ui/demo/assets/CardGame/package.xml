@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<packageDescription id="cgpk0001">
+  <resources>
+    <component id="cg005" name="BattleView.xml" path="/" exported="true"/>
+    <image id="cg004" name="hp_fill.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="cg003" name="hp_track.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="cg002" name="btn_card_down.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="cg001" name="btn_card_up.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="cg000" name="bg_battle.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+  </resources>
+  <publish name=""/>
+</packageDescription>

@@ -3,6 +3,13 @@ import {
     gameFixtureRegistry,
     type GameFixtureRegistry,
 } from "./registry";
+import type { ViewModelNode } from "../../framework";
+import { createViewModelRenderer } from "../../framework";
+import { createCardFixture } from "../../game_card/assembly";
+import {
+    createCardBattleBindings,
+    createCardBattleViewModel,
+} from "../../game_card/view/view";
 
 /**
  * 按品类夹具驱动一次完整生命周期冒烟：构造夹具并依次执行
@@ -72,4 +79,73 @@ export async function runFixtureSmoke(
             return;
         }
     }
+}
+
+/**
+ * 卡牌对战真实可玩冒烟：装配 game_card 夹具 + ViewModel 渲染器，经注入的
+ * 视图节点解析器（boot 侧 fgui 接缝）驱动完整对局——出牌/结束回合/敌攻/
+ * 胜负/重开。每步经 report 回调输出 `[card-battle]` 标记。组合逻辑留在
+ * 游戏层夹具，boot/AppRoot 只注入节点解析器（design decision 3/4）。
+ */
+export async function runCardBattleSmoke(
+    node: (name: string) => ViewModelNode | undefined,
+    report: (step: string, ok: boolean, detail?: string) => void,
+): Promise<void> {
+    const fixture = createCardFixture();
+    await fixture.start();
+
+    const renderer = createViewModelRenderer({
+        node,
+        bindings: createCardBattleBindings({
+            playCard: (index) => {
+                fixture.battle.playCard(index);
+            },
+            endTurn: () => {
+                fixture.battle.endTurn();
+            },
+            restart: () => {
+                fixture.battle.restart();
+            },
+        }),
+    });
+
+    const render = (): void => {
+        renderer.setViewModel(
+            createCardBattleViewModel(fixture.battle.state, 8),
+        );
+    };
+
+    // 完整对局：出牌 → 结束回合 → 敌攻 → 胜负 → 重开
+    render();
+    report("render-initial", true);
+
+    fixture.battle.playCard(0); // 卡牌 0 伤害 2
+    render();
+    report(
+        "play-card",
+        fixture.battle.state.enemyHp === 6,
+        `enemyHp=${fixture.battle.state.enemyHp}`,
+    );
+
+    fixture.battle.endTurn(); // 进入敌方阶段
+    fixture.clock.advance(600); // 敌攻一次（默认间隔 500ms）
+    render();
+    report(
+        "enemy-attack",
+        fixture.battle.state.playerHp === 8,
+        `playerHp=${fixture.battle.state.playerHp}`,
+    );
+
+    // 重开重置
+    fixture.battle.restart();
+    render();
+    const restartState = fixture.battle.state;
+    report(
+        "restart",
+        restartState.phase === "player" && restartState.enemyHp === 8,
+        `phase=${restartState.phase} enemyHp=${restartState.enemyHp}`,
+    );
+
+    await fixture.dispose();
+    renderer.dispose();
 }
