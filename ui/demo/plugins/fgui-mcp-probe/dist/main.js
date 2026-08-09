@@ -15,6 +15,7 @@ const pkg_open_1 = require("./probes/pkg-open");
 const server_1 = require("./mailbox/server");
 const handlers_1 = require("./mailbox/handlers");
 const handlers_write_1 = require("./mailbox/handlers-write");
+const publish_signal_1 = require("./mailbox/publish-signal");
 const App = FairyEditor.App;
 globalThis.__fguiMcpProbe_onPublishFired = false;
 let mailboxServer = null;
@@ -176,7 +177,21 @@ function onPublishEnd(pkgs) {
     for (let i = 0; i < pkgs.Length; i++)
         names.push(pkgs.get_Item(i).name);
     result_1.ProbeResultWriter.record("hook-publish-end", { packages: names });
-    (0, result_1.probeLog)(`onPublishEnd 触发，包: ${names.join(",")}`);
+    const project = App.project;
+    if (project) {
+        const publishSettings = project.GetSettings("Publish");
+        const path = (0, publish_signal_1.writePublishSignal)({
+            ok: true,
+            ts: new Date().toISOString(),
+            packages: names,
+            exportPath: publishSettings?.path ?? "",
+            isSuccess: true,
+        });
+        (0, result_1.probeLog)(`onPublishEnd 触发，包: ${names.join(",")}，信号已写 ${path}`);
+    }
+    else {
+        (0, result_1.probeLog)(`onPublishEnd 触发，包: ${names.join(",")}`);
+    }
 }
 function onDestroy() {
     stopMailboxServer();

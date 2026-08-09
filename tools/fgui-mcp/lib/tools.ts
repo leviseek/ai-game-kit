@@ -6,6 +6,7 @@
 import { MailboxBridge, isBridgeReachable } from "./bridge";
 import { runFguiCli } from "./fgui-cli";
 import { FguiMcpError } from "./paths";
+import { checkPublish, type CheckPublishResult } from "./check-publish";
 
 /** 工具统一返回形态：结构化数据 + 可选 bridge 状态。 */
 export interface ToolResult {
@@ -117,6 +118,33 @@ export const WRITE_TOOLS: Record<string, { description: string; run: (bridge: Ma
             "向目标文档插入组件。参数: package（包名）、component（要插入的组件名）、doc（目标文档组件名）。" +
             "返回 inserted/isModified/childrenDelta/opDocIsActive；可见性需人工或截图确认。",
         run: (bridge, params) => bridgeResult(bridge, "insert_component", params),
+    },
+};
+
+/**
+ * 检测工具：发布结果一致性检测（三重证据：信号 + 产物新鲜度 + validate --strict）。
+ * 走外部文件检测（check-publish.ts），不依赖编辑器桥——发布动作已由用户在编辑器完成。
+ */
+export interface CheckPublishToolOptions {
+    readonly signalPath: string;
+    readonly project: import("./paths").FguiProjectInfo;
+}
+
+export const CHECK_PUBLISH_TOOL: {
+    description: string;
+    run: (options: CheckPublishToolOptions, params: Record<string, unknown>) => ToolResult;
+} = {
+    description:
+        "检测发布结果与源一致性（三重证据：编辑器发布信号 + 产物 mtime 新鲜度 + validate --strict）。" +
+        "参数: 可选 packages（指定包，默认取信号中的包或全部产物包）。" +
+        "返回 evidence 与 mismatches；任一证据缺失判定失败。前置：用户在编辑器执行发布。",
+    run: (options, params) => {
+        const packages = (params["packages"] as string[] | undefined) ?? [];
+        const result: CheckPublishResult = checkPublish(options.project, {
+            signalPath: options.signalPath,
+            packages,
+        });
+        return { ok: result.ok, data: result };
     },
 };
 

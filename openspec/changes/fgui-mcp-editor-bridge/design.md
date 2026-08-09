@@ -53,6 +53,8 @@ MCP server（`tools/fgui-mcp/`，标准 MCP SDK devDependency，**已实现**：
 
 发布前记录源 XML/PNG 状态（git status/mtime/hash）→ 发布后 `validate --strict` 全绿 + 产物 mtime 新鲜 + 编辑器发布信号，三者同时满足视为产物与源一致；失败返回差异明细。备选的"源 XML → 期望产物哈希"回归基准仅作后期优化。
 
+**阶段 3 已实现**：插件 `onPublishEnd` 钩子写 `publish-signal.json`（`lib/publish-signal.ts`，含包列表/时间戳/exportPath/isSuccess）；MCP 侧 `lib/check-publish.ts` + `fgui_check_publish` 工具做三重证据判定（信号新鲜度 <2min + 产物 mtime ≥ 源最新 + validate --strict），失败返回 `mismatches` 差异明细。单测覆盖陈旧 bin、信号缺失、产物缺失（`test/check-publish.test.ts`，6 例）。检测不依赖编辑器桥可达性（发布已由用户完成），工具注册共 11 个。
+
 ### 6. 组件插入走证据充分的 API 路线（v2：显式激活 + 数据取证）
 
 - item 查找用 `FindItemByName`/`items` 遍历（有真实证据）；`GetItemByPath` 实机语义已收敛为 `"/DemoView"`（前导斜杠 + 无扩展名）。
@@ -82,6 +84,6 @@ MCP server（`tools/fgui-mcp/`，标准 MCP SDK devDependency，**已实现**：
 1. 阶段 0：探针插件验证未知区——`pkg.Open()`、文件邮箱、`PublishHandler.Run()`、HttpListener、insert-object **全部实测通过**（见 `ui/demo/plugins/fgui-mcp-probe/docs/probe-results.md`），未知区清单收敛完毕。
 2. 阶段 1：MCP server 骨架 + 读工具（包/资源/依赖/发布配置/活动文档），主桥接通道为文件邮箱，与 `tools/fgui` CLI 输出交叉验证。**已完成**。
 3. 阶段 2：写工具——发布配置切换（复用 `MenuMain_Publish` 链路）+ 组件插入（v2 复测通过后，按决策 6 固化）。**已完成**（4 写工具 + 单测）。
-4. 阶段 3：半自动发布闭环（改源 → 配置切换 → 用户点击发布 → 邮箱检测 → validate）。
+4. 阶段 3：半自动发布闭环（改源 → 配置切换 → 用户点击发布 → 邮箱检测 → validate）。**已完成**（发布信号 + 三重证据检测 + 单测）。
 5. 阶段 4（可选）：`Run()` 复测通过、HttpListener 增强通道就绪后开放全自动发布。
 回滚：新组件全部独立于 `tools/fgui` 与运行时，回滚即删除 `tools/fgui-mcp/` 与插件目录，现有确定性工作流零影响。

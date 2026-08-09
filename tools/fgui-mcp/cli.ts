@@ -11,7 +11,8 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { MailboxBridge } from "./lib/bridge";
 import { locateProject } from "./lib/paths";
-import { READ_TOOLS, WRITE_TOOLS, wrapToolRun, type ToolResult } from "./lib/tools";
+import { CHECK_PUBLISH_TOOL, READ_TOOLS, WRITE_TOOLS, wrapToolRun, type ToolResult } from "./lib/tools";
+import { join } from "node:path";
 
 async function main(): Promise<void> {
     const project = locateProject();
@@ -59,6 +60,20 @@ async function main(): Promise<void> {
             };
         });
     }
+
+    // 检测工具：发布一致性（走外部文件检测，不依赖编辑器桥可达性）
+    server.registerTool("fgui_check_publish", {
+        description: CHECK_PUBLISH_TOOL.description,
+        inputSchema: {
+            packages: z.array(z.string()).optional().describe("指定包（默认取信号中的包或全部产物包）"),
+        },
+    }, async (args) => {
+        const signalPath = join(project.probeDir, "publish-signal.json");
+        const result: ToolResult = CHECK_PUBLISH_TOOL.run({ signalPath, project }, args);
+        return {
+            content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+        };
+    });
 
     const transport = new StdioServerTransport();
     await server.connect(transport);

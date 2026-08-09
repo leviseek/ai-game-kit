@@ -28,10 +28,10 @@
 
 ## 4. 阶段 3：半自动发布闭环与一致性检测
 
-- [ ] 4.1 在插件中注册 `onPublishEnd`/`onPublish` 钩子：写邮箱文件（含包列表、时间戳），必要时读 `isSuccess`/`exportPath`
-- [ ] 4.2 MCP server 实现产物检测：发布信号 + 产物 mtime/hash 新鲜度 + `bun run fgui validate --strict` 三重证据判定，失败返回差异明细
-- [ ] 4.3 实现端到端 demo：改源 XML → 配置切换 → 用户点击发布 → 自动检测 → validate 报告
-- [ ] 4.4 补充检测链路测试：陈旧 bin 被标记、邮箱信号缺失被标记、validate 失败被标记
+- [x] 4.1 在插件中注册 `onPublishEnd`/`onPublish` 钩子：写邮箱文件（含包列表、时间戳），必要时读 `isSuccess`/`exportPath`
+- [x] 4.2 MCP server 实现产物检测：发布信号 + 产物 mtime/hash 新鲜度 + `bun run fgui validate --strict` 三重证据判定，失败返回差异明细
+- [x] 4.3 实现端到端 demo：改源 XML → 配置切换 → 用户点击发布 → 自动检测 → validate 报告
+- [x] 4.4 补充检测链路测试：陈旧 bin 被标记、邮箱信号缺失被标记、validate 失败被标记
 
 ## 5. 阶段 4（Run() 已复测通过，可推进）
 

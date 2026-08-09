@@ -20,6 +20,7 @@ import {
     handleRestorePublishSettings,
     handleSwitchPublishSettings,
 } from "./mailbox/handlers-write";
+import { writePublishSignal } from "./mailbox/publish-signal";
 
 const App = FairyEditor.App;
 
@@ -217,7 +218,21 @@ export function onPublishEnd(pkgs: CS.System.Array$1<CS.FairyEditor.FPackage>): 
     const names: string[] = [];
     for (let i = 0; i < pkgs.Length; i++) names.push(pkgs.get_Item(i).name);
     ProbeResultWriter.record("hook-publish-end", { packages: names });
-    probeLog(`onPublishEnd 触发，包: ${names.join(",")}`);
+    // 半自动闭环：写发布信号邮箱文件，MCP 侧据此判定"发布动作已发生"
+    const project = App.project;
+    if (project) {
+        const publishSettings = project.GetSettings("Publish") as any;
+        const path = writePublishSignal({
+            ok: true,
+            ts: new Date().toISOString(),
+            packages: names,
+            exportPath: publishSettings?.path ?? "",
+            isSuccess: true,
+        });
+        probeLog(`onPublishEnd 触发，包: ${names.join(",")}，信号已写 ${path}`);
+    } else {
+        probeLog(`onPublishEnd 触发，包: ${names.join(",")}`);
+    }
 }
 
 export function onDestroy(): void {
