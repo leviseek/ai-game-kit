@@ -4,7 +4,7 @@
     <image id="cg_bg0" name="bg_battle" src="cg000" fileName="img/bg_battle.png" xy="0,0" size="1280,720">
       <relation target="" sidePair="width-width,height-height"/>
     </image>
-    <component id="cg_bar0" name="bar_enemy_hp" src="gcza1p" fileName="ProgressBar/ProgressBar.xml" pkg="nk9ejx23" xy="400,36" size="480,28">
+    <component id="cg_bar0" name="bar_enemy_hp" src="com01" fileName="CommonProgressBar.xml" pkg="cmn00001" xy="400,36" size="480,28">
       <relation target="" sidePair="center-center,top-top"/>
       <ProgressBar value="100" max="100"/>
     </component>
@@ -13,20 +13,20 @@
     </text>
     <text id="cg_txt1" name="txt_player_hp" xy="40,520" size="220,36" fontSize="20" color="#ffffff" align="left" vAlign="middle" autoSize="none" singleLine="true" text="HP 10"/>
     <text id="cg_txt2" name="txt_mana" xy="40,562" size="220,36" fontSize="20" color="#ffffff" align="left" vAlign="middle" autoSize="none" singleLine="true" text="3"/>
-    <component id="cg_btn0" name="btn_card_0" src="xualm" fileName="Button/Button.xml" pkg="nk9ejx23" xy="270,568" size="180,110">
+    <component id="cg_btn0" name="btn_card_0" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="270,568" size="180,110">
       <Button title="Card 1" titleColor="#ffffff"/>
     </component>
-    <component id="cg_btn1" name="btn_card_1" src="xualm" fileName="Button/Button.xml" pkg="nk9ejx23" xy="470,568" size="180,110">
+    <component id="cg_btn1" name="btn_card_1" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="470,568" size="180,110">
       <Button title="Card 2" titleColor="#ffffff"/>
     </component>
-    <component id="cg_btn2" name="btn_card_2" src="xualm" fileName="Button/Button.xml" pkg="nk9ejx23" xy="670,568" size="180,110">
+    <component id="cg_btn2" name="btn_card_2" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="670,568" size="180,110">
       <Button title="Card 3" titleColor="#ffffff"/>
     </component>
-    <component id="cg_btn3" name="btn_end_turn" src="xualm" fileName="Button/Button.xml" pkg="nk9ejx23" xy="1040,568" size="180,52">
+    <component id="cg_btn3" name="btn_end_turn" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="1040,568" size="180,52">
       <Button title="结束回合" titleColor="#ffffff"/>
     </component>
     <text id="cg_result" name="txt_result" xy="440,280" size="400,80" fontSize="40" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="胜利" visible="false"/>
-    <component id="cg_btn4" name="btn_restart" src="xualm" fileName="Button/Button.xml" pkg="nk9ejx23" xy="540,376" size="200,52">
+    <component id="cg_btn4" name="btn_restart" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="540,376" size="200,52">
       <Button title="重新开始" titleColor="#ffffff"/>
     </component>
   </displayList>

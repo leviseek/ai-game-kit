@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<packageDescription id="cmn00001">
+  <resources>
+    <component id="com01" name="CommonProgressBar.xml" path="/" exported="true"/>
+    <component id="com00" name="CommonButton.xml" path="/" exported="true"/>
+    <image id="pb001" name="progress_fill.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="pb000" name="progress_track.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="btn02" name="btn_common_over.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="btn01" name="btn_common_down.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="btn00" name="btn_common_up.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+  </resources>
+  <publish name=""/>
+</packageDescription>

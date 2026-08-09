@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="1280,720">
+  <displayList>
+    <image id="lv_bg" name="img_bg" src="fmn11" fileName="img/background.png" xy="0,0" size="1280,720">
+      <relation target="" sidePair="width-width,height-height"/>
+    </image>
+    <text id="lv_title" name="txt_title" xy="440,72" size="400,48" fontSize="32" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="选择游戏">
+      <relation target="" sidePair="center-center"/>
+    </text>
+
+    <component id="lv_btn_card" name="btn_card" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="256,184" size="240,112">
+      <Button title=""/>
+    </component>
+    <text id="lv_card_name" name="txt_card_name" xy="256,184" size="240,112" fontSize="24" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="卡牌对战"/>
+
+    <component id="lv_btn_fight" name="btn_fight" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="520,184" size="240,112" grayed="true">
+      <Button title=""/>
+    </component>
+    <text id="lv_fight_name" name="txt_fight_name" xy="520,184" size="240,112" fontSize="20" color="#cccccc" align="center" vAlign="middle" autoSize="none" singleLine="false" text="格斗&#xA;敬请期待"/>
+
+    <component id="lv_btn_idle" name="btn_idle" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="784,184" size="240,112" grayed="true">
+      <Button title=""/>
+    </component>
+    <text id="lv_idle_name" name="txt_idle_name" xy="784,184" size="240,112" fontSize="20" color="#cccccc" align="center" vAlign="middle" autoSize="none" singleLine="false" text="挂机&#xA;敬请期待"/>
+
+    <component id="lv_btn_rpg" name="btn_rpg" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="388,320" size="240,112" grayed="true">
+      <Button title=""/>
+    </component>
+    <text id="lv_rpg_name" name="txt_rpg_name" xy="388,320" size="240,112" fontSize="20" color="#cccccc" align="center" vAlign="middle" autoSize="none" singleLine="false" text="RPG&#xA;敬请期待"/>
+
+    <component id="lv_btn_tycoon" name="btn_tycoon" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="652,320" size="240,112" grayed="true">
+      <Button title=""/>
+    </component>
+    <text id="lv_tycoon_name" name="txt_tycoon_name" xy="652,320" size="240,112" fontSize="20" color="#cccccc" align="center" vAlign="middle" autoSize="none" singleLine="false" text="经营&#xA;敬请期待"/>
+  </displayList>
+</component>
