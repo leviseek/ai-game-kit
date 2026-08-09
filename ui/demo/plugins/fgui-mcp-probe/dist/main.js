@@ -12,6 +12,7 @@ const insert_object_1 = require("./probes/insert-object");
 const publish_handler_1 = require("./probes/publish-handler");
 const http_listener_1 = require("./probes/http-listener");
 const pkg_open_1 = require("./probes/pkg-open");
+const settimeout_1 = require("./probes/settimeout");
 const server_1 = require("./mailbox/server");
 const handlers_1 = require("./mailbox/handlers");
 const handlers_write_1 = require("./mailbox/handlers-write");
@@ -23,6 +24,13 @@ let mailboxServer = null;
 let updateHandler = null;
 let timerHandler = null;
 const g = globalThis;
+function ensureRunInBackground() {
+    try {
+        CS.UnityEngine.Application.runInBackground = true;
+    }
+    catch {
+    }
+}
 function stopMailboxServer() {
     if (updateHandler) {
         try {
@@ -56,12 +64,15 @@ function buildMailboxServer(objsPath) {
     mailboxServer.register("insert_component", handlers_write_1.handleInsertComponent);
     mailboxServer.register("trigger_publish", (0, handlers_publish_1.createTriggerPublishHandler)(mailboxServer));
     const server = mailboxServer;
+    ensureRunInBackground();
     updateHandler = () => {
+        ensureRunInBackground();
         server.tick();
     };
     App.add_onUpdate(updateHandler);
     try {
         timerHandler = () => {
+            ensureRunInBackground();
             server.tick();
             if (timerHandler) {
                 FairyGUI.Timers.inst.Add(0.3, 1, timerHandler);
@@ -106,6 +117,7 @@ function registerMenu() {
     probeMenu.AddItem("PublishHandler.Run", "publish-handler", () => (0, publish_handler_1.runPublishHandlerProbe)());
     probeMenu.AddItem("HttpListener", "http-listener", () => (0, http_listener_1.runHttpListenerProbe)());
     probeMenu.AddItem("文件邮箱", "file-mailbox", () => (0, http_listener_1.runFileMailboxProbe)());
+    probeMenu.AddItem("setTimeout", "settimeout", () => (0, settimeout_1.runSetTimeoutProbe)());
     probeMenu.AddItem("pkg.Open", "pkg-open", () => (0, pkg_open_1.runPkgOpenProbe)());
     probeMenu.AddSeperator();
     probeMenu.AddItem("启动邮箱服务器", "mailbox-start", () => startMailboxServer());
@@ -116,6 +128,7 @@ function registerMenu() {
         (0, http_listener_1.runHttpListenerProbe)();
         (0, http_listener_1.runFileMailboxProbe)();
         (0, pkg_open_1.runPkgOpenProbe)();
+        (0, settimeout_1.runSetTimeoutProbe)();
         (0, result_1.probeLog)(`全部探针执行完毕，结果见 ${result_1.ProbeResultWriter.getResultsFile()}`);
     });
     (0, result_1.probeLog)("FGUI MCP 探针菜单注册完成");

@@ -4,6 +4,7 @@ exports.MailboxServer = exports.isDeferredResult = void 0;
 exports.listToArray = listToArray;
 const protocol_1 = require("./protocol");
 Object.defineProperty(exports, "isDeferredResult", { enumerable: true, get: function () { return protocol_1.isDeferredResult; } });
+const result_1 = require("../common/result");
 class MailboxServer {
     requestsDir;
     responsesDir;
@@ -68,6 +69,7 @@ class MailboxServer {
     }
     processFile(path) {
         const File = CS.System.IO.File;
+        const t0 = Date.now();
         try {
             const raw = File.ReadAllText(path);
             const req = JSON.parse(raw);
@@ -75,18 +77,22 @@ class MailboxServer {
             let resp;
             if (!handler) {
                 resp = { id: req.id, ok: false, error: `未注册的方法: ${req.method}` };
+                (0, result_1.probeLog)(`收到请求 method=${req.method} id=${req.id} → 未注册方法`);
             }
             else {
                 try {
                     const params = Object.assign({}, req.params ?? {}, { __requestId: req.id });
                     const result = handler(params);
                     if ((0, protocol_1.isDeferredResult)(result)) {
+                        (0, result_1.probeLog)(`收到请求 method=${req.method} id=${req.id} → 已受理（异步响应，${Date.now() - t0}ms）`);
                         return;
                     }
                     resp = { id: req.id, ok: true, result };
+                    (0, result_1.probeLog)(`收到请求 method=${req.method} id=${req.id} → 已响应（${Date.now() - t0}ms）`);
                 }
                 catch (e) {
                     resp = { id: req.id, ok: false, error: String(e && e.message ? e.message : e) };
+                    (0, result_1.probeLog)(`收到请求 method=${req.method} id=${req.id} → 异常: ${e && e.message ? e.message : e}`);
                 }
             }
             const tmpPath = path + ".tmp";

@@ -6,6 +6,7 @@ import { runInsertObjectProbe } from "./probes/insert-object";
 import { runPublishHandlerProbe } from "./probes/publish-handler";
 import { runHttpListenerProbe, runFileMailboxProbe } from "./probes/http-listener";
 import { runPkgOpenProbe } from "./probes/pkg-open";
+import { runSetTimeoutProbe } from "./probes/settimeout";
 import { MailboxServer } from "./mailbox/server";
 import {
     handleGetActiveContext,
@@ -39,6 +40,20 @@ let timerHandler: (() => void) | null = null;
  * 注：宿主会在两个隔离 JS 环境各执行一次 main.js，globalThis 跨环境不共享。
  */
 const g = globalThis as any;
+
+/**
+ * 允许 Unity 编辑器后台运行：默认窗口失焦/后台时 Unity 暂停主循环，
+ * 插件 add_onUpdate/Timers 均不驱动 → 邮箱轮询停摆（聚焦依赖问题根因）。
+ * 设 runInBackground=true 后，后台也跑主循环，定时器照常触发。
+ * 注意：F5 预览/部分模式会覆盖该标志，需在每个轮询驱动里持续重置（FairyGUI-MCP 同款模式）。
+ */
+function ensureRunInBackground(): void {
+    try {
+        CS.UnityEngine.Application.runInBackground = true;
+    } catch {
+        /* 设置失败则保持默认行为（前台才轮询） */
+    }
+}
 
 /** 停止邮箱服务器驱动：移除 add_onUpdate 回调与 Timers 定时器。刷新/卸载/重建前必须调用。 */
 function stopMailboxServer(): void {
@@ -79,14 +94,16 @@ function buildMailboxServer(objsPath: string): void {
 
     // 双驱动轮询：add_onUpdate（有帧时响应）与 Timers.inst（真实时间调度）。
     // 哪个可用都能驱动 tick；tick 内部有 300ms 时间门控，双驱动天然去重。
-    // 背景：编辑器空闲时 add_onUpdate 可能停帧，Timers.inst 若被编辑器驱动则按时间触发；
-    // 无法确定两者在目标版本的行为，双挂提高命中率。
+    // 关键：持续重置 runInBackground，确保窗口后台时主循环仍运行、定时器仍触发（根治聚焦依赖）。
+    ensureRunInBackground();
     updateHandler = (): void => {
+        ensureRunInBackground();
         server.tick();
     };
     App.add_onUpdate(updateHandler);
     try {
         timerHandler = (): void => {
+            ensureRunInBackground();
             server.tick();
             if (timerHandler) {
                 FairyGUI.Timers.inst.Add(0.3, 1, timerHandler);
@@ -139,6 +156,7 @@ function registerMenu(): void {
     probeMenu.AddItem("PublishHandler.Run", "publish-handler", () => runPublishHandlerProbe());
     probeMenu.AddItem("HttpListener", "http-listener", () => runHttpListenerProbe());
     probeMenu.AddItem("文件邮箱", "file-mailbox", () => runFileMailboxProbe());
+    probeMenu.AddItem("setTimeout", "settimeout", () => runSetTimeoutProbe());
     probeMenu.AddItem("pkg.Open", "pkg-open", () => runPkgOpenProbe());
     probeMenu.AddSeperator();
     probeMenu.AddItem("启动邮箱服务器", "mailbox-start", () => startMailboxServer());
@@ -149,6 +167,7 @@ function registerMenu(): void {
         runHttpListenerProbe();
         runFileMailboxProbe();
         runPkgOpenProbe();
+        runSetTimeoutProbe();
         probeLog(`全部探针执行完毕，结果见 ${ProbeResultWriter.getResultsFile()}`);
     });
 

@@ -76,7 +76,8 @@ MCP server（`tools/fgui-mcp/`，标准 MCP SDK devDependency，**已实现**：
 - [activeDoc.InsertObject 插入可能落在非前台文档（探针 v1 实测陷阱）] → 已复测：本工程 `OpenDocument(url, true)` 同步激活，`App.activeDoc === 操作对象` 成立；实现时仍保留引用相等性校验与 `docView.activeDoc = doc` 兜底，规避跨版本激活语义差异。
 - [工程为无分支形态，branch 空串发布已实测合法] → MCP 工具显式支持空分支（发布到主干）。
 - [pkg.Open() 刷新会让编辑区闪烁（实测确认"是"）] → 工具返回中显式提示副作用。
-- [**编辑器窗口失焦/后台时主循环暂停（已实测）**：插件侧 add_onUpdate/Timers 均不驱动 → 邮箱服务器不轮询 → MCP 请求超时。cross-verify 在编辑器前台稳定可达、后台必不可达] → 调用 MCP 工具前保持编辑器前台；MCP 侧错误信息提示焦点约束。**对阶段 4 的决策影响**：若需无人值守全自动，文件邮箱主通道受此约束，HTTP 通道（回调线程不依赖主循环）可能是更优解，需在阶段 4 复测其后台可用性。
+- [**编辑器窗口失焦/后台时主循环暂停 → 聚焦依赖（已根治）**：Unity 默认后台暂停主循环，插件 add_onUpdate/Timers 均不驱动 → 邮箱轮询停摆。参考 `D:\git-clone\FairyGUI-MCP` 的 Lua 插件，解法是 **`CS.UnityEngine.Application.runInBackground = true`**：允许后台运行主循环，定时器后台照常触发；F5/预览等模式会覆盖该标志，需在每个轮询驱动里持续重置（FairyGUI-MCP 同款模式）。已实现于插件 `ensureRunInBackground()`（启动 + 两个 tick 驱动内均调用）。**注意**：此前尝试的「后台线程驱动」（setTimeout、HttpListener 自驱动链）均不可行——setTimeout 随主循环停摆；HttpListener 回调线程访问 JS 闭包触发 Puerts 未定义行为导致编辑器闪退。runInBackground 是唯一正确解法。]
+- [**后台线程方案在 Puerts 不可行（实测闪退，已放弃）**：setTimeout 探针证实其随主循环停摆；HttpListener 后台自驱动链探针因「后台线程回调访问 JS 闭包」触发 Puerts 未定义行为，编辑器卡死闪退] → **Puerts 后台线程与 JS 状态不互通，任何「后台线程驱动 JS 轮询」方案不可行**。正确解法是 `runInBackground = true`（见上一条，已根治）。HTTP 通道若作增强仍需谨慎：其回调同样在线程池，访问 JS 状态有同类风险。
 - [**插件刷新/热重载重复启动（已修复）**：编辑器刷新插件会重跑 main.js，若旧实例的 add_onUpdate/Timers 驱动未移除，会与新实例 server 同时 tick 竞争同一邮箱目录导致编辑器卡死] → 插件侧 `stopMailboxServer()` 对称移除驱动（保存 updateHandler/timerHandler 句柄），`buildMailboxServer` 重建前先停旧驱动，`onDestroy` 走同一清理路径并删初始化锁。刷新后为干净重启，单 server 实例。
 - [插件崩溃可能拖累编辑器] → 插件代码最小化、只做确定性操作；MCP 方案失败不影响现有 `tools/fgui` 工作流。
 

@@ -1,5 +1,6 @@
 import FairyEditor = CS.FairyEditor;
 import { isDeferredResult, type DeferredResponse } from "./protocol";
+import { probeLog } from "../common/result";
 
 /**
  * 邮箱请求分发：MCP server 侧发起的读/写请求。
@@ -97,6 +98,7 @@ export class MailboxServer {
 
     private processFile(path: string): void {
         const File = CS.System.IO.File;
+        const t0 = Date.now();
         try {
             const raw = File.ReadAllText(path);
             const req = JSON.parse(raw) as MailboxHandlerRequest;
@@ -104,6 +106,7 @@ export class MailboxServer {
             let resp: MailboxHandlerResponse;
             if (!handler) {
                 resp = { id: req.id, ok: false, error: `未注册的方法: ${req.method}` };
+                probeLog(`收到请求 method=${req.method} id=${req.id} → 未注册方法`);
             } else {
                 try {
                     // 注入请求 id，供异步（deferred）handler 回写响应时定位
@@ -111,11 +114,14 @@ export class MailboxServer {
                     const result = handler(params);
                     if (isDeferredResult(result)) {
                         // 异步请求：响应由 handler 稍后经 writeResponse 写入；请求文件已读完，无需在此写
+                        probeLog(`收到请求 method=${req.method} id=${req.id} → 已受理（异步响应，${Date.now() - t0}ms）`);
                         return;
                     }
                     resp = { id: req.id, ok: true, result };
+                    probeLog(`收到请求 method=${req.method} id=${req.id} → 已响应（${Date.now() - t0}ms）`);
                 } catch (e: any) {
                     resp = { id: req.id, ok: false, error: String(e && e.message ? e.message : e) };
+                    probeLog(`收到请求 method=${req.method} id=${req.id} → 异常: ${e && e.message ? e.message : e}`);
                 }
             }
             // 先写 tmp 再改名，避免 MCP 侧读到半写文件

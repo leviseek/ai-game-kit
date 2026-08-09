@@ -125,10 +125,13 @@
 
 将本文件结论回填到 `openspec/changes/fgui-mcp-editor-bridge/design.md` 的未知区与阶段 4 判定。
 
-## 已知平台约束（重要）
+## 已知平台约束（重要，已根治）
 
-**FairyGUI 编辑器（Unity 内核）窗口失焦/后台时会暂停主循环。** 插件侧 `add_onUpdate` 与 `Timers.inst` 均由编辑器主循环驱动，窗口在后台时均不触发 → 邮箱服务器不轮询 → MCP 请求超时「编辑器桥不可达」。
+**FairyGUI 编辑器（Unity 内核）窗口失焦/后台时默认暂停主循环** → 插件 `add_onUpdate`/`Timers` 均不驱动 → 邮箱轮询停摆 → MCP 超时「编辑器桥不可达」。
 
-- 现象：cross-verify 在编辑器前台时稳定可达；鼠标焦点切到 VSCode 等其它窗口后，编辑器后台停帧，请求无人响应。
-- 这不是插件 bug，而是平台行为。**调用 MCP 工具前需保持 FairyGUI 编辑器窗口前台。**
-- 对阶段 4 的影响：若需全自动/无人值守，文件邮箱主通道受此约束；HTTP 通道（回调线程不依赖主循环）可能是更优解，需在阶段 4 复测其后台可用性。
+**根治方案（参考 FairyGUI-MCP 的 Lua 插件）**：`CS.UnityEngine.Application.runInBackground = true`——允许后台运行主循环，定时器后台照常触发。F5/预览等模式会覆盖该标志，需在每个轮询驱动里持续重置。已实现于插件 `ensureRunInBackground()`（启动 + 两个 tick 驱动内均调用）。
+
+**后台线程方案实测不可行（2026-08-10，已放弃）**：
+- `setTimeout` 探针：触发 12/12 但最大间隔 40309ms——所有回调随主循环停摆。**setTimeout 依赖主循环，不可用**。
+- HttpListener 后台自驱动链探针：后台线程回调访问 JS 闭包触发 Puerts 未定义行为，**编辑器卡死闪退**。已删除。
+- **结论**：Puerts 后台线程与 JS 状态不互通，后台线程驱动方案不可行。`runInBackground` 是唯一正确解法。
