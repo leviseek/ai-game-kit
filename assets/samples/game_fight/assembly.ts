@@ -1,15 +1,16 @@
 import type {
+    GameFixture,
     IResourceProvider,
     InputSample,
     InputSource,
     Module,
     ResourceScope,
 } from "../../framework";
-import { createInputMapper, createResourceProvider } from "../../framework";
 import {
     createGameFixture,
-    type GameFixture,
-} from "../../game/fixture/GameFixture";
+    createInputMapper,
+    createResourceProvider,
+} from "../../framework";
 import { createFightAudio, createFightAudioModule, type FightAudioHandle } from "./logic/audio";
 import { createFightBattle, createFightBattleModule, type FightBattleHandle } from "./logic/battle";
 import { createFightClock, createFightClockModule, type FightClock } from "./logic/clock";

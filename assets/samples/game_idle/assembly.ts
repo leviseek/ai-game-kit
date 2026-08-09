@@ -1,11 +1,9 @@
 import type {
+    GameFixture,
     Module,
     PlatformStorage,
 } from "../../framework";
-import {
-    createGameFixture,
-    type GameFixture,
-} from "../../game/fixture/GameFixture";
+import { createGameFixture } from "../../framework";
 import { createIdleClock, createIdleClockModule, type IdleClock } from "./logic/clock";
 import type {
     IdleOfflineSettlement,

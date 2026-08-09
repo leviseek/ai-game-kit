@@ -185,17 +185,26 @@ export class GameLobbyHostImpl implements GameLobbyHost {
 
     /**
      * GameLobbyHost.loadBundle：经 provider.load 哨兵资源触发 Bundle 脚本执行
-     * （脚本副作用完成注册桥登记）。samples 用哨兵 placeholder；game 用场景资源。
-     * 幂等（加载协调器按 key 缓存终态）。
+     * （脚本副作用完成注册桥登记）。game 用场景资源（无 placeholder.json）；
+     * 其余（如 samples 品类包）用哨兵 placeholder。幂等（加载协调器按 key 缓存
+     * 终态）。
      */
     async loadBundle(bundle: string): Promise<void> {
-        const handle = this.resourceProvider.load(bundle, "placeholder");
+        const handle = this.resourceProvider.load(
+            bundle,
+            this.bundleSentinel(bundle),
+        );
         const loaded = await handle.done;
         if (loaded.state !== "ready") {
             throw new Error(
                 `lobby host: bundle load failed for "${bundle}" (${loaded.state})`,
             );
         }
+    }
+
+    /** bundle → 哨兵资源映射：game 用同名场景资源，其余 bundle 用 placeholder。 */
+    private bundleSentinel(bundle: string): string {
+        return bundle === "game" ? "game" : "placeholder";
     }
 
     /** GameLobbyHost.ensureUiReady：初始化 UI 根并返回是否就绪（GRoot 可用）。幂等。 */

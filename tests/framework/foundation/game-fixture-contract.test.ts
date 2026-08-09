@@ -9,7 +9,12 @@ import {
 } from "../../../assets/game/fixture/GameFixture";
 
 const projectRoot = resolve(import.meta.dir, "../../..");
-const contractFile = resolve(projectRoot, "assets/game/fixture/GameFixture.ts");
+// 契约实现迁至 framework=main（bundle 共享）：本文件只做薄重导出，契约声明
+// 与接缝检查指向 framework/application/GameFixture
+const contractFile = resolve(
+    projectRoot,
+    "assets/framework/application/GameFixture.ts",
+);
 
 const lifecycleSeams = [
     "start",

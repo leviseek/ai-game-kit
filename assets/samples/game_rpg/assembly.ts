@@ -1,4 +1,5 @@
 import type {
+    GameFixture,
     IResourceProvider,
     InputSample,
     InputSource,
@@ -8,15 +9,12 @@ import type {
     UiNavigator,
 } from "../../framework";
 import {
+    createGameFixture,
     createInputMapper,
     createResourceProvider,
     createSceneFlow,
     createUiNavigator,
 } from "../../framework";
-import {
-    createGameFixture,
-    type GameFixture,
-} from "../../game/fixture/GameFixture";
 import {
     createRpgClockModule,
     createRpgSimClock,

@@ -1,14 +1,15 @@
 import type {
+    GameFixture,
     InputSample,
     InputSource,
     Module,
     UiNavigator,
 } from "../../framework";
-import { createInputMapper, createUiNavigator } from "../../framework";
 import {
     createGameFixture,
-    type GameFixture,
-} from "../../game/fixture/GameFixture";
+    createInputMapper,
+    createUiNavigator,
+} from "../../framework";
 import type { CardAction, CardConfig, CardTurnPhase } from "./models";
 import {
     createCardBattle,

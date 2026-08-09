@@ -36,7 +36,12 @@ export function createGameListFlow(host: GameLobbyHost, logger: Logger): GameLis
     function openListPageWithRetry(retryLeft = 20): void {
         if (!host.ensureUiReady()) {
             if (retryLeft > 0) {
-                setTimeout(() => openListPageWithRetry(retryLeft - 1), 100);
+                setTimeout(() => {
+                    if (disposed) {
+                        return;
+                    }
+                    openListPageWithRetry(retryLeft - 1);
+                }, 100);
             } else {
                 logger.error("[lobby] list page open timed out: UI root not ready");
             }

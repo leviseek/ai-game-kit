@@ -1,13 +1,13 @@
 import type {
+    GameFixture,
     Module,
     PlatformStorage,
     UiNavigator,
 } from "../../framework";
-import { createUiNavigator } from "../../framework";
 import {
     createGameFixture,
-    type GameFixture,
-} from "../../game/fixture/GameFixture";
+    createUiNavigator,
+} from "../../framework";
 import {
     createTycoonClock,
     createTycoonClockModule,

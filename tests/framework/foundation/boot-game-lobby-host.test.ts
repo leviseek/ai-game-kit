@@ -51,7 +51,11 @@ describe("GameLobbyHostImpl source contract", () => {
         expect(source).toMatch(/openGlobalPage/);
         expect(source).toMatch(/ensureUiReady/);
         expect(source).toMatch(/loadBundle/);
-        expect(source).toMatch(/resourceProvider\.load\(bundle, "placeholder"\)/);
+        // 哨兵资源映射：game 用同名场景资源（无 placeholder.json），其余 bundle 用
+        // placeholder；loadBundle 不再恒加载 placeholder，经 bundleSentinel 分派
+        expect(source).toMatch(/bundleSentinel\(bundle\)/);
+        expect(source).toMatch(/resourceProvider\.load\(\s*bundle,\s*this\.bundleSentinel\(bundle\)\s*,\s*\)/);
+        expect(source).toMatch(/return bundle === "game" \? "game" : "placeholder";/);
         // 列表编排不再残留在宿主
         expect(source).not.toMatch(/openListPageWithRetry/);
         expect(source).not.toMatch(/gameTypeCatalog/);

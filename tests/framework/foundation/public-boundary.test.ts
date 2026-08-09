@@ -592,6 +592,9 @@ describe("framework public boundary", () => {
             "configObject",
             "configString",
             "createConfigTable",
+            "createGameFixture",
+            "GameFixture",
+            "GameFixtureOptions",
         ].sort();
 
         expect(extractRootExportNames(source)).toEqual(expectedRootExports);

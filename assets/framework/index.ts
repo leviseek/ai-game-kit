@@ -64,6 +64,8 @@ export {
 
 export { Application } from "./application/Application";
 export { ApplicationStateError } from "./application/ApplicationStateError";
+export { createGameFixture } from "./application/GameFixture";
+export type { GameFixture, GameFixtureOptions } from "./application/GameFixture";
 export { ModuleLifecycleError } from "./application/ModuleLifecycleError";
 
 export type {

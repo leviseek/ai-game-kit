@@ -266,6 +266,9 @@ export class AppRoot extends Component {
     private openGameListPage(): void {
         const gameModule = lookupBundle("game") as GameModule | undefined;
         if (gameModule?.createListFlow === undefined) {
+            this.logger?.warn(
+                "[boot] game bundle list flow not registered; skipping list page open",
+            );
             return;
         }
         if (this.lobbyHost === undefined || this.logger === undefined) {
