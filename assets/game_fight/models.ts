@@ -8,28 +8,28 @@ export type FightAction = "punch" | "kick" | "block";
 
 /** 判定盒：招式生效的命中区域。 */
 export interface FightHitbox {
-  readonly x: number;
-  readonly y: number;
-  readonly width: number;
-  readonly height: number;
+    readonly x: number;
+    readonly y: number;
+    readonly width: number;
+    readonly height: number;
 }
 
 /** 帧数据：招式各阶段帧数与伤害，由命中帧推导结算。 */
 export interface FightFrameData {
-  readonly id: string;
-  readonly name: string;
-  readonly startupFrames: number;
-  readonly activeFrames: number;
-  readonly recoveryFrames: number;
-  readonly damage: number;
-  readonly hitbox: FightHitbox;
+    readonly id: string;
+    readonly name: string;
+    readonly startupFrames: number;
+    readonly activeFrames: number;
+    readonly recoveryFrames: number;
+    readonly damage: number;
+    readonly hitbox: FightHitbox;
 }
 
 /** 战斗状态：帧号、双方血量、连招计数与当前活动招式。 */
 export interface FightBattleState {
-  readonly frame: number;
-  readonly playerHp: number;
-  readonly enemyHp: number;
-  readonly combo: number;
-  readonly activeMoveId: string | null;
+    readonly frame: number;
+    readonly playerHp: number;
+    readonly enemyHp: number;
+    readonly combo: number;
+    readonly activeMoveId: string | null;
 }

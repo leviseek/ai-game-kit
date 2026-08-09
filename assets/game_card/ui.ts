@@ -8,12 +8,12 @@ import { CARD_BATTLE_ROUTE } from "./models";
  * 的 dispose 统一负责（对齐 GameFixture 幂等契约）。
  */
 export function createCardUiModule(navigator: UiNavigator): Module {
-  return {
-    id: "card.ui",
-    dependencies: [],
-    start: () => {
-      // 打开代表性 route 的入口由调用方经 navigator 触发；此处登记 route 常量
-      void CARD_BATTLE_ROUTE;
-    },
-  };
+    return {
+        id: "card.ui",
+        dependencies: [],
+        start: () => {
+            // 打开代表性 route 的入口由调用方经 navigator 触发；此处登记 route 常量
+            void CARD_BATTLE_ROUTE;
+        },
+    };
 }

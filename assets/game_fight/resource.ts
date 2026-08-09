@@ -7,15 +7,15 @@ import type { IResourceProvider, Module, ResourceScope } from "../framework";
  * 复用模块实例时提前释放夹具自身作用域，对齐 GameFixture 幂等契约）。
  */
 export function createFightResourceModule(
-  provider: IResourceProvider,
-  _scope: ResourceScope,
+    provider: IResourceProvider,
+    _scope: ResourceScope,
 ): Module {
-  return {
-    id: "fight.resource",
-    dependencies: [],
-    start: () => {
-      // 作用域由组合根创建并注入；此处仅确认资源提供者已就绪
-      void provider.canUnload("fight");
-    },
-  };
+    return {
+        id: "fight.resource",
+        dependencies: [],
+        start: () => {
+            // 作用域由组合根创建并注入；此处仅确认资源提供者已就绪
+            void provider.canUnload("fight");
+        },
+    };
 }

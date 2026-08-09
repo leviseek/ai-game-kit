@@ -6,14 +6,14 @@ import type { ResourceHandle } from "./Resource";
  * 的约定顺序。
  */
 export interface ResourceScope {
-  /**
-   * 使本作用域持有该资源。同一作用域对同一资源重复 retain 只计一次（幂等）。
-   * 已就绪的 handle 计入全局引用计数；仍在加载中的 handle 在落定 ready 后计入、
-   * 在作用域释放时被取消；failed/cancelled 的 handle 持有但不计数（失败隔离）。
-   * release 之后再次 retain 为无操作（作用域已不可用，忽略以避免引用泄漏）。
-   */
-  retain(handle: ResourceHandle): void;
+    /**
+     * 使本作用域持有该资源。同一作用域对同一资源重复 retain 只计一次（幂等）。
+     * 已就绪的 handle 计入全局引用计数；仍在加载中的 handle 在落定 ready 后计入、
+     * 在作用域释放时被取消；failed/cancelled 的 handle 持有但不计数（失败隔离）。
+     * release 之后再次 retain 为无操作（作用域已不可用，忽略以避免引用泄漏）。
+     */
+    retain(handle: ResourceHandle): void;
 
-  /** 释放本作用域持有的全部资源。重复调用为无操作（幂等）。 */
-  release(): void;
+    /** 释放本作用域持有的全部资源。重复调用为无操作（幂等）。 */
+    release(): void;
 }

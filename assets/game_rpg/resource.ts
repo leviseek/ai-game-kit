@@ -7,15 +7,15 @@ import type { IResourceProvider, Module, ResourceScope } from "../framework";
  * 实例时提前释放夹具自身作用域，对齐 GameFixture 幂等契约）。
  */
 export function createRpgResourceModule(
-  provider: IResourceProvider,
-  _scope: ResourceScope,
+    provider: IResourceProvider,
+    _scope: ResourceScope,
 ): Module {
-  return {
-    id: "rpg.resource",
-    dependencies: [],
-    start: () => {
-      // 作用域由组合根创建并注入；此处仅确认资源提供者已就绪
-      void provider.canUnload("rpg");
-    },
-  };
+    return {
+        id: "rpg.resource",
+        dependencies: [],
+        start: () => {
+            // 作用域由组合根创建并注入；此处仅确认资源提供者已就绪
+            void provider.canUnload("rpg");
+        },
+    };
 }

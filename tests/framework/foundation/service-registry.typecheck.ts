@@ -1,39 +1,39 @@
 import type {
-  ServiceRegistry,
-  ServiceToken,
+    ServiceRegistry,
+    ServiceToken,
 } from "../../../assets/framework/core/services/ServiceRegistry";
 import { createServiceToken } from "../../../assets/framework/core/services/ServiceRegistry";
 
 type Equal<Left, Right> =
-  (<Value>() => Value extends Left ? 1 : 2) extends
-  (<Value>() => Value extends Right ? 1 : 2)
+    (<Value>() => Value extends Left ? 1 : 2) extends
+    (<Value>() => Value extends Right ? 1 : 2)
     ? true
     : false;
 
 type Expect<Type extends true> = Type;
 
 interface AudioService {
-  readonly play: () => void;
+    readonly play: () => void;
 }
 
 interface LoggerService {
-  readonly log: (message: string) => void;
+    readonly log: (message: string) => void;
 }
 
 const audioToken = createServiceToken<AudioService>("audio");
 const loggerToken = createServiceToken<LoggerService>("logger");
 
 type _TokenTypeIsGenericBound = Expect<
-  Equal<typeof audioToken, ServiceToken<AudioService>>
+    Equal<typeof audioToken, ServiceToken<AudioService>>
 >;
 type _TokenDescriptionIsString = Expect<
-  Equal<ServiceToken<AudioService>["description"], string>
+    Equal<ServiceToken<AudioService>["description"], string>
 >;
 type _DifferentServiceTypesYieldDistinctTokens = Expect<
-  Equal<
-    Equal<ServiceToken<AudioService>, ServiceToken<LoggerService>>,
-    false
-  >
+    Equal<
+        Equal<ServiceToken<AudioService>, ServiceToken<LoggerService>>,
+        false
+    >
 >;
 
 // 类型不匹配必须编译期被拒：token 绑定唯一服务类型，不能赋值给另一类型 token。
@@ -44,9 +44,9 @@ const wrongAssignment: ServiceToken<LoggerService> = audioToken;
 // 只在类型层面对契约做断言，不依赖运行时工厂（工厂实现属于后续任务）。
 declare const registry: ServiceRegistry;
 
-registry.register(audioToken, { play: () => {} });
+registry.register(audioToken, { play: () => { } });
 // @ts-expect-error 注册类型与 token 绑定类型不一致必须被拒绝
-registry.register(audioToken, { log: () => {} });
+registry.register(audioToken, { log: () => { } });
 
 const resolvedAudio = registry.resolve(audioToken);
 type _ResolvedTypeMatchesToken = Expect<Equal<typeof resolvedAudio, AudioService>>;

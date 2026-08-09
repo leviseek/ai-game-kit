@@ -14,112 +14,112 @@ type CardTurnEvent = "end-turn" | "turn-elapsed" | "finish";
  * 只来自注入的配置句柄，框架层不出现卡组/回合模型（3.1 负向断言锁定）。
  */
 export interface CardBattleHandle {
-  readonly state: CardBattleState;
-  /** 玩家阶段出牌：校验手牌与 mana 后结算伤害，命中终局进入 over。 */
-  playCard(index: number): boolean;
-  /** 结束玩家回合：player → enemy；非玩家阶段拒绝。 */
-  endTurn(): boolean;
-  /** 停止回合推进与出牌，幂等。 */
-  dispose(): void;
+    readonly state: CardBattleState;
+    /** 玩家阶段出牌：校验手牌与 mana 后结算伤害，命中终局进入 over。 */
+    playCard(index: number): boolean;
+    /** 结束玩家回合：player → enemy；非玩家阶段拒绝。 */
+    endTurn(): boolean;
+    /** 停止回合推进与出牌，幂等。 */
+    dispose(): void;
 }
 
 export function createCardBattle(
-  clock: CardSimClock,
-  config: CardConfigHandle,
+    clock: CardSimClock,
+    config: CardConfigHandle,
 ): CardBattleHandle {
-  // 回合流状态机：阶段转移表只表达"结束回合/时钟超时/终局"三种驱动
-  const fsm: StateMachine<CardTurnPhase, CardTurnEvent> = createStateMachine<
-    CardTurnPhase,
-    CardTurnEvent
-  >({
-    initial: "player",
-    transitions: {
-      player: { "end-turn": "enemy", finish: "over" },
-      enemy: { "turn-elapsed": "player" },
-      over: {},
-    },
-    onTransitionError: () => {
-      // 非法事件（如非玩家阶段出牌）静默拒绝，阶段保持不变
-    },
-  });
+    // 回合流状态机：阶段转移表只表达"结束回合/时钟超时/终局"三种驱动
+    const fsm: StateMachine<CardTurnPhase, CardTurnEvent> = createStateMachine<
+        CardTurnPhase,
+        CardTurnEvent
+    >({
+        initial: "player",
+        transitions: {
+            player: { "end-turn": "enemy", finish: "over" },
+            enemy: { "turn-elapsed": "player" },
+            over: {},
+        },
+        onTransitionError: () => {
+            // 非法事件（如非玩家阶段出牌）静默拒绝，阶段保持不变
+        },
+    });
 
-  let disposed = false;
-  let turn = 1;
-  let playerHp = config.playerHp;
-  let enemyHp = config.enemyHp;
-  let mana = config.startMana;
-  let phaseEnteredAt = clock.now();
+    let disposed = false;
+    let turn = 1;
+    let playerHp = config.playerHp;
+    let enemyHp = config.enemyHp;
+    let mana = config.startMana;
+    let phaseEnteredAt = clock.now();
 
-  // 惰性同步回合阶段：enemy 阶段超时后自动回到 player 并重置 mana；
-  // 读取状态或任何操作前先同步，保证时钟推进即时反映到回合流
-  function syncPhase(): void {
-    if (disposed || fsm.state !== "enemy") {
-      return;
+    // 惰性同步回合阶段：enemy 阶段超时后自动回到 player 并重置 mana；
+    // 读取状态或任何操作前先同步，保证时钟推进即时反映到回合流
+    function syncPhase(): void {
+        if (disposed || fsm.state !== "enemy") {
+            return;
+        }
+
+        if (clock.now() - phaseEnteredAt < config.turnDurationMs) {
+            return;
+        }
+
+        fsm.send("turn-elapsed");
+        turn += 1;
+        mana = config.startMana;
+        phaseEnteredAt = clock.now();
     }
 
-    if (clock.now() - phaseEnteredAt < config.turnDurationMs) {
-      return;
-    }
+    return {
+        get state(): CardBattleState {
+            syncPhase();
+            return {
+                turn,
+                phase: fsm.state,
+                playerHp,
+                enemyHp,
+                mana,
+                hand: config.cards,
+            };
+        },
+        playCard(index: number): boolean {
+            syncPhase();
 
-    fsm.send("turn-elapsed");
-    turn += 1;
-    mana = config.startMana;
-    phaseEnteredAt = clock.now();
-  }
+            if (disposed || fsm.state !== "player") {
+                return false;
+            }
 
-  return {
-    get state(): CardBattleState {
-      syncPhase();
-      return {
-        turn,
-        phase: fsm.state,
-        playerHp,
-        enemyHp,
-        mana,
-        hand: config.cards,
-      };
-    },
-    playCard(index: number): boolean {
-      syncPhase();
+            const card = config.cards[index];
+            if (card === undefined || mana < card.cost) {
+                return false;
+            }
 
-      if (disposed || fsm.state !== "player") {
-        return false;
-      }
+            mana -= card.cost;
+            enemyHp -= card.damage;
 
-      const card = config.cards[index];
-      if (card === undefined || mana < card.cost) {
-        return false;
-      }
+            if (enemyHp <= 0) {
+                enemyHp = 0;
+                fsm.send("finish");
+            }
 
-      mana -= card.cost;
-      enemyHp -= card.damage;
+            return true;
+        },
+        endTurn(): boolean {
+            syncPhase();
 
-      if (enemyHp <= 0) {
-        enemyHp = 0;
-        fsm.send("finish");
-      }
+            if (disposed || fsm.state !== "player") {
+                return false;
+            }
 
-      return true;
-    },
-    endTurn(): boolean {
-      syncPhase();
-
-      if (disposed || fsm.state !== "player") {
-        return false;
-      }
-
-      fsm.send("end-turn");
-      phaseEnteredAt = clock.now();
-      return true;
-    },
-    dispose(): void {
-      if (disposed) {
-        return;
-      }
-      disposed = true;
-      fsm.dispose();
-    },
-  };
+            fsm.send("end-turn");
+            phaseEnteredAt = clock.now();
+            return true;
+        },
+        dispose(): void {
+            if (disposed) {
+                return;
+            }
+            disposed = true;
+            fsm.dispose();
+        },
+    };
 }
 
 /**
@@ -128,12 +128,12 @@ export function createCardBattle(
  * 实例时提前销毁夹具自身能力，对齐 GameFixture 幂等契约）。
  */
 export function createCardBattleModule(battle: CardBattleHandle): Module {
-  return {
-    id: "card.battle",
-    dependencies: [],
-    start: () => {
-      // 控制器在组合根构造时即就绪；start 只是让模块进入装配清单
-      void battle.state.phase;
-    },
-  };
+    return {
+        id: "card.battle",
+        dependencies: [],
+        start: () => {
+            // 控制器在组合根构造时即就绪；start 只是让模块进入装配清单
+            void battle.state.phase;
+        },
+    };
 }

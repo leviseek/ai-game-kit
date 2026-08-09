@@ -8,87 +8,87 @@ import type { Module } from "../../../assets/framework";
 type ModuleGraphConstructor = new (modules: readonly Module[]) => object;
 
 interface ModuleGraphExports {
-  readonly ModuleGraph?: ModuleGraphConstructor;
+    readonly ModuleGraph?: ModuleGraphConstructor;
 }
 
 const projectRoot = resolve(import.meta.dir, "../../..");
 const moduleGraphFile = resolve(
-  projectRoot,
-  "assets/framework/application/ModuleGraph.ts",
+    projectRoot,
+    "assets/framework/application/ModuleGraph.ts",
 );
 
 function createModule(
-  id: string,
-  dependencies: readonly string[] = [],
+    id: string,
+    dependencies: readonly string[] = [],
 ): Module {
-  return { id, dependencies };
+    return { id, dependencies };
 }
 
 async function loadModuleGraph(): Promise<ModuleGraphConstructor> {
-  expect(existsSync(moduleGraphFile)).toBe(true);
+    expect(existsSync(moduleGraphFile)).toBe(true);
 
-  const exports = (await import(
-    pathToFileURL(moduleGraphFile).href
-  )) as ModuleGraphExports;
+    const exports = (await import(
+        pathToFileURL(moduleGraphFile).href
+    )) as ModuleGraphExports;
 
-  expect(typeof exports.ModuleGraph).toBe("function");
+    expect(typeof exports.ModuleGraph).toBe("function");
 
-  return exports.ModuleGraph as ModuleGraphConstructor;
+    return exports.ModuleGraph as ModuleGraphConstructor;
 }
 
 describe("ModuleGraph validation", () => {
-  test("rejects an empty module id", async () => {
-    const ModuleGraph = await loadModuleGraph();
+    test("rejects an empty module id", async () => {
+        const ModuleGraph = await loadModuleGraph();
 
-    expect(() => new ModuleGraph([createModule("")])).toThrow();
-  });
+        expect(() => new ModuleGraph([createModule("")])).toThrow();
+    });
 
-  test("rejects duplicate module ids", async () => {
-    const ModuleGraph = await loadModuleGraph();
-    const first = createModule("inventory");
-    const duplicate = createModule("inventory");
+    test("rejects duplicate module ids", async () => {
+        const ModuleGraph = await loadModuleGraph();
+        const first = createModule("inventory");
+        const duplicate = createModule("inventory");
 
-    expect(() => new ModuleGraph([first, duplicate])).toThrow();
-  });
+        expect(() => new ModuleGraph([first, duplicate])).toThrow();
+    });
 
-  test("rejects a missing dependency", async () => {
-    const ModuleGraph = await loadModuleGraph();
-    const inventory = createModule("inventory", ["logging"]);
+    test("rejects a missing dependency", async () => {
+        const ModuleGraph = await loadModuleGraph();
+        const inventory = createModule("inventory", ["logging"]);
 
-    expect(() => new ModuleGraph([inventory])).toThrow();
-  });
+        expect(() => new ModuleGraph([inventory])).toThrow();
+    });
 
-  test("rejects a self dependency cycle", async () => {
-    const ModuleGraph = await loadModuleGraph();
-    const inventory = createModule("inventory", ["inventory"]);
+    test("rejects a self dependency cycle", async () => {
+        const ModuleGraph = await loadModuleGraph();
+        const inventory = createModule("inventory", ["inventory"]);
 
-    expect(() => new ModuleGraph([inventory])).toThrow();
-  });
+        expect(() => new ModuleGraph([inventory])).toThrow();
+    });
 
-  test("rejects a multi-module dependency cycle", async () => {
-    const ModuleGraph = await loadModuleGraph();
-    const inventory = createModule("inventory", ["economy"]);
-    const economy = createModule("economy", ["analytics"]);
-    const analytics = createModule("analytics", ["inventory"]);
+    test("rejects a multi-module dependency cycle", async () => {
+        const ModuleGraph = await loadModuleGraph();
+        const inventory = createModule("inventory", ["economy"]);
+        const economy = createModule("economy", ["analytics"]);
+        const analytics = createModule("analytics", ["inventory"]);
 
-    expect(() => new ModuleGraph([inventory, economy, analytics])).toThrow();
-  });
+        expect(() => new ModuleGraph([inventory, economy, analytics])).toThrow();
+    });
 
-  test("does not invoke lifecycle hooks while rejecting an invalid graph", async () => {
-    const ModuleGraph = await loadModuleGraph();
-    const calls: string[] = [];
-    const invalidModule: Module = {
-      id: "inventory",
-      dependencies: ["missing"],
-      initialize: () => { calls.push("initialize"); },
-      start: () => { calls.push("start"); },
-      pause: () => { calls.push("pause"); },
-      resume: () => { calls.push("resume"); },
-      stop: () => { calls.push("stop"); },
-      dispose: () => { calls.push("dispose"); },
-    };
+    test("does not invoke lifecycle hooks while rejecting an invalid graph", async () => {
+        const ModuleGraph = await loadModuleGraph();
+        const calls: string[] = [];
+        const invalidModule: Module = {
+            id: "inventory",
+            dependencies: ["missing"],
+            initialize: () => { calls.push("initialize"); },
+            start: () => { calls.push("start"); },
+            pause: () => { calls.push("pause"); },
+            resume: () => { calls.push("resume"); },
+            stop: () => { calls.push("stop"); },
+            dispose: () => { calls.push("dispose"); },
+        };
 
-    expect(() => new ModuleGraph([invalidModule])).toThrow();
-    expect(calls).toEqual([]);
-  });
+        expect(() => new ModuleGraph([invalidModule])).toThrow();
+        expect(calls).toEqual([]);
+    });
 });

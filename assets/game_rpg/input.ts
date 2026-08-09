@@ -8,43 +8,43 @@ import type { RpgAction } from "./models";
  * 把测试驱动的事件送入 mapper（见 assembly.ts）。
  */
 export interface RpgInputHooks {
-  readonly activeContext: string;
-  setActiveContext(context: string): void;
-  push(sourceId: string, pressed: boolean, value?: number): void;
+    readonly activeContext: string;
+    setActiveContext(context: string): void;
+    push(sourceId: string, pressed: boolean, value?: number): void;
 }
 
 /** 可控输入源：测试经 push 注入底层输入事件，无需真实键盘。 */
 export interface RpgInputSource {
-  readonly source: InputSource;
-  push(sourceId: string, pressed: boolean, value?: number): void;
+    readonly source: InputSource;
+    push(sourceId: string, pressed: boolean, value?: number): void;
 }
 
 export function createRpgInputSource(): RpgInputSource {
-  let listener: ((event: InputEvent) => void) | undefined;
+    let listener: ((event: InputEvent) => void) | undefined;
 
-  return {
-    source: {
-      id: "rpg-input",
-      subscribe(next: (event: InputEvent) => void): () => void {
-        listener = next;
-        return () => {
-          listener = undefined;
-        };
-      },
-    },
-    push: (sourceId: string, pressed: boolean, value?: number) => {
-      listener?.({ sourceId, pressed, value });
-    },
-  };
+    return {
+        source: {
+            id: "rpg-input",
+            subscribe(next: (event: InputEvent) => void): () => void {
+                listener = next;
+                return () => {
+                    listener = undefined;
+                };
+            },
+        },
+        push: (sourceId: string, pressed: boolean, value?: number) => {
+            listener?.({ sourceId, pressed, value });
+        },
+    };
 }
 
 export function createRpgInputModule(handle: RpgInputSource): Module {
-  return {
-    id: "rpg.input",
-    dependencies: [],
-    start: () => {
-      // 输入源已就绪；mapper 在组合根创建并订阅该源
-      void handle.source.id;
-    },
-  };
+    return {
+        id: "rpg.input",
+        dependencies: [],
+        start: () => {
+            // 输入源已就绪；mapper 在组合根创建并订阅该源
+            void handle.source.id;
+        },
+    };
 }

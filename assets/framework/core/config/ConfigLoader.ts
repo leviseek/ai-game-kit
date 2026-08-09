@@ -6,14 +6,14 @@ import { createConfigTable } from "./ConfigTable";
 
 /** 配置资源加载失败时，解包 LoadCoordinator 包装的 FrameworkError，保留底层原因。 */
 function unwrapCause(error: unknown): unknown {
-  // FrameworkError 把 cause 传给 Error 构造器，但类本身未声明该字段
-  // （ES2015 lib 无 Error.cause）；此处按已知形状窄化后读取。
-  if (error instanceof FrameworkError) {
-    const cause = (error as FrameworkError & { readonly cause?: unknown })
-      .cause;
-    return cause !== undefined ? cause : error;
-  }
-  return error;
+    // FrameworkError 把 cause 传给 Error 构造器，但类本身未声明该字段
+    // （ES2015 lib 无 Error.cause）；此处按已知形状窄化后读取。
+    if (error instanceof FrameworkError) {
+        const cause = (error as FrameworkError & { readonly cause?: unknown })
+            .cause;
+        return cause !== undefined ? cause : error;
+    }
+    return error;
 }
 
 /**
@@ -29,23 +29,23 @@ function unwrapCause(error: unknown): unknown {
  * Cocos 适配器用它把 JsonAsset 解包为纯数据后再走 createConfigTable。
  */
 export async function loadConfigTable(
-  provider: IResourceProvider,
-  bundle: string,
-  path: string,
-  extractContent: (resource: unknown) => unknown = (resource) => resource,
+    provider: IResourceProvider,
+    bundle: string,
+    path: string,
+    extractContent: (resource: unknown) => unknown = (resource) => resource,
 ): Promise<ConfigTable> {
-  const handle = provider.load(bundle, path);
-  const settled = await handle.done;
+    const handle = provider.load(bundle, path);
+    const settled = await handle.done;
 
-  if (settled.state === "failed") {
-    throw new ConfigLoadError(bundle, path, {
-      cause: unwrapCause(settled.error),
-    });
-  }
+    if (settled.state === "failed") {
+        throw new ConfigLoadError(bundle, path, {
+            cause: unwrapCause(settled.error),
+        });
+    }
 
-  if (settled.state === "cancelled") {
-    throw new ConfigLoadError(bundle, path);
-  }
+    if (settled.state === "cancelled") {
+        throw new ConfigLoadError(bundle, path);
+    }
 
-  return createConfigTable(extractContent(settled.resource));
+    return createConfigTable(extractContent(settled.resource));
 }

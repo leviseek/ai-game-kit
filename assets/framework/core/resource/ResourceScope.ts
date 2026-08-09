@@ -5,29 +5,29 @@ import type { ResourceScope } from "../../contracts/resource/ResourceScope";
 export type { ResourceScope } from "../../contracts/resource/ResourceScope";
 
 export interface ResourceScopeRegistry {
-  /** 创建共享同一全局引用计数与卸载判断的独立作用域。 */
-  createScope(): ResourceScope;
+    /** 创建共享同一全局引用计数与卸载判断的独立作用域。 */
+    createScope(): ResourceScope;
 
-  /** 查询某 Bundle 当前是否已无任何引用（可卸载），不依赖引擎全局状态。 */
-  canUnload(bundle: string): boolean;
+    /** 查询某 Bundle 当前是否已无任何引用（可卸载），不依赖引擎全局状态。 */
+    canUnload(bundle: string): boolean;
 }
 
 export interface ResourceScopeRegistryOptions {
-  /**
-   * 卸载执行器：某个 Bundle 从"仍有作用域持有"变为"无任何引用且无进行中加载"
-   * 时调用一次。纯 TypeScript 侧只负责判定时机，真正执行 releaseAll/removeBundle
-   * 由 Cocos Asset Bundle 适配器注入（参见 design.md 决策 3 的接缝）。
-   */
-  readonly unloadBundle: (bundle: string) => void;
+    /**
+     * 卸载执行器：某个 Bundle 从"仍有作用域持有"变为"无任何引用且无进行中加载"
+     * 时调用一次。纯 TypeScript 侧只负责判定时机，真正执行 releaseAll/removeBundle
+     * 由 Cocos Asset Bundle 适配器注入（参见 design.md 决策 3 的接缝）。
+     */
+    readonly unloadBundle: (bundle: string) => void;
 }
 
 interface CountedResource {
-  count: number;
+    count: number;
 }
 
 function serializeKey(key: ResourceKey): string {
-  // 与 LoadCoordinator 相同的键序化，保证同资源键去重一致
-  return JSON.stringify([key.kind, key.bundle, key.path]);
+    // 与 LoadCoordinator 相同的键序化，保证同资源键去重一致
+    return JSON.stringify([key.kind, key.bundle, key.path]);
 }
 
 /**
@@ -36,199 +36,199 @@ function serializeKey(key: ResourceKey): string {
  * 卸载执行器；仍被其他作用域引用或仍在加载的 Bundle 不会提前卸载。
  */
 export function createResourceScopeRegistry(
-  options: ResourceScopeRegistryOptions,
+    options: ResourceScopeRegistryOptions,
 ): ResourceScopeRegistry {
-  const counts = new Map<string, CountedResource>();
-  const bundleKeys = new Map<string, Set<string>>();
-  const pendingCounts = new Map<string, number>();
+    const counts = new Map<string, CountedResource>();
+    const bundleKeys = new Map<string, Set<string>>();
+    const pendingCounts = new Map<string, number>();
 
-  function isBundleOwned(bundle: string): boolean {
-    const hasReference = (bundleKeys.get(bundle)?.size ?? 0) > 0;
-    const hasPending = (pendingCounts.get(bundle) ?? 0) > 0;
-    return hasReference || hasPending;
-  }
-
-  function markPending(bundle: string): void {
-    pendingCounts.set(bundle, (pendingCounts.get(bundle) ?? 0) + 1);
-  }
-
-  function clearPending(bundle: string): void {
-    const next = (pendingCounts.get(bundle) ?? 1) - 1;
-
-    if (next <= 0) {
-      pendingCounts.delete(bundle);
-    } else {
-      pendingCounts.set(bundle, next);
-    }
-  }
-
-  function markReferenced(key: ResourceKey): void {
-    const keyId = serializeKey(key);
-    const existing = counts.get(keyId);
-
-    if (existing === undefined) {
-      counts.set(keyId, { count: 1 });
-
-      let keys = bundleKeys.get(key.bundle);
-      if (keys === undefined) {
-        keys = new Set();
-        bundleKeys.set(key.bundle, keys);
-      }
-      keys.add(keyId);
-    } else {
-      existing.count += 1;
-    }
-  }
-
-  function maybeUnloadIfNotOwned(bundle: string): unknown {
-    if (isBundleOwned(bundle)) {
-      return undefined;
+    function isBundleOwned(bundle: string): boolean {
+        const hasReference = (bundleKeys.get(bundle)?.size ?? 0) > 0;
+        const hasPending = (pendingCounts.get(bundle) ?? 0) > 0;
+        return hasReference || hasPending;
     }
 
-    try {
-      options.unloadBundle(bundle);
-      return undefined;
-    } catch (error) {
-      // 卸载执行器失败不阻断引用计数收敛；调用方（release）决定如何上报
-      return error;
-    }
-  }
-
-  function releaseReferenced(key: ResourceKey): unknown {
-    const keyId = serializeKey(key);
-    const entry = counts.get(keyId);
-
-    if (entry === undefined) {
-      return undefined;
+    function markPending(bundle: string): void {
+        pendingCounts.set(bundle, (pendingCounts.get(bundle) ?? 0) + 1);
     }
 
-    entry.count -= 1;
+    function clearPending(bundle: string): void {
+        const next = (pendingCounts.get(bundle) ?? 1) - 1;
 
-    if (entry.count > 0) {
-      return undefined;
+        if (next <= 0) {
+            pendingCounts.delete(bundle);
+        } else {
+            pendingCounts.set(bundle, next);
+        }
     }
 
-    counts.delete(keyId);
+    function markReferenced(key: ResourceKey): void {
+        const keyId = serializeKey(key);
+        const existing = counts.get(keyId);
 
-    const bundleKeysForBundle = bundleKeys.get(key.bundle);
-    bundleKeysForBundle?.delete(keyId);
+        if (existing === undefined) {
+            counts.set(keyId, { count: 1 });
 
-    if (bundleKeysForBundle !== undefined && bundleKeysForBundle.size === 0) {
-      bundleKeys.delete(key.bundle);
+            let keys = bundleKeys.get(key.bundle);
+            if (keys === undefined) {
+                keys = new Set();
+                bundleKeys.set(key.bundle, keys);
+            }
+            keys.add(keyId);
+        } else {
+            existing.count += 1;
+        }
     }
 
-    return maybeUnloadIfNotOwned(key.bundle);
-  }
+    function maybeUnloadIfNotOwned(bundle: string): unknown {
+        if (isBundleOwned(bundle)) {
+            return undefined;
+        }
 
-  function createScope(): ResourceScope {
-    const held = new Map<
-      string,
-      { handle: ResourceHandle; counted: boolean; pending: boolean }
-    >();
-    let released = false;
+        try {
+            options.unloadBundle(bundle);
+            return undefined;
+        } catch (error) {
+            // 卸载执行器失败不阻断引用计数收敛；调用方（release）决定如何上报
+            return error;
+        }
+    }
 
-    function settle(keyId: string, settled: ResourceHandle): void {
-      if (released) {
-        return;
-      }
+    function releaseReferenced(key: ResourceKey): unknown {
+        const keyId = serializeKey(key);
+        const entry = counts.get(keyId);
 
-      const entry = held.get(keyId);
+        if (entry === undefined) {
+            return undefined;
+        }
 
-      if (entry === undefined) {
-        return;
-      }
+        entry.count -= 1;
 
-      if (entry.pending) {
-        entry.pending = false;
-        clearPending(entry.handle.key.bundle);
-      }
+        if (entry.count > 0) {
+            return undefined;
+        }
 
-      if (!entry.counted && settled.state === "ready") {
-        markReferenced(settled.key);
-        entry.counted = true;
-      }
+        counts.delete(keyId);
 
-      // 异步回调中的卸载失败无法向调用方可靠上报，这里隔离；Adapter 应自行防御引擎异常
-      maybeUnloadIfNotOwned(entry.handle.key.bundle);
+        const bundleKeysForBundle = bundleKeys.get(key.bundle);
+        bundleKeysForBundle?.delete(keyId);
+
+        if (bundleKeysForBundle !== undefined && bundleKeysForBundle.size === 0) {
+            bundleKeys.delete(key.bundle);
+        }
+
+        return maybeUnloadIfNotOwned(key.bundle);
+    }
+
+    function createScope(): ResourceScope {
+        const held = new Map<
+            string,
+            { handle: ResourceHandle; counted: boolean; pending: boolean }
+        >();
+        let released = false;
+
+        function settle(keyId: string, settled: ResourceHandle): void {
+            if (released) {
+                return;
+            }
+
+            const entry = held.get(keyId);
+
+            if (entry === undefined) {
+                return;
+            }
+
+            if (entry.pending) {
+                entry.pending = false;
+                clearPending(entry.handle.key.bundle);
+            }
+
+            if (!entry.counted && settled.state === "ready") {
+                markReferenced(settled.key);
+                entry.counted = true;
+            }
+
+            // 异步回调中的卸载失败无法向调用方可靠上报，这里隔离；Adapter 应自行防御引擎异常
+            maybeUnloadIfNotOwned(entry.handle.key.bundle);
+        }
+
+        return {
+            retain(handle) {
+                // release 后作用域已不可用：忽略后续 retain，避免复活已释放作用域
+                // 造成引用永不回落的泄漏
+                if (released) {
+                    return;
+                }
+
+                const keyId = serializeKey(handle.key);
+
+                if (held.has(keyId)) {
+                    return;
+                }
+
+                const entry = { handle, counted: false, pending: false };
+                held.set(keyId, entry);
+
+                if (handle.state === "loading") {
+                    entry.pending = true;
+                    markPending(handle.key.bundle);
+                    handle.done.then((settled) => {
+                        settle(keyId, settled);
+                    });
+                } else if (handle.state === "ready") {
+                    markReferenced(handle.key);
+                    entry.counted = true;
+                }
+                // failed / cancelled：持有但不计数、不占 pending，实现失败隔离
+            },
+
+            release() {
+                if (released) {
+                    return;
+                }
+
+                released = true;
+
+                let firstError: unknown;
+
+                // 按持有顺序逆序释放，对齐"逆序释放其自身持有项"的契约
+                // Array.from 而非展开运算符：Creator 构建会把 `[...iterable]` 转译成
+                // `[].concat(iterable)`，concat 不展开迭代器/Set 导致迭代得到迭代器本身，
+                // 资源释放会静默失效。Array.from 转译后语义不变。
+                for (const entry of Array.from(held.values()).reverse()) {
+                    if (entry.counted) {
+                        const error = releaseReferenced(entry.handle.key);
+
+                        if (error !== undefined && firstError === undefined) {
+                            firstError = error;
+                        }
+                    } else if (entry.pending) {
+                        entry.pending = false;
+                        clearPending(entry.handle.key.bundle);
+                        entry.handle.cancel();
+
+                        const error = maybeUnloadIfNotOwned(entry.handle.key.bundle);
+
+                        if (error !== undefined && firstError === undefined) {
+                            firstError = error;
+                        }
+                    }
+                }
+
+                held.clear();
+
+                // 引用计数已全部收敛，再上报首个卸载失败，避免一次回调异常毁掉整个释放
+                if (firstError !== undefined) {
+                    throw firstError;
+                }
+            },
+        };
     }
 
     return {
-      retain(handle) {
-        // release 后作用域已不可用：忽略后续 retain，避免复活已释放作用域
-        // 造成引用永不回落的泄漏
-        if (released) {
-          return;
-        }
-
-        const keyId = serializeKey(handle.key);
-
-        if (held.has(keyId)) {
-          return;
-        }
-
-        const entry = { handle, counted: false, pending: false };
-        held.set(keyId, entry);
-
-        if (handle.state === "loading") {
-          entry.pending = true;
-          markPending(handle.key.bundle);
-          handle.done.then((settled) => {
-            settle(keyId, settled);
-          });
-        } else if (handle.state === "ready") {
-          markReferenced(handle.key);
-          entry.counted = true;
-        }
-        // failed / cancelled：持有但不计数、不占 pending，实现失败隔离
-      },
-
-      release() {
-        if (released) {
-          return;
-        }
-
-        released = true;
-
-        let firstError: unknown;
-
-        // 按持有顺序逆序释放，对齐"逆序释放其自身持有项"的契约
-        // Array.from 而非展开运算符：Creator 构建会把 `[...iterable]` 转译成
-        // `[].concat(iterable)`，concat 不展开迭代器/Set 导致迭代得到迭代器本身，
-        // 资源释放会静默失效。Array.from 转译后语义不变。
-        for (const entry of Array.from(held.values()).reverse()) {
-          if (entry.counted) {
-            const error = releaseReferenced(entry.handle.key);
-
-            if (error !== undefined && firstError === undefined) {
-              firstError = error;
-            }
-          } else if (entry.pending) {
-            entry.pending = false;
-            clearPending(entry.handle.key.bundle);
-            entry.handle.cancel();
-
-            const error = maybeUnloadIfNotOwned(entry.handle.key.bundle);
-
-            if (error !== undefined && firstError === undefined) {
-              firstError = error;
-            }
-          }
-        }
-
-        held.clear();
-
-        // 引用计数已全部收敛，再上报首个卸载失败，避免一次回调异常毁掉整个释放
-        if (firstError !== undefined) {
-          throw firstError;
-        }
-      },
+        createScope,
+        canUnload(bundle: string) {
+            return !isBundleOwned(bundle);
+        },
     };
-  }
-
-  return {
-    createScope,
-    canUnload(bundle: string) {
-      return !isBundleOwned(bundle);
-    },
-  };
 }

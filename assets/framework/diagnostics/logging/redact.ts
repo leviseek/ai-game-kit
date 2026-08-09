@@ -1,74 +1,74 @@
 import type {
-  LogContext,
-  LogRecord,
+    LogContext,
+    LogRecord,
 } from "../../contracts/logging/Logger";
 
 const SENSITIVE_KEY_PATTERNS = [
-  /token$/i,
-  /secret$/i,
-  /password$/i,
-  /api[._-]?key$/i,
+    /token$/i,
+    /secret$/i,
+    /password$/i,
+    /api[._-]?key$/i,
 ];
 
 const REDACTED = "[REDACTED]";
 const CIRCULAR = "[Circular]";
 
 function isSensitiveKey(key: string): boolean {
-  return SENSITIVE_KEY_PATTERNS.some((pattern) => pattern.test(key));
+    return SENSITIVE_KEY_PATTERNS.some((pattern) => pattern.test(key));
 }
 
 function isPlainObject(value: object): boolean {
-  const prototype = Object.getPrototypeOf(value);
+    const prototype = Object.getPrototypeOf(value);
 
-  return prototype === Object.prototype || prototype === null;
+    return prototype === Object.prototype || prototype === null;
 }
 
 function redactValue(value: unknown, seen: Set<object>): unknown {
-  if (value === null || typeof value !== "object") {
-    return value;
-  }
+    if (value === null || typeof value !== "object") {
+        return value;
+    }
 
-  // 非普通对象（Date、Map、类实例、Error）原样透传：它们无法被安全遍历，
-  // 其字符串形式由调用方负责。注意这里包含 Map——虽然技术上可迭代，但
-  // 有意保持一致而不做过滤。
-  if (!isPlainObject(value) && !Array.isArray(value)) {
-    return value;
-  }
+    // 非普通对象（Date、Map、类实例、Error）原样透传：它们无法被安全遍历，
+    // 其字符串形式由调用方负责。注意这里包含 Map——虽然技术上可迭代，但
+    // 有意保持一致而不做过滤。
+    if (!isPlainObject(value) && !Array.isArray(value)) {
+        return value;
+    }
 
-  if (seen.has(value)) {
-    return CIRCULAR;
-  }
+    if (seen.has(value)) {
+        return CIRCULAR;
+    }
 
-  seen.add(value);
+    seen.add(value);
 
-  const result = Array.isArray(value)
-    ? value.map((item) => redactValue(item, seen))
-    : redactContext(value as LogContext, seen);
+    const result = Array.isArray(value)
+        ? value.map((item) => redactValue(item, seen))
+        : redactContext(value as LogContext, seen);
 
-  seen.delete(value);
+    seen.delete(value);
 
-  return result;
+    return result;
 }
 
 export function redactContext(
-  context: LogContext,
-  seen = new Set<object>(),
+    context: LogContext,
+    seen = new Set<object>(),
 ): LogContext {
-  const result: Record<string, unknown> = {};
+    const result: Record<string, unknown> = {};
 
-  for (const key of Object.keys(context)) {
-    result[key] = isSensitiveKey(key)
-      ? REDACTED
-      : redactValue(context[key], seen);
-  }
+    for (const key of Object.keys(context)) {
+        result[key] = isSensitiveKey(key)
+            ? REDACTED
+            : redactValue(context[key], seen);
+    }
 
-  return result;
+    return result;
 }
 
 export function redactRecord(record: LogRecord): LogRecord {
-  return {
-    ...record,
-    context: redactContext(record.context),
-    error: record.error,
-  };
+    return {
+        ...record,
+        context: redactContext(record.context),
+        error: record.error,
+    };
 }

@@ -11,23 +11,23 @@ export type InputContextId = string;
 
 /** 底层输入事件：来源、按下/释放状态与可选连续值（如摇杆位移）。 */
 export interface InputEvent {
-  readonly sourceId: InputSourceId;
-  readonly pressed: boolean;
-  readonly value?: number;
+    readonly sourceId: InputSourceId;
+    readonly pressed: boolean;
+    readonly value?: number;
 }
 
 /** 类型化 gameplay action 采样：action 标识由调用方定义。 */
 export interface InputSample<TAction> {
-  readonly action: TAction;
-  readonly pressed: boolean;
-  /** 连续值：模拟输入（如摇杆位移）透传原始值；数字输入未携带值时按下=1、释放=0。 */
-  readonly value: number;
-  readonly timestamp: number;
+    readonly action: TAction;
+    readonly pressed: boolean;
+    /** 连续值：模拟输入（如摇杆位移）透传原始值；数字输入未携带值时按下=1、释放=0。 */
+    readonly value: number;
+    readonly timestamp: number;
 }
 
 /** 单个输入上下文下的映射声明：底层输入源 → action。 */
 export type InputMapping<TAction> = Readonly<
-  Record<InputSourceId, TAction>
+    Record<InputSourceId, TAction>
 >;
 
 /**
@@ -36,6 +36,6 @@ export type InputMapping<TAction> = Readonly<
  * id 供适配器/调试识别来源，内核不读取。
  */
 export interface InputSource {
-  readonly id: InputSourceId;
-  subscribe(listener: (event: InputEvent) => void): () => void;
+    readonly id: InputSourceId;
+    subscribe(listener: (event: InputEvent) => void): () => void;
 }

@@ -3,5 +3,5 @@
  * 可安全重复调用。
  */
 export interface DisposeHandle {
-  dispose(): void;
+    dispose(): void;
 }

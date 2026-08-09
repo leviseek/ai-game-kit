@@ -1,139 +1,139 @@
 import type { DisposeHandle } from "../scheduling/DisposeHandle";
 
 export type StateHook<State extends string, Event extends string> = (
-  from: State,
-  event: Event,
-  to: State,
+    from: State,
+    event: Event,
+    to: State,
 ) => void;
 
 export type StateTransitionTable<State extends string, Event extends string> = {
-  readonly [from in State]?: { readonly [event in Event]?: State };
+    readonly [from in State]?: { readonly [event in Event]?: State };
 };
 
 export interface StateMachineHooks<State extends string, Event extends string> {
-  readonly onExit?: { readonly [state in State]?: StateHook<State, Event> };
-  readonly onEnter?: { readonly [state in State]?: StateHook<State, Event> };
+    readonly onExit?: { readonly [state in State]?: StateHook<State, Event> };
+    readonly onEnter?: { readonly [state in State]?: StateHook<State, Event> };
 }
 
 export interface StateMachineOptions<State extends string, Event extends string> {
-  readonly initial: State;
-  readonly transitions: StateTransitionTable<State, Event>;
-  readonly hooks?: StateMachineHooks<State, Event>;
-  readonly onTransitionError?: (error: unknown) => void;
+    readonly initial: State;
+    readonly transitions: StateTransitionTable<State, Event>;
+    readonly hooks?: StateMachineHooks<State, Event>;
+    readonly onTransitionError?: (error: unknown) => void;
 }
 
 export interface StateMachine<State extends string, Event extends string> {
-  readonly state: State;
-  send(event: Event): void;
-  reset(): void;
-  dispose(): DisposeHandle;
+    readonly state: State;
+    send(event: Event): void;
+    reset(): void;
+    dispose(): DisposeHandle;
 }
 
 const NOOP_HANDLE: DisposeHandle = {
-  dispose: () => {},
+    dispose: () => { },
 };
 
 export function createStateMachine<State extends string, Event extends string>(
-  options: StateMachineOptions<State, Event>,
+    options: StateMachineOptions<State, Event>,
 ): StateMachine<State, Event> {
-  const { initial, transitions, hooks } = options;
-  const reportFailure =
-    options.onTransitionError ?? ((error: unknown) => console.error(error));
+    const { initial, transitions, hooks } = options;
+    const reportFailure =
+        options.onTransitionError ?? ((error: unknown) => console.error(error));
 
-  let current: State = initial;
-  let disposed = false;
-  let inTransition = false;
+    let current: State = initial;
+    let disposed = false;
+    let inTransition = false;
 
-  function report(error: unknown): void {
-    try {
-      reportFailure(error);
-    } catch (reporterError) {
-      console.error(reporterError);
-    }
-  }
-
-  function send(event: Event): void {
-    if (disposed) {
-      return;
+    function report(error: unknown): void {
+        try {
+            reportFailure(error);
+        } catch (reporterError) {
+            console.error(reporterError);
+        }
     }
 
-    if (inTransition) {
-      report(
-        new Error(
-          `StateMachine rejected reentrant event "${String(event)}" from state "${String(current)}"`,
-        ),
-      );
-      return;
+    function send(event: Event): void {
+        if (disposed) {
+            return;
+        }
+
+        if (inTransition) {
+            report(
+                new Error(
+                    `StateMachine rejected reentrant event "${String(event)}" from state "${String(current)}"`,
+                ),
+            );
+            return;
+        }
+
+        const from = current;
+        const eventTransitions = transitions[from];
+        const to = eventTransitions?.[event];
+
+        if (to === undefined) {
+            report(
+                new Error(
+                    `StateMachine rejected event "${String(event)}" from state "${String(from)}"`,
+                ),
+            );
+            return;
+        }
+
+        inTransition = true;
+        let switched = false;
+
+        try {
+            const exitHook = hooks?.onExit?.[from];
+            if (exitHook !== undefined) {
+                exitHook(from, event, to);
+            }
+
+            current = to;
+            switched = true;
+
+            const enterHook = hooks?.onEnter?.[to];
+            if (enterHook !== undefined) {
+                enterHook(from, event, to);
+            }
+        } catch (error) {
+            if (switched) {
+                current = from;
+            }
+            report(error);
+        } finally {
+            inTransition = false;
+        }
     }
 
-    const from = current;
-    const eventTransitions = transitions[from];
-    const to = eventTransitions?.[event];
+    function reset(): void {
+        if (disposed) {
+            return;
+        }
 
-    if (to === undefined) {
-      report(
-        new Error(
-          `StateMachine rejected event "${String(event)}" from state "${String(from)}"`,
-        ),
-      );
-      return;
+        current = initial;
     }
 
-    inTransition = true;
-    let switched = false;
+    /**
+     * 释放立即生效：状态机停止接收事件。返回的句柄只用于满足统一的
+     * DisposeHandle 形状与幂等确认；与调度器或事件通道的句柄不同，
+     * 它不会延迟或重复执行释放。
+     */
+    function dispose(): DisposeHandle {
+        if (disposed) {
+            return NOOP_HANDLE;
+        }
 
-    try {
-      const exitHook = hooks?.onExit?.[from];
-      if (exitHook !== undefined) {
-        exitHook(from, event, to);
-      }
+        disposed = true;
 
-      current = to;
-      switched = true;
-
-      const enterHook = hooks?.onEnter?.[to];
-      if (enterHook !== undefined) {
-        enterHook(from, event, to);
-      }
-    } catch (error) {
-      if (switched) {
-        current = from;
-      }
-      report(error);
-    } finally {
-      inTransition = false;
-    }
-  }
-
-  function reset(): void {
-    if (disposed) {
-      return;
+        return NOOP_HANDLE;
     }
 
-    current = initial;
-  }
-
-  /**
-   * 释放立即生效：状态机停止接收事件。返回的句柄只用于满足统一的
-   * DisposeHandle 形状与幂等确认；与调度器或事件通道的句柄不同，
-   * 它不会延迟或重复执行释放。
-   */
-  function dispose(): DisposeHandle {
-    if (disposed) {
-      return NOOP_HANDLE;
-    }
-
-    disposed = true;
-
-    return NOOP_HANDLE;
-  }
-
-  return {
-    get state(): State {
-      return current;
-    },
-    send,
-    reset,
-    dispose,
-  };
+    return {
+        get state(): State {
+            return current;
+        },
+        send,
+        reset,
+        dispose,
+    };
 }

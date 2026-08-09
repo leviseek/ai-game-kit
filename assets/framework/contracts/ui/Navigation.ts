@@ -6,22 +6,22 @@ import type { DisposeHandle } from "../../core/scheduling/DisposeHandle";
 
 /** 七层层级契约，从低到高：scene < normal < popup < guide < toast < loading < system。 */
 export type UiLayer =
-  | "scene"
-  | "normal"
-  | "popup"
-  | "guide"
-  | "toast"
-  | "loading"
-  | "system";
+    | "scene"
+    | "normal"
+    | "popup"
+    | "guide"
+    | "toast"
+    | "loading"
+    | "system";
 
 export const UI_LAYER_ORDER: readonly UiLayer[] = [
-  "scene",
-  "normal",
-  "popup",
-  "guide",
-  "toast",
-  "loading",
-  "system",
+    "scene",
+    "normal",
+    "popup",
+    "guide",
+    "toast",
+    "loading",
+    "system",
 ];
 
 /**
@@ -38,21 +38,21 @@ export type DuplicateOpenPolicy = "focus-existing" | "reject" | "allow-stack";
  * 按逆序释放；重复释放幂等。
  */
 export interface UiPage {
-  readonly id: string;
-  readonly route: string;
-  readonly layer: UiLayer;
-  /** 是否声明阻断输入：成为栈顶时导航进入模态状态。 */
-  readonly blocking: boolean;
-  readonly disposed: boolean;
-  /** 登记释放项；页面关闭时按登记逆序释放，已释放页面登记为 no-op。 */
-  addDisposable(disposable: DisposeHandle): void;
-  /** 释放页面作用域，幂等。 */
-  dispose(): void;
+    readonly id: string;
+    readonly route: string;
+    readonly layer: UiLayer;
+    /** 是否声明阻断输入：成为栈顶时导航进入模态状态。 */
+    readonly blocking: boolean;
+    readonly disposed: boolean;
+    /** 登记释放项；页面关闭时按登记逆序释放，已释放页面登记为 no-op。 */
+    addDisposable(disposable: DisposeHandle): void;
+    /** 释放页面作用域，幂等。 */
+    dispose(): void;
 }
 
 /** 打开/关闭结果：ok=false 时携带原因，失败不改变导航状态。 */
 export interface UiResult {
-  readonly ok: boolean;
-  readonly page?: UiPage;
-  readonly reason?: string;
+    readonly ok: boolean;
+    readonly page?: UiPage;
+    readonly reason?: string;
 }

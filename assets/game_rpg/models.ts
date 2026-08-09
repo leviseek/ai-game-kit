@@ -8,30 +8,30 @@ export type RpgAction = "move" | "interact" | "confirm" | "cancel";
 
 /** 跨场景玩家状态：写入后可在场景切换间恢复。 */
 export interface RpgPlayerState {
-  readonly sceneId: string;
-  readonly level: number;
-  readonly gold: number;
+    readonly sceneId: string;
+    readonly level: number;
+    readonly gold: number;
 }
 
 /** 代表性角色模型：业务模型留在游戏层的最小形态。 */
 export interface RpgCharacter {
-  readonly id: string;
-  readonly name: string;
-  readonly level: number;
+    readonly id: string;
+    readonly name: string;
+    readonly level: number;
 }
 
 /** 代表性技能模型。 */
 export interface RpgSkill {
-  readonly id: string;
-  readonly name: string;
-  readonly power: number;
+    readonly id: string;
+    readonly name: string;
+    readonly power: number;
 }
 
 /** 代表性任务模型。 */
 export interface RpgQuest {
-  readonly id: string;
-  readonly title: string;
-  readonly done: boolean;
+    readonly id: string;
+    readonly title: string;
+    readonly done: boolean;
 }
 
 /** 代表性 FairyGUI route：路由标识由游戏层定义，呈现由适配层完成。 */
@@ -39,7 +39,7 @@ export const RPG_STATUS_ROUTE = "rpg/status";
 
 /** 代表性 route 的 ViewModel：只承载呈现数据，不涉及渲染实现。 */
 export interface RpgStatusViewModel {
-  readonly hp: number;
-  readonly gold: number;
-  readonly quests: readonly string[];
+    readonly hp: number;
+    readonly gold: number;
+    readonly quests: readonly string[];
 }

@@ -1,19 +1,19 @@
 import type {
-  LogContext,
-  Logger,
-  LogRecord,
+    LogContext,
+    Logger,
+    LogRecord,
 } from "../../contracts/logging/Logger";
 import {
-  createScopedLogger,
-  type LogRecordFilter,
+    createScopedLogger,
+    type LogRecordFilter,
 } from "./ScopedLogger";
 import { redactRecord } from "./redact";
 
 interface ConsoleOutput {
-  debug(record: LogRecord): void;
-  info(record: LogRecord): void;
-  warn(record: LogRecord): void;
-  error(record: LogRecord): void;
+    debug(record: LogRecord): void;
+    info(record: LogRecord): void;
+    warn(record: LogRecord): void;
+    error(record: LogRecord): void;
 }
 
 /**
@@ -21,39 +21,39 @@ interface ConsoleOutput {
  * 再按级别输出到指定 output（默认 console）。
  */
 export class ConsoleLogger implements Logger {
-  private readonly delegate: Logger;
+    private readonly delegate: Logger;
 
-  public constructor(
-    output: ConsoleOutput = console,
-    scope = "",
-    context: LogContext = {},
-    filter: LogRecordFilter = redactRecord,
-  ) {
-    this.delegate = createScopedLogger(
-      (record) => output[record.level](record),
-      scope,
-      context,
-      filter,
-    );
-  }
+    public constructor(
+        output: ConsoleOutput = console,
+        scope = "",
+        context: LogContext = {},
+        filter: LogRecordFilter = redactRecord,
+    ) {
+        this.delegate = createScopedLogger(
+            (record) => output[record.level](record),
+            scope,
+            context,
+            filter,
+        );
+    }
 
-  public debug(message: string, context?: LogContext): void {
-    this.delegate.debug(message, context);
-  }
+    public debug(message: string, context?: LogContext): void {
+        this.delegate.debug(message, context);
+    }
 
-  public info(message: string, context?: LogContext): void {
-    this.delegate.info(message, context);
-  }
+    public info(message: string, context?: LogContext): void {
+        this.delegate.info(message, context);
+    }
 
-  public warn(message: string, context?: LogContext): void {
-    this.delegate.warn(message, context);
-  }
+    public warn(message: string, context?: LogContext): void {
+        this.delegate.warn(message, context);
+    }
 
-  public error(message: string, context?: LogContext, error?: Error): void {
-    this.delegate.error(message, context, error);
-  }
+    public error(message: string, context?: LogContext, error?: Error): void {
+        this.delegate.error(message, context, error);
+    }
 
-  public child(scope: string, context?: LogContext): Logger {
-    return this.delegate.child(scope, context);
-  }
+    public child(scope: string, context?: LogContext): Logger {
+        return this.delegate.child(scope, context);
+    }
 }

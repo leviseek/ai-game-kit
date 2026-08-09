@@ -5,12 +5,12 @@ export const RPG_SAVE_VERSION = 1;
 
 /** 版本化存档句柄：基于注入的平台存储，写入带版本号的存档记录。 */
 export interface RpgSave {
-  readonly currentVersion: number;
-  save(namespace: string, key: string, data: unknown): Promise<void>;
-  load(
-    namespace: string,
-    key: string,
-  ): Promise<{ version: number; data: unknown } | null>;
+    readonly currentVersion: number;
+    save(namespace: string, key: string, data: unknown): Promise<void>;
+    load(
+        namespace: string,
+        key: string,
+    ): Promise<{ version: number; data: unknown } | null>;
 }
 
 /**
@@ -20,58 +20,58 @@ export interface RpgSave {
  * "版本化"语义，不依赖框架根入口白名单外的内部实现（design decision 4 边界）。
  */
 export function createRpgSave(storage: PlatformStorage): RpgSave {
-  const keyFor = (namespace: string, key: string): string =>
-    `rpg:${encodeURIComponent(namespace)}:${encodeURIComponent(key)}`;
+    const keyFor = (namespace: string, key: string): string =>
+        `rpg:${encodeURIComponent(namespace)}:${encodeURIComponent(key)}`;
 
-  return {
-    currentVersion: RPG_SAVE_VERSION,
-    async save(namespace: string, key: string, data: unknown): Promise<void> {
-      const record = JSON.stringify({
-        version: RPG_SAVE_VERSION,
-        data,
-      });
-      await storage.set(keyFor(namespace, key), record);
-    },
-    async load(
-      namespace: string,
-      key: string,
-    ): Promise<{ version: number; data: unknown } | null> {
-      const raw = await storage.get(keyFor(namespace, key));
-      if (raw === null) {
-        return null;
-      }
+    return {
+        currentVersion: RPG_SAVE_VERSION,
+        async save(namespace: string, key: string, data: unknown): Promise<void> {
+            const record = JSON.stringify({
+                version: RPG_SAVE_VERSION,
+                data,
+            });
+            await storage.set(keyFor(namespace, key), record);
+        },
+        async load(
+            namespace: string,
+            key: string,
+        ): Promise<{ version: number; data: unknown } | null> {
+            const raw = await storage.get(keyFor(namespace, key));
+            if (raw === null) {
+                return null;
+            }
 
-      let record: { version?: unknown; data?: unknown };
-      try {
-        record = JSON.parse(raw) as { version?: unknown; data?: unknown };
-      } catch {
-        // 损坏 JSON 视为无效记录，返回 null（对齐 PlatformStorage 缺档语义）
-        return null;
-      }
+            let record: { version?: unknown; data?: unknown };
+            try {
+                record = JSON.parse(raw) as { version?: unknown; data?: unknown };
+            } catch {
+                // 损坏 JSON 视为无效记录，返回 null（对齐 PlatformStorage 缺档语义）
+                return null;
+            }
 
-      // 版本缺失或与当前版本不符的记录视为无效：夹具层不承载迁移
-      if (
-        typeof record.version !== "number" ||
-        record.version !== RPG_SAVE_VERSION
-      ) {
-        return null;
-      }
+            // 版本缺失或与当前版本不符的记录视为无效：夹具层不承载迁移
+            if (
+                typeof record.version !== "number" ||
+                record.version !== RPG_SAVE_VERSION
+            ) {
+                return null;
+            }
 
-      return { version: record.version, data: record.data };
-    },
-  };
+            return { version: record.version, data: record.data };
+        },
+    };
 }
 
 export function createRpgSaveModule(save: RpgSave): Module {
-  return {
-    id: "rpg.save",
-    dependencies: [],
-    start: () => {
-      // 存档仓库已就绪；版本号经 currentVersion 暴露
-      void save.currentVersion;
-    },
-    dispose: () => {
-      // 平台存储由注入方持有，此处不释放
-    },
-  };
+    return {
+        id: "rpg.save",
+        dependencies: [],
+        start: () => {
+            // 存档仓库已就绪；版本号经 currentVersion 暴露
+            void save.currentVersion;
+        },
+        dispose: () => {
+            // 平台存储由注入方持有，此处不释放
+        },
+    };
 }

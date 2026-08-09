@@ -1,10 +1,10 @@
 import type { Module, UiNavigator } from "../framework";
 import type { TycoonEconomicState, TycoonProductionState } from "./models";
 import {
-  TYCOON_FACTORY_ROUTE,
-  TYCOON_HUB_ROUTE,
-  type TycoonFactoryViewModel,
-  type TycoonHubViewModel,
+    TYCOON_FACTORY_ROUTE,
+    TYCOON_HUB_ROUTE,
+    type TycoonFactoryViewModel,
+    type TycoonHubViewModel,
 } from "./models";
 
 /**
@@ -13,10 +13,10 @@ import {
  * 纯数据映射，不依赖 fgui，也不持有导航器之外的共享状态。
  */
 export interface TycoonUiViewModels {
-  /** normal 层总览 ViewModel：现金与库存快照。 */
-  readonly hubViewModel: TycoonHubViewModel;
-  /** popup 层生产详情 ViewModel：当前任务与进度。 */
-  readonly factoryViewModel: TycoonFactoryViewModel;
+    /** normal 层总览 ViewModel：现金与库存快照。 */
+    readonly hubViewModel: TycoonHubViewModel;
+    /** popup 层生产详情 ViewModel：当前任务与进度。 */
+    readonly factoryViewModel: TycoonFactoryViewModel;
 }
 
 /**
@@ -25,25 +25,25 @@ export interface TycoonUiViewModels {
  * 经统一的呈现形状暴露给导航 route。
  */
 export function createTycoonUiViewModels(sources: {
-  readonly economyState: () => TycoonEconomicState;
-  readonly productionState: () => TycoonProductionState;
+    readonly economyState: () => TycoonEconomicState;
+    readonly productionState: () => TycoonProductionState;
 }): TycoonUiViewModels {
-  return {
-    get hubViewModel(): TycoonHubViewModel {
-      const state = sources.economyState();
-      return {
-        cash: state.cash,
-        inventory: state.inventory,
-      };
-    },
-    get factoryViewModel(): TycoonFactoryViewModel {
-      const state = sources.productionState();
-      return {
-        activeProductId: state.activeProductId,
-        progress: state.progress,
-      };
-    },
-  };
+    return {
+        get hubViewModel(): TycoonHubViewModel {
+            const state = sources.economyState();
+            return {
+                cash: state.cash,
+                inventory: state.inventory,
+            };
+        },
+        get factoryViewModel(): TycoonFactoryViewModel {
+            const state = sources.productionState();
+            return {
+                activeProductId: state.activeProductId,
+                progress: state.progress,
+            };
+        },
+    };
 }
 
 /**
@@ -53,14 +53,14 @@ export function createTycoonUiViewModels(sources: {
  * 共享导航器——组合根的 dispose 统一负责（对齐 GameFixture 幂等契约）。
  */
 export function createTycoonUiModule(navigator: UiNavigator): Module {
-  return {
-    id: "tycoon.ui",
-    dependencies: [],
-    start: () => {
-      // 打开代表性 route 的入口由调用方经 navigator 触发；此处登记 route 常量
-      void TYCOON_HUB_ROUTE;
-      void TYCOON_FACTORY_ROUTE;
-      void navigator;
-    },
-  };
+    return {
+        id: "tycoon.ui",
+        dependencies: [],
+        start: () => {
+            // 打开代表性 route 的入口由调用方经 navigator 触发；此处登记 route 常量
+            void TYCOON_HUB_ROUTE;
+            void TYCOON_FACTORY_ROUTE;
+            void navigator;
+        },
+    };
 }

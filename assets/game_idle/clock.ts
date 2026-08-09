@@ -7,22 +7,22 @@ import type { Module, TimeSource } from "../framework";
  * 故夹具层自实现最小可控墙钟，保证离线结算可经 advance 独立驱动。
  */
 export interface IdleClock extends TimeSource {
-  advance(milliseconds: number): void;
+    advance(milliseconds: number): void;
 }
 
 export function createIdleClock(initialTime = 0): IdleClock {
-  let current = initialTime;
+    let current = initialTime;
 
-  return {
-    now: () => current,
-    advance: (milliseconds: number) => {
-      // 与框架时钟先例一致：拒绝负值推进，保证时间单调，避免倒退破坏离线结算
-      if (milliseconds < 0) {
-        throw new Error("IdleClock advance must not be negative");
-      }
-      current += milliseconds;
-    },
-  };
+    return {
+        now: () => current,
+        advance: (milliseconds: number) => {
+            // 与框架时钟先例一致：拒绝负值推进，保证时间单调，避免倒退破坏离线结算
+            if (milliseconds < 0) {
+                throw new Error("IdleClock advance must not be negative");
+            }
+            current += milliseconds;
+        },
+    };
 }
 
 /**
@@ -30,12 +30,12 @@ export function createIdleClock(initialTime = 0): IdleClock {
  * 墙钟推进经 fixture.clock.advance 由测试驱动，模块生命周期无副作用。
  */
 export function createIdleClockModule(clock: IdleClock): Module {
-  return {
-    id: "idle.clock",
-    dependencies: [],
-    start: () => {
-      // 时钟在组合根构造时即就绪；start 只是让模块进入装配清单
-      void clock.now();
-    },
-  };
+    return {
+        id: "idle.clock",
+        dependencies: [],
+        start: () => {
+            // 时钟在组合根构造时即就绪；start 只是让模块进入装配清单
+            void clock.now();
+        },
+    };
 }

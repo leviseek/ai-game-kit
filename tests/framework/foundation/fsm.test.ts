@@ -2,628 +2,628 @@ import { describe, expect, spyOn, test } from "bun:test";
 
 import type { DisposeHandle } from "../../../assets/framework/core/scheduling/DisposeHandle";
 import {
-  createStateMachine,
-  type StateMachine,
-  type StateTransitionTable,
+    createStateMachine,
+    type StateMachine,
+    type StateTransitionTable,
 } from "../../../assets/framework/core/fsm/StateMachine";
 
 type DoorState = "closed" | "open" | "locked";
 type DoorEvent = "open" | "close" | "lock" | "unlock";
 
 const DOOR_TRANSITIONS: StateTransitionTable<DoorState, DoorEvent> = {
-  closed: { open: "open", lock: "locked" },
-  open: { close: "closed" },
-  locked: { unlock: "closed" },
+    closed: { open: "open", lock: "locked" },
+    open: { close: "closed" },
+    locked: { unlock: "closed" },
 };
 
 interface Failure {
-  readonly error: Error;
+    readonly error: Error;
 }
 
 function createFailures(): {
-  readonly failures: Failure[];
-  readonly onTransitionError: (error: unknown) => void;
+    readonly failures: Failure[];
+    readonly onTransitionError: (error: unknown) => void;
 } {
-  const failures: Failure[] = [];
+    const failures: Failure[] = [];
 
-  return {
-    failures,
-    onTransitionError: (error) => {
-      failures.push({ error: error as Error });
-    },
-  };
+    return {
+        failures,
+        onTransitionError: (error) => {
+            failures.push({ error: error as Error });
+        },
+    };
 }
 
 describe("StateMachine legal transitions", () => {
-  test("exposes the initial state on creation", () => {
-    const machine = createStateMachine<DoorState, DoorEvent>({
-      initial: "closed",
-      transitions: DOOR_TRANSITIONS,
+    test("exposes the initial state on creation", () => {
+        const machine = createStateMachine<DoorState, DoorEvent>({
+            initial: "closed",
+            transitions: DOOR_TRANSITIONS,
+        });
+
+        expect(machine.state).toBe("closed");
     });
 
-    expect(machine.state).toBe("closed");
-  });
+    test("sending an allowed event advances state", () => {
+        const machine = createStateMachine<DoorState, DoorEvent>({
+            initial: "closed",
+            transitions: DOOR_TRANSITIONS,
+        });
 
-  test("sending an allowed event advances state", () => {
-    const machine = createStateMachine<DoorState, DoorEvent>({
-      initial: "closed",
-      transitions: DOOR_TRANSITIONS,
+        machine.send("open");
+        expect(machine.state).toBe("open");
+
+        machine.send("close");
+        expect(machine.state).toBe("closed");
     });
 
-    machine.send("open");
-    expect(machine.state).toBe("open");
+    test("follows the full declared path", () => {
+        const machine = createStateMachine<DoorState, DoorEvent>({
+            initial: "closed",
+            transitions: DOOR_TRANSITIONS,
+        });
 
-    machine.send("close");
-    expect(machine.state).toBe("closed");
-  });
+        machine.send("lock");
+        expect(machine.state).toBe("locked");
 
-  test("follows the full declared path", () => {
-    const machine = createStateMachine<DoorState, DoorEvent>({
-      initial: "closed",
-      transitions: DOOR_TRANSITIONS,
+        machine.send("unlock");
+        expect(machine.state).toBe("closed");
     });
-
-    machine.send("lock");
-    expect(machine.state).toBe("locked");
-
-    machine.send("unlock");
-    expect(machine.state).toBe("closed");
-  });
 });
 
 describe("StateMachine disallowed transitions", () => {
-  test("rejects an event not allowed from the current state and keeps state", () => {
-    const { failures, onTransitionError } = createFailures();
-    const machine = createStateMachine<DoorState, DoorEvent>({
-      initial: "closed",
-      transitions: DOOR_TRANSITIONS,
-      onTransitionError,
+    test("rejects an event not allowed from the current state and keeps state", () => {
+        const { failures, onTransitionError } = createFailures();
+        const machine = createStateMachine<DoorState, DoorEvent>({
+            initial: "closed",
+            transitions: DOOR_TRANSITIONS,
+            onTransitionError,
+        });
+
+        machine.send("close");
+
+        expect(machine.state).toBe("closed");
+        expect(failures).toHaveLength(1);
+        expect(failures[0].error).toBeInstanceOf(Error);
+        expect(failures[0].error.message.length).toBeGreaterThan(0);
     });
 
-    machine.send("close");
+    test("machine remains usable after a disallowed event", () => {
+        const { onTransitionError } = createFailures();
+        const machine = createStateMachine<DoorState, DoorEvent>({
+            initial: "closed",
+            transitions: DOOR_TRANSITIONS,
+            onTransitionError,
+        });
 
-    expect(machine.state).toBe("closed");
-    expect(failures).toHaveLength(1);
-    expect(failures[0].error).toBeInstanceOf(Error);
-    expect(failures[0].error.message.length).toBeGreaterThan(0);
-  });
+        machine.send("close");
+        machine.send("open");
 
-  test("machine remains usable after a disallowed event", () => {
-    const { onTransitionError } = createFailures();
-    const machine = createStateMachine<DoorState, DoorEvent>({
-      initial: "closed",
-      transitions: DOOR_TRANSITIONS,
-      onTransitionError,
+        expect(machine.state).toBe("open");
     });
-
-    machine.send("close");
-    machine.send("open");
-
-    expect(machine.state).toBe("open");
-  });
 });
 
 describe("StateMachine unknown events", () => {
-  test("an event not declared in the table keeps state unchanged and reports failure", () => {
-    const { failures, onTransitionError } = createFailures();
-    const machine = createStateMachine<DoorState, DoorEvent>({
-      initial: "closed",
-      transitions: DOOR_TRANSITIONS,
-      onTransitionError,
+    test("an event not declared in the table keeps state unchanged and reports failure", () => {
+        const { failures, onTransitionError } = createFailures();
+        const machine = createStateMachine<DoorState, DoorEvent>({
+            initial: "closed",
+            transitions: DOOR_TRANSITIONS,
+            onTransitionError,
+        });
+
+        machine.send("buzz" as DoorEvent);
+
+        expect(machine.state).toBe("closed");
+        expect(failures).toHaveLength(1);
+        expect(failures[0].error).toBeInstanceOf(Error);
     });
 
-    machine.send("buzz" as DoorEvent);
+    test("machine remains usable after an unknown event", () => {
+        const { onTransitionError } = createFailures();
+        const machine = createStateMachine<DoorState, DoorEvent>({
+            initial: "closed",
+            transitions: DOOR_TRANSITIONS,
+            onTransitionError,
+        });
 
-    expect(machine.state).toBe("closed");
-    expect(failures).toHaveLength(1);
-    expect(failures[0].error).toBeInstanceOf(Error);
-  });
+        machine.send("buzz" as DoorEvent);
+        machine.send("open");
 
-  test("machine remains usable after an unknown event", () => {
-    const { onTransitionError } = createFailures();
-    const machine = createStateMachine<DoorState, DoorEvent>({
-      initial: "closed",
-      transitions: DOOR_TRANSITIONS,
-      onTransitionError,
+        expect(machine.state).toBe("open");
     });
-
-    machine.send("buzz" as DoorEvent);
-    machine.send("open");
-
-    expect(machine.state).toBe("open");
-  });
 });
 
 describe("StateMachine transition hooks", () => {
-  test("exit hook of the source state runs before the enter hook of the target state", () => {
-    const order: string[] = [];
-    const machine = createStateMachine<DoorState, DoorEvent>({
-      initial: "closed",
-      transitions: DOOR_TRANSITIONS,
-      hooks: {
-        onExit: {
-          closed: (from, event, to) => {
-            order.push(`exit:${from}`);
-            expect(event).toBe("open");
-            expect(to).toBe("open");
-          },
-        },
-        onEnter: {
-          open: (from, event, to) => {
-            order.push(`enter:${to}`);
-            expect(from).toBe("closed");
-            expect(event).toBe("open");
-          },
-        },
-      },
+    test("exit hook of the source state runs before the enter hook of the target state", () => {
+        const order: string[] = [];
+        const machine = createStateMachine<DoorState, DoorEvent>({
+            initial: "closed",
+            transitions: DOOR_TRANSITIONS,
+            hooks: {
+                onExit: {
+                    closed: (from, event, to) => {
+                        order.push(`exit:${from}`);
+                        expect(event).toBe("open");
+                        expect(to).toBe("open");
+                    },
+                },
+                onEnter: {
+                    open: (from, event, to) => {
+                        order.push(`enter:${to}`);
+                        expect(from).toBe("closed");
+                        expect(event).toBe("open");
+                    },
+                },
+            },
+        });
+
+        machine.send("open");
+
+        expect(order).toEqual(["exit:closed", "enter:open"]);
     });
 
-    machine.send("open");
+    test("hooks receive the full transition context", () => {
+        const seen: Array<{ readonly from: DoorState; readonly event: DoorEvent; readonly to: DoorState }> = [];
+        const machine = createStateMachine<DoorState, DoorEvent>({
+            initial: "closed",
+            transitions: DOOR_TRANSITIONS,
+            hooks: {
+                onExit: {
+                    closed: (from, event, to) => {
+                        seen.push({ from, event, to });
+                    },
+                },
+                onEnter: {
+                    open: (from, event, to) => {
+                        seen.push({ from, event, to });
+                    },
+                },
+            },
+        });
 
-    expect(order).toEqual(["exit:closed", "enter:open"]);
-  });
+        machine.send("open");
 
-  test("hooks receive the full transition context", () => {
-    const seen: Array<{ readonly from: DoorState; readonly event: DoorEvent; readonly to: DoorState }> = [];
-    const machine = createStateMachine<DoorState, DoorEvent>({
-      initial: "closed",
-      transitions: DOOR_TRANSITIONS,
-      hooks: {
-        onExit: {
-          closed: (from, event, to) => {
-            seen.push({ from, event, to });
-          },
-        },
-        onEnter: {
-          open: (from, event, to) => {
-            seen.push({ from, event, to });
-          },
-        },
-      },
+        expect(seen).toEqual([
+            { from: "closed", event: "open", to: "open" },
+            { from: "closed", event: "open", to: "open" },
+        ]);
     });
-
-    machine.send("open");
-
-    expect(seen).toEqual([
-      { from: "closed", event: "open", to: "open" },
-      { from: "closed", event: "open", to: "open" },
-    ]);
-  });
 });
 
 describe("StateMachine hook failure rollback", () => {
-  test("a failing exit hook prevents the enter hook and keeps the original state", () => {
-    const { failures, onTransitionError } = createFailures();
-    const order: string[] = [];
-    const machine = createStateMachine<DoorState, DoorEvent>({
-      initial: "closed",
-      transitions: DOOR_TRANSITIONS,
-      onTransitionError,
-      hooks: {
-        onExit: {
-          closed: () => {
-            order.push("exit:closed");
-            throw new Error("exit failed");
-          },
-        },
-        onEnter: {
-          open: () => {
-            order.push("enter:open");
-          },
-        },
-      },
+    test("a failing exit hook prevents the enter hook and keeps the original state", () => {
+        const { failures, onTransitionError } = createFailures();
+        const order: string[] = [];
+        const machine = createStateMachine<DoorState, DoorEvent>({
+            initial: "closed",
+            transitions: DOOR_TRANSITIONS,
+            onTransitionError,
+            hooks: {
+                onExit: {
+                    closed: () => {
+                        order.push("exit:closed");
+                        throw new Error("exit failed");
+                    },
+                },
+                onEnter: {
+                    open: () => {
+                        order.push("enter:open");
+                    },
+                },
+            },
+        });
+
+        machine.send("open");
+
+        expect(order).toEqual(["exit:closed"]);
+        expect(failures).toHaveLength(1);
+        expect(failures[0].error.message).toBe("exit failed");
+        expect(machine.state).toBe("closed");
     });
 
-    machine.send("open");
+    test("a failing enter hook rolls the state back to the source state", () => {
+        const { failures, onTransitionError } = createFailures();
+        const machine = createStateMachine<DoorState, DoorEvent>({
+            initial: "closed",
+            transitions: DOOR_TRANSITIONS,
+            onTransitionError,
+            hooks: {
+                onEnter: {
+                    open: () => {
+                        throw new Error("enter failed");
+                    },
+                },
+            },
+        });
 
-    expect(order).toEqual(["exit:closed"]);
-    expect(failures).toHaveLength(1);
-    expect(failures[0].error.message).toBe("exit failed");
-    expect(machine.state).toBe("closed");
-  });
+        machine.send("open");
 
-  test("a failing enter hook rolls the state back to the source state", () => {
-    const { failures, onTransitionError } = createFailures();
-    const machine = createStateMachine<DoorState, DoorEvent>({
-      initial: "closed",
-      transitions: DOOR_TRANSITIONS,
-      onTransitionError,
-      hooks: {
-        onEnter: {
-          open: () => {
-            throw new Error("enter failed");
-          },
-        },
-      },
+        expect(machine.state).toBe("closed");
+        expect(failures).toHaveLength(1);
+        expect(failures[0].error.message).toBe("enter failed");
     });
 
-    machine.send("open");
+    test("a failed transition does not run hooks of later stages", () => {
+        const { onTransitionError } = createFailures();
+        const order: string[] = [];
+        const machine = createStateMachine<DoorState, DoorEvent>({
+            initial: "closed",
+            transitions: DOOR_TRANSITIONS,
+            onTransitionError,
+            hooks: {
+                onExit: {
+                    closed: () => {
+                        order.push("exit:closed");
+                    },
+                },
+                onEnter: {
+                    open: () => {
+                        order.push("enter:open");
+                        throw new Error("enter failed");
+                    },
+                },
+            },
+        });
 
-    expect(machine.state).toBe("closed");
-    expect(failures).toHaveLength(1);
-    expect(failures[0].error.message).toBe("enter failed");
-  });
+        machine.send("open");
 
-  test("a failed transition does not run hooks of later stages", () => {
-    const { onTransitionError } = createFailures();
-    const order: string[] = [];
-    const machine = createStateMachine<DoorState, DoorEvent>({
-      initial: "closed",
-      transitions: DOOR_TRANSITIONS,
-      onTransitionError,
-      hooks: {
-        onExit: {
-          closed: () => {
-            order.push("exit:closed");
-          },
-        },
-        onEnter: {
-          open: () => {
-            order.push("enter:open");
-            throw new Error("enter failed");
-          },
-        },
-      },
+        expect(order).toEqual(["exit:closed", "enter:open"]);
+        expect(machine.state).toBe("closed");
     });
 
-    machine.send("open");
+    test("machine stays usable and consistent after a failed transition", () => {
+        let enterFails = true;
+        const { onTransitionError } = createFailures();
+        const machine = createStateMachine<DoorState, DoorEvent>({
+            initial: "closed",
+            transitions: DOOR_TRANSITIONS,
+            onTransitionError,
+            hooks: {
+                onEnter: {
+                    open: () => {
+                        if (enterFails) {
+                            enterFails = false;
+                            throw new Error("enter failed once");
+                        }
+                    },
+                },
+            },
+        });
 
-    expect(order).toEqual(["exit:closed", "enter:open"]);
-    expect(machine.state).toBe("closed");
-  });
+        machine.send("open");
+        expect(machine.state).toBe("closed");
 
-  test("machine stays usable and consistent after a failed transition", () => {
-    let enterFails = true;
-    const { onTransitionError } = createFailures();
-    const machine = createStateMachine<DoorState, DoorEvent>({
-      initial: "closed",
-      transitions: DOOR_TRANSITIONS,
-      onTransitionError,
-      hooks: {
-        onEnter: {
-          open: () => {
-            if (enterFails) {
-              enterFails = false;
-              throw new Error("enter failed once");
-            }
-          },
-        },
-      },
+        machine.send("open");
+        expect(machine.state).toBe("open");
     });
-
-    machine.send("open");
-    expect(machine.state).toBe("closed");
-
-    machine.send("open");
-    expect(machine.state).toBe("open");
-  });
 });
 
 describe("StateMachine reset", () => {
-  test("reset returns to the initial state and rules remain usable", () => {
-    const machine = createStateMachine<DoorState, DoorEvent>({
-      initial: "closed",
-      transitions: DOOR_TRANSITIONS,
+    test("reset returns to the initial state and rules remain usable", () => {
+        const machine = createStateMachine<DoorState, DoorEvent>({
+            initial: "closed",
+            transitions: DOOR_TRANSITIONS,
+        });
+
+        machine.send("open");
+        expect(machine.state).toBe("open");
+
+        machine.reset();
+        expect(machine.state).toBe("closed");
+
+        machine.send("lock");
+        expect(machine.state).toBe("locked");
     });
 
-    machine.send("open");
-    expect(machine.state).toBe("open");
+    test("reset does not run transition hooks", () => {
+        const order: string[] = [];
+        const machine = createStateMachine<DoorState, DoorEvent>({
+            initial: "closed",
+            transitions: DOOR_TRANSITIONS,
+            hooks: {
+                onExit: {
+                    closed: () => {
+                        order.push("exit:closed");
+                    },
+                },
+                onEnter: {
+                    open: () => {
+                        order.push("enter:open");
+                    },
+                },
+            },
+        });
 
-    machine.reset();
-    expect(machine.state).toBe("closed");
+        machine.send("open");
+        expect(order).toEqual(["exit:closed", "enter:open"]);
 
-    machine.send("lock");
-    expect(machine.state).toBe("locked");
-  });
-
-  test("reset does not run transition hooks", () => {
-    const order: string[] = [];
-    const machine = createStateMachine<DoorState, DoorEvent>({
-      initial: "closed",
-      transitions: DOOR_TRANSITIONS,
-      hooks: {
-        onExit: {
-          closed: () => {
-            order.push("exit:closed");
-          },
-        },
-        onEnter: {
-          open: () => {
-            order.push("enter:open");
-          },
-        },
-      },
+        machine.reset();
+        expect(machine.state).toBe("closed");
+        expect(order).toEqual(["exit:closed", "enter:open"]);
     });
-
-    machine.send("open");
-    expect(order).toEqual(["exit:closed", "enter:open"]);
-
-    machine.reset();
-    expect(machine.state).toBe("closed");
-    expect(order).toEqual(["exit:closed", "enter:open"]);
-  });
 });
 
 describe("StateMachine dispose", () => {
-  test("after dispose the machine rejects events without side effects", () => {
-    const { failures, onTransitionError } = createFailures();
-    const order: string[] = [];
-    const machine = createStateMachine<DoorState, DoorEvent>({
-      initial: "closed",
-      transitions: DOOR_TRANSITIONS,
-      onTransitionError,
-      hooks: {
-        onExit: {
-          closed: () => {
-            order.push("exit:closed");
-          },
-        },
-        onEnter: {
-          open: () => {
-            order.push("enter:open");
-          },
-        },
-      },
+    test("after dispose the machine rejects events without side effects", () => {
+        const { failures, onTransitionError } = createFailures();
+        const order: string[] = [];
+        const machine = createStateMachine<DoorState, DoorEvent>({
+            initial: "closed",
+            transitions: DOOR_TRANSITIONS,
+            onTransitionError,
+            hooks: {
+                onExit: {
+                    closed: () => {
+                        order.push("exit:closed");
+                    },
+                },
+                onEnter: {
+                    open: () => {
+                        order.push("enter:open");
+                    },
+                },
+            },
+        });
+
+        machine.dispose();
+        machine.send("open");
+
+        expect(machine.state).toBe("closed");
+        expect(order).toEqual([]);
+        expect(failures).toEqual([]);
     });
 
-    machine.dispose();
-    machine.send("open");
+    test("dispose returns a DisposeHandle", () => {
+        const machine = createStateMachine<DoorState, DoorEvent>({
+            initial: "closed",
+            transitions: DOOR_TRANSITIONS,
+        });
 
-    expect(machine.state).toBe("closed");
-    expect(order).toEqual([]);
-    expect(failures).toEqual([]);
-  });
+        const handle: DisposeHandle = machine.dispose();
 
-  test("dispose returns a DisposeHandle", () => {
-    const machine = createStateMachine<DoorState, DoorEvent>({
-      initial: "closed",
-      transitions: DOOR_TRANSITIONS,
+        expect(typeof handle.dispose).toBe("function");
     });
 
-    const handle: DisposeHandle = machine.dispose();
+    test("disposing the returned handle repeatedly is a no-op", () => {
+        const machine = createStateMachine<DoorState, DoorEvent>({
+            initial: "closed",
+            transitions: DOOR_TRANSITIONS,
+        });
 
-    expect(typeof handle.dispose).toBe("function");
-  });
+        const handle = machine.dispose();
 
-  test("disposing the returned handle repeatedly is a no-op", () => {
-    const machine = createStateMachine<DoorState, DoorEvent>({
-      initial: "closed",
-      transitions: DOOR_TRANSITIONS,
+        expect(() => {
+            handle.dispose();
+            handle.dispose();
+            handle.dispose();
+        }).not.toThrow();
     });
 
-    const handle = machine.dispose();
+    test("repeated disposal is idempotent and runs no hooks", () => {
+        const order: string[] = [];
+        const machine = createStateMachine<DoorState, DoorEvent>({
+            initial: "closed",
+            transitions: DOOR_TRANSITIONS,
+            hooks: {
+                onExit: {
+                    closed: () => {
+                        order.push("exit:closed");
+                    },
+                },
+                onEnter: {
+                    open: () => {
+                        order.push("enter:open");
+                    },
+                },
+            },
+        });
 
-    expect(() => {
-      handle.dispose();
-      handle.dispose();
-      handle.dispose();
-    }).not.toThrow();
-  });
+        expect(() => {
+            machine.dispose();
+            machine.dispose();
+            machine.dispose();
+        }).not.toThrow();
 
-  test("repeated disposal is idempotent and runs no hooks", () => {
-    const order: string[] = [];
-    const machine = createStateMachine<DoorState, DoorEvent>({
-      initial: "closed",
-      transitions: DOOR_TRANSITIONS,
-      hooks: {
-        onExit: {
-          closed: () => {
-            order.push("exit:closed");
-          },
-        },
-        onEnter: {
-          open: () => {
-            order.push("enter:open");
-          },
-        },
-      },
+        expect(order).toEqual([]);
     });
 
-    expect(() => {
-      machine.dispose();
-      machine.dispose();
-      machine.dispose();
-    }).not.toThrow();
+    test("reset after dispose is a no-op", () => {
+        const order: string[] = [];
+        const machine = createStateMachine<DoorState, DoorEvent>({
+            initial: "closed",
+            transitions: DOOR_TRANSITIONS,
+            hooks: {
+                onEnter: {
+                    open: () => {
+                        order.push("enter:open");
+                    },
+                },
+            },
+        });
 
-    expect(order).toEqual([]);
-  });
+        machine.send("open");
+        expect(machine.state).toBe("open");
+        expect(order).toEqual(["enter:open"]);
 
-  test("reset after dispose is a no-op", () => {
-    const order: string[] = [];
-    const machine = createStateMachine<DoorState, DoorEvent>({
-      initial: "closed",
-      transitions: DOOR_TRANSITIONS,
-      hooks: {
-        onEnter: {
-          open: () => {
-            order.push("enter:open");
-          },
-        },
-      },
+        machine.dispose();
+
+        expect(() => {
+            machine.reset();
+        }).not.toThrow();
+        expect(machine.state).toBe("open");
+        expect(order).toEqual(["enter:open"]);
     });
-
-    machine.send("open");
-    expect(machine.state).toBe("open");
-    expect(order).toEqual(["enter:open"]);
-
-    machine.dispose();
-
-    expect(() => {
-      machine.reset();
-    }).not.toThrow();
-    expect(machine.state).toBe("open");
-    expect(order).toEqual(["enter:open"]);
-  });
 });
 
 describe("StateMachine contract shape", () => {
-  test("satisfies the StateMachine interface shape", () => {
-    const machine = createStateMachine<DoorState, DoorEvent>({
-      initial: "closed",
-      transitions: DOOR_TRANSITIONS,
-    });
-    const typed: StateMachine<DoorState, DoorEvent> = machine;
+    test("satisfies the StateMachine interface shape", () => {
+        const machine = createStateMachine<DoorState, DoorEvent>({
+            initial: "closed",
+            transitions: DOOR_TRANSITIONS,
+        });
+        const typed: StateMachine<DoorState, DoorEvent> = machine;
 
-    expect(typeof typed.send).toBe("function");
-    expect(typeof typed.reset).toBe("function");
-    expect(typeof typed.dispose).toBe("function");
-    expect(typeof typed.state).toBe("string");
-  });
+        expect(typeof typed.send).toBe("function");
+        expect(typeof typed.reset).toBe("function");
+        expect(typeof typed.dispose).toBe("function");
+        expect(typeof typed.state).toBe("string");
+    });
 });
 
 describe("StateMachine error reporter isolation", () => {
-  test("a throwing error reporter is contained and does not break send", () => {
-    const errorSpy = spyOn(console, "error").mockImplementation(() => {});
+    test("a throwing error reporter is contained and does not break send", () => {
+        const errorSpy = spyOn(console, "error").mockImplementation(() => { });
 
-    try {
-      const machine = createStateMachine<DoorState, DoorEvent>({
-        initial: "closed",
-        transitions: DOOR_TRANSITIONS,
-        onTransitionError: () => {
-          throw new Error("reporter failed");
-        },
-      });
+        try {
+            const machine = createStateMachine<DoorState, DoorEvent>({
+                initial: "closed",
+                transitions: DOOR_TRANSITIONS,
+                onTransitionError: () => {
+                    throw new Error("reporter failed");
+                },
+            });
 
-      machine.send("close");
-      expect(machine.state).toBe("closed");
+            machine.send("close");
+            expect(machine.state).toBe("closed");
 
-      machine.send("open");
-      expect(machine.state).toBe("open");
+            machine.send("open");
+            expect(machine.state).toBe("open");
 
-      expect(errorSpy).toHaveBeenCalled();
-    } finally {
-      errorSpy.mockRestore();
-    }
-  });
+            expect(errorSpy).toHaveBeenCalled();
+        } finally {
+            errorSpy.mockRestore();
+        }
+    });
 });
 
 describe("StateMachine unregistered source state", () => {
-  test("sending an event from a state without declared transitions reports failure and keeps state", () => {
-    const { failures, onTransitionError } = createFailures();
-    const machine = createStateMachine<"alpha" | "beta", "go">({
-      initial: "alpha",
-      transitions: {
-        beta: { go: "alpha" },
-      },
-      onTransitionError,
+    test("sending an event from a state without declared transitions reports failure and keeps state", () => {
+        const { failures, onTransitionError } = createFailures();
+        const machine = createStateMachine<"alpha" | "beta", "go">({
+            initial: "alpha",
+            transitions: {
+                beta: { go: "alpha" },
+            },
+            onTransitionError,
+        });
+
+        machine.send("go");
+
+        expect(machine.state).toBe("alpha");
+        expect(failures).toHaveLength(1);
+        expect(failures[0].error).toBeInstanceOf(Error);
     });
-
-    machine.send("go");
-
-    expect(machine.state).toBe("alpha");
-    expect(failures).toHaveLength(1);
-    expect(failures[0].error).toBeInstanceOf(Error);
-  });
 });
 
 describe("StateMachine reentrant send", () => {
-  test("a reentrant send from inside a hook is rejected without corrupting state", () => {
-    const { failures, onTransitionError } = createFailures();
-    let machine: StateMachine<DoorState, DoorEvent>;
-    machine = createStateMachine<DoorState, DoorEvent>({
-      initial: "closed",
-      transitions: DOOR_TRANSITIONS,
-      onTransitionError,
-      hooks: {
-        onEnter: {
-          open: () => {
-            machine.send("close");
-          },
-        },
-      },
+    test("a reentrant send from inside a hook is rejected without corrupting state", () => {
+        const { failures, onTransitionError } = createFailures();
+        let machine: StateMachine<DoorState, DoorEvent>;
+        machine = createStateMachine<DoorState, DoorEvent>({
+            initial: "closed",
+            transitions: DOOR_TRANSITIONS,
+            onTransitionError,
+            hooks: {
+                onEnter: {
+                    open: () => {
+                        machine.send("close");
+                    },
+                },
+            },
+        });
+
+        machine.send("open");
+
+        expect(machine.state).toBe("open");
+        expect(failures).toHaveLength(1);
+        expect(failures[0].error.message).toContain("reentrant");
     });
-
-    machine.send("open");
-
-    expect(machine.state).toBe("open");
-    expect(failures).toHaveLength(1);
-    expect(failures[0].error.message).toContain("reentrant");
-  });
 });
 
 describe("StateMachine self-transition", () => {
-  const SELF_TRANSITIONS: StateTransitionTable<DoorState, DoorEvent> = {
-    closed: { close: "closed" },
-    open: { close: "closed" },
-    locked: { unlock: "closed" },
-  };
+    const SELF_TRANSITIONS: StateTransitionTable<DoorState, DoorEvent> = {
+        closed: { close: "closed" },
+        open: { close: "closed" },
+        locked: { unlock: "closed" },
+    };
 
-  test("self-transition runs exit and enter hooks of the same state in order", () => {
-    const order: string[] = [];
-    const machine = createStateMachine<DoorState, DoorEvent>({
-      initial: "closed",
-      transitions: SELF_TRANSITIONS,
-      hooks: {
-        onExit: {
-          closed: (from, event, to) => {
-            order.push(`exit:${from}`);
-            expect(to).toBe("closed");
-          },
-        },
-        onEnter: {
-          closed: (from, event, to) => {
-            order.push(`enter:${to}`);
-            expect(from).toBe("closed");
-          },
-        },
-      },
+    test("self-transition runs exit and enter hooks of the same state in order", () => {
+        const order: string[] = [];
+        const machine = createStateMachine<DoorState, DoorEvent>({
+            initial: "closed",
+            transitions: SELF_TRANSITIONS,
+            hooks: {
+                onExit: {
+                    closed: (from, event, to) => {
+                        order.push(`exit:${from}`);
+                        expect(to).toBe("closed");
+                    },
+                },
+                onEnter: {
+                    closed: (from, event, to) => {
+                        order.push(`enter:${to}`);
+                        expect(from).toBe("closed");
+                    },
+                },
+            },
+        });
+
+        machine.send("close");
+
+        expect(machine.state).toBe("closed");
+        expect(order).toEqual(["exit:closed", "enter:closed"]);
     });
 
-    machine.send("close");
+    test("a failing enter hook on a self-transition keeps the state unchanged", () => {
+        const { failures, onTransitionError } = createFailures();
+        const machine = createStateMachine<DoorState, DoorEvent>({
+            initial: "closed",
+            transitions: SELF_TRANSITIONS,
+            onTransitionError,
+            hooks: {
+                onEnter: {
+                    closed: () => {
+                        throw new Error("self enter failed");
+                    },
+                },
+            },
+        });
 
-    expect(machine.state).toBe("closed");
-    expect(order).toEqual(["exit:closed", "enter:closed"]);
-  });
+        machine.send("close");
 
-  test("a failing enter hook on a self-transition keeps the state unchanged", () => {
-    const { failures, onTransitionError } = createFailures();
-    const machine = createStateMachine<DoorState, DoorEvent>({
-      initial: "closed",
-      transitions: SELF_TRANSITIONS,
-      onTransitionError,
-      hooks: {
-        onEnter: {
-          closed: () => {
-            throw new Error("self enter failed");
-          },
-        },
-      },
+        expect(machine.state).toBe("closed");
+        expect(failures).toHaveLength(1);
+        expect(failures[0].error.message).toBe("self enter failed");
     });
 
-    machine.send("close");
+    test("a failing exit hook on a self-transition does not run the enter hook", () => {
+        const { failures, onTransitionError } = createFailures();
+        const order: string[] = [];
+        const machine = createStateMachine<DoorState, DoorEvent>({
+            initial: "closed",
+            transitions: SELF_TRANSITIONS,
+            onTransitionError,
+            hooks: {
+                onExit: {
+                    closed: () => {
+                        order.push("exit:closed");
+                        throw new Error("self exit failed");
+                    },
+                },
+                onEnter: {
+                    closed: () => {
+                        order.push("enter:closed");
+                    },
+                },
+            },
+        });
 
-    expect(machine.state).toBe("closed");
-    expect(failures).toHaveLength(1);
-    expect(failures[0].error.message).toBe("self enter failed");
-  });
+        machine.send("close");
 
-  test("a failing exit hook on a self-transition does not run the enter hook", () => {
-    const { failures, onTransitionError } = createFailures();
-    const order: string[] = [];
-    const machine = createStateMachine<DoorState, DoorEvent>({
-      initial: "closed",
-      transitions: SELF_TRANSITIONS,
-      onTransitionError,
-      hooks: {
-        onExit: {
-          closed: () => {
-            order.push("exit:closed");
-            throw new Error("self exit failed");
-          },
-        },
-        onEnter: {
-          closed: () => {
-            order.push("enter:closed");
-          },
-        },
-      },
+        expect(order).toEqual(["exit:closed"]);
+        expect(failures).toHaveLength(1);
+        expect(failures[0].error.message).toBe("self exit failed");
+        expect(machine.state).toBe("closed");
     });
-
-    machine.send("close");
-
-    expect(order).toEqual(["exit:closed"]);
-    expect(failures).toHaveLength(1);
-    expect(failures[0].error.message).toBe("self exit failed");
-    expect(machine.state).toBe("closed");
-  });
 });

@@ -9,12 +9,12 @@ import { RPG_STATUS_ROUTE } from "./models";
  * 自身导航器，对齐 GameFixture 幂等契约）。
  */
 export function createRpgUiModule(navigator: UiNavigator): Module {
-  return {
-    id: "rpg.ui",
-    dependencies: [],
-    start: () => {
-      // 打开代表性 route 的入口由调用方经 navigator 触发；此处登记 route 常量
-      void RPG_STATUS_ROUTE;
-    },
-  };
+    return {
+        id: "rpg.ui",
+        dependencies: [],
+        start: () => {
+            // 打开代表性 route 的入口由调用方经 navigator 触发；此处登记 route 常量
+            void RPG_STATUS_ROUTE;
+        },
+    };
 }

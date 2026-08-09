@@ -5,20 +5,20 @@
 
 /** 成长进度状态：等级与金币；离线收益结算后经版本化存档持久化。 */
 export interface IdleProgressState {
-  readonly level: number;
-  readonly gold: number;
-  /** 上次在线/离线结算的墙钟时间戳（毫秒）。 */
-  readonly lastSettledAtMs: number;
+    readonly level: number;
+    readonly gold: number;
+    /** 上次在线/离线结算的墙钟时间戳（毫秒）。 */
+    readonly lastSettledAtMs: number;
 }
 
 /** 离线收益结算结果：离线时长与结算所得金币。 */
 export interface IdleOfflineSettlement {
-  readonly elapsedMs: number;
-  readonly goldEarned: number;
+    readonly elapsedMs: number;
+    readonly goldEarned: number;
 }
 
 /** 存档记录：离线收益结算后写入的金币与等级。 */
 export interface IdleSaveRecord {
-  readonly level: number;
-  readonly gold: number;
+    readonly level: number;
+    readonly gold: number;
 }

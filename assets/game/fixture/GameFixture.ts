@@ -1,9 +1,9 @@
 import {
-  Application,
-  type ApplicationContext,
-  type Logger,
-  type Module,
-  type ResourceScope,
+    Application,
+    type ApplicationContext,
+    type Logger,
+    type Module,
+    type ResourceScope,
 } from "../../framework";
 
 /**
@@ -22,56 +22,56 @@ import {
  * 避免发明共享的全局注入机制。
  */
 export interface GameFixture {
-  /** 品类标识（如 "rpg"、"card"）。 */
-  readonly id: string;
-  /** 该品类模块装配清单：只包含已声明的模块，未声明的能力不参与装配。 */
-  readonly modules: readonly Module[];
-  /** 该品类声明的资源作用域；未声明资源能力时缺省不持有作用域。 */
-  readonly scope?: ResourceScope;
-  start(): Promise<void>;
-  pause(): Promise<void>;
-  resume(): Promise<void>;
-  failRollback(): Promise<void>;
-  dispose(): Promise<void>;
+    /** 品类标识（如 "rpg"、"card"）。 */
+    readonly id: string;
+    /** 该品类模块装配清单：只包含已声明的模块，未声明的能力不参与装配。 */
+    readonly modules: readonly Module[];
+    /** 该品类声明的资源作用域；未声明资源能力时缺省不持有作用域。 */
+    readonly scope?: ResourceScope;
+    start(): Promise<void>;
+    pause(): Promise<void>;
+    resume(): Promise<void>;
+    failRollback(): Promise<void>;
+    dispose(): Promise<void>;
 }
 
 export interface GameFixtureOptions {
-  readonly id: string;
-  readonly modules: readonly Module[];
-  readonly scope?: ResourceScope;
-  /** 可选日志：缺省为静默日志，保持夹具装配过程无输出。 */
-  readonly logger?: Logger;
+    readonly id: string;
+    readonly modules: readonly Module[];
+    readonly scope?: ResourceScope;
+    /** 可选日志：缺省为静默日志，保持夹具装配过程无输出。 */
+    readonly logger?: Logger;
 }
 
 // 失败回滚验证用的哨兵模块：start 阶段抛错，用于触发框架的启动失败回滚路径。
 const failingProbeModule: Module = {
-  id: "__fixture_fail_probe__",
-  dependencies: [],
-  start: () => {
-    throw new Error("fixture failRollback: forced startup failure");
-  },
+    id: "__fixture_fail_probe__",
+    dependencies: [],
+    start: () => {
+        throw new Error("fixture failRollback: forced startup failure");
+    },
 };
 
 function createQuietLogger(): Logger {
-  const logger: Logger = {
-    debug: () => {},
-    info: () => {},
-    warn: () => {},
-    error: () => {},
-    child: () => logger,
-  };
-  return logger;
+    const logger: Logger = {
+        debug: () => { },
+        info: () => { },
+        warn: () => { },
+        error: () => { },
+        child: () => logger,
+    };
+    return logger;
 }
 
 // 与框架 createApplicationContext 一致：context.state 始终为 "created"，
 // 应用自身的状态由 Application 内部维护，不写入 context。
 function createFixtureContext(logger: Logger): ApplicationContext {
-  return {
-    logger,
-    get state() {
-      return "created" as const;
-    },
-  };
+    return {
+        logger,
+        get state() {
+            return "created" as const;
+        },
+    };
 }
 
 /**
@@ -82,23 +82,23 @@ function createFixtureContext(logger: Logger): ApplicationContext {
  * 本接缝只证明组合可回滚；真实品类模块的失败注入由各品类自身测试承担。
  */
 async function runFailRollbackProbe(
-  modules: readonly Module[],
-  context: ApplicationContext,
+    modules: readonly Module[],
+    context: ApplicationContext,
 ): Promise<void> {
-  const probe = new Application([...modules, failingProbeModule], context);
-  let rejected = false;
+    const probe = new Application([...modules, failingProbeModule], context);
+    let rejected = false;
 
-  try {
-    await probe.start();
-  } catch {
-    rejected = true;
-  }
+    try {
+        await probe.start();
+    } catch {
+        rejected = true;
+    }
 
-  if (!rejected || probe.state !== "disposed") {
-    throw new Error(
-      "fixture failRollback: startup failure did not roll back to disposed",
-    );
-  }
+    if (!rejected || probe.state !== "disposed") {
+        throw new Error(
+            "fixture failRollback: startup failure did not roll back to disposed",
+        );
+    }
 }
 
 /**
@@ -106,18 +106,18 @@ async function runFailRollbackProbe(
  * 生命周期接缝委托给框架 Application；failRollback 经探针验证回滚路径。
  */
 export function createGameFixture(options: GameFixtureOptions): GameFixture {
-  const logger = options.logger ?? createQuietLogger();
-  const context = createFixtureContext(logger);
-  const app = new Application(options.modules, context);
+    const logger = options.logger ?? createQuietLogger();
+    const context = createFixtureContext(logger);
+    const app = new Application(options.modules, context);
 
-  return {
-    id: options.id,
-    modules: [...options.modules],
-    scope: options.scope,
-    start: () => app.start(),
-    pause: () => app.pause(),
-    resume: () => app.resume(),
-    failRollback: () => runFailRollbackProbe(options.modules, context),
-    dispose: () => app.dispose(),
-  };
+    return {
+        id: options.id,
+        modules: [...options.modules],
+        scope: options.scope,
+        start: () => app.start(),
+        pause: () => app.pause(),
+        resume: () => app.resume(),
+        failRollback: () => runFailRollbackProbe(options.modules, context),
+        dispose: () => app.dispose(),
+    };
 }

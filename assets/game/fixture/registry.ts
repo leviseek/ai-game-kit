@@ -21,9 +21,9 @@ export type GameFixtureRegistry = Readonly<Record<string, GameFixtureFactory>>;
  * 装配入口（boot/AppRoot）只经此表做薄转发，组合逻辑留在游戏层夹具内。
  */
 export const gameFixtureRegistry: GameFixtureRegistry = Object.freeze({
-  rpg: createRpgFixture,
-  card: createCardFixture,
-  idle: createIdleFixture,
-  tycoon: createTycoonFixture,
-  fight: createFightFixture,
+    rpg: createRpgFixture,
+    card: createCardFixture,
+    idle: createIdleFixture,
+    tycoon: createTycoonFixture,
+    fight: createFightFixture,
 });

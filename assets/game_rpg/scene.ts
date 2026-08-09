@@ -8,12 +8,12 @@ import type { Module, SceneFlow } from "../framework";
  * 自身能力，对齐 GameFixture 幂等契约）。
  */
 export function createRpgSceneModule(flow: SceneFlow): Module {
-  return {
-    id: "rpg.scene",
-    dependencies: [],
-    start: () => {
-      // SceneFlow 由组合根创建并注入；此处仅确认其已就绪
-      void flow.state;
-    },
-  };
+    return {
+        id: "rpg.scene",
+        dependencies: [],
+        start: () => {
+            // SceneFlow 由组合根创建并注入；此处仅确认其已就绪
+            void flow.state;
+        },
+    };
 }

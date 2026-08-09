@@ -7,10 +7,10 @@ export type ConfigKey = string;
  * 内容无法按期望解析抛 ConfigParseError。不依赖 cc/fgui，不触达存档后端。
  */
 export interface ConfigReadType<T> {
-  /** 声明类型名，用于诊断信息。 */
-  readonly name: string;
-  /** 解析/校验原始值为声明类型；失败抛类型化错误。 */
-  readonly parse: (key: ConfigKey, raw: unknown) => T;
+    /** 声明类型名，用于诊断信息。 */
+    readonly name: string;
+    /** 解析/校验原始值为声明类型；失败抛类型化错误。 */
+    readonly parse: (key: ConfigKey, raw: unknown) => T;
 }
 
 /** 只读配置快照：配置装载后暴露给读取方的不可变结构（深度冻结）。 */
@@ -23,10 +23,10 @@ export type ReadonlyConfigSnapshot = Readonly<Record<ConfigKey, unknown>>;
  * （对齐 ADR-013：错误类留在 core 实现层，contracts 层只放纯类型契约）。
  */
 export interface ConfigTable {
-  /** 按声明类型读取配置值；键缺失抛 ConfigMissingError。 */
-  read<T>(key: ConfigKey, type: ConfigReadType<T>): T;
-  /** 带默认值读取：键缺失时回退默认值，键存在时返回实际值（解析失败仍报错）。 */
-  read<T>(key: ConfigKey, type: ConfigReadType<T>, defaultValue: T): T;
-  /** 只读快照：深度冻结结构，运行时不可修改。 */
-  snapshot(): ReadonlyConfigSnapshot;
+    /** 按声明类型读取配置值；键缺失抛 ConfigMissingError。 */
+    read<T>(key: ConfigKey, type: ConfigReadType<T>): T;
+    /** 带默认值读取：键缺失时回退默认值，键存在时返回实际值（解析失败仍报错）。 */
+    read<T>(key: ConfigKey, type: ConfigReadType<T>, defaultValue: T): T;
+    /** 只读快照：深度冻结结构，运行时不可修改。 */
+    snapshot(): ReadonlyConfigSnapshot;
 }

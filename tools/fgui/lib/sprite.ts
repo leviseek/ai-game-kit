@@ -9,36 +9,36 @@ import { join } from "node:path";
 import { nextResourceId, type FguiPackage } from "./fgui";
 
 export interface Scale9Grid {
-  readonly left: number;
-  readonly top: number;
-  readonly right: number;
-  readonly bottom: number;
+    readonly left: number;
+    readonly top: number;
+    readonly right: number;
+    readonly bottom: number;
 }
 
 /** 解析 scale9grid 四元组 "left,top,right,bottom"（边界线坐标）。 */
 export function parseScale9grid(value: string): Scale9Grid {
-  const parts = value.split(",").map((s) => Number.parseInt(s.trim(), 10));
-  if (parts.length !== 4 || parts.some((n) => !Number.isFinite(n))) {
-    throw new Error(`scale9grid 格式应为 left,top,right,bottom，收到: "${value}"`);
-  }
-  const [left, top, right, bottom] = parts as [number, number, number, number];
-  if (left < 0 || top < 0 || right <= left || bottom <= top) {
-    throw new Error(`scale9grid 边界非法（right>left 且 bottom>top）: "${value}"`);
-  }
-  return { left, top, right, bottom };
+    const parts = value.split(",").map((s) => Number.parseInt(s.trim(), 10));
+    if (parts.length !== 4 || parts.some((n) => !Number.isFinite(n))) {
+        throw new Error(`scale9grid 格式应为 left,top,right,bottom，收到: "${value}"`);
+    }
+    const [left, top, right, bottom] = parts as [number, number, number, number];
+    if (left < 0 || top < 0 || right <= left || bottom <= top) {
+        throw new Error(`scale9grid 边界非法（right>left 且 bottom>top）: "${value}"`);
+    }
+    return { left, top, right, bottom };
 }
 
 /**
  * 检查资源是否已登记（按文件名 + 路径匹配）。返回 true 表示已存在。
  */
 export function ensureResourceRegistered(pkg: FguiPackage, fileName: string, path: string): boolean {
-  return pkg.resources.some((r) => r.name === fileName && normalizePath(r.path) === normalizePath(path));
+    return pkg.resources.some((r) => r.name === fileName && normalizePath(r.path) === normalizePath(path));
 }
 
 function normalizePath(path: string): string {
-  const p = path.replace(/\\/g, "/");
-  const withLeading = p.startsWith("/") ? p : `/${p}`;
-  return withLeading.endsWith("/") ? withLeading : `${withLeading}/`;
+    const p = path.replace(/\\/g, "/");
+    const withLeading = p.startsWith("/") ? p : `/${p}`;
+    return withLeading.endsWith("/") ? withLeading : `${withLeading}/`;
 }
 
 /**
@@ -47,22 +47,22 @@ function normalizePath(path: string): string {
  * 用字符串操作插入，保留原文件格式。prefix 用于 id 前缀续编。
  */
 export function registerGeneratedImage(
-  pkg: FguiPackage,
-  fileName: string,
-  path: string,
-  scale9grid?: string,
-  prefix?: string,
+    pkg: FguiPackage,
+    fileName: string,
+    path: string,
+    scale9grid?: string,
+    prefix?: string,
 ): string {
-  if (ensureResourceRegistered(pkg, fileName, path)) {
-    const existing = pkg.resources.find((r) => r.name === fileName);
-    if (existing) return existing.id;
-  }
+    if (ensureResourceRegistered(pkg, fileName, path)) {
+        const existing = pkg.resources.find((r) => r.name === fileName);
+        if (existing) return existing.id;
+    }
 
-  const scaleAttr = scale9grid
-    ? ` scale="9grid" scale9grid="${scale9grid}"`
-    : "";
-  const entry = `<image id="" name="${fileName}" path="${normalizePath(path)}"${scaleAttr} qualityOption="source" duplicatePadding="true"/>`;
-  return appendResourceEntry(pkg, entry, prefix);
+    const scaleAttr = scale9grid
+        ? ` scale="9grid" scale9grid="${scale9grid}"`
+        : "";
+    const entry = `<image id="" name="${fileName}" path="${normalizePath(path)}"${scaleAttr} qualityOption="source" duplicatePadding="true"/>`;
+    return appendResourceEntry(pkg, entry, prefix);
 }
 
 /**
@@ -71,27 +71,27 @@ export function registerGeneratedImage(
  * prefix 用于 id 前缀续编。
  */
 export function registerComponent(pkg: FguiPackage, fileName: string, path = "/", prefix?: string): string {
-  const existing = pkg.resources.find((r) => r.kind === "component" && r.name === fileName);
-  if (existing) return existing.id;
+    const existing = pkg.resources.find((r) => r.kind === "component" && r.name === fileName);
+    if (existing) return existing.id;
 
-  const entry = `<component id="" name="${fileName}" path="${normalizePath(path)}" exported="true"/>`;
-  return appendResourceEntry(pkg, entry, prefix);
+    const entry = `<component id="" name="${fileName}" path="${normalizePath(path)}" exported="true"/>`;
+    return appendResourceEntry(pkg, entry, prefix);
 }
 
 /** 插入资源条目到 <resources> 块：分配 5 位 id（支持前缀续编）并写入磁盘。 */
 function appendResourceEntry(pkg: FguiPackage, entryTemplate: string, prefix?: string): string {
-  const packageXmlPath = join(pkg.dir, "package.xml");
-  const xml = readFileSync(packageXmlPath, "utf8");
+    const packageXmlPath = join(pkg.dir, "package.xml");
+    const xml = readFileSync(packageXmlPath, "utf8");
 
-  const id = nextResourceId(pkg, prefix);
-  const entry = entryTemplate.replace('id=""', `id="${id}"`);
+    const id = nextResourceId(pkg, prefix);
+    const entry = entryTemplate.replace('id=""', `id="${id}"`);
 
-  const resourcesStart = xml.indexOf("<resources>");
-  const resourcesEnd = xml.indexOf("</resources>");
-  if (resourcesStart < 0 || resourcesEnd < 0) {
-    throw new Error(`package.xml 缺少 <resources> 块: ${packageXmlPath}`);
-  }
-  const inserted = `${xml.slice(0, resourcesStart + "<resources>".length)}\n    ${entry}${xml.slice(resourcesStart + "<resources>".length)}`;
-  writeFileSync(packageXmlPath, inserted, "utf8");
-  return id;
+    const resourcesStart = xml.indexOf("<resources>");
+    const resourcesEnd = xml.indexOf("</resources>");
+    if (resourcesStart < 0 || resourcesEnd < 0) {
+        throw new Error(`package.xml 缺少 <resources> 块: ${packageXmlPath}`);
+    }
+    const inserted = `${xml.slice(0, resourcesStart + "<resources>".length)}\n    ${entry}${xml.slice(resourcesStart + "<resources>".length)}`;
+    writeFileSync(packageXmlPath, inserted, "utf8");
+    return id;
 }

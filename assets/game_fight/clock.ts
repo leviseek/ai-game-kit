@@ -8,22 +8,22 @@ import type { Module, TimeSource } from "../framework";
  * 故夹具层自实现最小可控时钟，保证输入采样时间戳可独立驱动。
  */
 export interface FightClock extends TimeSource {
-  advance(milliseconds: number): void;
+    advance(milliseconds: number): void;
 }
 
 export function createFightClock(initialTime = 0): FightClock {
-  let current = initialTime;
+    let current = initialTime;
 
-  return {
-    now: () => current,
-    advance: (milliseconds: number) => {
-      // 与框架时钟先例一致：拒绝负值推进，保证时间单调，避免破坏帧推进
-      if (milliseconds < 0) {
-        throw new Error("FightClock advance must not be negative");
-      }
-      current += milliseconds;
-    },
-  };
+    return {
+        now: () => current,
+        advance: (milliseconds: number) => {
+            // 与框架时钟先例一致：拒绝负值推进，保证时间单调，避免破坏帧推进
+            if (milliseconds < 0) {
+                throw new Error("FightClock advance must not be negative");
+            }
+            current += milliseconds;
+        },
+    };
 }
 
 /**
@@ -31,12 +31,12 @@ export function createFightClock(initialTime = 0): FightClock {
  * 时钟推进经 fixture.clock.advance 由测试驱动，模块生命周期无副作用。
  */
 export function createFightClockModule(clock: FightClock): Module {
-  return {
-    id: "fight.clock",
-    dependencies: [],
-    start: () => {
-      // 时钟在组合根构造时即就绪；start 只是让模块进入装配清单
-      void clock.now();
-    },
-  };
+    return {
+        id: "fight.clock",
+        dependencies: [],
+        start: () => {
+            // 时钟在组合根构造时即就绪；start 只是让模块进入装配清单
+            void clock.now();
+        },
+    };
 }
