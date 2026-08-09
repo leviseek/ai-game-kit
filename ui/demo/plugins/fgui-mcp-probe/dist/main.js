@@ -14,25 +14,57 @@ const http_listener_1 = require("./probes/http-listener");
 const pkg_open_1 = require("./probes/pkg-open");
 const server_1 = require("./mailbox/server");
 const handlers_1 = require("./mailbox/handlers");
+const handlers_write_1 = require("./mailbox/handlers-write");
 const App = FairyEditor.App;
 globalThis.__fguiMcpProbe_onPublishFired = false;
 let mailboxServer = null;
+let updateHandler = null;
+let timerHandler = null;
 const g = globalThis;
+function stopMailboxServer() {
+    if (updateHandler) {
+        try {
+            App.remove_onUpdate(updateHandler);
+        }
+        catch {
+        }
+        updateHandler = null;
+    }
+    if (timerHandler) {
+        try {
+            FairyGUI.Timers.inst.Remove(timerHandler);
+        }
+        catch {
+        }
+        timerHandler = null;
+    }
+    mailboxServer = null;
+}
 function buildMailboxServer(objsPath) {
+    stopMailboxServer();
     mailboxServer = new server_1.MailboxServer(CS.System.IO.Path.Combine(objsPath, "fgui-mcp-probe", "mailbox"));
     mailboxServer.register("list_packages", handlers_1.handleListPackages);
     mailboxServer.register("list_resources", handlers_1.handleListResources);
     mailboxServer.register("query_dependencies", handlers_1.handleQueryDependencies);
     mailboxServer.register("read_publish_settings", handlers_1.handleReadPublishSettings);
     mailboxServer.register("get_active_context", handlers_1.handleGetActiveContext);
+    mailboxServer.register("switch_publish_settings", handlers_write_1.handleSwitchPublishSettings);
+    mailboxServer.register("restore_publish_settings", handlers_write_1.handleRestorePublishSettings);
+    mailboxServer.register("refresh_project", handlers_write_1.handleRefreshProject);
+    mailboxServer.register("insert_component", handlers_write_1.handleInsertComponent);
     const server = mailboxServer;
-    App.add_onUpdate(() => server?.tick());
+    updateHandler = () => {
+        server.tick();
+    };
+    App.add_onUpdate(updateHandler);
     try {
-        const tickOnce = () => {
+        timerHandler = () => {
             server.tick();
-            FairyGUI.Timers.inst.Add(0.3, 1, tickOnce);
+            if (timerHandler) {
+                FairyGUI.Timers.inst.Add(0.3, 1, timerHandler);
+            }
         };
-        FairyGUI.Timers.inst.Add(0.3, 1, tickOnce);
+        FairyGUI.Timers.inst.Add(0.3, 1, timerHandler);
     }
     catch (e) {
         (0, result_1.probeLog)(`Timers 驱动不可用（回退 add_onUpdate）: ${e}`);
@@ -147,7 +179,7 @@ function onPublishEnd(pkgs) {
     (0, result_1.probeLog)(`onPublishEnd 触发，包: ${names.join(",")}`);
 }
 function onDestroy() {
-    mailboxServer = null;
+    stopMailboxServer();
     delete g.__fguiMcpProbe_mailboxServer;
     delete g.__fguiMcpProbe_mailboxObjsPath;
     try {

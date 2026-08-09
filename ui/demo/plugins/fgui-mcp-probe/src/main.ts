@@ -14,6 +14,12 @@ import {
     handleQueryDependencies,
     handleReadPublishSettings,
 } from "./mailbox/handlers";
+import {
+    handleInsertComponent,
+    handleRefreshProject,
+    handleRestorePublishSettings,
+    handleSwitchPublishSettings,
+} from "./mailbox/handlers-write";
 
 const App = FairyEditor.App;
 
@@ -22,6 +28,9 @@ const App = FairyEditor.App;
 
 /** 邮箱服务器：响应 MCP server 的读请求（阶段 1 读工具）。 */
 let mailboxServer: MailboxServer | null = null;
+/** 驱动回调句柄：onDestroy/刷新时必须对称移除，否则旧实例的 tick 持续运行 */
+let updateHandler: (() => void) | null = null;
+let timerHandler: (() => void) | null = null;
 /**
  * 邮箱服务器守卫（globalThis 承载）：
  * 防同一 JS 环境内重复启动；跨环境的重复由 init() 的文件锁兜底。
@@ -29,26 +38,58 @@ let mailboxServer: MailboxServer | null = null;
  */
 const g = globalThis as any;
 
+/** 停止邮箱服务器驱动：移除 add_onUpdate 回调与 Timers 定时器。刷新/卸载/重建前必须调用。 */
+function stopMailboxServer(): void {
+    if (updateHandler) {
+        try {
+            App.remove_onUpdate(updateHandler);
+        } catch {
+            /* 忽略移除异常 */
+        }
+        updateHandler = null;
+    }
+    if (timerHandler) {
+        try {
+            FairyGUI.Timers.inst.Remove(timerHandler);
+        } catch {
+            /* 忽略移除异常 */
+        }
+        timerHandler = null;
+    }
+    mailboxServer = null;
+}
+
 function buildMailboxServer(objsPath: string): void {
+    // 启动新实例前先停掉旧实例的驱动，避免刷新/重建后两个 server 同时 tick 竞争
+    stopMailboxServer();
     mailboxServer = new MailboxServer(CS.System.IO.Path.Combine(objsPath, "fgui-mcp-probe", "mailbox"));
     mailboxServer.register("list_packages", handleListPackages);
     mailboxServer.register("list_resources", handleListResources);
     mailboxServer.register("query_dependencies", handleQueryDependencies);
     mailboxServer.register("read_publish_settings", handleReadPublishSettings);
     mailboxServer.register("get_active_context", handleGetActiveContext);
+    mailboxServer.register("switch_publish_settings", handleSwitchPublishSettings);
+    mailboxServer.register("restore_publish_settings", handleRestorePublishSettings);
+    mailboxServer.register("refresh_project", handleRefreshProject);
+    mailboxServer.register("insert_component", handleInsertComponent);
     const server = mailboxServer;
 
     // 双驱动轮询：add_onUpdate（有帧时响应）与 Timers.inst（真实时间调度）。
     // 哪个可用都能驱动 tick；tick 内部有 300ms 时间门控，双驱动天然去重。
     // 背景：编辑器空闲时 add_onUpdate 可能停帧，Timers.inst 若被编辑器驱动则按时间触发；
     // 无法确定两者在目标版本的行为，双挂提高命中率。
-    App.add_onUpdate(() => server?.tick());
+    updateHandler = (): void => {
+        server.tick();
+    };
+    App.add_onUpdate(updateHandler);
     try {
-        const tickOnce = (): void => {
+        timerHandler = (): void => {
             server.tick();
-            FairyGUI.Timers.inst.Add(0.3, 1, tickOnce);
+            if (timerHandler) {
+                FairyGUI.Timers.inst.Add(0.3, 1, timerHandler);
+            }
         };
-        FairyGUI.Timers.inst.Add(0.3, 1, tickOnce);
+        FairyGUI.Timers.inst.Add(0.3, 1, timerHandler);
     } catch (e: any) {
         probeLog(`Timers 驱动不可用（回退 add_onUpdate）: ${e}`);
     }
@@ -180,7 +221,8 @@ export function onPublishEnd(pkgs: CS.System.Array$1<CS.FairyEditor.FPackage>): 
 }
 
 export function onDestroy(): void {
-    mailboxServer = null;
+    // 停止驱动（add_onUpdate/Timers 对称移除）——刷新/卸载后旧实例不再 tick，避免与重建实例竞争
+    stopMailboxServer();
     delete g.__fguiMcpProbe_mailboxServer;
     delete g.__fguiMcpProbe_mailboxObjsPath;
     // 对称清理：删除初始化锁，允许下次激活重新初始化

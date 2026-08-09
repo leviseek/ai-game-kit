@@ -20,11 +20,11 @@
 
 ## 3. 阶段 2：写工具
 
-- [ ] 3.1 实现发布配置切换：快照 → CopySetting（跳过只读 `fileName`）→ `Save()` → `project.type` → `project.Save()` → `allPackages.Open()`，返回副作用提示（含"编辑区会闪烁"）
-- [ ] 3.2 实现发布配置回滚：基于切换前快照恢复，验证只读字段保持原值
-- [ ] 3.3 实现 `fgui-refresh`（`App.RefreshProject`）端点，供写操作后刷新编辑器感知
-- [ ] 3.4 探针复测通过后实现组件插入工具（`FindItemByName` → `GetURL` → `OpenDocument` → `UnselectAll` + `InsertObject(url)` → `SetModified`）；未通过则保持禁用并记录原因
-- [ ] 3.5 发布/分支相关工具参数：branch 为可选参数，默认取 `project.activeBranch`（允许空串），合法值由 `allBranches` 动态生成，**禁止硬编码分支名**（工程当前为无分支形态，MCP 需能表达"发布到主干/无分支"）
+- [x] 3.1 实现发布配置切换：快照 → CopySetting（跳过只读 `fileName`）→ `Save()` → `project.type` → `project.Save()` → `allPackages.Open()`，返回副作用提示（含"编辑区会闪烁"）
+- [x] 3.2 实现发布配置回滚：基于切换前快照恢复，验证只读字段保持原值
+- [x] 3.3 实现 `fgui-refresh`（`App.RefreshProject`）端点，供写操作后刷新编辑器感知
+- [x] 3.4 探针复测通过后实现组件插入工具（`FindItemByName` → `GetURL` → `OpenDocument` → `UnselectAll` + `InsertObject(url)` → `SetModified`）；未通过则保持禁用并记录原因
+- [ ] 3.5 发布/分支相关工具参数：branch 为可选参数，默认取 `project.activeBranch`（允许空串），合法值由 `allBranches` 动态生成，**禁止硬编码分支名**（工程当前为无分支形态，MCP 需能表达"发布到主干/无分支"）——设计约束已固化于 design.md 决策 4，实际随阶段 4 的 `fgui_trigger_publish` 实现（任务 5.1）
 
 ## 4. 阶段 3：半自动发布闭环与一致性检测
 

@@ -40,6 +40,8 @@ MCP server（`tools/fgui-mcp/`，标准 MCP SDK devDependency，**已实现**：
 
 `GlobalPublishSettings` 字段（path/fileExtension/binaryFormat/atlasSetting 等）程序化写入 → `Save()` → `project.type` → `project.Save()` → `allPackages.ForEach(v => v.Open())` 刷新包设置；跳过只读 `fileName`；切换前快照、提供回滚。这段是全报告确定性最高可抄段（证据：`MenuMain_Publish.ts:116-143`；`pkg.Open()` 实测幂等 17ms）。
 
+**阶段 2 已实现**：插件侧 `mailbox/handlers-write.ts`（`switch_publish_settings`/`restore_publish_settings`/`refresh_project`/`insert_component`），MCP 侧 `WRITE_TOOLS`（`fgui_switch_publish_settings`/`fgui_restore_publish_settings`/`fgui_refresh_project`/`fgui_insert_component`）。切换返回 `before` 快照（settings + projectType）供回滚留存；只读字段 `fileName` 拒绝覆写；回滚需传入快照。组件插入按决策 6 固化流程 + `opDocIsActive` 引用校验。写工具单测覆盖注册表与不可达错误（`test/write-tools.test.ts`，4 例）。
+
 ### 4. 发布触发分级：半自动优先，Run() 复测通过后开放全自动
 
 - 首期：MCP 全自动做配置切换 + 检测，发布动作留在用户点击边界。
@@ -72,13 +74,14 @@ MCP server（`tools/fgui-mcp/`，标准 MCP SDK devDependency，**已实现**：
 - [工程为无分支形态，branch 空串发布已实测合法] → MCP 工具显式支持空分支（发布到主干）。
 - [pkg.Open() 刷新会让编辑区闪烁（实测确认"是"）] → 工具返回中显式提示副作用。
 - [**编辑器窗口失焦/后台时主循环暂停（已实测）**：插件侧 add_onUpdate/Timers 均不驱动 → 邮箱服务器不轮询 → MCP 请求超时。cross-verify 在编辑器前台稳定可达、后台必不可达] → 调用 MCP 工具前保持编辑器前台；MCP 侧错误信息提示焦点约束。**对阶段 4 的决策影响**：若需无人值守全自动，文件邮箱主通道受此约束，HTTP 通道（回调线程不依赖主循环）可能是更优解，需在阶段 4 复测其后台可用性。
+- [**插件刷新/热重载重复启动（已修复）**：编辑器刷新插件会重跑 main.js，若旧实例的 add_onUpdate/Timers 驱动未移除，会与新实例 server 同时 tick 竞争同一邮箱目录导致编辑器卡死] → 插件侧 `stopMailboxServer()` 对称移除驱动（保存 updateHandler/timerHandler 句柄），`buildMailboxServer` 重建前先停旧驱动，`onDestroy` 走同一清理路径并删初始化锁。刷新后为干净重启，单 server 实例。
 - [插件崩溃可能拖累编辑器] → 插件代码最小化、只做确定性操作；MCP 方案失败不影响现有 `tools/fgui` 工作流。
 
 ## Migration Plan
 
 1. 阶段 0：探针插件验证未知区——`pkg.Open()`、文件邮箱、`PublishHandler.Run()`、HttpListener、insert-object **全部实测通过**（见 `ui/demo/plugins/fgui-mcp-probe/docs/probe-results.md`），未知区清单收敛完毕。
-2. 阶段 1：MCP server 骨架 + 读工具（包/资源/依赖/发布配置/活动文档），主桥接通道为文件邮箱，与 `tools/fgui` CLI 输出交叉验证。
-3. 阶段 2：写工具——发布配置切换（复用 `MenuMain_Publish` 链路）+ 组件插入（v2 复测通过后，按决策 6 固化）。
+2. 阶段 1：MCP server 骨架 + 读工具（包/资源/依赖/发布配置/活动文档），主桥接通道为文件邮箱，与 `tools/fgui` CLI 输出交叉验证。**已完成**。
+3. 阶段 2：写工具——发布配置切换（复用 `MenuMain_Publish` 链路）+ 组件插入（v2 复测通过后，按决策 6 固化）。**已完成**（4 写工具 + 单测）。
 4. 阶段 3：半自动发布闭环（改源 → 配置切换 → 用户点击发布 → 邮箱检测 → validate）。
 5. 阶段 4（可选）：`Run()` 复测通过、HttpListener 增强通道就绪后开放全自动发布。
 回滚：新组件全部独立于 `tools/fgui` 与运行时，回滚即删除 `tools/fgui-mcp/` 与插件目录，现有确定性工作流零影响。

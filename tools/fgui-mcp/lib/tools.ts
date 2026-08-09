@@ -92,6 +92,34 @@ export function requireBridge(bridge: MailboxBridge, mailboxDir: string): ToolRe
     return null;
 }
 
+/**
+ * 写工具集：发布配置切换/回滚、工程刷新、组件插入。
+ * 全部走编辑器桥（是编辑器独有能力）。发布配置切换前返回快照，供回滚留存。
+ */
+export const WRITE_TOOLS: Record<string, { description: string; run: (bridge: MailboxBridge, params: Record<string, unknown>) => Promise<ToolResult> }> = {
+    fgui_switch_publish_settings: {
+        description:
+            "程序化切换全局发布设置。参数: settings（字段覆盖，如 path/fileExtension/binaryFormat/atlasSetting），可选 projectType（工程类型）。" +
+            "返回 before 快照（含 settings 与 projectType），供 fgui_restore_publish_settings 回滚。副作用：包设置刷新，编辑区会闪烁。",
+        run: (bridge, params) => bridgeResult(bridge, "switch_publish_settings", params),
+    },
+    fgui_restore_publish_settings: {
+        description:
+            "基于 switch 返回的 before 快照回滚发布设置。参数: snapshot（settings 字段快照），可选 projectType。副作用：包设置刷新，编辑区会闪烁。",
+        run: (bridge, params) => bridgeResult(bridge, "restore_publish_settings", params),
+    },
+    fgui_refresh_project: {
+        description: "刷新工程（App.RefreshProject），供写操作（如源 XML/PNG 变更）后编辑器感知变更。",
+        run: (bridge, params) => bridgeResult(bridge, "refresh_project", params),
+    },
+    fgui_insert_component: {
+        description:
+            "向目标文档插入组件。参数: package（包名）、component（要插入的组件名）、doc（目标文档组件名）。" +
+            "返回 inserted/isModified/childrenDelta/opDocIsActive；可见性需人工或截图确认。",
+        run: (bridge, params) => bridgeResult(bridge, "insert_component", params),
+    },
+};
+
 /** 供工具分发统一包裹：先查桥可达性（仅编辑器侧工具），再执行。 */
 export function wrapToolRun(
     isEditorTool: boolean,
