@@ -25,6 +25,7 @@ const frameworkVendorRoot = resolve(frameworkRoot, "libs");
 const frameworkPublicEntry = resolve(frameworkRoot, "index.ts");
 const moduleContractsRoot = resolve(frameworkRoot, "contracts/module");
 const gameRoot = resolve(assetsRoot, "game");
+const samplesRoot = resolve(assetsRoot, "samples");
 const bootRoot = resolve(assetsRoot, "boot");
 const importScanner = new Bun.Transpiler({ loader: "ts" });
 
@@ -54,15 +55,21 @@ function isWithin(path: string, directory: string): boolean {
 }
 
 /**
- * 判断文件是否属于游戏层：`assets/game` 及其子目录，或顶层品类目录
- * `assets/game_*`。游戏层作为外部消费者，只能经框架根入口导入框架。
+ * 判断文件是否属于游戏层：`assets/game` 及其子目录、`assets/samples`（品类
+ * bundle 目录），或顶层品类目录 `assets/game_*`。游戏层作为外部消费者，只能
+ * 经框架根入口导入框架。
  *
  * 命名约定：游戏层品类目录 MUST 使用 `game_` 前缀（如 game_rpg/game_card），
- * 该前缀是边界检查识别游戏层的依据；`assets/game-content` 等非品类目录
+ * 该前缀是边界检查识别游戏层的依据；`assets/samples` 在 Task 4 合并后承载
+ * 品类代码，与 `assets/game` 同属游戏层；`assets/game-content` 等非品类目录
  * 不属于游戏层，不受本判定约束。
  */
 function isGameLayerFile(path: string): boolean {
     if (isWithin(path, gameRoot)) {
+        return true;
+    }
+
+    if (isWithin(path, samplesRoot)) {
         return true;
     }
 
