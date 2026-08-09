@@ -26,7 +26,9 @@
 
 ### 1. MCP server 放独立 Node 进程，编辑器插件只做操作层
 
-MCP server（`tools/fgui-mcp/`，标准 MCP SDK，devDependency）承载协议编排；编辑器插件（TS→Puerts）暴露操作端点。理由：Puerts 宿主隔离/热重载/异常传播策略未知（知识库 `05-plugin-system.md`），把协议层放进不可控宿主扩大风险面；独立进程让 MCP 层与 FGUI 层各自可测。备选（插件内嵌 MCP server）被否：MCP stdio 与编辑器 GUI 进程冲突、生命周期清理复杂。
+MCP server（`tools/fgui-mcp/`，标准 MCP SDK devDependency，**已实现**：`McpServer` + `StdioServerTransport`）承载协议编排；编辑器插件（TS→Puerts）暴露操作端点。理由：Puerts 宿主隔离/热重载/异常传播策略未知（知识库 `05-plugin-system.md`），把协议层放进不可控宿主扩大风险面；独立进程让 MCP 层与 FGUI 层各自可测。备选（插件内嵌 MCP server）被否：MCP stdio 与编辑器 GUI 进程冲突、生命周期清理复杂。
+
+> **依赖决策（已确认）**：用户批准引入 `@modelcontextprotocol/sdk` 作为 devDependency，破例于 `.ai/instructions.md` 第 3 条"禁止第三方运行时依赖"——MCP 协议层由官方 SDK 承载，其余逻辑保持零依赖（`lib/paths`、`lib/bridge`、`lib/tools` 均只用 Node 内置模块 + `tools/fgui` 复用）。
 
 ### 2. 桥接：文件邮箱为主通道（实测通过），HTTP 为可选增强
 

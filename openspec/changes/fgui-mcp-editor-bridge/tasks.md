@@ -13,10 +13,10 @@
 
 ## 2. 阶段 1：MCP server 骨架与读工具
 
-- [ ] 2.1 在 `tools/fgui-mcp/` 建立独立进程 MCP server（Bun + MCP SDK devDependency），**主桥接通道采用文件邮箱模式**（已实测通过、天然主线程轮询无跨线程风险）；HTTP 作为可选增强待复测
-- [ ] 2.2 实现读工具：包列表、资源清单（复用 `GetPackageByName`/`items` 遍历证据）、依赖查询（`DependencyQuery`）、发布配置读取（`GetSettings("Publish")` + 反射读字段）、活动文档/活动文件夹
-- [ ] 2.3 读工具结果与 `tools/fgui` CLI（`list-resources`/`validate`/`read-component`）交叉验证一致，补充一致性测试
-- [ ] 2.4 实现错误处理：编辑器不可达/操作失败返回结构化错误，不中断后续调用
+- [x] 2.1 在 `tools/fgui-mcp/` 建立独立进程 MCP server（Bun + MCP SDK devDependency），**主桥接通道采用文件邮箱模式**（已实测通过、天然主线程轮询无跨线程风险）；HTTP 作为可选增强待复测
+- [x] 2.2 实现读工具：包列表、资源清单（复用 `GetPackageByName`/`items` 遍历证据）、依赖查询（`DependencyQuery`）、发布配置读取（`GetSettings("Publish")` + 反射读字段）、活动文档/活动文件夹
+- [x] 2.3 读工具结果与 `tools/fgui` CLI（`list-resources`/`validate`/`read-component`）交叉验证一致，补充一致性测试
+- [x] 2.4 实现错误处理：编辑器不可达/操作失败返回结构化错误，不中断后续调用
 
 ## 3. 阶段 2：写工具
 

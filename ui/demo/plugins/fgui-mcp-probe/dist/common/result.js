@@ -45,11 +45,11 @@ class ProbeResultWriter {
 }
 exports.ProbeResultWriter = ProbeResultWriter;
 function probeLog(msg) {
-    console.log(`[fgui-mcp-probe] ${msg}`);
     try {
         FairyEditor.App.consoleView.Log(`[fgui-mcp-probe] ${msg}`);
     }
     catch {
+        console.log(`[fgui-mcp-probe] ${msg}`);
     }
 }
 function safeRun(key, fn) {

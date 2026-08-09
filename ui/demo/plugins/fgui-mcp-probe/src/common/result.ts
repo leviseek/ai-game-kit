@@ -44,13 +44,17 @@ export class ProbeResultWriter {
     }
 }
 
-/** 控制台与结果双写日志 */
+/**
+ * 控制台日志。
+ * 注意：FairyGUI 编辑器控制台会同时捕获 Puerts 的 console.log 与 App.consoleView.Log，
+ * 若两处都写，同一条日志会显示两遍（曾被误判为插件重复加载）。
+ * 这里只写 consoleView.Log（编辑器内建控制台），避免双显示。
+ */
 export function probeLog(msg: string): void {
-    console.log(`[fgui-mcp-probe] ${msg}`);
     try {
         FairyEditor.App.consoleView.Log(`[fgui-mcp-probe] ${msg}`);
     } catch {
-        /* 编辑器控制台不可用时仅 console 输出 */
+        console.log(`[fgui-mcp-probe] ${msg}`);
     }
 }
 

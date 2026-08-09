@@ -11,11 +11,47 @@ const insert_object_1 = require("./probes/insert-object");
 const publish_handler_1 = require("./probes/publish-handler");
 const http_listener_1 = require("./probes/http-listener");
 const pkg_open_1 = require("./probes/pkg-open");
+const server_1 = require("./mailbox/server");
+const handlers_1 = require("./mailbox/handlers");
 const App = FairyEditor.App;
 globalThis.__fguiMcpProbe_onPublishFired = false;
+let mailboxServer = null;
+const g = globalThis;
+function buildMailboxServer(objsPath) {
+    mailboxServer = new server_1.MailboxServer(CS.System.IO.Path.Combine(objsPath, "fgui-mcp-probe", "mailbox"));
+    mailboxServer.register("list_packages", handlers_1.handleListPackages);
+    mailboxServer.register("list_resources", handlers_1.handleListResources);
+    mailboxServer.register("query_dependencies", handlers_1.handleQueryDependencies);
+    mailboxServer.register("read_publish_settings", handlers_1.handleReadPublishSettings);
+    mailboxServer.register("get_active_context", handlers_1.handleGetActiveContext);
+    App.add_onUpdate(() => mailboxServer?.tick());
+    g.__fguiMcpProbe_mailboxServer = mailboxServer;
+    g.__fguiMcpProbe_mailboxObjsPath = objsPath;
+    (0, result_1.probeLog)(`FGUI MCP 邮箱服务器启动: ${CS.System.IO.Path.Combine(objsPath, "fgui-mcp-probe", "mailbox")}`);
+}
+function startMailboxServer() {
+    const objsPath = App.project ? App.project.objsPath : "";
+    if (!objsPath)
+        return;
+    if (g.__fguiMcpProbe_mailboxServer) {
+        if (g.__fguiMcpProbe_mailboxObjsPath === objsPath) {
+            (0, result_1.probeLog)("邮箱服务器已在另一实例启动，跳过");
+            return;
+        }
+        (0, result_1.probeLog)(`工程目录变化（${g.__fguiMcpProbe_mailboxObjsPath} → ${objsPath}），重建邮箱服务器`);
+    }
+    if (mailboxServer && g.__fguiMcpProbe_mailboxObjsPath === objsPath)
+        return;
+    buildMailboxServer(objsPath);
+}
 function registerMenu() {
     const toolMenu = App.menu.GetSubMenu("tool");
     const probeMenuName = "fgui-mcp-probe";
+    try {
+        toolMenu.RemoveItem(probeMenuName);
+    }
+    catch {
+    }
     toolMenu.AddItem("FGUI MCP 探针", probeMenuName, -1, true, null);
     const probeMenu = toolMenu.GetSubMenu(probeMenuName);
     probeMenu.AddItem("环境快照", "env", () => (0, env_1.runEnvProbe)());
@@ -25,6 +61,7 @@ function registerMenu() {
     probeMenu.AddItem("文件邮箱", "file-mailbox", () => (0, http_listener_1.runFileMailboxProbe)());
     probeMenu.AddItem("pkg.Open", "pkg-open", () => (0, pkg_open_1.runPkgOpenProbe)());
     probeMenu.AddSeperator();
+    probeMenu.AddItem("启动邮箱服务器", "mailbox-start", () => startMailboxServer());
     probeMenu.AddItem("运行全部探针", "run-all", () => {
         (0, env_1.runEnvProbe)();
         (0, insert_object_1.runInsertObjectProbe)();
@@ -36,14 +73,39 @@ function registerMenu() {
     });
     (0, result_1.probeLog)("FGUI MCP 探针菜单注册完成");
 }
-try {
-    App.add_onProjectOpened(() => {
-        registerMenu();
-    });
-    if (App.project) {
-        registerMenu();
+function init() {
+    const objsPath = App.project ? App.project.objsPath : "";
+    if (!objsPath)
+        return;
+    const lockPath = `${objsPath}/fgui-mcp-probe/.initialized`;
+    let stream;
+    try {
+        stream = CS.System.IO.File.Open(lockPath, CS.System.IO.FileMode.CreateNew);
     }
-    (0, result_1.probeLog)("FGUI MCP 探针插件加载完成");
+    catch (e) {
+        (0, result_1.probeLog)(`插件已在另一环境初始化，跳过（${e && e.message ? e.message : e}）`);
+        return;
+    }
+    finally {
+        if (stream)
+            stream.Close();
+    }
+    try {
+        registerMenu();
+        startMailboxServer();
+        (0, result_1.probeLog)("FGUI MCP 探针插件加载完成");
+    }
+    catch (e) {
+        console.log(`[fgui-mcp-probe] 加载异常: ${e}`);
+    }
+}
+try {
+    if (App.project) {
+        init();
+    }
+    else {
+        App.add_onProjectOpened(init);
+    }
 }
 catch (e) {
     console.log(`[fgui-mcp-probe] 加载异常: ${e}`);
@@ -73,6 +135,18 @@ function onPublishEnd(pkgs) {
     (0, result_1.probeLog)(`onPublishEnd 触发，包: ${names.join(",")}`);
 }
 function onDestroy() {
+    mailboxServer = null;
+    delete g.__fguiMcpProbe_mailboxServer;
+    delete g.__fguiMcpProbe_mailboxObjsPath;
+    try {
+        const lockPath = App.project
+            ? `${App.project.objsPath}/fgui-mcp-probe/.initialized`
+            : "";
+        if (lockPath)
+            CS.System.IO.File.Delete(lockPath);
+    }
+    catch {
+    }
     try {
         const toolMenu = App.menu.GetSubMenu("tool");
         toolMenu.RemoveItem("fgui-mcp-probe");
