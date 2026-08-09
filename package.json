@@ -4,10 +4,17 @@
   "creator": {
     "version": "3.8.8"
   },
+  "workspaces": [
+    "tools/fgui",
+    "tools/creator"
+  ],
   "scripts": {
     "test:foundation": "bun test ./tests/framework/foundation",
     "test:foundation:types": "bun ./tests/scripts/check-foundation-contracts.ts",
     "test:fgui": "bun test ./tools/fgui/test",
+    "test": "bun run test:foundation && bun run test:fgui",
+    "test:all": "bun run test:foundation && bun run test:fgui && bun run test:foundation:types",
+    "verify": "bun run typecheck && bun run test",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tools/creator/tsconfig.json && tsc --noEmit -p tools/fgui/tsconfig.json",
     "ccc": "bun ./tools/creator/cli.ts",
     "fgui": "bun ./tools/fgui/cli.ts"
