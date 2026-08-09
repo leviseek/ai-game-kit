@@ -1,0 +1,14 @@
+{
+  "name": "com.ai.fgui.mcp-probe",
+  "displayName": "FGUI MCP 探针",
+  "description": "阶段 0 实机探针：验证 PublishHandler.Run()/HttpListener/InsertObject/pkg.Open() 在目标编辑器版本上的真实行为，结果写入 .objs/fgui-mcp-probe/。",
+  "version": "0.1.0",
+  "author": {
+    "name": "ai-game-kit"
+  },
+  "icon": "",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc"
+  }
+}

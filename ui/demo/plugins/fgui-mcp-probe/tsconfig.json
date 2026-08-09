@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "commonjs",
+    "sourceMap": true,
+    "strict": false,
+    "skipLibCheck": true,
+    "outDir": "./dist",
+    "removeComments": true
+  },
+  "include": ["./src/**/*.ts", "./libs/**/*.d.ts"],
+  "exclude": ["./node_modules/**/*", "./dist/**/*"]
+}
