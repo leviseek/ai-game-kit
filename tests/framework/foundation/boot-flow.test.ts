@@ -1,7 +1,13 @@
 import { describe, expect, test } from "bun:test";
 
-import type { SceneResources } from "../../../assets/framework";
-import { createSceneFlow } from "../../../assets/framework/core/scene/SceneFlow";
+import type {
+    IResourceProvider,
+    SceneResources,
+} from "../../../assets/framework";
+import {
+    createSceneFlow,
+    type SceneFlow,
+} from "../../../assets/framework/core/scene/SceneFlow";
 import { createMemoryResourceProvider } from "../../../assets/framework/adapters/memory/MemoryResourceProvider";
 import {
     createBootFlow,
@@ -64,6 +70,9 @@ interface Harness {
     readonly events: string[];
     readonly activatedScenes: string[];
     readonly hotUpdateCalls: number;
+    /** 供资源释放闭环断言（canUnload）观察。 */
+    readonly provider: IResourceProvider;
+    readonly sceneFlow: SceneFlow;
 }
 
 function createHarness(search: string, isNative: boolean): Harness {
@@ -122,6 +131,8 @@ function createHarness(search: string, isNative: boolean): Harness {
         bootFlow,
         events,
         activatedScenes,
+        provider,
+        sceneFlow,
         get hotUpdateCalls() {
             return hotUpdateCalls;
         },
@@ -253,5 +264,122 @@ describe("BootFlow state and dispose", () => {
         // dispose 后 launch 为 no-op，状态保持 logo（未推进）
         expect(harness.bootFlow.state).toBe("logo");
         expect(harness.activatedScenes).toEqual([]);
+    });
+});
+
+describe("BootFlow preload layering (L0 resident + L1 scene preload)", () => {
+    test("L0 framework preload (Common/config) completes before L1 game scene preload", async () => {
+        const events: string[] = [];
+        const provider = createMemoryResourceProvider();
+        const sceneFlow = createSceneFlow({
+            provider,
+            activateScene: async (sceneId: string) => {
+                events.push(`activate:${sceneId}`);
+            },
+        });
+        // 包装 sceneFlow.preload 记录 L1（game 场景 preload）的调用时机
+        const wrappedFlow: SceneFlow = {
+            get state() {
+                return sceneFlow.state;
+            },
+            preload: (sceneId, resources) => {
+                events.push(`preload:${sceneId}`);
+                return sceneFlow.preload(sceneId, resources);
+            },
+            switchTo: (sceneId, resources) => sceneFlow.switchTo(sceneId, resources),
+            dispose: () => sceneFlow.dispose(),
+        };
+        const bootFlow = createBootFlow({
+            sceneFlow: wrappedFlow,
+            uiHost: { init: () => events.push("ui-init") },
+            lobbyHost: {
+                ensureSharedUiDependencies: async () => events.push("ensure-shared"),
+                openListPageWithRetry: () => events.push("open-list"),
+            },
+            smokeRouter: createSmokeRouterRecording(events).router,
+            sceneMap: {
+                game: Object.freeze({ bundle: "ui", paths: ["placeholder"] }),
+            },
+            logger: new MemoryLogger(),
+            isNative: () => false,
+            getSearch: () => "",
+            preloadFrameworkConfig: async () => events.push("framework-config"),
+            scheduleSmoke: (callback) => callback(),
+        });
+
+        await bootFlow.launch();
+
+        const index = {
+            ensure: events.indexOf("ensure-shared"),
+            config: events.indexOf("framework-config"),
+            preload: events.indexOf("preload:game"),
+            activate: events.indexOf("activate:game"),
+            openList: events.indexOf("open-list"),
+        };
+        // L0（框架级 Common/config）先于 L1（game 场景 preload），再切换 game、打开列表页
+        expect(index.ensure).toBeGreaterThan(-1);
+        expect(index.config).toBeGreaterThan(index.ensure);
+        expect(index.preload).toBeGreaterThan(index.config);
+        expect(index.activate).toBeGreaterThan(index.preload);
+        expect(index.openList).toBeGreaterThan(index.activate);
+    });
+
+    test("game scene preload reports monotonic progress in [0, 1] during the default flow", async () => {
+        const progresses: number[] = [];
+        const provider = createMemoryResourceProvider();
+        const sceneFlow = createSceneFlow({
+            provider,
+            activateScene: async () => { },
+            onProgress: (_sceneId, progress) => {
+                progresses.push(progress);
+            },
+        });
+        const bootFlow = createBootFlow({
+            sceneFlow,
+            uiHost: { init: () => { } },
+            lobbyHost: {
+                ensureSharedUiDependencies: async () => { },
+                openListPageWithRetry: () => { },
+            },
+            smokeRouter: createSmokeRouterRecording([]).router,
+            sceneMap: {
+                game: Object.freeze({ bundle: "ui", paths: ["placeholder"] }),
+            },
+            logger: new MemoryLogger(),
+            isNative: () => false,
+            getSearch: () => "",
+            scheduleSmoke: (callback) => callback(),
+        });
+
+        await bootFlow.launch();
+
+        // 默认流程 L1 preload 期间进度上报：单调不减、始终在 [0,1]、收敛到终态 1
+        expect(progresses.length).toBeGreaterThan(0);
+        for (const value of progresses) {
+            expect(value).toBeGreaterThanOrEqual(0);
+            expect(value).toBeLessThanOrEqual(1);
+        }
+        for (let i = 1; i < progresses.length; i += 1) {
+            expect(progresses[i]).toBeGreaterThanOrEqual(progresses[i - 1]);
+        }
+        expect(progresses[progresses.length - 1]).toBe(1);
+    });
+});
+
+describe("BootFlow default flow resource release loop", () => {
+    test("after switching to game, ui is owned by the game scene and released on scene flow dispose", async () => {
+        const harness = createHarness("", false);
+        expect(harness.provider.canUnload("ui")).toBe(true);
+
+        await harness.bootFlow.launch();
+
+        // 切 game 后 ui 由 game 场景持有（startup 期流转作用域已转移并释放）
+        expect(harness.bootFlow.state).toBe("active");
+        expect(harness.activatedScenes).toEqual(["game"]);
+        expect(harness.provider.canUnload("ui")).toBe(false);
+
+        // 释放场景流转后 ui 可卸载：资源释放闭环收敛，无泄漏引用
+        harness.sceneFlow.dispose();
+        expect(harness.provider.canUnload("ui")).toBe(true);
     });
 });
