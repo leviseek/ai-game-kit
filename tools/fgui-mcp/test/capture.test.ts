@@ -17,7 +17,7 @@ describe("fgui_capture_preview 注册", () => {
         const tool = WRITE_TOOLS["fgui_capture_preview"]!;
         expect(tool).toBeDefined();
         expect(tool.description).toMatch("截图");
-        expect(tool.description).toMatch("fgui-visual-verifier");
+        expect(tool.description).toMatch("visual-verifier");
     });
 
     it("描述注明不产生半截图像（失败即结构化错误）", () => {

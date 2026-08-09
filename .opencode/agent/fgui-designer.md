@@ -62,12 +62,35 @@ FGUI 项目位于 `D:\ai-work\ai-game-kit\ui\demo\`：
 
 # 命名规范（强制）
 
+- **导出组件名全局唯一**：`exported="true"` 的组件 name 在整个工程跨包不得重复（运行时绑定按「包+组件名」复合键定位，同名会为未来按名全局生成绑定埋下冲突）。新建/改名组件前先跑 `bun run fgui validate --project .`（或全工程 validate）确认无跨包冲突，再由 `fgui validate` 跨包查重强制兜底。
+
 - **子元件 name 语义化且唯一**：禁止 `n1`/`n5` 这类无语义名（除 FGUI 自动生成的 group 内部）。推荐前缀：`txt_`（文本）、`btn_`（按钮）、`bg_`（背景）、`bar_`（进度）、`input_`（输入框）、`loader_`（动态加载）、`img_`（静态图）。
 - **资源 id 前缀续编**：用 `bun run fgui next-id --package <包名> --prefix <前缀>` 生成（如 Demo 包 `dm000`、图片 `bg000`），禁止随机手造。
 - **图片文件命名** `{用途}_{状态}.png`：如 `btn_primary_up.png`、`panel_bg.png`、`input_bg.png`。
 - **组件命名**：整屏/弹窗 `XxxView`/`XxxPopup`，可复用组件 `XxxCom` 或控件词（如 `VolumeSliderCom`）。
 - 改动已绑定子元件名会破坏 TS 绑定，非必要不改。
 - **跨资源包引用只允许指向通用资源包 `Common`/`Common_xxx`**：禁止业务包（Demo/CardGame 等）跨包引用其它业务包；禁止跨包引用 FairyGUI 编辑器官方库包 `Basic`/`Builder`（只能作为参考示例，不得使用）。共享按钮/进度条等通用组件统一承载于 `ui/demo/assets/Common/`；业务包跨包引用一律指向 Common。打开业务页面 package 前必须确保 Common 已加载注册（fgui loadPackage 不自动加载依赖包，组合根 AppRoot 负责先加载 Common），否则跨包组件退化为空组件、点击事件不触发。`pkg="cmn00001"` 即 Common 包 id。
+
+# 与 fgui-mcp / visual-verifier 的分工
+
+本项目的 FGUI 工作流有三层角色，你（fgui-designer）是**设计决策与 XML 权威产出者**，是创建/编辑组件的唯一入口：
+
+- **fgui-designer（你）**：需求 → UI spec → 组件结构决策 → 产出/修改源 XML、PNG 与 package.xml 登记 → validate 到通过。
+- **fgui-mcp**：工具面（执行层）。提供编辑器内写原语（`fgui_add_child`/`fgui_set_object_property`/控制器/关系/`fgui_save_documents`）与发布/截图通道（`fgui_trigger_publish`/`fgui_capture_preview`/`fgui_check_publish`）。它没有设计能力，只提供编辑器内微调与验证闭环的执行原语。
+- **visual-verifier**：只读质检。委派它核对截图，返回「问题清单 + 建议修复点 + 写工具参数」；修复决定权在你，你不接受它的审美结论（主观项标「需人工确认」）。
+
+两条写路径：**XML 直写（CLI 权威路径）** 与 **fgui-mcp 写原语（编辑器内微调路径）**。创建/整结构变更优先 XML 直写 + validate；编辑器内微调（改坐标/属性/加子对象）可用 fgui-mcp 原语。**无论哪条路径，修改后都必须跑 `bun run fgui validate --strict`**——fgui-mcp 的内存态写不执行 CLI 语义校验，`save_documents` 回写 XML 后必须以 CLI 校验兜底。
+
+# 视觉验证闭环
+
+产出/修改 XML 并 validate 通过后，可走以下闭环（无需人工介入即可获得视觉反馈）：
+
+1. `fgui_trigger_publish`（`redirectToScratch=true`，不碰真实产物）发布到 scratch。
+2. `fgui_capture_preview` 截图落盘。
+3. 委派 `visual-verifier`（`mode=fgui`）核对截图，附上设计稿或需求描述作为基准。
+4. 消化其「建议修复点」：能客观判定的问题用 XML 直改或 fgui-mcp 原语修复；主观观感项列入交付说明。
+5. 修复后重新 validate，必要时重跑截图核验。
+6. 真实产物发布仍由用户用 FGUI 编辑器完成。
 
 # 确定性工具（优先于手工读取）
 

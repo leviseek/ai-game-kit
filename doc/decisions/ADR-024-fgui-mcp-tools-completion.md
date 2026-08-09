@@ -18,9 +18,10 @@ ADR-023 建立了 fgui-mcp 的「读 + 发布」两端工具面，但中间层�
 
 ### 2. 视觉验证由多模态 subagent 承担，不做「人眼模拟」的断言
 
-- 新建 `.opencode/agent/fgui-visual-verifier.md`（`mode: subagent`，`model: codexapis/gpt-5.6-sol`）：只做视觉判断，输出结构化核验结论（问题列表/符合度/建议修复点 + 对应写工具参数），不执行写操作。
+- 新建 `.opencode/agent/visual-verifier.md`（`mode: subagent`，`model: codexapis/gpt-5.6-sol`）：只做视觉判断，输出结构化核验结论（问题列表/符合度/建议修复点 + 对应写工具参数），不执行写操作。
 - 配套 `fgui_capture_preview` 截图工具：editor.d.ts 无 `App.Capture`/`EncodeToPNG`，走 OS 级窗口截图（PowerShell System.Drawing）备选。
-- 理由：布局/像素「好不好看」无法用断言验证；把视觉环节显式委托给多模态模型 + 人工兜底，比在 MCP 层做脆弱的像素断言更可靠。观感项（字体/间距/配色）必须标注「需人工确认」，AI 不替用户做审美决策。
+- **泛化（ADR-024 修订）**：`visual-verifier` 为**通用视觉验证 agent**，支持双模式——默认 `general`（布局/层级/尺寸/像素等与 UI 框架无关项，适用 Cocos 运行时、网页、编辑器等任意渲染截图），`mode=fgui` 叠加 FGUI 专项检查（controller/gear 状态、交互组件骨架、graph/transition 禁令）。文件原为 `fgui-visual-verifier.md`，随泛化重命名；FGUI 截图通道（`fgui_capture_preview`）作为其输入之一保留。
+- 理由：布局/像素「好不好看」无法用断言验证；把视觉环节显式委托给多模态模型 + 人工兜底，比在 MCP 层做脆弱的像素断言更可靠。泛化为通用 agent 使同一核对框架可复用于 Cocos 运行时截图等非 FGUI 场景，FGUI 领域知识保留为专项模式，不因泛化丢失。观感项（字体/间距/配色）必须标注「需人工确认」，AI 不替用户做审美决策。
 
 ### 3. handler 层硬屏蔽项目禁止路径
 
@@ -47,6 +48,6 @@ ADR-023 建立了 fgui-mcp 的「读 + 发布」两端工具面，但中间层�
 ## 影响
 
 - 扩展 `tools/fgui-mcp/lib/tools.ts`（读 11 + 写 27 + 检测 1）、`ui/demo/plugins/fgui-mcp-probe/src/mailbox/handlers*.ts`（新增 handler）。
-- 新增 `.opencode/agent/fgui-visual-verifier.md` 与 `fgui_capture_preview` 截图通道。
+- 新增 `.opencode/agent/visual-verifier.md`（原 `fgui-visual-verifier.md`，随泛化重命名）与 `fgui_capture_preview` 截图通道。
 - 新写工具全部走「内存态 + 显式保存 + 二次确认」，不改变 `tools/fgui` CLI 的 XML 生成/校验权威；发布产物仍由编辑器生成，检测链路只读。
 - 实机验证项（探针结论、编辑器闭环）需用户配合编辑器运行后回填，不回填不阻塞代码侧交付。

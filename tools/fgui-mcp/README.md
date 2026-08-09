@@ -52,7 +52,7 @@ MCP 客户端经 stdio 拉起（`opencode.json` 已配置）：
 
 ## 视觉验证
 
-- `fgui_capture_preview` 截图后，交 `.opencode/agent/fgui-visual-verifier.md`（绑定 `codexapis/gpt-5.6-sol` 多模态）核对布局/像素/预览。
+- `fgui_capture_preview` 截图后，交 `.opencode/agent/visual-verifier.md`（绑定 `codexapis/gpt-5.6-sol` 多模态，`mode=fgui`）核对布局/像素/预览。
 - 截图走 FairyGUI 官方路径（探针实机验证）：`doc.content.displayObject.GetScreenShot` + `UnityEngine.ImageConversion.EncodeToPNG`。`ScreenCapture.CaptureScreenshot`/`Application.CaptureScreenshot` 在 Puerts 不可调用；OS 级 PowerShell 截图在 Unity 内 `Process.Start` 受限。
 - **Puerts 序列化陷阱**：C# `long`（如 `FileInfo.Length`）映射为 BigInt，`JSON.stringify` 会抛错致响应丢失，所有序列化字段必须 `Number()` 转换。
 

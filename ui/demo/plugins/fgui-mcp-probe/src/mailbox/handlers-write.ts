@@ -1191,7 +1191,7 @@ export function createCapturePreviewHandler(server: import("./server").MailboxSe
                         path: outPng,
                         sizeBytes,
                         doc: activeDoc.docURL,
-                        note: "GetScreenShot + EncodeToPNG（FairyGUI 官方截图路径），可用于 fgui-visual-verifier 视觉核对",
+                        note: "GetScreenShot + EncodeToPNG（FairyGUI 官方截图路径），可用于 visual-verifier 视觉核对（mode=fgui）",
                     },
                 });
             } catch (e: any) {

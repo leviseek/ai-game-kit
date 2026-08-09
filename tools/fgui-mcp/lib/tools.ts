@@ -270,7 +270,7 @@ export const WRITE_TOOLS: Record<string, { description: string; run: (bridge: Ma
     },
     fgui_capture_preview: {
         description:
-            "截图采集（FairyGUI 官方路径：GetScreenShot + ImageConversion.EncodeToPNG），返回 PNG 路径供 fgui-visual-verifier 视觉核对。" +
+            "截图采集（FairyGUI 官方路径：GetScreenShot + ImageConversion.EncodeToPNG），返回 PNG 路径供 visual-verifier 视觉核对（mode=fgui）。" +
             "编辑器不可达/截图失败返回结构化错误，不产生半截图像。",
         run: (bridge, params) => bridgeResult(bridge, "capture_preview", params),
     },
