@@ -88,13 +88,13 @@ export async function run(argv: readonly string[]): Promise<number> {
             );
             const required = [
                 "entry: ok",
-                "initial-can-unload-ui: ok",
+                "initial-can-unload-game: ok",
                 "preload: ok",
-                "preload-holds-ui: ok",
+                "preload-holds-game: ok",
                 "release-loop: ok",
                 "switch: ok",
                 "switch-scene: ok",
-                "switch-holds-ui: ok",
+                "switch-holds-game: ok",
                 "fail-keeps-scene: ok",
                 "retry: ok",
                 "missing-bundle-noop: ok",
