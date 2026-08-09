@@ -130,8 +130,9 @@ export interface CardBattleViewNode {
 /**
  * 把记录转换为渲染器消费的 ViewModelNode 实现，并附加 recording 引用：
  * 测试经 clickHandler 触发命令绑定回调（渲染器 onClick 时写入）。
+ * 导出供冒烟回退路径复用，避免节点契约在装配与冒烟间漂移。
  */
-function toViewModelNode(recording: CardBattleViewNode): ViewModelNode {
+export function toViewModelNode(recording: CardBattleViewNode): ViewModelNode {
     return {
         setText: (value: string) => {
             recording.text = value;

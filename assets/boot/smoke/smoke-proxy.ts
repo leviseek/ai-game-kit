@@ -8,6 +8,7 @@ import {
     type UiLayer,
 } from "../../framework";
 import { profiler } from "cc";
+import { createFairyGuiViewHandle } from "../../framework/adapters/cocos/ui/FairyGuiViewHandle";
 import type { GameLobbyHostImpl } from "../host/GameLobbyHostImpl";
 import type { UiHost } from "../host/UiHost";
 import {
@@ -36,6 +37,7 @@ interface SamplesSmokeModule {
         readonly cardBattle: (
             host: unknown,
             ensureSharedDependencies: () => Promise<void>,
+            options?: { readonly nodeResolver?: (view: unknown) => (name: string) => unknown },
         ) => Promise<void>;
     };
 }
@@ -195,7 +197,15 @@ export class SmokeProxy {
         if (smoke === undefined) {
             throw new Error(`[smoke] samples module has no cardBattle smoke`);
         }
-        await smoke(this.uiHost, () => this.lobbyHost.ensureSharedUiDependencies());
+        await smoke(
+            this.uiHost,
+            () => this.lobbyHost.ensureSharedUiDependencies(),
+            // 注入真实 fgui 渲染接缝：把 BattleView 根组件包装成节点解析器，
+            // 冒烟渲染落到真实页面节点，验证 BattleView.xml 与 viewModel 节点名对齐
+            {
+                nodeResolver: (view) => createFairyGuiViewHandle(view as never),
+            },
+        );
     }
 
     /** 游戏层品类夹具冒烟序列。 */

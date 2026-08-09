@@ -1,6 +1,6 @@
 import {
     createCardFixture,
-    type CardBattleViewNode,
+    toViewModelNode,
 } from "./assembly";
 import {
     createCardBattleBindings,
@@ -8,7 +8,12 @@ import {
 } from "./view/view";
 import { createViewModelRenderer, type ViewModelNode } from "../../framework";
 
-/** 卡牌对战冒烟的宿主接缝：boot 侧 UiHost 的结构性子集（运行时值传入，samples 不 import boot）。 */
+/**
+ * 卡牌对战冒烟的宿主接缝：boot 侧 UiHost 的结构性子集（运行时值传入，samples 不
+ * import boot）。nodeResolver 为可选的真实 fgui 渲染接缝：boot 注入
+ * createFairyGuiViewHandle，把页面根组件包装成 ViewModelNode 解析器，使冒烟渲染
+ * 落到真实 BattleView 节点（验证 BattleView.xml 与 viewModel 节点名对齐）。
+ */
 export interface CardBattleSmokeHost {
     loadPackage(bundle: string, path: string): Promise<{ readonly state: string }>;
     readonly pageAdapter:
@@ -24,18 +29,26 @@ export interface CardBattleSmokeHost {
         | undefined;
     smokeUiInit(): boolean;
     release(): void;
+    nodeResolver?: (view: unknown) => (name: string) => ViewModelNode | undefined;
+}
+
+/** 冒烟运行选项：真实 fgui 渲染接缝由 boot 侧注入（host 缺省无此能力时经此传入）。 */
+export interface CardBattleSmokeOptions {
+    readonly nodeResolver?: (view: unknown) => (name: string) => ViewModelNode | undefined;
 }
 
 /**
  * 卡牌对战真实可玩冒烟：装配 game_card 夹具 + ViewModel 渲染器，驱动完整对局
  * ——出牌/结束回合/敌攻/胜负/重开。每步经 console 输出 `[card-battle]` 标记，
- * 由 headless Chrome + CDP 采集验证。视图节点解析器取用夹具内存记录型
- * viewModel（样本层不 import fgui 适配器，渲染目标与真实页面同名节点一致），
- * 页面打开/关闭与 package 加载经注入的宿主接缝执行。
+ * 由 headless Chrome + CDP 采集验证。视图节点解析器优先取 nodeResolver（boot
+ * 注入的真实 fgui 路径，渲染落到真实 BattleView 节点）；无接缝时回退夹具内存
+ * 记录型节点（样本层不 import fgui 适配器）。页面打开/关闭与 package 加载经
+ * 注入的宿主接缝执行。
  */
 export async function runCardBattleSmoke(
     host: CardBattleSmokeHost,
     ensureSharedDependencies: () => Promise<void>,
+    options: CardBattleSmokeOptions = {},
 ): Promise<void> {
     const report = (step: string, ok: boolean, detail = "") => {
         console.log(`[card-battle] ${step}: ${ok ? "ok" : "FAIL"}${detail ? ` (${detail})` : ""}`);
@@ -78,29 +91,18 @@ export async function runCardBattleSmoke(
     adapter.mount(page);
     report("battle-open", true);
 
-    // 4. 驱动游戏层完整对局：渲染器写夹具内存记录型节点，命令绑定接入战斗操作
+    // 4. 驱动游戏层完整对局：渲染器写视图节点，命令绑定接入战斗操作
     const fixture = createCardFixture();
     await fixture.start();
 
-    // 记录型节点包装为渲染器消费的 ViewModelNode（夹具 viewModel.node 惰性
-    // 建录同名节点，多次访问返回同一实例，渲染写入可被重复覆盖）
-    const node = (name: string): ViewModelNode => {
-        const recording: CardBattleViewNode = fixture.viewModel.node(name);
-        return {
-            setText: (value: string) => {
-                recording.text = value;
-            },
-            setProgress: (value: number) => {
-                recording.progress = value;
-            },
-            setVisible: (value: boolean) => {
-                recording.visible = value;
-            },
-            onClick: (handler: () => void) => {
-                recording.clickHandler = handler;
-            },
-        };
-    };
+    // 真实 fgui 渲染接缝优先：boot 注入 nodeResolver 把页面根组件包装成节点
+    // 解析器，渲染落到真实 BattleView 节点（覆盖 XML↔viewModel 节点名对齐）；
+    // 无接缝时回退夹具内存记录型节点（测试/无 fgui 环境）。
+    const resolver = options.nodeResolver ?? host.nodeResolver;
+    const node: (name: string) => ViewModelNode | undefined =
+        resolver === undefined
+            ? (name: string): ViewModelNode => toViewModelNode(fixture.viewModel.node(name))
+            : resolver(page.view);
 
     const renderer = createViewModelRenderer({
         node,
