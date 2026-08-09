@@ -59,6 +59,11 @@ interface AppRootInstance {
     onLoad(): void;
     start(): Promise<void>;
     onDestroy(): void;
+    smoke?: SmokeProxyInstance;
+    [key: string]: unknown;
+}
+
+interface SmokeProxyInstance {
     smokeUiInit(): boolean;
     smokeUiReady(): boolean;
     smokeUiLoadPackage(bundle: string, path: string): Promise<unknown>;
@@ -92,7 +97,7 @@ describe("AppRoot FairyGUI UI smoke methods", () => {
         const instance = new AppRoot();
         instance.onLoad();
 
-        expect(instance.smokeUiReady()).toBe(false);
+        expect(instance.smoke?.smokeUiReady()).toBe(false);
     });
 
     test("smokeUiInit establishes the page adapter once the UI root is ready", async () => {
@@ -103,9 +108,9 @@ describe("AppRoot FairyGUI UI smoke methods", () => {
 
         // 直接调用 smokeUiInit 时，真实 createCocosUiRoot 的缺省 GRoot seam 依赖引擎
         // GRoot 单例；此处仅验证方法存在性与幂等调用不抛错（运行时行为由 Web 冒烟验证）。
-        expect(() => instance.smokeUiInit()).not.toThrow();
+        expect(() => instance.smoke?.smokeUiInit()).not.toThrow();
         // 组合根不再手动 setModal：模态遮罩由适配器消费导航器状态自动同步
-        expect(instance.smokeUiSetModal).toBeUndefined();
+        expect(instance.smoke?.smokeUiSetModal).toBeUndefined();
     });
 
     test("smokeUiOpenPage/ClosePage are safe before the adapter is ready", async () => {
@@ -113,16 +118,20 @@ describe("AppRoot FairyGUI UI smoke methods", () => {
         const instance = new AppRoot();
         instance.onLoad();
 
-        expect(instance.smokeUiOpenPage("demo", "normal", "Demo", "DemoView")).toBe(false);
-        expect(instance.smokeUiClosePage("demo")).toBe(false);
+        expect(
+            instance.smoke?.smokeUiOpenPage("demo", "normal", "Demo", "DemoView"),
+        ).toBe(false);
+        expect(instance.smoke?.smokeUiClosePage("demo")).toBe(false);
     });
 
-    test("smokeUiLoadPackage without provider returns a failed handle", async () => {
+    test("smokeUiLoadPackage returns a failed handle under mock engine", async () => {
         const { AppRoot } = await loadAppRoot();
         const instance = new AppRoot();
         instance.onLoad();
 
-        const handle = await instance.smokeUiLoadPackage("ui", "Demo/Demo");
+        // SmokeProxy 依赖必填，uiHost 必然存在；此处验证的是 mock 引擎下
+        // UiHost.loadPackage 加载失败返回 state === "failed"（非代理防御路径）
+        const handle = await instance.smoke?.smokeUiLoadPackage("ui", "Demo/Demo");
         expect(handle).toBeDefined();
         const state = (handle as { state?: string }).state;
         expect(state).toBe("failed");
@@ -146,7 +155,7 @@ describe("AppRoot FairyGUI UI smoke methods", () => {
         console.log = (message?: unknown) => logs.push(String(message));
 
         try {
-            await instance.runUiSmoke();
+            await instance.smoke?.runUiSmoke();
         } finally {
             console.log = originalLog;
         }

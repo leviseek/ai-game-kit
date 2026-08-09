@@ -3,7 +3,7 @@ import {
     createStateMachine,
     type StateTransitionTable,
 } from "../../framework";
-import type { SmokeAction, SmokeRouter } from "./SmokeRouter";
+import type { SmokeAction } from "./SmokeRouter";
 
 export type BootFlowState =
     | "logo"
@@ -25,6 +25,11 @@ export interface BootFlowLobbyHost {
     openListPageWithRetry(): void;
 }
 
+/** BootFlow 消费的冒烟分派能力：仅需 URL 解析，由 SmokeProxy 的 router 满足。 */
+export interface BootFlowSmokeRouter {
+    resolve(search: string): SmokeAction | null;
+}
+
 /**
  * BootFlow 依赖：由组合根注入装配对象（真实 UiHost/GameLobbyHostImpl 满足上述
  * 能力接口）与运行环境接缝。场景映射（sceneMap）显式注入，保证编排器可被 memory
@@ -34,7 +39,7 @@ export interface BootFlowDeps {
     readonly sceneFlow: SceneFlow;
     readonly uiHost: BootFlowUiHost;
     readonly lobbyHost: BootFlowLobbyHost;
-    readonly smokeRouter: SmokeRouter;
+    readonly smokeRouter: BootFlowSmokeRouter;
     /** 场景映射清单：game 场景资源（bundle/paths），供 preload 与 switchTo 复用。 */
     readonly sceneMap: Readonly<Record<string, SceneResources>>;
     readonly logger: Logger;

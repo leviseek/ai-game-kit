@@ -12,15 +12,11 @@ import {
     type IResourceProvider,
     type Logger,
     type Module,
-    type ResourceHandle,
     type SceneFlow,
-    type SceneResources,
-    type SceneSwitchResult,
     ServiceResolutionError,
     type ServiceRegistry,
     type ServiceToken,
     type TimeSource,
-    type UiLayer,
 } from "../framework";
 import { createApplicationContext } from "../framework/application/ApplicationContext";
 import { WallClock } from "../framework/core/time/WallClock";
@@ -32,7 +28,6 @@ import {
     createCocosUiRoot,
     type CocosUiRoot,
 } from "../framework/adapters/cocos/ui/CocosUiRoot";
-import { runFixtureSmoke } from "../game/fixture/smoke";
 import {
     sceneMap,
     type EntryPageHandle,
@@ -51,17 +46,9 @@ import {
     type BootFlow,
 } from "./flow/BootFlow";
 import {
-    createSmokeRouter,
-    type SmokeRouter,
-} from "./flow/SmokeRouter";
-import { runUiSmoke } from "./smoke/ui-smoke";
-import { runSceneFlowSmoke } from "./smoke/scene-smoke";
-import {
-    clearModalClickHook,
-    runModalClickSmoke,
-} from "./smoke/modal-click";
-import { runCardBattleSmoke } from "./smoke/card-battle";
-import { runFixturePerfSmoke } from "./smoke/perf";
+    createSmokeProxy,
+    type SmokeProxy,
+} from "./smoke/smoke-proxy";
 
 const { ccclass } = _decorator;
 
@@ -151,9 +138,10 @@ export function assembleApp(): AppAssembly {
 }
 
 /**
- * 组合根组件：装配 Application 与宿主模块（UiHost/GameLobbyHostImpl/SmokeRouter/
- * BootFlow），并把冒烟触发、会话打开/关闭收敛为薄代理。启动编排、UI 根初始化时机
- * 与默认列表页打开逻辑委托 BootFlow + 宿主模块（本 Change 阶段 2）。
+ * 组合根组件：装配 Application 与宿主模块（UiHost/GameLobbyHostImpl/SmokeProxy/
+ * BootFlow），并把会话打开/关闭收敛为薄代理；冒烟触发/观察与 URL 冒烟分派收敛到
+ * SmokeProxy（唯一冒烟初始化入口）。启动编排、UI 根初始化时机与默认列表页打开
+ * 逻辑委托 BootFlow + 宿主模块。
  */
 @ccclass("AppRoot")
 export class AppRoot extends Component {
@@ -163,7 +151,7 @@ export class AppRoot extends Component {
     private resourceProvider?: IResourceProvider;
     private uiHost?: UiHost;
     private lobbyHost?: GameLobbyHostImpl;
-    private smokeRouter?: SmokeRouter;
+    private smoke?: SmokeProxy;
     private bootFlow?: BootFlow;
     private logger?: Logger;
     private validateAssembly?: () => void;
@@ -190,27 +178,13 @@ export class AppRoot extends Component {
             resourceProvider,
             logger,
         });
-        this.smokeRouter = createSmokeRouter({
-            runUiSmoke: () => this.runUiSmoke(),
-            runSceneFlowSmoke: () => this.runSceneFlowSmoke(),
-            runModalClickSmoke: () => {
-                const host = this.uiHost;
-                return host === undefined
-                    ? Promise.resolve()
-                    : runModalClickSmoke(host);
-            },
-            runCardBattleSmoke: () => {
-                const host = this.uiHost;
-                if (host === undefined) {
-                    return Promise.resolve();
-                }
-                return runCardBattleSmoke(
-                    host,
-                    () => this.lobbyHost?.ensureSharedUiDependencies() ?? Promise.resolve(),
-                );
-            },
-            runFixtureSmoke: (fixtureId) => runFixtureSmoke(fixtureId),
-            runFixturePerf: (perfFixtureId) => runFixturePerfSmoke(perfFixtureId),
+        // 冒烟唯一初始化入口：冒烟触发/观察方法与 URL 冒烟分派收敛到 SmokeProxy，
+        // AppRoot 不再持有各冒烟序列实现。
+        this.smoke = createSmokeProxy({
+            uiHost: this.uiHost,
+            sceneFlow,
+            resourceProvider,
+            lobbyHost: this.lobbyHost,
         });
         // 启动编排器：场景映射清单来自游戏层 fixture（game/fixture 薄转发）；
         // isNative 探测原生平台（Web 静默跳过热更阶段）；getSearch 供 URL 冒烟分派。
@@ -218,7 +192,7 @@ export class AppRoot extends Component {
             sceneFlow,
             uiHost: this.uiHost,
             lobbyHost: this.lobbyHost,
-            smokeRouter: this.smokeRouter,
+            smokeRouter: this.smoke.router,
             sceneMap,
             logger,
             isNative: () => sys.isNative === true,
@@ -265,81 +239,6 @@ export class AppRoot extends Component {
         }
     }
 
-    smokePreload(sceneId: string, resources: SceneResources): Promise<void> {
-        return this.sceneFlow?.preload(sceneId, resources) ?? Promise.resolve();
-    }
-
-    smokeSwitchTo(
-        sceneId: string,
-        resources: SceneResources,
-    ): Promise<SceneSwitchResult> {
-        return (
-            this.sceneFlow?.switchTo(sceneId, resources) ??
-            Promise.resolve({ ok: false, sceneId, reason: "scene flow not assembled" })
-        );
-    }
-
-    smokeCanUnload(bundle: string): boolean {
-        return this.resourceProvider?.canUnload(bundle) ?? false;
-    }
-
-    smokeUiInit(): boolean {
-        return this.uiHost?.smokeUiInit() ?? false;
-    }
-
-    smokeUiReady(): boolean {
-        return this.uiHost?.smokeUiReady() ?? false;
-    }
-
-    smokeUiLoadPackage(bundle: string, path: string): Promise<ResourceHandle> {
-        const host = this.uiHost;
-        if (host === undefined) {
-            const key = { kind: "fairygui-package" as const, bundle, path };
-            const error = new Error("ui host not assembled");
-            const handle = {
-                key,
-                state: "failed" as const,
-                resource: undefined,
-                error,
-                done: Promise.resolve(),
-                cancel: () => { },
-            } as unknown as ResourceHandle;
-            return Promise.resolve(handle);
-        }
-        return host.loadPackage(bundle, path);
-    }
-
-    smokeUiOpenPage(
-        route: string,
-        layer: UiLayer,
-        packageName: string,
-        resName: string,
-    ): boolean {
-        return this.uiHost?.openPage(route, layer, packageName, resName) ?? false;
-    }
-
-    smokeUiClosePage(route: string): boolean {
-        return this.uiHost?.closePage(route) ?? false;
-    }
-
-    runUiSmoke(): Promise<void> {
-        const host = this.uiHost;
-        return host === undefined ? Promise.resolve() : runUiSmoke(host);
-    }
-
-    runSceneFlowSmoke(): Promise<void> {
-        const sceneFlow = this.sceneFlow;
-        const resourceProvider = this.resourceProvider;
-        if (sceneFlow === undefined || resourceProvider === undefined) {
-            return Promise.resolve();
-        }
-        return runSceneFlowSmoke({
-            preload: (sceneId, resources) => sceneFlow.preload(sceneId, resources),
-            switchTo: (sceneId, resources) => sceneFlow.switchTo(sceneId, resources),
-            canUnload: (bundle) => resourceProvider.canUnload(bundle),
-        });
-    }
-
     openEntryPage(entry: GameEntryInfo): Promise<EntryPageHandle> {
         const lobbyHost = this.lobbyHost;
         if (lobbyHost === undefined) {
@@ -358,9 +257,9 @@ export class AppRoot extends Component {
 
     onDestroy(): void {
         this.adapter?.unbind();
-        // 清理冒烟交互钩子：闭包持有组件，常驻根销毁时一并释放
-        clearModalClickHook();
-        this.smokeRouter = undefined;
+        // 释放冒烟代理：清理冒烟交互钩子（闭包持有组件，常驻根销毁时一并释放）
+        this.smoke?.dispose();
+        this.smoke = undefined;
         this.bootFlow?.dispose();
         this.bootFlow = undefined;
         this.uiHost?.dispose();

@@ -310,9 +310,10 @@ describe("AppRoot Component", () => {
         const instance = new AppRoot();
         instance.onLoad();
 
-        expect(typeof instance.smokePreload).toBe("function");
-        expect(typeof instance.smokeSwitchTo).toBe("function");
-        expect(typeof instance.smokeCanUnload).toBe("function");
+        const smoke = (instance as unknown as { smoke?: Record<string, unknown> }).smoke;
+        expect(typeof smoke?.smokePreload).toBe("function");
+        expect(typeof smoke?.smokeSwitchTo).toBe("function");
+        expect(typeof smoke?.smokeCanUnload).toBe("function");
     });
 
     test("exposes FairyGUI UI smoke methods after onLoad", async () => {
@@ -321,13 +322,14 @@ describe("AppRoot Component", () => {
         const instance = new AppRoot();
         instance.onLoad();
 
-        expect(typeof instance.smokeUiInit).toBe("function");
-        expect(typeof instance.smokeUiReady).toBe("function");
-        expect(typeof instance.smokeUiLoadPackage).toBe("function");
-        expect(typeof instance.smokeUiOpenPage).toBe("function");
-        expect(typeof instance.smokeUiClosePage).toBe("function");
+        const smoke = (instance as unknown as { smoke?: Record<string, unknown> }).smoke;
+        expect(typeof smoke?.smokeUiInit).toBe("function");
+        expect(typeof smoke?.smokeUiReady).toBe("function");
+        expect(typeof smoke?.smokeUiLoadPackage).toBe("function");
+        expect(typeof smoke?.smokeUiOpenPage).toBe("function");
+        expect(typeof smoke?.smokeUiClosePage).toBe("function");
         // 组合根不再暴露手动 setModal：遮罩由适配器消费导航器模态状态自动同步
-        expect(instance.smokeUiSetModal).toBeUndefined();
+        expect((smoke as { smokeUiSetModal?: unknown } | undefined)?.smokeUiSetModal).toBeUndefined();
     });
 
     test("exposes the scene flow smoke method as a thin proxy", async () => {
@@ -336,7 +338,19 @@ describe("AppRoot Component", () => {
         const instance = new AppRoot();
         instance.onLoad();
 
-        expect(typeof instance.runSceneFlowSmoke).toBe("function");
+        const smoke = (instance as unknown as { smoke?: Record<string, unknown> }).smoke;
+        expect(typeof smoke?.runSceneFlowSmoke).toBe("function");
+    });
+
+    test("smoke methods live in SmokeProxy, not directly on AppRoot", () => {
+        const source = readFileSync(appRootFile, "utf8");
+
+        // 冒烟职责收敛到 smoke-proxy；AppRoot 只经 createSmokeProxy 初始化，
+        // 若未来有人把冒烟方法放回 AppRoot（回退重构），此断言拦截
+        expect(source).toMatch(/createSmokeProxy/);
+        expect(source).not.toMatch(/^\s*smokePreload\(/m);
+        expect(source).not.toMatch(/^\s*smokeUiInit\(/m);
+        expect(source).not.toMatch(/^\s*runUiSmoke\(/m);
     });
 
     test("delegates default startup orchestration to BootFlow", () => {

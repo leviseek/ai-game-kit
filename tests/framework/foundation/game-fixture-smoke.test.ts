@@ -10,7 +10,6 @@ import type { GameFixtureRegistry } from "../../../assets/game/fixture/registry"
 import { runFixtureSmoke } from "../../../assets/game/fixture/smoke";
 
 const projectRoot = resolve(import.meta.dir, "../../..");
-const appRootFile = resolve(projectRoot, "assets/boot/AppRoot.ts");
 
 async function captureFixtureSmoke(
     fixtureId: string,
@@ -147,11 +146,14 @@ describe("game fixture smoke runner", () => {
     });
 });
 
-describe("AppRoot fixture smoke forwarding", () => {
-    test("wires the fixture smoke runner from the game layer fixture", () => {
-        expect(existsSync(appRootFile)).toBe(true);
+describe("SmokeProxy fixture smoke forwarding", () => {
+    test("wires the fixture smoke runner from the game layer fixture via SmokeProxy", () => {
+        const smokeProxyFile = resolve(projectRoot, "assets/boot/smoke/smoke-proxy.ts");
+        expect(existsSync(smokeProxyFile)).toBe(true);
 
-        const source = readFileSync(appRootFile, "utf8");
+        // 文本断言仅防"删除转发"，不防"转发逻辑错误"；转发行为由 boot-flow /
+        // boot-smoke-router 运行测试兜底
+        const source = readFileSync(smokeProxyFile, "utf8");
 
         expect(source).toMatch(/from\s*["'][^"']*game\/fixture\/smoke["']/);
         expect(source).toMatch(/runFixtureSmoke/);
