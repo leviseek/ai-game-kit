@@ -92,7 +92,7 @@ export async function runAutoBattleSmoke(
     // 3. 打开 BattleView 页面
     const page = adapter.createPage("auto_battle/battle", "normal", {
         packageName: "AutoBattle",
-        resName: "BattleView",
+        resName: "AutoBattleView",
     });
     if (page.disposed || page.view === undefined) {
         report("battle-open", false, String(page.error ?? "no view"));

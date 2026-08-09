@@ -35,7 +35,7 @@ export const gameTypeCatalog: readonly GameTypeInfo[] = [
         entry: {
             route: "card/battle",
             packageName: "CardGame",
-            resName: "BattleView",
+            resName: "CardBattleView",
         },
         playable: true,
     },
@@ -46,7 +46,7 @@ export const gameTypeCatalog: readonly GameTypeInfo[] = [
         entry: {
             route: "auto_battle/battle",
             packageName: "AutoBattle",
-            resName: "BattleView",
+            resName: "AutoBattleView",
         },
         playable: true,
     },

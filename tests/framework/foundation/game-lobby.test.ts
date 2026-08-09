@@ -69,7 +69,7 @@ const TEST_CATALOG: readonly GameTypeInfo[] = [
     {
         id: "card",
         title: "卡牌",
-        entry: { route: "card/battle", packageName: "CardGame", resName: "BattleView" },
+        entry: { route: "card/battle", packageName: "CardGame", resName: "CardBattleView" },
         playable: true,
     },
     { id: "rpg", title: "RPG", playable: false },

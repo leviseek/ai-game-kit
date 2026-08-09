@@ -82,7 +82,7 @@ export async function runCardBattleSmoke(
     // 3. 打开 BattleView 页面
     const page = adapter.createPage("card/battle", "normal", {
         packageName: "CardGame",
-        resName: "BattleView",
+        resName: "CardBattleView",
     });
     if (page.disposed || page.view === undefined) {
         report("battle-open", false, String(page.error ?? "no view"));

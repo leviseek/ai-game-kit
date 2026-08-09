@@ -206,8 +206,8 @@ export class SmokeProxy {
         await smoke(
             this.uiHost,
             () => this.lobbyHost.ensureSharedUiDependencies(),
-            // 注入真实 fgui 渲染接缝：把 BattleView 根组件包装成节点解析器，
-            // 冒烟渲染落到真实页面节点，验证 BattleView.xml 与 viewModel 节点名对齐
+            // 注入真实 fgui 渲染接缝：把 CardBattleView 根组件包装成节点解析器，
+            // 冒烟渲染落到真实页面节点，验证 CardBattleView.xml 与 viewModel 节点名对齐
             {
                 nodeResolver: (view) => createFairyGuiViewHandle(view as never),
             },
@@ -225,7 +225,7 @@ export class SmokeProxy {
         await smoke(
             this.uiHost,
             () => this.lobbyHost.ensureSharedUiDependencies(),
-            // 注入真实 fgui 渲染接缝：验证 AutoBattle/BattleView 与 viewModel 节点名对齐
+            // 注入真实 fgui 渲染接缝：验证 AutoBattle/AutoBattleView 与 viewModel 节点名对齐
             {
                 nodeResolver: (view) => createFairyGuiViewHandle(view as never),
             },

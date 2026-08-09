@@ -396,7 +396,7 @@ describe("AppRoot lobby host", () => {
             instance.openEntryPage({
                 route: "card/battle",
                 packageName: "CardGame",
-                resName: "BattleView",
+                resName: "CardBattleView",
             }),
         ).rejects.toThrow(/page adapter not ready/);
     });

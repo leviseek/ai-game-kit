@@ -25,7 +25,7 @@ describe("game lobby catalog", () => {
         expect(card?.entry).toEqual({
             route: "card/battle",
             packageName: "CardGame",
-            resName: "BattleView",
+            resName: "CardBattleView",
         });
     });
 
@@ -35,7 +35,7 @@ describe("game lobby catalog", () => {
         expect(autoBattle?.entry).toEqual({
             route: "auto_battle/battle",
             packageName: "AutoBattle",
-            resName: "BattleView",
+            resName: "AutoBattleView",
         });
     });
 
