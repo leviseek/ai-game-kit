@@ -59,7 +59,8 @@ export interface FairyGuiPageAdapterOptions {
 function createFairyGuiMask(width: number, height: number): unknown {
   const mask = new GGraph();
   mask.name = "modal-mask";
-  mask.opaque = true;
+  // GGraph 类型声明未暴露 opaque，运行时存在，按接缝断言（与 clickable view 一致）
+  (mask as unknown as { opaque: boolean }).opaque = true;
   mask.touchable = true;
   mask.setSize(width, height);
   // lineSize=0 无线条；line/fill 复用 modalLayerColor，fill 决定可见性

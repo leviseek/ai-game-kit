@@ -68,11 +68,9 @@ export function createStateMachine<State extends string, Event extends string>(
 
     const from = current;
     const eventTransitions = transitions[from];
+    const to = eventTransitions?.[event];
 
-    if (
-      eventTransitions === undefined ||
-      eventTransitions[event] === undefined
-    ) {
+    if (to === undefined) {
       report(
         new Error(
           `StateMachine rejected event "${String(event)}" from state "${String(from)}"`,
@@ -80,8 +78,6 @@ export function createStateMachine<State extends string, Event extends string>(
       );
       return;
     }
-
-    const to = eventTransitions[event];
 
     inTransition = true;
     let switched = false;
