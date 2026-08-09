@@ -31,10 +31,15 @@ interface GameSmokeModule {
     };
 }
 
-/** samples bundle 冒烟模块的结构性子集（cardBattle 宿主为 boot 侧 UiHost 结构）。 */
+/** samples bundle 冒烟模块的结构性子集（cardBattle/autoBattle 宿主为 boot 侧 UiHost 结构）。 */
 interface SamplesSmokeModule {
     readonly smokes?: {
         readonly cardBattle: (
+            host: unknown,
+            ensureSharedDependencies: () => Promise<void>,
+            options?: { readonly nodeResolver?: (view: unknown) => (name: string) => unknown },
+        ) => Promise<void>;
+        readonly autoBattle: (
             host: unknown,
             ensureSharedDependencies: () => Promise<void>,
             options?: { readonly nodeResolver?: (view: unknown) => (name: string) => unknown },
@@ -100,6 +105,7 @@ export class SmokeProxy {
             runSceneFlowSmoke: () => this.runSceneFlowSmoke(),
             runModalClickSmoke: () => this.runModalClickSmoke(),
             runCardBattleSmoke: () => this.runCardBattleSmoke(),
+            runAutoBattleSmoke: () => this.runAutoBattleSmoke(),
             runFixtureSmoke: (fixtureId) => this.runFixtureSmoke(fixtureId),
             runFixturePerf: (perfFixtureId) => this.runFixturePerf(perfFixtureId),
         });
@@ -202,6 +208,24 @@ export class SmokeProxy {
             () => this.lobbyHost.ensureSharedUiDependencies(),
             // 注入真实 fgui 渲染接缝：把 BattleView 根组件包装成节点解析器，
             // 冒烟渲染落到真实页面节点，验证 BattleView.xml 与 viewModel 节点名对齐
+            {
+                nodeResolver: (view) => createFairyGuiViewHandle(view as never),
+            },
+        );
+    }
+
+    /** 自动战斗真实可玩冒烟序列；先确保共享 UI 依赖（Common）已注册。 */
+    async runAutoBattleSmoke(): Promise<void> {
+        await this.loadSamplesBundle();
+        const samplesModule = lookupBundle("samples") as SamplesSmokeModule | undefined;
+        const smoke = samplesModule?.smokes?.autoBattle;
+        if (smoke === undefined) {
+            throw new Error(`[smoke] samples module has no autoBattle smoke`);
+        }
+        await smoke(
+            this.uiHost,
+            () => this.lobbyHost.ensureSharedUiDependencies(),
+            // 注入真实 fgui 渲染接缝：验证 AutoBattle/BattleView 与 viewModel 节点名对齐
             {
                 nodeResolver: (view) => createFairyGuiViewHandle(view as never),
             },

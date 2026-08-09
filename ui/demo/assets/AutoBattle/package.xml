@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<packageDescription id="abpk0001">
+  <resources>
+    <component id="ab001" name="BattleView.xml" path="/" exported="true"/>
+    <image id="ab000" name="bg_battle.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+  </resources>
+  <publish name=""/>
+</packageDescription>

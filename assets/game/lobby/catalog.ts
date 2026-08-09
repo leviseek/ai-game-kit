@@ -24,8 +24,8 @@ export interface GameTypeInfo {
 
 /**
  * 游戏类型清单：显式声明，不自动扫描品类目录。id 与 gameFixtureRegistry
- * 逐一对齐（断言由 game-lobby-catalog.test 锁定）；card 为当前唯一可玩品类，
- * 其余四类登记占位。
+ * 逐一对齐（断言由 game-lobby-catalog.test 锁定）；card 与 auto_battle 为当前
+ * 可玩品类，其余四类登记占位。
  */
 export const gameTypeCatalog: readonly GameTypeInfo[] = [
     {
@@ -35,6 +35,17 @@ export const gameTypeCatalog: readonly GameTypeInfo[] = [
         entry: {
             route: "card/battle",
             packageName: "CardGame",
+            resName: "BattleView",
+        },
+        playable: true,
+    },
+    {
+        id: "auto_battle",
+        title: "自动战斗",
+        subtitle: "卡牌自动战斗",
+        entry: {
+            route: "auto_battle/battle",
+            packageName: "AutoBattle",
             resName: "BattleView",
         },
         playable: true,

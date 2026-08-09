@@ -38,6 +38,10 @@ async function loadSmokeRouter(): Promise<{
             called.push({ tag: "card-battle", args: [] });
             return Promise.resolve();
         },
+        runAutoBattleSmoke: () => {
+            called.push({ tag: "auto-battle", args: [] });
+            return Promise.resolve();
+        },
         runFixtureSmoke: (fixtureId: string) => {
             called.push({ tag: "fixture-smoke", args: [fixtureId] });
             return Promise.resolve();
@@ -91,6 +95,16 @@ describe("SmokeRouter URL dispatch", () => {
         expect(called).toEqual([{ tag: "card-battle", args: [] }]);
     });
 
+    test("maps smoke=auto-battle to the auto battle smoke runner", async () => {
+        const { router, called } = await loadSmokeRouter();
+
+        const action = router.resolve("?smoke=auto-battle");
+        expect(action?.tag).toBe("auto-battle");
+        await action?.run();
+
+        expect(called).toEqual([{ tag: "auto-battle", args: [] }]);
+    });
+
     test("maps fixture=<id> to the fixture smoke runner with the fixture id", async () => {
         const { router, called } = await loadSmokeRouter();
 
@@ -120,7 +134,7 @@ describe("SmokeRouter URL dispatch", () => {
 });
 
 describe("SmokeRouter source wiring", () => {
-    test("parses all six URL smoke branches", () => {
+    test("parses all seven URL smoke branches", () => {
         expect(existsSync(smokeRouterFile)).toBe(true);
 
         const source = readFileSync(smokeRouterFile, "utf8");
@@ -129,6 +143,7 @@ describe("SmokeRouter source wiring", () => {
         expect(source).toMatch(/params\.get\("smoke"\) === "scene-flow"/);
         expect(source).toMatch(/params\.get\("smoke"\) === "modal-click"/);
         expect(source).toMatch(/params\.get\("smoke"\) === "card-battle"/);
+        expect(source).toMatch(/params\.get\("smoke"\) === "auto-battle"/);
         expect(source).toMatch(/params\.get\("fixture"\)/);
         expect(source).toMatch(/params\.get\("fixture-perf"\)/);
     });

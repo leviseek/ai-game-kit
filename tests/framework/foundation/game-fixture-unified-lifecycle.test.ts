@@ -9,10 +9,10 @@ import {
 } from "../../../assets/game/fixture/GameFixture";
 import { gameFixtureRegistry } from "../../../assets/game/fixture/registry";
 
-// ---- 8.6 统一生命周期测试：以同一驱动对五个夹具执行统一接缝 ----
+// ---- 8.6 统一生命周期测试：以同一驱动对六个夹具执行统一接缝 ----
 
 // 统一驱动：与 8.6 验收口径相同的接缝调用顺序，对任意品类无差异执行
-// （start → pause → resume → failRollback → dispose）。五个夹具都必须
+// （start → pause → resume → failRollback → dispose）。六个夹具都必须
 // 以同一驱动全部通过，且不需要修改框架内核（core/contracts 禁改，design
 // decision 4）；品类内部各自的组合差异只体现在 modules 清单上。
 async function driveUniformLifecycle(fixture: GameFixture): Promise<string[]> {
@@ -30,11 +30,11 @@ async function driveUniformLifecycle(fixture: GameFixture): Promise<string[]> {
     return steps;
 }
 
-// 品类登记表：五类夹具全部登记（task 1.3 约定 2.x-6.x 逐类登记）
-const fixtureIds = ["rpg", "card", "idle", "tycoon", "fight"] as const;
+// 品类登记表：六类夹具全部登记（task 1.3 约定 2.x-6.x 逐类登记）
+const fixtureIds = ["rpg", "card", "idle", "tycoon", "fight", "auto_battle"] as const;
 
 describe("8.6 unified lifecycle test", () => {
-    test("the registry exposes exactly the five declared fixtures", () => {
+    test("the registry exposes exactly the six declared fixtures", () => {
         const registered = Object.keys(gameFixtureRegistry()).sort();
         expect(registered).toEqual([...fixtureIds].sort());
     });

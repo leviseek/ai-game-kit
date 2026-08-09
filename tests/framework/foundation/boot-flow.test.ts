@@ -50,6 +50,7 @@ function createSmokeRouterRecording(events: string[]): {
         runSceneFlowSmoke: record("scene-smoke"),
         runModalClickSmoke: record("modal-click"),
         runCardBattleSmoke: record("card-battle"),
+        runAutoBattleSmoke: record("auto-battle"),
         runFixtureSmoke: (fixtureId: string) => {
             calls.push({ tag: "fixture-smoke", args: [fixtureId] });
             events.push(`smoke:fixture:${fixtureId}`);

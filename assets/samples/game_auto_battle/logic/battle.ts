@@ -1,0 +1,288 @@
+import type { Module } from "../../../framework";
+import type { AutoBattleClock } from "./clock";
+import type { AutoBattleConfigHandle } from "./config";
+import {
+    applyAutoBattleDamage,
+    applyAutoBattleHeal,
+    growAutoBattleEnergy,
+} from "./skills";
+import {
+    isAutoBattleAlive,
+    selectAutoBattleHealTarget,
+    selectAutoBattleTarget,
+    sortAutoBattleOrder,
+} from "./formation";
+import {
+    createMutableUnit,
+    snapshotUnits,
+    type MutableUnit,
+} from "./units";
+import type {
+    AutoBattleEvent,
+    AutoBattlePhase,
+    AutoBattleSide,
+    AutoBattleState,
+} from "../models";
+
+/** 战斗控制器选项：时钟用于事件时间戳，事件经 onEvent 广播。 */
+export interface AutoBattleBattleOptions {
+    readonly clock: AutoBattleClock;
+    readonly config: AutoBattleConfigHandle;
+    readonly onEvent?: (event: AutoBattleEvent) => void;
+}
+
+export interface AutoBattleBattleHandle {
+    readonly state: AutoBattleState;
+    /** 事件回放日志：按发生顺序完整记录。 */
+    readonly events: readonly AutoBattleEvent[];
+    /** 单行动推进：每轮存活单位各行动一次，序列耗尽则进入下一回合。 */
+    tick(): void;
+    /** 重置对局到初始状态，幂等。 */
+    restart(): void;
+    /** 停止推进，幂等。 */
+    dispose(): void;
+}
+
+/**
+ * tick 驱动的自动战斗控制器：每次 tick 执行行动序列中的下一个行动；序列
+ * 耗尽则轮次 +1、按存活单位速度降序重建序列。每轮 = 存活单位各行动一次。
+ * 能量未满普攻（攻击者/受击者按配置增长能量），满能量释放技能（伤害对敌方
+ * 前排优先目标、治疗对己方 HP 最低存活单位）并清零能量。终局判定先于后续
+ * 行动：一方全灭即进入 over，tick 不再推进。事件经选项 onEvent 广播并保序
+ * 记录，确定性来自速度稳定排序与纯函数结算（同输入同结果）。
+ */
+export function createAutoBattleBattle(
+    options: AutoBattleBattleOptions,
+): AutoBattleBattleHandle {
+    const clock = options.clock;
+    const config = options.config;
+    const report = options.onEvent ?? (() => { });
+
+    const events: AutoBattleEvent[] = [];
+
+    let disposed = false;
+    let round = 1;
+    let phase: AutoBattlePhase = "fighting";
+    let result: "win" | "lose" | undefined;
+    let order: string[] = [];
+    let actionIndex = 0;
+    let seq = 0;
+    let units: MutableUnit[] = [];
+
+    function emit(event: Omit<AutoBattleEvent, "seq" | "time">): void {
+        const full: AutoBattleEvent = { ...event, seq, time: clock.now() };
+        seq += 1;
+        events.push(full);
+        report(full);
+    }
+
+    function resetUnits(): void {
+        units = [
+            ...config.ally.map((def) => createMutableUnit(def)),
+            ...config.enemy.map((def) => createMutableUnit(def)),
+        ];
+    }
+
+    function unitById(id: string): MutableUnit | undefined {
+        return units.find((unit) => unit.id === id);
+    }
+
+    function sideUnits(side: AutoBattleSide): readonly MutableUnit[] {
+        return units.filter((unit) => unit.side === side);
+    }
+
+    /** 终局判定：一方全灭进入 over；己方存活判胜、己方全灭判败。 */
+    function checkGameOver(): boolean {
+        const allyAlive = sideUnits("ally").some(isAutoBattleAlive);
+        const enemyAlive = sideUnits("enemy").some(isAutoBattleAlive);
+        if (allyAlive && enemyAlive) {
+            return false;
+        }
+        phase = "over";
+        result = allyAlive ? "win" : "lose";
+        emit({ type: "battle-over", sourceId: "", round, result });
+        return true;
+    }
+
+    /** 终局读取：经函数间接读取可变 phase，避免 TS 在 tick 内过度收窄。 */
+    function isOver(): boolean {
+        return phase === "over";
+    }
+
+    /** 开始一轮：轮次 +1、按存活单位速度降序快照行动序列并广播 round-start。 */
+    function beginRound(nextRound: number): void {
+        round = nextRound;
+        order = sortAutoBattleOrder(
+            snapshotUnits(units).filter(isAutoBattleAlive),
+        ).map((unit) => unit.id);
+        actionIndex = 0;
+        emit({ type: "round-start", sourceId: "", round });
+    }
+
+    /** 普攻：对敌方前排优先目标造成自身攻击力伤害，双方按配置增长能量。 */
+    function basicAttack(actor: MutableUnit): void {
+        const opposingSide: AutoBattleSide = actor.side === "ally" ? "enemy" : "ally";
+        const target = selectAutoBattleTarget(sideUnits(opposingSide)) as
+            | MutableUnit
+            | undefined;
+        if (target === undefined) {
+            // 对侧全灭：终局已由前一次行动判定，此处防御性 no-op
+            return;
+        }
+
+        const outcome = applyAutoBattleDamage(target.hp, actor.def.attack);
+        target.hp = outcome.hp;
+        actor.energy = growAutoBattleEnergy(
+            actor.energy,
+            actor.def.energyMax,
+            config.energyGainAttacker,
+        );
+        if (!outcome.kills) {
+            target.energy = growAutoBattleEnergy(
+                target.energy,
+                target.def.energyMax,
+                config.energyGainTarget,
+            );
+        }
+
+        emit({
+            type: "attack",
+            sourceId: actor.id,
+            targetId: target.id,
+            value: outcome.applied,
+            round,
+        });
+
+        if (outcome.kills) {
+            emit({ type: "unit-dead", sourceId: actor.id, targetId: target.id, round });
+            checkGameOver();
+        }
+    }
+
+    /** 满能量释放技能：伤害对敌方前排目标、治疗对己方 HP 最低存活单位。 */
+    function castSkill(actor: MutableUnit): void {
+        const skill = actor.def.skill;
+        if (skill.kind === "damage") {
+            const opposingSide: AutoBattleSide = actor.side === "ally" ? "enemy" : "ally";
+            const target = selectAutoBattleTarget(sideUnits(opposingSide)) as
+                | MutableUnit
+                | undefined;
+            if (target === undefined) {
+                return;
+            }
+            const outcome = applyAutoBattleDamage(target.hp, skill.value);
+            target.hp = outcome.hp;
+            actor.energy = 0;
+            emit({
+                type: "skill-damage",
+                sourceId: actor.id,
+                targetId: target.id,
+                value: outcome.applied,
+                round,
+            });
+            if (outcome.kills) {
+                emit({ type: "unit-dead", sourceId: actor.id, targetId: target.id, round });
+                checkGameOver();
+            }
+            return;
+        }
+
+        const target = selectAutoBattleHealTarget(sideUnits(actor.side)) as
+            | MutableUnit
+            | undefined;
+        if (target === undefined) {
+            return;
+        }
+        const outcome = applyAutoBattleHeal(target.hp, target.maxHp, skill.value);
+        target.hp = outcome.hp;
+        actor.energy = 0;
+        emit({
+            type: "skill-heal",
+            sourceId: actor.id,
+            targetId: target.id,
+            value: outcome.applied,
+            round,
+        });
+    }
+
+    function act(actor: MutableUnit): void {
+        if (actor.energy >= actor.def.skill.energyCost) {
+            castSkill(actor);
+            return;
+        }
+        basicAttack(actor);
+    }
+
+    // 构造即就绪：从配置初始化单位阵列并开启第 1 回合（广播 round-start），
+    // 使首次 tick 即可消费已构建的行动序列
+    resetUnits();
+    beginRound(1);
+
+    return {
+        get state(): AutoBattleState {
+            return {
+                round,
+                phase,
+                order: [...order],
+                actionIndex,
+                result,
+                units: snapshotUnits(units),
+            };
+        },
+        get events(): readonly AutoBattleEvent[] {
+            return events;
+        },
+        tick(): void {
+            if (disposed || isOver()) {
+                return;
+            }
+            if (actionIndex >= order.length) {
+                beginRound(round + 1);
+            }
+            const actor = unitById(order[actionIndex]);
+            // 行动中阵亡的单位跳过：不重排序列，保证该轮次序固定
+            if (actor !== undefined && actor.hp > 0) {
+                act(actor);
+            }
+            if (!isOver()) {
+                actionIndex += 1;
+            }
+        },
+        restart(): void {
+            if (disposed) {
+                return;
+            }
+            resetUnits();
+            round = 1;
+            phase = "fighting";
+            result = undefined;
+            order = [];
+            actionIndex = 0;
+            emit({ type: "restart", sourceId: "" });
+            beginRound(1);
+        },
+        dispose(): void {
+            if (disposed) {
+                return;
+            }
+            disposed = true;
+        },
+    };
+}
+
+/**
+ * 战斗模块：组合根创建战斗控制器并注入；模块只登记引用，不在此释放共享
+ * 控制器——组合根的 dispose 统一负责（对齐 GameFixture 幂等契约）。
+ */
+export function createAutoBattleBattleModule(
+    battle: AutoBattleBattleHandle,
+): Module {
+    return {
+        id: "auto_battle.battle",
+        dependencies: [],
+        start: () => {
+            // 控制器在组合根构造时即就绪；start 只是让模块进入装配清单
+            void battle.state.round;
+        },
+    };
+}

@@ -33,6 +33,11 @@ bun run test
 
 测试计数会随代码演进，以实际输出为准。
 
+## 可玩品类与冒烟
+
+- **卡牌对战**（`game_card`，炉石式回合制卡牌）：Cocos 预览 `?smoke=card-battle` 驱动完整对局。
+- **自动战斗**（`game_auto_battle`，我叫MT/刀塔传奇式多单位自动战斗）：双方 3v3 阵列按速度自动行动、能量积满自动放技能、前排优先目标选择、胜负终局与重开；Cocos 预览 `?smoke=auto-battle` 冒烟驱动完整对局到终局。开打前需在 FGUI 编辑器中发布 `AutoBattle` 包（生成 `assets/ui/AutoBattle/*.bin` 与 atlas），并确保运行时先注册 Common 包。
+
 ## CI
 
 `.github/workflows/pure-ts-gate.yml` 提供纯 TypeScript 门禁层（Layer 1）：`push` / `pull_request` 自动运行，覆盖 typecheck、lint、foundation/fgui 测试、FGUI 源工程校验（`fgui validate --strict`）与 OpenSpec specs 校验。零 Creator 授权、零引擎依赖，可在 `ubuntu-latest` 全跑。依赖 Cocos Creator 的构建/smoke（`ccc`）不在本层。

@@ -32,5 +32,10 @@
       <Button title=""/>
     </component>
     <text id="lv_tycoon_name" name="txt_tycoon_name" xy="652,320" size="240,112" fontSize="20" color="#cccccc" align="center" vAlign="middle" autoSize="none" singleLine="false" text="经营&#xA;敬请期待"/>
+
+    <component id="lv_btn_auto_battle" name="btn_auto_battle" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="916,320" size="240,112">
+      <Button title=""/>
+    </component>
+    <text id="lv_auto_battle_name" name="txt_auto_battle_name" xy="916,320" size="240,112" fontSize="24" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="自动战斗"/>
   </displayList>
 </component>

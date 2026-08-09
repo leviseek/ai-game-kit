@@ -6,6 +6,7 @@ export interface SmokeRouterDeps {
     readonly runSceneFlowSmoke: () => Promise<void>;
     readonly runModalClickSmoke: () => Promise<void>;
     readonly runCardBattleSmoke: () => Promise<void>;
+    readonly runAutoBattleSmoke: () => Promise<void>;
     readonly runFixtureSmoke: (fixtureId: string) => Promise<void>;
     readonly runFixturePerf: (perfFixtureId: string) => Promise<void>;
 }
@@ -21,7 +22,7 @@ export interface SmokeAction {
 
 /**
  * URL 冒烟分派：解析 URL 参数（smoke=fairygui-ui/scene-flow/modal-click/
- * card-battle、fixture、fixture-perf），命中则返回对应冒烟序列；未命中任何
+ * card-battle/auto-battle、fixture、fixture-perf），命中则返回对应冒烟序列；未命中任何
  * 冒烟参数返回 null 供调用方走默认主入口流程。优先级与 else-if 互斥语义
  * 对齐既有 AppRoot.start：一次请求只分派一种冒烟序列，不叠加执行。
  */
@@ -41,6 +42,9 @@ export class SmokeRouter {
         }
         if (params.get("smoke") === "card-battle") {
             return { tag: "card-battle", run: this.deps.runCardBattleSmoke };
+        }
+        if (params.get("smoke") === "auto-battle") {
+            return { tag: "auto-battle", run: this.deps.runAutoBattleSmoke };
         }
         if (params.get("fixture") !== null) {
             const fixtureId = params.get("fixture") ?? "";

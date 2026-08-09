@@ -12,11 +12,11 @@ describe("game lobby catalog", () => {
         expect(catalogIds).toEqual(registryIds);
     });
 
-    test("card is the only playable game type", () => {
+    test("card and auto_battle are the playable game types", () => {
         const playable = gameTypeCatalog
             .filter((info) => info.playable)
             .map((info) => info.id);
-        expect(playable).toEqual(["card"]);
+        expect(playable).toEqual(["card", "auto_battle"]);
     });
 
     test("card entry matches the card-battle smoke contract", () => {
@@ -25,6 +25,16 @@ describe("game lobby catalog", () => {
         expect(card?.entry).toEqual({
             route: "card/battle",
             packageName: "CardGame",
+            resName: "BattleView",
+        });
+    });
+
+    test("auto_battle entry matches the auto-battle smoke contract", () => {
+        const autoBattle = gameTypeCatalog.find((info) => info.id === "auto_battle");
+        expect(autoBattle?.playable).toBe(true);
+        expect(autoBattle?.entry).toEqual({
+            route: "auto_battle/battle",
+            packageName: "AutoBattle",
             resName: "BattleView",
         });
     });
