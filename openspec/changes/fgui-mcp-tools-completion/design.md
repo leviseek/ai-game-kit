@@ -45,6 +45,14 @@
 
 `ImportResource`、`CopyHandler`、`Document.AddController`、`App.Capture` 等无实机证据的 API，先写最小探针（仿 `src/probes/` 既有模式）验证调用链，通过后再固化为 handler；失败则回退到「文档+CLI 补充路径」并在工具描述注明能力受限。
 
+### D8: 移植 FairyGUI-MCP 工具面（去重后补全）
+
+参考 `D:\git-clone\FairyGUI-MCP`（Lua 插件 + Python MCP server）的工具面，去重当前已实现项后移植 9 个工具：open_component/show_preview/get_selection/select_element/close_document/get_component_info/get_logs/clear_logs/publish_all。关键取舍：
+- **get_logs** 用 `FileShare.ReadWrite` 流式读 `Application.consoleLogPath`（Player.log）——`ReadAllText` 会因 Unity 进程独占锁抛 Sharing violation。
+- **publish_all** 顺序遍历 `allPackages` 逐个 PublishHandler（复用 trigger_publish 的 deferred 模式），默认重定向 scratch。
+- **不移植项**：`start_test`/`stop_test`（F5 覆盖 `runInBackground`，main.ts 注释明确警告）、`switch_device`/`list_devices`（依赖 testView 内部状态，高风险）、`activate`（Python 端 Win32 窗口激活，非编辑器 API）、`reload_plugin`（FairyGUI-MCP 自身仍通过 probe_plugin_api 探测）、`open_publish_settings`/`probe_*`（调试/探针性质）。
+- 理由：FairyGUI-MCP 是经实机验证的参考实现，其稳定能力可直接移植；未移植项风险/适用性不符合本项目「确定性工具」原则。
+
 ## Risks / Trade-offs
 
 - [新 API 无实机证据可能失败] → D7 探针先行；失败的 API 用现有 CLI 路径兜底，不阻塞发布。

@@ -329,3 +329,78 @@ export const handleListControllers: MailboxHandler = (params) => {
     }));
     return { package: packageName, component: componentName, count: controllers.length, controllers };
 };
+
+/** 返回活动文档的选中对象（GetSelection）。参考 FairyGUI-MCP handleGetSelection。 */
+export const handleGetSelection: MailboxHandler = () => {
+    const doc = App.activeDoc as any;
+    if (!doc) {
+        return { selection: [], count: 0, message: "无活动文档" };
+    }
+    const selection = doc.GetSelection ? doc.GetSelection() : null;
+    const result: unknown[] = [];
+    if (selection && typeof selection.Count === "number") {
+        for (let i = 0; i < selection.Count; i++) {
+            const obj = selection.get_Item(i) as any;
+            if (obj) {
+                result.push({ id: obj.id ?? "", name: obj.name ?? "", objectType: obj.objectType ?? "unknown" });
+            }
+        }
+    }
+    return { selection: result, count: result.length, doc: doc.docURL };
+};
+
+/** 返回组件元信息（宽高/url/exported/type）。参考 FairyGUI-MCP handleGetComponentInfo。 */
+export const handleGetComponentInfo: MailboxHandler = (params) => {
+    const project = App.project;
+    if (!project) throw new Error("无打开工程");
+    const packageName = params["package"] as string | undefined;
+    const componentName = params["component"] as string | undefined;
+    if (!packageName) throw new Error("缺少参数 package");
+    if (!componentName) throw new Error("缺少参数 component");
+
+    const pkg = project.GetPackageByName(packageName);
+    if (!pkg) throw new Error(`包不存在: ${packageName}`);
+    const item = pkg.FindItemByName(componentName) || pkg.FindItemByName(`${componentName}.xml`);
+    if (!item) throw new Error(`组件不存在: ${packageName}/${componentName}`);
+    return {
+        name: item.name,
+        id: item.id,
+        type: item.type,
+        width: item.width,
+        height: item.height,
+        path: item.path,
+        url: item.GetURL(),
+        exported: item.exported,
+    };
+};
+
+/** 返回编辑器控制台日志尾部（Unity Application.consoleLogPath 读取最近 N 行）。参数: 可选 lines（默认 100）。 */
+export const handleGetLogs: MailboxHandler = (params) => {
+    const project = App.project;
+    if (!project) throw new Error("无打开工程");
+    const lines = params["lines"] as number | undefined ?? 100;
+    const path = (CS.UnityEngine as any).Application.consoleLogPath as string;
+    if (!path || !CS.System.IO.File.Exists(path)) {
+        return { logs: [], source: path ?? "", message: "控制台日志文件不存在" };
+    }
+    try {
+        // Player.log 被 Unity 进程独占（无 FileShare 读取会 Sharing violation），用 FileShare.ReadWrite 流式读
+        // d.ts 对 FileStream 构造/ReadToEnd 声明不全，以 any 访问（运行时 API 稳定）
+        const IO = CS.System.IO as any;
+        const stream = new IO.FileStream(
+            path,
+            IO.FileMode.Open,
+            IO.FileAccess.Read,
+            IO.FileShare.ReadWrite,
+        );
+        const reader = new IO.StreamReader(stream);
+        const raw: string = reader.ReadToEnd();
+        reader.Close();
+        stream.Close();
+        const parts = raw.split("\n");
+        const tail = parts.slice(Math.max(0, parts.length - lines));
+        return { logs: tail, count: tail.length, source: path };
+    } catch (e: any) {
+        throw new Error(`读取控制台日志失败: ${e && e.message ? e.message : e}`);
+    }
+};

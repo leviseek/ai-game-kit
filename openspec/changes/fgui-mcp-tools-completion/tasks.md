@@ -82,6 +82,11 @@
   - 验证后已清理全部测试残留（ProbeLoopView/probe_loop/loop_import），Demo 校验通过、无污染。
 - [x] 10.3 更新 `tools/fgui-mcp/README.md` 工具面清单（新增工具、能力受限标注、回滚约束）
 - [x] 10.4 确认 `.ai/instructions.md`/AGENTS.md 中与 fgui-mcp 相关的描述与新工具面一致，需要时同步
+- [x] 10.5 移植 FairyGUI-MCP（D:\git-clone\FairyGUI-MCP）去重后可用工具，实机验证通过
+  - **新增 9 工具并全部实机验证**：`fgui_open_component` / `fgui_show_preview` / `fgui_get_selection` / `fgui_select_element` / `fgui_close_document` / `fgui_get_component_info` / `fgui_get_logs` / `fgui_clear_logs` / `fgui_publish_all`。
+  - 关键实现：get_logs 用 `FileShare.ReadWrite` 流式读 Player.log（`ReadAllText` 会 Sharing violation）；publish_all 顺序遍历 `allPackages` 逐个 PublishHandler（deferred）；select_element 走 `UnselectAll + SelectObject`。
+  - **去重结论**（FairyGUI-MCP 有而本项目已覆盖）：save/read_document/list_controllers/list_resources/full_search/validate/move|delete_resource/reload 等。
+  - **不移植项及原因**：`start_test`/`stop_test`（F5 覆盖 runInBackground）、`switch_device`/`list_devices`（依赖 testView 内部状态，高风险）、`activate`（Python 端 Win32，非编辑器 API）、`reload_plugin`（FairyGUI-MCP 自身仍在探测 API）、`open_publish_settings`/`probe_*`（调试/探针性质，与确定性工具原则冲突）。
 
 ## 11. ADR 检查
 

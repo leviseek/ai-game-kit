@@ -31,6 +31,7 @@ async function main(): Promise<void> {
                 section: z.string().optional().describe("工程设置段（Adaptation/Common/I18n/PackageGroup）"),
                 keyword: z.string().optional().describe("搜索关键字"),
                 maxResults: z.number().optional().describe("搜索结果上限"),
+                lines: z.number().optional().describe("日志读取行数（get_logs，默认 100）"),
             },
         }, async (args) => {
             const isEditorTool = name !== "fgui_validate_package";
@@ -75,6 +76,7 @@ async function main(): Promise<void> {
                 targetRelation: z.string().optional().describe("关系目标对象 id/name（空=父级）"),
                 confirm: z.boolean().optional().describe("破坏性操作二次确认"),
                 targetPath: z.string().optional().describe("复制/移动目标路径"),
+                exclude: z.array(z.string()).optional().describe("publish_all 跳过包名数组"),
             },
         }, async (args) => {
             // 写工具均为编辑器侧操作，先做桥可达性检查

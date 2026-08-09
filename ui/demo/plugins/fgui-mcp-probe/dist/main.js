@@ -66,6 +66,9 @@ function buildMailboxServer(objsPath) {
     mailboxServer.register("full_search", handlers_1.handleFullSearch);
     mailboxServer.register("read_document", handlers_1.handleReadDocument);
     mailboxServer.register("list_controllers", handlers_1.handleListControllers);
+    mailboxServer.register("get_selection", handlers_1.handleGetSelection);
+    mailboxServer.register("get_component_info", handlers_1.handleGetComponentInfo);
+    mailboxServer.register("get_logs", handlers_1.handleGetLogs);
     mailboxServer.register("find_unused_resources", (0, handlers_1.createFindResourcesHandler)("unused", mailboxServer));
     mailboxServer.register("find_duplicate_resources", (0, handlers_1.createFindResourcesHandler)("duplicate", mailboxServer));
     mailboxServer.register("switch_publish_settings", handlers_write_1.handleSwitchPublishSettings);
@@ -93,9 +96,15 @@ function buildMailboxServer(objsPath) {
     mailboxServer.register("list_branches", handlers_write_1.handleListBranches);
     mailboxServer.register("switch_branch", handlers_write_1.handleSwitchBranch);
     mailboxServer.register("reload_package", handlers_write_1.handleReloadPackage);
+    mailboxServer.register("open_component", handlers_write_1.handleOpenComponent);
+    mailboxServer.register("show_preview", handlers_write_1.handleShowPreview);
+    mailboxServer.register("select_element", handlers_write_1.handleSelectElement);
+    mailboxServer.register("close_document", handlers_write_1.handleCloseDocument);
+    mailboxServer.register("clear_logs", handlers_write_1.handleClearLogs);
     mailboxServer.register("capture_preview", (0, handlers_write_1.createCapturePreviewHandler)(mailboxServer));
     mailboxServer.register("insert_component", handlers_write_1.handleInsertComponent);
     mailboxServer.register("trigger_publish", (0, handlers_publish_1.createTriggerPublishHandler)(mailboxServer));
+    mailboxServer.register("publish_all", (0, handlers_publish_1.createPublishAllHandler)(mailboxServer));
     const server = mailboxServer;
     ensureRunInBackground();
     updateHandler = () => {

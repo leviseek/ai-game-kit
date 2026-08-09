@@ -22,6 +22,9 @@ import {
     handleFullSearch,
     handleReadDocument,
     handleListControllers,
+    handleGetSelection,
+    handleGetComponentInfo,
+    handleGetLogs,
     createFindResourcesHandler,
 } from "./mailbox/handlers";
 import {
@@ -50,11 +53,16 @@ import {
     handleListBranches,
     handleSwitchBranch,
     handleReloadPackage,
+    handleOpenComponent,
+    handleShowPreview,
+    handleSelectElement,
+    handleCloseDocument,
+    handleClearLogs,
     createImportResourceHandler,
     createCapturePreviewHandler,
 } from "./mailbox/handlers-write";
 import { writePublishSignal } from "./mailbox/publish-signal";
-import { createTriggerPublishHandler } from "./mailbox/handlers-publish";
+import { createTriggerPublishHandler, createPublishAllHandler } from "./mailbox/handlers-publish";
 
 const App = FairyEditor.App;
 
@@ -121,6 +129,9 @@ function buildMailboxServer(objsPath: string): void {
     mailboxServer.register("full_search", handleFullSearch);
     mailboxServer.register("read_document", handleReadDocument);
     mailboxServer.register("list_controllers", handleListControllers);
+    mailboxServer.register("get_selection", handleGetSelection);
+    mailboxServer.register("get_component_info", handleGetComponentInfo);
+    mailboxServer.register("get_logs", handleGetLogs);
     mailboxServer.register("find_unused_resources", createFindResourcesHandler("unused", mailboxServer));
     mailboxServer.register("find_duplicate_resources", createFindResourcesHandler("duplicate", mailboxServer));
     mailboxServer.register("switch_publish_settings", handleSwitchPublishSettings);
@@ -148,9 +159,15 @@ function buildMailboxServer(objsPath: string): void {
     mailboxServer.register("list_branches", handleListBranches);
     mailboxServer.register("switch_branch", handleSwitchBranch);
     mailboxServer.register("reload_package", handleReloadPackage);
+    mailboxServer.register("open_component", handleOpenComponent);
+    mailboxServer.register("show_preview", handleShowPreview);
+    mailboxServer.register("select_element", handleSelectElement);
+    mailboxServer.register("close_document", handleCloseDocument);
+    mailboxServer.register("clear_logs", handleClearLogs);
     mailboxServer.register("capture_preview", createCapturePreviewHandler(mailboxServer));
     mailboxServer.register("insert_component", handleInsertComponent);
     mailboxServer.register("trigger_publish", createTriggerPublishHandler(mailboxServer));
+    mailboxServer.register("publish_all", createPublishAllHandler(mailboxServer));
     const server = mailboxServer;
 
     // 双驱动轮询：add_onUpdate（有帧时响应）与 Timers.inst（真实时间调度）。

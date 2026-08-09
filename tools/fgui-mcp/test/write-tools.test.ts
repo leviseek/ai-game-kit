@@ -18,11 +18,13 @@ function joinTempDir(): string {
 }
 
 describe("写工具注册表", () => {
-    it("注册 28 个写工具且描述非空", () => {
+    it("注册 34 个写工具且描述非空", () => {
         expect(Object.keys(WRITE_TOOLS).sort()).toEqual([
             "fgui_add_child",
             "fgui_add_controller",
             "fgui_capture_preview",
+            "fgui_clear_logs",
+            "fgui_close_document",
             "fgui_copy_items",
             "fgui_create_component",
             "fgui_create_folder",
@@ -34,6 +36,8 @@ describe("写工具注册表", () => {
             "fgui_insert_component",
             "fgui_list_branches",
             "fgui_move_resource",
+            "fgui_open_component",
+            "fgui_publish_all",
             "fgui_refresh_project",
             "fgui_reload_package",
             "fgui_remove_controller",
@@ -41,8 +45,10 @@ describe("写工具注册表", () => {
             "fgui_rename_resource",
             "fgui_restore_publish_settings",
             "fgui_save_documents",
+            "fgui_select_element",
             "fgui_set_object_property",
             "fgui_set_relation",
+            "fgui_show_preview",
             "fgui_switch_branch",
             "fgui_switch_page",
             "fgui_switch_publish_settings",

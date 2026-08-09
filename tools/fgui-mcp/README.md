@@ -28,7 +28,7 @@ MCP 客户端经 stdio 拉起（`opencode.json` 已配置）：
 
 | 类别 | 工具 | 通道 |
 | --- | --- | --- |
-| 读 | `fgui_list_packages` / `fgui_list_resources` / `fgui_query_dependencies` / `fgui_read_publish_settings` / `fgui_get_active_context` / `fgui_read_project_settings` / `fgui_full_search` / `fgui_read_document` / `fgui_list_controllers` / `fgui_find_unused_resources` / `fgui_find_duplicate_resources` | 编辑器桥 |
+| 读 | `fgui_list_packages` / `fgui_list_resources` / `fgui_query_dependencies` / `fgui_read_publish_settings` / `fgui_get_active_context` / `fgui_read_project_settings` / `fgui_full_search` / `fgui_read_document` / `fgui_list_controllers` / `fgui_find_unused_resources` / `fgui_find_duplicate_resources` / `fgui_get_selection` / `fgui_get_component_info` / `fgui_get_logs` | 编辑器桥 |
 | 校验 | `fgui_validate_package` | fgui CLI |
 | 保存 | `fgui_save_documents`（写闭环：发布前自动强制保存） | 编辑器桥 |
 | 刷新 | `fgui_reload_package`（pkg.Touch + item.Touch 精准刷新；full=true 走全量）/ `fgui_refresh_project` | 编辑器桥 |
@@ -37,8 +37,10 @@ MCP 客户端经 stdio 拉起（`opencode.json` 已配置）：
 | 控制器 | `fgui_add_controller` / `fgui_update_controller` / `fgui_remove_controller` / `fgui_switch_page` | 编辑器桥 |
 | 关系 | `fgui_set_relation` / `fgui_remove_relation`（sidePair ≤2 内置校验） | 编辑器桥 |
 | 分支 | `fgui_list_branches` / `fgui_switch_branch` | 编辑器桥 |
-| 截图 | `fgui_capture_preview`（OS 级窗口截图，供视觉验证 subagent） | 编辑器桥 |
-| 发布 | `fgui_trigger_publish`（全自动，deferred 异步响应） | 编辑器桥 |
+| 文档/预览 | `fgui_open_component` / `fgui_show_preview` / `fgui_select_element` / `fgui_close_document` | 编辑器桥 |
+| 日志 | `fgui_get_logs`（FileShare.ReadWrite 读 Player.log 尾部）/ `fgui_clear_logs` | 编辑器桥 |
+| 截图 | `fgui_capture_preview`（GetScreenShot + EncodeToPNG，供视觉验证 subagent） | 编辑器桥 |
+| 发布 | `fgui_trigger_publish` / `fgui_publish_all`（全自动，deferred 异步响应） | 编辑器桥 |
 | 检测 | `fgui_check_publish`（三重证据：信号 + 产物 mtime + validate） | 外部 |
 
 ## 写工具通用约定
@@ -74,3 +76,4 @@ bun run tools/fgui-mcp/test/smoke-stdio.ts                  # stdio 握手 + 工
 - HTTP 增强通道（`HttpListener`，回调线程可读编辑器 API 已探针验证；`runInBackground` 解决后台问题后必要性降低）。
 - 实机探针验证回填：`ImportResource`/`CopyHandler`/`AddController`/截图四类新探针待编辑器实机运行，汇总结论将固化到工具描述的能力受限标注。
 - 组件模板（`ComponentTemplates`）暂缓工具化（骨架依赖官方库图片约定，与调色板锁定约定可能冲突）。
+- FairyGUI-MCP 未移植项（因风险/不适配，见 design.md）：F5 预览测试（`start_test`/`stop_test` 覆盖 runInBackground）、设备切换（`switch_device` 依赖 testView 内部状态）、窗口激活（Win32，非编辑器 API）、插件重载（FairyGUI-MCP 自身仍在探测 API）。

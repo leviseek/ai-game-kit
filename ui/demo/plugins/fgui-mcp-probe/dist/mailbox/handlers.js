@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.handleListControllers = exports.handleReadDocument = exports.handleFullSearch = exports.handleReadProjectSettings = exports.handleGetActiveContext = exports.handleReadPublishSettings = exports.handleQueryDependencies = exports.handleListResources = exports.handleListPackages = void 0;
+exports.handleGetLogs = exports.handleGetComponentInfo = exports.handleGetSelection = exports.handleListControllers = exports.handleReadDocument = exports.handleFullSearch = exports.handleReadProjectSettings = exports.handleGetActiveContext = exports.handleReadPublishSettings = exports.handleQueryDependencies = exports.handleListResources = exports.handleListPackages = void 0;
 exports.createFindResourcesHandler = createFindResourcesHandler;
 var FairyEditor = CS.FairyEditor;
 const server_1 = require("./server");
@@ -327,4 +327,75 @@ const handleListControllers = (params) => {
     return { package: packageName, component: componentName, count: controllers.length, controllers };
 };
 exports.handleListControllers = handleListControllers;
+const handleGetSelection = () => {
+    const doc = App.activeDoc;
+    if (!doc) {
+        return { selection: [], count: 0, message: "无活动文档" };
+    }
+    const selection = doc.GetSelection ? doc.GetSelection() : null;
+    const result = [];
+    if (selection && typeof selection.Count === "number") {
+        for (let i = 0; i < selection.Count; i++) {
+            const obj = selection.get_Item(i);
+            if (obj) {
+                result.push({ id: obj.id ?? "", name: obj.name ?? "", objectType: obj.objectType ?? "unknown" });
+            }
+        }
+    }
+    return { selection: result, count: result.length, doc: doc.docURL };
+};
+exports.handleGetSelection = handleGetSelection;
+const handleGetComponentInfo = (params) => {
+    const project = App.project;
+    if (!project)
+        throw new Error("无打开工程");
+    const packageName = params["package"];
+    const componentName = params["component"];
+    if (!packageName)
+        throw new Error("缺少参数 package");
+    if (!componentName)
+        throw new Error("缺少参数 component");
+    const pkg = project.GetPackageByName(packageName);
+    if (!pkg)
+        throw new Error(`包不存在: ${packageName}`);
+    const item = pkg.FindItemByName(componentName) || pkg.FindItemByName(`${componentName}.xml`);
+    if (!item)
+        throw new Error(`组件不存在: ${packageName}/${componentName}`);
+    return {
+        name: item.name,
+        id: item.id,
+        type: item.type,
+        width: item.width,
+        height: item.height,
+        path: item.path,
+        url: item.GetURL(),
+        exported: item.exported,
+    };
+};
+exports.handleGetComponentInfo = handleGetComponentInfo;
+const handleGetLogs = (params) => {
+    const project = App.project;
+    if (!project)
+        throw new Error("无打开工程");
+    const lines = params["lines"] ?? 100;
+    const path = CS.UnityEngine.Application.consoleLogPath;
+    if (!path || !CS.System.IO.File.Exists(path)) {
+        return { logs: [], source: path ?? "", message: "控制台日志文件不存在" };
+    }
+    try {
+        const IO = CS.System.IO;
+        const stream = new IO.FileStream(path, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite);
+        const reader = new IO.StreamReader(stream);
+        const raw = reader.ReadToEnd();
+        reader.Close();
+        stream.Close();
+        const parts = raw.split("\n");
+        const tail = parts.slice(Math.max(0, parts.length - lines));
+        return { logs: tail, count: tail.length, source: path };
+    }
+    catch (e) {
+        throw new Error(`读取控制台日志失败: ${e && e.message ? e.message : e}`);
+    }
+};
+exports.handleGetLogs = handleGetLogs;
 //# sourceMappingURL=handlers.js.map

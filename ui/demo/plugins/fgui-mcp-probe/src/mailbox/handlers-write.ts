@@ -1195,3 +1195,96 @@ export function createCapturePreviewHandler(server: import("./server").MailboxSe
         return { deferred: true, id: reqId };
     };
 }
+
+/** 独立打开组件文档并激活。参数: package、component。参考 FairyGUI-MCP handleOpenComponent。 */
+export const handleOpenComponent: MailboxHandler = (params) => {
+    const project = App.project;
+    if (!project) throw new Error("无打开工程");
+    const packageName = params["package"] as string | undefined;
+    const componentName = params["component"] as string | undefined;
+    if (!packageName) throw new Error("缺少参数 package");
+    if (!componentName) throw new Error("缺少参数 component");
+
+    const pkg = project.GetPackageByName(packageName);
+    if (!pkg) throw new Error(`包不存在: ${packageName}`);
+    const item = pkg.FindItemByName(componentName) || pkg.FindItemByName(`${componentName}.xml`);
+    if (!item) throw new Error(`组件不存在: ${packageName}/${componentName}`);
+    const url = item.GetURL();
+    const doc: any = App.docView.OpenDocument(url, true);
+    if (!doc) throw new Error(`打开文档失败: ${url}`);
+    return { opened: true, url, name: item.name, path: item.path, displayTitle: doc.displayTitle };
+};
+
+/** 预览组件（App.ShowPreview）。参数: package、component。 */
+export const handleShowPreview: MailboxHandler = (params) => {
+    const project = App.project;
+    if (!project) throw new Error("无打开工程");
+    const packageName = params["package"] as string | undefined;
+    const componentName = params["component"] as string | undefined;
+    if (!packageName) throw new Error("缺少参数 package");
+    if (!componentName) throw new Error("缺少参数 component");
+
+    const pkg = project.GetPackageByName(packageName);
+    if (!pkg) throw new Error(`包不存在: ${packageName}`);
+    const item = pkg.FindItemByName(componentName) || pkg.FindItemByName(`${componentName}.xml`);
+    if (!item) throw new Error(`组件不存在: ${packageName}/${componentName}`);
+    App.ShowPreview(item);
+    return { previewing: true, url: item.GetURL(), name: item.name };
+};
+
+/** 选中文档中的元素。参数: package、doc、target（对象 id 或 name）。参考 FairyGUI-MCP handleSelectElement。 */
+export const handleSelectElement: MailboxHandler = (params) => {
+    const project = App.project;
+    if (!project) throw new Error("无打开工程");
+    const packageName = params["package"] as string | undefined;
+    const componentName = params["doc"] as string | undefined;
+    const target = params["target"] as string | undefined;
+    if (!packageName) throw new Error("缺少参数 package");
+    if (!componentName) throw new Error("缺少参数 doc");
+    if (!target) throw new Error("缺少参数 target");
+
+    const pkg = project.GetPackageByName(packageName);
+    if (!pkg) throw new Error(`包不存在: ${packageName}`);
+    const { doc } = openDocForWrite(pkg, componentName);
+    const obj = findObjectInDoc(doc, target);
+    if (!obj) throw new Error(`文档中未找到对象: ${target}`);
+    doc.UnselectAll();
+    doc.SelectObject(obj, true, true);
+    const selected = doc.GetSelection ? doc.GetSelection() : null;
+    const count = selected && typeof selected.Count === "number" ? selected.Count : 0;
+    return { selected: count > 0, target, id: obj.id, name: obj.name, selectionCount: count };
+};
+
+/** 关闭活动文档或指定文档。参数: 可选 doc（组件名）。参考 FairyGUI-MCP handleClose。 */
+export const handleCloseDocument: MailboxHandler = (params) => {
+    if (!App.project) throw new Error("无打开工程");
+    const docArg = params["doc"] as string | undefined;
+    let doc: any;
+    if (docArg) {
+        const project = App.project;
+        const packageName = params["package"] as string | undefined;
+        if (!packageName) throw new Error("缺少参数 package（关闭指定文档时必填）");
+        const pkg = project.GetPackageByName(packageName);
+        if (!pkg) throw new Error(`包不存在: ${packageName}`);
+        const item = pkg.FindItemByName(docArg) || pkg.FindItemByName(`${docArg}.xml`);
+        if (!item) throw new Error(`组件不存在: ${packageName}/${docArg}`);
+        doc = App.docView.FindDocument(item.GetURL());
+        if (!doc) throw new Error(`文档未打开: ${docArg}`);
+    } else {
+        doc = App.activeDoc;
+        if (!doc) throw new Error("无活动文档可关闭");
+    }
+    App.docView.CloseDocument(doc);
+    return { closed: true, doc: doc.docURL };
+};
+
+/** 清空编辑器控制台日志（ConsoleView.Clear）。 */
+export const handleClearLogs: MailboxHandler = () => {
+    if (!App.project) throw new Error("无打开工程");
+    try {
+        App.consoleView.Clear();
+        return { cleared: true };
+    } catch (e: any) {
+        throw new Error(`清空控制台失败: ${e && e.message ? e.message : e}`);
+    }
+};

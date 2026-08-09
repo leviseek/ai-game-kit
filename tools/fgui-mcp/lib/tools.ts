@@ -81,6 +81,21 @@ export const READ_TOOLS: Record<string, { description: string; run: (bridge: Mai
             "列出组件的控制器（名称/页面/选中页）。参数: package、component。",
         run: (bridge, params) => bridgeResult(bridge, "list_controllers", params),
     },
+    fgui_get_selection: {
+        description:
+            "返回活动文档的选中对象列表（id/name/objectType）。参考 FairyGUI-MCP。",
+        run: (bridge, params) => bridgeResult(bridge, "get_selection", params),
+    },
+    fgui_get_component_info: {
+        description:
+            "返回组件元信息（name/id/type/width/height/path/url/exported）。参数: package、component。",
+        run: (bridge, params) => bridgeResult(bridge, "get_component_info", params),
+    },
+    fgui_get_logs: {
+        description:
+            "返回编辑器控制台日志尾部（Unity Application.consoleLogPath 最近 N 行）。参数: 可选 lines（默认 100）。",
+        run: (bridge, params) => bridgeResult(bridge, "get_logs", params),
+    },
     fgui_find_unused_resources: {
         description:
             "未使用资源检查（只读报告，不删除）。参数: 可选 package（默认全部包）。deferred：异步完成后返回。",
@@ -255,9 +270,31 @@ export const WRITE_TOOLS: Record<string, { description: string; run: (bridge: Ma
     },
     fgui_capture_preview: {
         description:
-            "截图采集当前编辑器窗口为 PNG（OS 级窗口截图，编辑器无公开截图 API），返回文件路径供 fgui-visual-verifier 视觉核对。" +
+            "截图采集（FairyGUI 官方路径：GetScreenShot + ImageConversion.EncodeToPNG），返回 PNG 路径供 fgui-visual-verifier 视觉核对。" +
             "编辑器不可达/截图失败返回结构化错误，不产生半截图像。",
         run: (bridge, params) => bridgeResult(bridge, "capture_preview", params),
+    },
+    fgui_open_component: {
+        description:
+            "独立打开组件文档并激活。参数: package、component。参考 FairyGUI-MCP handleOpenComponent。",
+        run: (bridge, params) => bridgeResult(bridge, "open_component", params),
+    },
+    fgui_show_preview: {
+        description: "预览组件（App.ShowPreview）。参数: package、component。参考 FairyGUI-MCP handlePreview。",
+        run: (bridge, params) => bridgeResult(bridge, "show_preview", params),
+    },
+    fgui_select_element: {
+        description:
+            "选中文档中的元素。参数: package、doc、target（对象 id 或 name）。参考 FairyGUI-MCP handleSelectElement。",
+        run: (bridge, params) => bridgeResult(bridge, "select_element", params),
+    },
+    fgui_close_document: {
+        description: "关闭活动文档或指定文档。参数: 可选 package、可选 doc（组件名）。参考 FairyGUI-MCP handleClose。",
+        run: (bridge, params) => bridgeResult(bridge, "close_document", params),
+    },
+    fgui_clear_logs: {
+        description: "清空编辑器控制台日志（ConsoleView.Clear）。",
+        run: (bridge, params) => bridgeResult(bridge, "clear_logs", params),
     },
     fgui_insert_component: {
         description:
@@ -271,6 +308,12 @@ export const WRITE_TOOLS: Record<string, { description: string; run: (bridge: Ma
             "可选 redirectToScratch（默认 true 重定向到 .objs 不碰真实产物；false 走真实发布路径）。" +
             "发布为异步操作，等待 onComplete 后返回 isSuccess/exportPath/elapsedMs；期间编辑器可能卡顿。",
         run: (bridge, params) => bridgeResult(bridge, "trigger_publish", params),
+    },
+    fgui_publish_all: {
+        description:
+            "全自动发布全部包（顺序遍历 allPackages，逐个 PublishHandler 发布）。参数: 可选 redirectToScratch（默认 true）、" +
+            "可选 exclude（跳过包名数组）。deferred 异步，全部完成后返回逐包结果。参考 FairyGUI-MCP publish_all。",
+        run: (bridge, params) => bridgeResult(bridge, "publish_all", params),
     },
 };
 

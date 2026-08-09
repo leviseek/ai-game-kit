@@ -104,3 +104,105 @@ export function createTriggerPublishHandler(server: MailboxServer): MailboxHandl
         return { deferred: true, id: reqId };
     };
 }
+
+/**
+ * 全自动发布全部包（deferred，参考 FairyGUI-MCP publish_all）：遍历 project.allPackages，
+ * 逐个构造 PublishHandler 顺序 Run，全部 onComplete 后写响应。安全约束同 trigger_publish（默认重定向 scratch）。
+ * 参数: 可选 redirectToScratch（默认 true）、可选 exclude（跳过指定包名数组）。
+ */
+export function createPublishAllHandler(server: MailboxServer): MailboxHandler {
+    return (params): { deferred: true; id: string } => {
+        const project = App.project;
+        if (!project) throw new Error("无打开工程");
+
+        // 发布前强制保存全部未保存文档（写闭环）
+        try {
+            saveAllDocuments();
+        } catch (e: any) {
+            const error = `发布前保存文档失败，已中止发布: ${e && e.message ? e.message : e}`;
+            const reqId = params["__requestId"] as string;
+            if (reqId) server.writeResponse(reqId, { ok: false, error });
+            throw new Error(error);
+        }
+
+        const reqId = params["__requestId"] as string;
+        if (!reqId) throw new Error("缺少请求 id（内部错误）");
+
+        // 收集待发布包（跳过 exclude）
+        const exclude = (params["exclude"] as string[] | undefined) ?? [];
+        const pkgs: FairyEditor.FPackage[] = [];
+        const all = project.allPackages;
+        if (all) {
+            for (let i = 0; i < all.Count; i++) {
+                const p = all.get_Item(i);
+                if (!exclude.includes(p.name)) pkgs.push(p);
+            }
+        }
+        if (pkgs.length === 0) throw new Error("无待发布包（可能全部被 exclude）");
+
+        const redirect = params["redirectToScratch"] !== false;
+        const results: Array<{ package: string; isSuccess: boolean; exportPath: string }> = [];
+        const t0 = Date.now();
+
+        const runNext = (index: number): void => {
+            if (index >= pkgs.length) {
+                // 全部完成：写发布信号（覆盖为最新批次）+ 响应
+                const failedCount = results.filter((r) => !r.isSuccess).length;
+                const payload = {
+                    ok: failedCount === 0,
+                    ts: new Date().toISOString(),
+                    packages: results.map((r) => r.package),
+                    exportPath: results[results.length - 1]?.exportPath ?? "",
+                    isSuccess: failedCount === 0,
+                };
+                writePublishSignal(payload);
+                server.writeResponse(reqId, {
+                    ok: true,
+                    result: {
+                        status: failedCount === 0 ? "success" : "partial",
+                        isSuccess: failedCount === 0,
+                        total: results.length,
+                        failedCount,
+                        elapsedMs: Date.now() - t0,
+                        packages: results,
+                    },
+                });
+                return;
+            }
+            const pkg = pkgs[index]!;
+            let handler: FairyEditor.PublishHandler;
+            try {
+                handler = new FairyEditor.PublishHandler(pkg, project.activeBranch);
+            } catch {
+                try {
+                    handler = new FairyEditor.PublishHandler();
+                } catch (e: any) {
+                    results.push({ package: pkg.name, isSuccess: false, exportPath: "" });
+                    runNext(index + 1);
+                    return;
+                }
+            }
+            if (redirect) {
+                handler.exportPath = `${project.objsPath}/fgui-mcp-probe/publish-out/${pkg.name}`;
+            }
+            handler.genCode = false;
+            handler.add_onComplete(() => {
+                results.push({ package: pkg.name, isSuccess: handler.isSuccess, exportPath: handler.exportPath });
+                runNext(index + 1);
+            });
+            try {
+                handler.Run();
+            } catch (e: any) {
+                results.push({ package: pkg.name, isSuccess: false, exportPath: "" });
+                runNext(index + 1);
+            }
+        };
+
+        try {
+            runNext(0);
+        } catch (e: any) {
+            server.writeResponse(reqId, { ok: false, error: String(e && e.message ? e.message : e) });
+        }
+        return { deferred: true, id: reqId };
+    };
+}

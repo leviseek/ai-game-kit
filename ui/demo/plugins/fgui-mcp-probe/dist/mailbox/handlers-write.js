@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.handleSwitchBranch = exports.handleListBranches = exports.handleCopyItems = exports.handleCreateComponent = exports.handleDeleteResource = exports.handleMoveResource = exports.handleRenameResource = exports.handleCreateFolder = exports.handleDeletePackage = exports.handleCreatePackage = exports.handleRemoveRelation = exports.handleSetRelation = exports.handleSwitchPage = exports.handleRemoveController = exports.handleUpdateController = exports.handleAddController = exports.handleSetObjectProperty = exports.handleDeleteChild = exports.handleAddChild = exports.handleInsertComponent = exports.handleSaveDocuments = exports.handleRefreshProject = exports.handleRestorePublishSettings = exports.handleSwitchPublishSettings = exports.handleReloadPackage = void 0;
+exports.handleClearLogs = exports.handleCloseDocument = exports.handleSelectElement = exports.handleShowPreview = exports.handleOpenComponent = exports.handleSwitchBranch = exports.handleListBranches = exports.handleCopyItems = exports.handleCreateComponent = exports.handleDeleteResource = exports.handleMoveResource = exports.handleRenameResource = exports.handleCreateFolder = exports.handleDeletePackage = exports.handleCreatePackage = exports.handleRemoveRelation = exports.handleSetRelation = exports.handleSwitchPage = exports.handleRemoveController = exports.handleUpdateController = exports.handleAddController = exports.handleSetObjectProperty = exports.handleDeleteChild = exports.handleAddChild = exports.handleInsertComponent = exports.handleSaveDocuments = exports.handleRefreshProject = exports.handleRestorePublishSettings = exports.handleSwitchPublishSettings = exports.handleReloadPackage = void 0;
 exports.assertForbiddenObjectType = assertForbiddenObjectType;
 exports.saveAllDocuments = saveAllDocuments;
 exports.createImportResourceHandler = createImportResourceHandler;
@@ -1192,4 +1192,115 @@ function createCapturePreviewHandler(server) {
         return { deferred: true, id: reqId };
     };
 }
+const handleOpenComponent = (params) => {
+    const project = App.project;
+    if (!project)
+        throw new Error("无打开工程");
+    const packageName = params["package"];
+    const componentName = params["component"];
+    if (!packageName)
+        throw new Error("缺少参数 package");
+    if (!componentName)
+        throw new Error("缺少参数 component");
+    const pkg = project.GetPackageByName(packageName);
+    if (!pkg)
+        throw new Error(`包不存在: ${packageName}`);
+    const item = pkg.FindItemByName(componentName) || pkg.FindItemByName(`${componentName}.xml`);
+    if (!item)
+        throw new Error(`组件不存在: ${packageName}/${componentName}`);
+    const url = item.GetURL();
+    const doc = App.docView.OpenDocument(url, true);
+    if (!doc)
+        throw new Error(`打开文档失败: ${url}`);
+    return { opened: true, url, name: item.name, path: item.path, displayTitle: doc.displayTitle };
+};
+exports.handleOpenComponent = handleOpenComponent;
+const handleShowPreview = (params) => {
+    const project = App.project;
+    if (!project)
+        throw new Error("无打开工程");
+    const packageName = params["package"];
+    const componentName = params["component"];
+    if (!packageName)
+        throw new Error("缺少参数 package");
+    if (!componentName)
+        throw new Error("缺少参数 component");
+    const pkg = project.GetPackageByName(packageName);
+    if (!pkg)
+        throw new Error(`包不存在: ${packageName}`);
+    const item = pkg.FindItemByName(componentName) || pkg.FindItemByName(`${componentName}.xml`);
+    if (!item)
+        throw new Error(`组件不存在: ${packageName}/${componentName}`);
+    App.ShowPreview(item);
+    return { previewing: true, url: item.GetURL(), name: item.name };
+};
+exports.handleShowPreview = handleShowPreview;
+const handleSelectElement = (params) => {
+    const project = App.project;
+    if (!project)
+        throw new Error("无打开工程");
+    const packageName = params["package"];
+    const componentName = params["doc"];
+    const target = params["target"];
+    if (!packageName)
+        throw new Error("缺少参数 package");
+    if (!componentName)
+        throw new Error("缺少参数 doc");
+    if (!target)
+        throw new Error("缺少参数 target");
+    const pkg = project.GetPackageByName(packageName);
+    if (!pkg)
+        throw new Error(`包不存在: ${packageName}`);
+    const { doc } = openDocForWrite(pkg, componentName);
+    const obj = findObjectInDoc(doc, target);
+    if (!obj)
+        throw new Error(`文档中未找到对象: ${target}`);
+    doc.UnselectAll();
+    doc.SelectObject(obj, true, true);
+    const selected = doc.GetSelection ? doc.GetSelection() : null;
+    const count = selected && typeof selected.Count === "number" ? selected.Count : 0;
+    return { selected: count > 0, target, id: obj.id, name: obj.name, selectionCount: count };
+};
+exports.handleSelectElement = handleSelectElement;
+const handleCloseDocument = (params) => {
+    if (!App.project)
+        throw new Error("无打开工程");
+    const docArg = params["doc"];
+    let doc;
+    if (docArg) {
+        const project = App.project;
+        const packageName = params["package"];
+        if (!packageName)
+            throw new Error("缺少参数 package（关闭指定文档时必填）");
+        const pkg = project.GetPackageByName(packageName);
+        if (!pkg)
+            throw new Error(`包不存在: ${packageName}`);
+        const item = pkg.FindItemByName(docArg) || pkg.FindItemByName(`${docArg}.xml`);
+        if (!item)
+            throw new Error(`组件不存在: ${packageName}/${docArg}`);
+        doc = App.docView.FindDocument(item.GetURL());
+        if (!doc)
+            throw new Error(`文档未打开: ${docArg}`);
+    }
+    else {
+        doc = App.activeDoc;
+        if (!doc)
+            throw new Error("无活动文档可关闭");
+    }
+    App.docView.CloseDocument(doc);
+    return { closed: true, doc: doc.docURL };
+};
+exports.handleCloseDocument = handleCloseDocument;
+const handleClearLogs = () => {
+    if (!App.project)
+        throw new Error("无打开工程");
+    try {
+        App.consoleView.Clear();
+        return { cleared: true };
+    }
+    catch (e) {
+        throw new Error(`清空控制台失败: ${e && e.message ? e.message : e}`);
+    }
+};
+exports.handleClearLogs = handleClearLogs;
 //# sourceMappingURL=handlers-write.js.map
