@@ -6,6 +6,7 @@ import {
   Node,
   Touch,
   Vec3,
+  profiler,
 } from "cc";
 import {
   Application,
@@ -40,6 +41,7 @@ import {
   type CocosUiRoot,
 } from "../framework/adapters/cocos/ui/CocosUiRoot";
 import { runFixtureSmoke } from "../game/fixture/smoke";
+import { runFixturePerf, type PerfSample } from "../game/fixture/perf";
 import {
   createFairyGuiPageAdapter,
   createFairyGuiView,
@@ -229,6 +231,18 @@ export class AppRoot extends Component {
           runFixtureSmoke(fixtureId).catch((error) => {
             console.error("[fixture-smoke] sequence error", error);
           });
+        }, 1000);
+      } else if (params.get("fixture-perf") !== null) {
+        // 品类夹具基础性能检查：经 Cocos Profiler 采样引擎运行状态。
+        // 采样器由组合根（唯一允许依赖 cc 的装配层）读取 profiler.stats，
+        // 游戏层 runFixturePerf 保持引擎无关，只消费纯数值采样。
+        const perfFixtureId = params.get("fixture-perf") ?? "";
+        setTimeout(() => {
+          runFixturePerf(perfFixtureId, () => this.sampleProfilerStats()).catch(
+            (error) => {
+              console.error("[fixture-perf] sequence error", error);
+            },
+          );
         }, 1000);
       }
     }
@@ -684,6 +698,26 @@ export class AppRoot extends Component {
   /** 冒烟观察：页面适配器是否已就绪（GRoot 已初始化）。 */
   smokeUiReady(): boolean {
     return this.pageAdapter !== undefined && this.uiRoot?.initialized === true;
+  }
+
+  /**
+   * 性能采样器：读取 Cocos Profiler 当前帧的引擎运行状态。stats 未就绪时
+   * 返回 null（由游戏层 runFixturePerf 跳过本次采样）。每项为引擎计时器或
+   * 渲染统计的实时值；纹理/缓冲区内存单位为 MB。
+   */
+  private sampleProfilerStats(): PerfSample | null {
+    const stats = profiler.stats;
+    if (stats === null) {
+      return null;
+    }
+    return {
+      fps: stats.fps.counter.value,
+      frameMs: stats.frame.counter.value,
+      logicMs: stats.logic.counter.value,
+      draws: stats.draws.counter.value,
+      textureMemoryMB: stats.textureMemory.counter.value,
+      bufferMemoryMB: stats.bufferMemory.counter.value,
+    };
   }
 
   onDestroy(): void {

@@ -8,6 +8,7 @@ import { run as runUiSmoke } from "./commands/ui-smoke";
 import { run as runUiModalClick } from "./commands/ui-modal-click";
 import { run as runSceneSmoke } from "./commands/scene-smoke";
 import { run as runFixtureSmoke } from "./commands/fixture-smoke";
+import { run as runFixturePerf } from "./commands/fixture-perf";
 
 interface Command {
   readonly run: (argv: readonly string[]) => Promise<number>;
@@ -45,6 +46,10 @@ const COMMANDS: Record<string, Command> = {
   "fixture-smoke": {
     run: runFixtureSmoke,
     usage: "fixture-smoke [--fixture <品类>|all] [--debug true] 品类夹具冒烟：构建 → headless Chrome 逐类驱动统一生命周期与音频降级路径",
+  },
+  "fixture-perf": {
+    run: runFixturePerf,
+    usage: "fixture-perf [--fixture <品类>|all] [--debug true] 品类夹具性能检查：构建 → headless Chrome 经 Cocos Profiler 采样 FPS/帧时/逻辑/绘制/内存",
   },
 };
 
