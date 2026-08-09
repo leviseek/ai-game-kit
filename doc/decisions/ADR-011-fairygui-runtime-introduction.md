@@ -26,11 +26,11 @@ Accepted
 
 **未采用方案：** 无需为 Runtime 购买商业授权（MIT 覆盖）；不采用 FairyGUI 官方站点可能提供的其他授权文本作为 vendor 依据（以仓库 LICENSE 为准）。
 
-### 3. vendor 到 `assets/third-party/fairygui`，经 import-map 接入
+### 3. vendor 到 `assets/framework/libs/fairygui`，经 import-map 接入
 
-SDK 文件（`fairygui.mjs`、`fairygui.min.mjs`、`fairygui.d.ts`）与 LICENSE vendor 到 `assets/third-party/fairygui`（与 `library`/`temp` 生成目录隔离）。项目根 `import-map.json` 将裸包名 `fairygui-cc` 映射到该 `.mjs`；`settings/v2/packages/project.json` 的 `script.importMap` 声明为 `project://import-map.json` 使 Creator 编程系统采用该映射。`fairygui.d.ts` 是 dts-bundle 产物（ambient 模块声明），被 Creator 识别为 typescript 资源，strict 类型检查通过。
+SDK 文件（`fairygui.mjs`、`fairygui.min.mjs`、`fairygui.d.ts`）与 LICENSE vendor 到 `assets/framework/libs/fairygui`（与 `library`/`temp` 生成目录隔离）。项目根 `import-map.json` 将裸包名 `fairygui-cc` 映射到该 `.mjs`；`settings/v2/packages/project.json` 的 `script.importMap` 声明为 `project://import-map.json` 使 Creator 编程系统采用该映射。`fairygui.d.ts` 是 dts-bundle 产物（ambient 模块声明），被 Creator 识别为 typescript 资源，strict 类型检查通过。
 
-**理由：** 保持代码以官方裸包名 `fairygui-cc` 导入（与官方 demo/ccc_lab 一致），运行时与类型均经 Creator 原生机制解析，无需 npm 依赖、无需改任何 `cc` 导入；vendor 方式符合项目"不引入 npm 依赖"纪律且可审计。
+**理由：** 保持代码以官方裸包名 `fairygui-cc` 导入（与官方 demo/ccc_lab 一致），运行时与类型均经 Creator 原生机制解析，无需 npm 依赖、无需改任何 `cc` 导入；vendor 方式符合项目"不引入 npm 依赖"纪律且可审计。2026-08 将 fairygui 由 `assets/third-party` 迁入 `assets/framework/libs`：fairygui 属 main bundle，`third-party` 目录原用于未来可能分包的第三包 bundle；迁移避免第三包 bundle 化后跨包重复 vendor，原 `assets/third-party` 目录已删除。
 
 **未采用方案：** 不引入 npm 包（违反项目纪律）；不把 `.d.ts` 重写为相对导入模块（破坏 dts-bundle 结构，无法维护）。
 
@@ -66,7 +66,7 @@ SDK 文件（`fairygui.mjs`、`fairygui.min.mjs`、`fairygui.d.ts`）与 LICENSE
 ## 影响
 
 - FairyGUI Runtime 版本冻结为 `fairygui-cc@1.2.2`，后续升级需独立 change 验证。
-- `assets/third-party/fairygui` 为 vendor 目录（含 LICENSE）；`import-map.json` 与 `settings/v2/packages/project.json` 的 `script.importMap` 为持久配置。
+- `assets/framework/libs/fairygui` 为 vendor 目录（含 LICENSE）；`import-map.json` 与 `settings/v2/packages/project.json` 的 `script.importMap` 为持久配置。
 - 后续 Task 1-4 以本 spike 结论为基准：资源层扩展 `fairygui-package` 加载、UI 根宿主、页面适配器均按 `import { ... } from "fairygui-cc"` 编写（仅 Adapter 边界）。
 - 冒烟验证复用 headless Chrome + CDP 模式（本 spike 已验证可用）。
 - spike 临时验证文件（spike-smoke.scene、SpikeFairyGuiSmoke.ts）已清理，不进入仓库。

@@ -21,6 +21,7 @@ interface ImportViolation {
 const projectRoot = resolve(import.meta.dir, "../../..");
 const assetsRoot = resolve(projectRoot, "assets");
 const frameworkRoot = resolve(assetsRoot, "framework");
+const frameworkVendorRoot = resolve(frameworkRoot, "libs");
 const frameworkPublicEntry = resolve(frameworkRoot, "index.ts");
 const moduleContractsRoot = resolve(frameworkRoot, "contracts/module");
 const gameRoot = resolve(assetsRoot, "game");
@@ -231,6 +232,11 @@ function getFrameworkLayer(path: string): FrameworkLayer | undefined {
     }
 
     const pathFromFramework = normalizePath(relative(frameworkRoot, path));
+
+    if (isWithin(path, frameworkVendorRoot)) {
+        // vendor 目录（如 libs/fairygui）不是框架源码分层，不套用分层依赖约束
+        return undefined;
+    }
 
     if (
         pathFromFramework === "" ||
@@ -1042,13 +1048,15 @@ describe("framework public boundary", () => {
 
     test("locks fairygui-cc imports to the cocos adapter layer", () => {
         const cocosAdapterRoot = resolve(frameworkRoot, "adapters/cocos");
-        const thirdPartyFairyGuiRoot = resolve(
-            assetsRoot,
-            "third-party/fairygui",
-        );
+        const fairyGuiVendorRoot = resolve(frameworkVendorRoot, "fairygui");
 
         const offenders = collectTypeScriptFiles(frameworkRoot).filter((file) => {
             if (isWithin(file, cocosAdapterRoot)) {
+                return false;
+            }
+
+            if (isWithin(file, frameworkVendorRoot)) {
+                // vendor 目录（libs/fairygui）即 fairygui 本体，非框架源码
                 return false;
             }
 
@@ -1065,7 +1073,7 @@ describe("framework public boundary", () => {
                 const target = resolveImportTarget(file, specifier);
                 return (
                     target !== undefined &&
-                    isWithin(target, thirdPartyFairyGuiRoot)
+                    isWithin(target, fairyGuiVendorRoot)
                 );
             });
 
@@ -1078,10 +1086,7 @@ describe("framework public boundary", () => {
     test("keeps the game layer free of fgui imports", () => {
         // 游戏层（assets/game 与 assets/game_*）作为外部消费者，不得导入 fgui：
         // 组合根经 adapter 边界接入 FairyGUI，游戏层只消费框架根入口的 UI 契约。
-        const thirdPartyFairyGuiRoot = resolve(
-            assetsRoot,
-            "third-party/fairygui",
-        );
+        const fairyGuiVendorRoot = resolve(frameworkVendorRoot, "fairygui");
 
         const offenders = collectTypeScriptFiles(assetsRoot).filter((file) => {
             if (!isGameLayerFile(file)) {
@@ -1103,7 +1108,7 @@ describe("framework public boundary", () => {
                 const target = resolveImportTarget(file, specifier);
                 return (
                     target !== undefined &&
-                    isWithin(target, thirdPartyFairyGuiRoot)
+                    isWithin(target, fairyGuiVendorRoot)
                 );
             });
         });

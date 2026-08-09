@@ -1,5 +1,5 @@
 {
   "imports": {
-    "fairygui-cc": "./assets/third-party/fairygui/fairygui.mjs"
+    "fairygui-cc": "./assets/framework/libs/fairygui/fairygui.mjs"
   }
 }
