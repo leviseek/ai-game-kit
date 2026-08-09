@@ -1,10 +1,15 @@
 import type { Module } from "../../../framework";
 import type { AutoBattleSkill } from "../models";
 
-/** 技能结算结果：按技能类型返回实际生效的伤害或治疗量。 */
+/** 技能结算结果：按技能类型返回实际生效值、结算后 HP 与是否阵亡。 */
 export type AutoBattleSkillEffect =
-    | { readonly kind: "damage"; readonly damage: number; readonly kills: boolean }
-    | { readonly kind: "heal"; readonly heal: number };
+    | {
+          readonly kind: "damage";
+          readonly hp: number;
+          readonly applied: number;
+          readonly kills: boolean;
+      }
+    | { readonly kind: "heal"; readonly hp: number; readonly applied: number };
 
 /** 受击结算：扣除伤害并 clamp 到 0，返回实际扣减量与是否阵亡。 */
 export function applyAutoBattleDamage(
@@ -35,18 +40,27 @@ export function growAutoBattleEnergy(
     return Math.min(energyMax, energy + gain);
 }
 
-/** 技能结算纯函数：按技能类型结算到目标当前 HP，不修改任何状态。 */
+/**
+ * 技能结算纯函数：按技能类型结算到目标当前 HP，返回实际生效值与结算后
+ * HP，不修改任何状态。battle 的 castSkill 与受击结算共用同一套语义，
+ * 避免伤害钳制/治疗上限规则在多处重复实现导致漂移。
+ */
 export function resolveAutoBattleSkill(
     skill: AutoBattleSkill,
     targetHp: number,
     targetMaxHp: number,
 ): AutoBattleSkillEffect {
     if (skill.kind === "damage") {
-        const result = applyAutoBattleDamage(targetHp, skill.value);
-        return { kind: "damage", damage: result.applied, kills: result.kills };
+        const outcome = applyAutoBattleDamage(targetHp, skill.value);
+        return {
+            kind: "damage",
+            hp: outcome.hp,
+            applied: outcome.applied,
+            kills: outcome.kills,
+        };
     }
-    const result = applyAutoBattleHeal(targetHp, targetMaxHp, skill.value);
-    return { kind: "heal", heal: result.applied };
+    const outcome = applyAutoBattleHeal(targetHp, targetMaxHp, skill.value);
+    return { kind: "heal", hp: outcome.hp, applied: outcome.applied };
 }
 
 /**

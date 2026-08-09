@@ -87,6 +87,12 @@ function readTeam(
     if (raw.length === 0) {
         throw new Error(`auto-battle config: team "${key}" must not be empty`);
     }
+    // MVP 固定 6 静态槽位：每队至多 3 单位，超规模单位会"参战但页面不渲染"
+    if (raw.length > 3) {
+        throw new Error(
+            `auto-battle config: team "${key}" must have at most 3 units`,
+        );
+    }
     return raw.map((entry, index) => {
         if (!isUnitConfig(entry)) {
             throw new Error(

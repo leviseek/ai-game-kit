@@ -3,8 +3,8 @@ import type { AutoBattleClock } from "./clock";
 import type { AutoBattleConfigHandle } from "./config";
 import {
     applyAutoBattleDamage,
-    applyAutoBattleHeal,
     growAutoBattleEnergy,
+    resolveAutoBattleSkill,
 } from "./skills";
 import {
     isAutoBattleAlive,
@@ -137,6 +137,7 @@ export function createAutoBattleBattle(
             actor.def.energyMax,
             config.energyGainAttacker,
         );
+        // 阵亡目标不再累计受击能量（实现收窄，测试锁定其行为）
         if (!outcome.kills) {
             target.energy = growAutoBattleEnergy(
                 target.energy,
@@ -159,7 +160,7 @@ export function createAutoBattleBattle(
         }
     }
 
-    /** 满能量释放技能：伤害对敌方前排目标、治疗对己方 HP 最低存活单位。 */
+    /** 满能量释放技能：结算统一走 resolveAutoBattleSkill，避免规则多实现。 */
     function castSkill(actor: MutableUnit): void {
         const skill = actor.def.skill;
         if (skill.kind === "damage") {
@@ -170,19 +171,21 @@ export function createAutoBattleBattle(
             if (target === undefined) {
                 return;
             }
-            const outcome = applyAutoBattleDamage(target.hp, skill.value);
-            target.hp = outcome.hp;
-            actor.energy = 0;
-            emit({
-                type: "skill-damage",
-                sourceId: actor.id,
-                targetId: target.id,
-                value: outcome.applied,
-                round,
-            });
-            if (outcome.kills) {
-                emit({ type: "unit-dead", sourceId: actor.id, targetId: target.id, round });
-                checkGameOver();
+            const effect = resolveAutoBattleSkill(skill, target.hp, target.maxHp);
+            if (effect.kind === "damage") {
+                target.hp = effect.hp;
+                actor.energy = 0;
+                emit({
+                    type: "skill-damage",
+                    sourceId: actor.id,
+                    targetId: target.id,
+                    value: effect.applied,
+                    round,
+                });
+                if (effect.kills) {
+                    emit({ type: "unit-dead", sourceId: actor.id, targetId: target.id, round });
+                    checkGameOver();
+                }
             }
             return;
         }
@@ -193,16 +196,18 @@ export function createAutoBattleBattle(
         if (target === undefined) {
             return;
         }
-        const outcome = applyAutoBattleHeal(target.hp, target.maxHp, skill.value);
-        target.hp = outcome.hp;
-        actor.energy = 0;
-        emit({
-            type: "skill-heal",
-            sourceId: actor.id,
-            targetId: target.id,
-            value: outcome.applied,
-            round,
-        });
+        const effect = resolveAutoBattleSkill(skill, target.hp, target.maxHp);
+        if (effect.kind === "heal") {
+            target.hp = effect.hp;
+            actor.energy = 0;
+            emit({
+                type: "skill-heal",
+                sourceId: actor.id,
+                targetId: target.id,
+                value: effect.applied,
+                round,
+            });
+        }
     }
 
     function act(actor: MutableUnit): void {
@@ -258,6 +263,9 @@ export function createAutoBattleBattle(
             result = undefined;
             order = [];
             actionIndex = 0;
+            // 重开即新对局：清空事件日志与序号，避免旧对局日志残留
+            events.length = 0;
+            seq = 0;
             emit({ type: "restart", sourceId: "" });
             beginRound(1);
         },
