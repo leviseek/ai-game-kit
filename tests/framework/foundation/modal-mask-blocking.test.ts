@@ -20,7 +20,7 @@ interface FairyGuiContainerLike {
     get numChildren(): number;
 }
 
-interface FairyGuiRootLike extends FairyGuiContainerLike { }
+type FairyGuiRootLike = FairyGuiContainerLike;
 
 // 页面视图接缝：命中模拟需要可触摸与尺寸
 interface FairyGuiViewLike {

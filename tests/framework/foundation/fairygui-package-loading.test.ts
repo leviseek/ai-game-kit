@@ -2,7 +2,6 @@ import { describe, expect, test } from "bun:test";
 
 import { createResourceProvider } from "../../../assets/framework/core/resource/ResourceProvider";
 import type {
-    ResourceHandle,
     ResourceKey,
 } from "../../../assets/framework/contracts/resource/Resource";
 

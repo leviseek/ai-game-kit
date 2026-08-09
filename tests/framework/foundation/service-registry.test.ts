@@ -104,8 +104,6 @@ describe("ServiceRegistry error paths", () => {
     });
 
     test("both errors carry the token description for diagnostics", () => {
-        const registry = createServiceRegistry();
-        const token = createServiceToken<AudioService>("audio");
         const registrationError = new ServiceRegistrationError("audio");
         const resolutionError = new ServiceResolutionError("audio");
 

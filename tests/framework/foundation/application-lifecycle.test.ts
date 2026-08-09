@@ -77,11 +77,10 @@ describe("Application lifecycle", () => {
 
     test("transitions through the full lifecycle in order", async () => {
         const Application = await loadApplication();
-        let app!: ApplicationInstance;
         const calls: string[] = [];
         const states: ApplicationState[] = [];
 
-        app = new Application(
+        const app = new Application(
             [createLifecycleModule("inventory", calls, states, () => app)],
             createContext(),
         );
@@ -139,7 +138,6 @@ describe("Application lifecycle", () => {
 
     test("passes the provided context to module hooks without mutating it", async () => {
         const Application = await loadApplication();
-        let app!: ApplicationInstance;
         const logger = new MemoryLogger();
         const context: ApplicationContext = { logger, state: "created" };
         let receivedContext: ApplicationContext | undefined;
@@ -149,7 +147,7 @@ describe("Application lifecycle", () => {
             initialize: async (ctx) => { receivedContext = ctx; },
         };
 
-        app = new Application([module], context);
+        const app = new Application([module], context);
 
         await app.start();
         expect(receivedContext).toBe(context);

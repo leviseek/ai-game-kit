@@ -313,7 +313,7 @@ describe("存档生命周期保存收敛（7.6）", () => {
         const createCoordinator = await loadCreateCoordinator();
 
         const visibility = new MemoryPlatform();
-        const adapter = createAdapter({
+        const _adapter = createAdapter({
             localStorage: createInspectableLocalStorage(),
         });
 

@@ -1,7 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
 import { createMemoryResourceProvider } from "../../../assets/framework/adapters/memory/MemoryResourceProvider";
-import type { PlatformStorage } from "../../../assets/framework/contracts/platform/Platform";
 import type {
     ConfigTable,
     ReadonlyConfigSnapshot,
@@ -265,18 +264,6 @@ describe("ConfigTable content validation guards", () => {
 describe("ConfigTable save-storage separation boundary", () => {
     test("config loads and reads never touch a save key-value backend", async () => {
         const storageCalls: string[] = [];
-        const spyStorage: PlatformStorage = {
-            async get(key) {
-                storageCalls.push(`get:${key}`);
-                return null;
-            },
-            async set(key, value) {
-                storageCalls.push(`set:${key}:${value}`);
-            },
-            async delete(key) {
-                storageCalls.push(`delete:${key}`);
-            },
-        };
 
         // 配置走资源读取路径（kind: "asset"），全程不写也不读存档后端
         const provider = createMemoryResourceProvider({

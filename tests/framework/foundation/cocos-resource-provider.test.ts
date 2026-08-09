@@ -13,7 +13,6 @@ mock.module("cc", () => ({
 mock.module("fairygui-cc", () => createFairyGuiMock());
 
 import type { IResourceProvider } from "../../../assets/framework/contracts/resource/ResourceProvider";
-import type { ResourceKey } from "../../../assets/framework/contracts/resource/Resource";
 
 interface CocosBundleLike {
     readonly name: string;

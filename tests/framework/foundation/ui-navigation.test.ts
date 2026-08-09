@@ -1,7 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
 import type {
-    DuplicateOpenPolicy,
     UiLayer,
     UiPage,
     UiResult,
@@ -392,7 +391,7 @@ describe("UiNavigator page scope", () => {
         const navigator = createUiNavigator();
         openResult(navigator, "hero");
         const inventory = openResult(navigator, "inventory");
-        const popup = openResult(navigator, "confirm", { layer: "popup", blocking: true });
+        openResult(navigator, "confirm", { layer: "popup", blocking: true });
         expect(navigator.top?.route).toBe("confirm");
 
         const result = navigator.close(inventory.page?.id);

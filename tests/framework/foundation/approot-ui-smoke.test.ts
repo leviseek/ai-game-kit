@@ -38,23 +38,6 @@ mock.module("cc", () => ({
     sys: { isNative: false },
 }));
 
-interface GRootLike {
-    readonly name: string;
-    readonly width: number;
-    readonly height: number;
-    addChild(child: unknown): unknown;
-    removeChild(child: unknown, dispose?: boolean): unknown;
-    removeChildren(beginIndex?: number, endIndex?: number, dispose?: boolean): void;
-    getChildAt(index: number): unknown;
-    readonly numChildren: number;
-}
-
-interface CocosUiRootLike {
-    init(): void;
-    readonly initialized: boolean;
-    readonly root: GRootLike | undefined;
-}
-
 interface AppRootInstance {
     onLoad(): void;
     start(): Promise<void>;

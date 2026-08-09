@@ -5,7 +5,6 @@ import type { PlatformStorage } from "../../../assets/framework/contracts/platfo
 import type {
     SaveMigrator,
     SaveVersion,
-    VersionedStorage,
     VersionedStorageOptions,
 } from "../../../assets/framework/contracts/storage/VersionedStorage";
 import {
@@ -16,7 +15,7 @@ import {
     createVersionedStorage,
 } from "../../../assets/framework/core/storage/VersionedStorage";
 
-interface PlayerSave {
+interface _PlayerSave {
     readonly name: string;
     readonly level: number;
 }

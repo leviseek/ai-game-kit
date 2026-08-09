@@ -24,9 +24,10 @@ bun run test
 | 命令 | 内容 | 需要 Cocos |
 | --- | --- | --- |
 | `bun run typecheck` | 三个 TS 工程（根 / `tools/creator` / `tools/fgui`）严格类型检查 | 否 |
+| `bun run lint` | ESLint（typescript-eslint recommended，非 type-aware）全仓检查 | 否 |
 | `bun run test` | `test:foundation`（843）+ `test:fgui`（76） | 否 |
 | `bun run test:all` | 追加 `test:foundation:types`（framework 契约 + fairygui 接入类型检查） | 是 |
-| `bun run verify` | `typecheck` + `test`，提交前完整门禁 | 否 |
+| `bun run verify` | `typecheck` + `lint` + `test`，提交前完整门禁 | 否 |
 | `bun run fgui <command>` | FGUI 确定性工具链（资源清单/校验/短 id 等） | 否 |
 | `bun run ccc <command>` | Creator 命令行工具（构建/smoke/性能检查等） | 是 |
 
@@ -55,5 +56,6 @@ ui/                   FairyGUI 源工程（assets/ 引用其发布产物）
 ## AI 协作约定
 
 - 项目级规则：`AGENTS.md`（FGUI 工作流、注释语言、validate 语义）
-- AI 行为约束：`.ai/instructions.md`（14 条硬规则）
+- AI 行为约束：`.ai/instructions.md`（14 条硬规则；第 3 条豁免 devDependency 工具链）
+- lint 策略：`eslint.config.mjs`（typescript-eslint recommended，非 type-aware）；`_` 前缀变量与 `*.typecheck.ts` 豁免 `no-unused-vars`
 - OpenSpec 流程按 `openspec/config.yaml` 执行

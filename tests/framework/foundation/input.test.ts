@@ -3,7 +3,6 @@ import { describe, expect, test } from "bun:test";
 import type { TimeSource } from "../../../assets/framework/contracts/time/TimeSource";
 import { MonotonicClock } from "../../../assets/framework/core/time/MonotonicClock";
 import type {
-    InputContextId,
     InputEvent,
     InputSample,
     InputSource,

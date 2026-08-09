@@ -2,7 +2,6 @@ import * as cc from "cc";
 import type {
     AudioBackend,
     AudioGroup,
-    AudioTrackRef,
 } from "../../../contracts/audio/Audio";
 import type { ResourceScope } from "../../../contracts/resource/ResourceScope";
 import type { IResourceProvider } from "../../../contracts/resource/ResourceProvider";

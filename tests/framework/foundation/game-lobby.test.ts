@@ -5,7 +5,6 @@ import type { GamePresenterFactory } from "../../../assets/game/lobby/presenter"
 import {
     createGameLobby,
     type EntryPageHandle,
-    type GameLobby,
     type GameLobbyHost,
 } from "../../../assets/game/lobby/lobby";
 import type { GameTypeInfo } from "../../../assets/game/lobby/catalog";

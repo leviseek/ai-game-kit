@@ -294,7 +294,6 @@ describe.skipIf(!assemblyExists)(
 
             // 出售空库存被拒绝，现金不变
             expect(fixture.economy.sell("widget")).toBe(false);
-            const cashBefore = fixture.economy.cash;
 
             // 生产一件 widget 后出售：成本扣减、售价入账
             fixture.production.start("widget"); // cost 5
@@ -531,7 +530,7 @@ describe.skipIf(!assemblyExists)(
         test("a failing storage write rejects the save without swallowing the error", async () => {
             const createTycoonFixture = await loadCreateTycoonFixture();
             const failingStorage: PlatformStorage = {
-                async get(key: string): Promise<string | null> {
+                async get(_key: string): Promise<string | null> {
                     return null;
                 },
                 async set(): Promise<void> {

@@ -14,9 +14,9 @@ native
 node_modules/
 
 #//////////////////////////
-# VSCode
+# VSCode（共享配置入库；本地私有覆盖放 *.local.json，被忽略）
 #//////////////////////////
-.vscode/
+.vscode/*.local.json
 
 #//////////////////////////
 # WebStorm

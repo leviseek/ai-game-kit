@@ -2,7 +2,7 @@
 
 1. 修改代码前先解释设计
 2. 不允许创建超过300行的新文件
-3. 不允许引入第三方库
+3. 不允许引入第三方运行时依赖；仅允许 devDependency 开发工具链（当前：typescript、eslint、typescript-eslint、@types/node）
 4. 优先复用已有模块
 5. 修改架构必须更新docs
 6. 每个系统必须有测试

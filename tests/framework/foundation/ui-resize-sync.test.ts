@@ -255,7 +255,7 @@ describe("window resize sync", () => {
 
         let resizeCallback: ((width: number, height: number) => void) | undefined;
         const recording = createResizableRoot();
-        const uiRoot = createCocosUiRoot({
+        const _uiRoot = createCocosUiRoot({
             getRoot: () => recording.root,
             subscribeResize: (callback) => {
                 resizeCallback = callback;

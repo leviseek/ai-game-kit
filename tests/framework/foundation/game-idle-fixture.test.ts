@@ -30,12 +30,6 @@ interface IdleClock extends TimeSource {
     advance(milliseconds: number): void;
 }
 
-/** 离线收益结算结果：离线时长与结算所得金币。 */
-interface IdleOfflineSettlement {
-    readonly elapsedMs: number;
-    readonly goldEarned: number;
-}
-
 /**
  * createIdleFixture 的注入选项：测试注入受控替身驱动协作行为；
  * 缺省项由夹具内部以引擎无关实现兜底，不强制依赖 cc/fgui。
@@ -395,7 +389,7 @@ describe.skipIf(!assemblyExists)(
             // 不产生重复累计。
             let failWrites = true;
             const failingStorage: PlatformStorage = {
-                async get(key: string): Promise<string | null> {
+                async get(_key: string): Promise<string | null> {
                     return null;
                 },
                 async set(): Promise<void> {

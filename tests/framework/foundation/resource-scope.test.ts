@@ -7,7 +7,6 @@ import {
 } from "../../../assets/framework/core/resource/LoadCoordinator";
 import {
     createResourceScopeRegistry,
-    type ResourceScope,
     type ResourceScopeRegistry,
 } from "../../../assets/framework/core/resource/ResourceScope";
 
@@ -313,7 +312,7 @@ describe("ResourceScope in-flight cancellation during release", () => {
     });
 
     test("releasing the only scope holding an in-flight load cancels it and unloads the bundle", async () => {
-        const { loader, pending } = createControlledLoader();
+        const { loader, pending: _pending } = createControlledLoader();
         const coordinator = createLoadCoordinator({ loader });
         const { registry, unloaded } = createRegistrySpy();
         const scope = registry.createScope();

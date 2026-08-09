@@ -516,7 +516,8 @@ describe("game.scene (smoke switch target)", () => {
 
     test("contains only infrastructure components (no business UI)", () => {
         const content = readFileSync(gameSceneFile, "utf8");
-        const scene = JSON.parse(content) as Array<{ __type__?: string }>;
+        // JSON.parse 仅用于校验场景文件可解析；后续断言直接在原始文本上做正则匹配
+        const _scene = JSON.parse(content) as Array<{ __type__?: string }>;
 
         const forbiddenUI = [
             "cc.Sprite",

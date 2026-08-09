@@ -94,7 +94,7 @@ export function createFightBattle(
     const reportHit = options.onHit ?? (() => { });
 
     let frame = 0;
-    let playerHp = PLAYER_START_HP;
+    const playerHp = PLAYER_START_HP;
     let enemyHp = ENEMY_START_HP;
     let combo = 0;
     let activeMove: ActiveMoveState | undefined;

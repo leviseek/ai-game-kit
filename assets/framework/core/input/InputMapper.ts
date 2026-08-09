@@ -59,7 +59,6 @@ export function createInputMapper<TAction>(
 
     let activeContext = options.activeContext;
     let mappings = options.mappings;
-    let currentSource: InputSource | undefined;
     let currentUnsubscribe: (() => void) | undefined;
     let disposed = false;
 
@@ -84,15 +83,13 @@ export function createInputMapper<TAction>(
     function detachSource(): void {
         currentUnsubscribe?.();
         currentUnsubscribe = undefined;
-        currentSource = undefined;
     }
 
     function attachSource(source: InputSource): void {
         detachSource();
-        // 先订阅成功再更新 currentSource：subscribe 抛错时旧源已退订、新源未挂载，
-        // currentSource 保持 undefined，避免静默"有源但无订阅"的不一致状态
+        // 先订阅成功再挂载新源：subscribe 抛错时旧源已退订、新源未订阅，
+        // 不更新 currentUnsubscribe，避免"有源但无订阅"的不一致状态
         const unsubscribe = source.subscribe(processEvent);
-        currentSource = source;
         currentUnsubscribe = unsubscribe;
     }
 

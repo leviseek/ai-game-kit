@@ -8,7 +8,7 @@ import { RPG_STATUS_ROUTE } from "../models";
  * 的 dispose 统一负责（避免 failRollback 探针复用模块实例时提前销毁夹具
  * 自身导航器，对齐 GameFixture 幂等契约）。
  */
-export function createRpgUiModule(navigator: UiNavigator): Module {
+export function createRpgUiModule(_navigator: UiNavigator): Module {
     return {
         id: "rpg.ui",
         dependencies: [],

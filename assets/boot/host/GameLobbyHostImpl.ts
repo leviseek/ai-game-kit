@@ -104,8 +104,7 @@ export class GameLobbyHostImpl implements GameLobbyHost {
         // 组合根（design decision 7 边界）
         const node = createFairyGuiViewHandle(page.view as never);
 
-        let handle: EntryPageHandle;
-        handle = {
+        const handle: EntryPageHandle = {
             node,
             onClose: (callback: () => void) => {
                 // 登记到导航页作用域：导航关闭页面时触发一次（幂等）

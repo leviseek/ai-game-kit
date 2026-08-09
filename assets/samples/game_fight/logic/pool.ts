@@ -25,7 +25,7 @@ const POOL_CAPACITY = 4;
  * 战斗命中持续发生时对象被复用，created 保持在小值。
  */
 export function createFightEffectPool(): FightEffectPool {
-    let nextId = 1;
+    const nextId = 1;
     let created = 0;
 
     const pool = createObjectPool<FightEffect>({

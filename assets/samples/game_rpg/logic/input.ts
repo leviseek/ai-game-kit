@@ -1,6 +1,5 @@
 import type { InputEvent, InputSource } from "../../../framework";
 import type { Module } from "../../../framework";
-import type { RpgAction } from "../models";
 
 /**
  * 输入上下文：组合根创建 InputMapper，按激活上下文把底层输入源事件

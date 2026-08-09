@@ -3,10 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, test } from "bun:test";
 
 import type { DisposeHandle } from "../../../assets/framework/core/scheduling/DisposeHandle";
-import {
-    createScopedEventChannel,
-    type ScopedEventChannel,
-} from "../../../assets/framework/core/events/ScopedEventChannel";
+import { createScopedEventChannel } from "../../../assets/framework/core/events/ScopedEventChannel";
 
 interface GameEvents {
     readonly scoreChanged: { readonly score: number };
@@ -148,12 +145,13 @@ describe("ScopedEventChannel scope closure", () => {
     test("a subscription disposed during emit is skipped later", () => {
         const channel = createScopedEventChannel<GameEvents>();
         const scores: number[] = [];
-        let handle: DisposeHandle | undefined;
 
+        // 先注册"emit 时 dispose 已订阅 handle"的订阅：回调在 emit 阶段触发，
+        // 此时 const handle 已初始化，命中后置声明不构成 TDZ 引用
         channel.on("scoreChanged", () => {
             handle?.dispose();
         });
-        handle = channel.on("scoreChanged", (payload) =>
+        const handle = channel.on("scoreChanged", (payload) =>
             scores.push(payload.score),
         );
 

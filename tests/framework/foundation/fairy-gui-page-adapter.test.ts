@@ -24,7 +24,7 @@ interface FairyGuiContainerLike {
     get numChildren(): number;
 }
 
-interface FairyGuiRootLike extends FairyGuiContainerLike { }
+type FairyGuiRootLike = FairyGuiContainerLike;
 
 interface FairyGuiViewLike {
     readonly name: string;
@@ -124,7 +124,7 @@ function createRecordingRoot(): {
                 calls.push({ container: name, action: "addChild", child });
                 return child;
             },
-            removeChild(child, dispose = false) {
+            removeChild(child, _dispose = false) {
                 const index = children.indexOf(child);
                 if (index >= 0) {
                     children.splice(index, 1);
@@ -132,8 +132,8 @@ function createRecordingRoot(): {
                 calls.push({ container: name, action: "removeChild", child });
                 return child;
             },
-            removeChildren(beginIndex = 0, endIndex?: number, dispose = false) {
-                const toRemove = children.splice(beginIndex, endIndex);
+            removeChildren(_beginIndex = 0, _endIndex?: number, _dispose = false) {
+                const toRemove = children.splice(_beginIndex, _endIndex);
                 calls.push({
                     container: name,
                     action: "removeChildren",
@@ -162,11 +162,11 @@ function createRecordingRoot(): {
             containers.set(name, container);
             return container;
         },
-        removeChild(child, dispose = false) {
+        removeChild(child, _dispose = false) {
             calls.push({ container: "GRoot", action: "removeChild", child });
             return child;
         },
-        removeChildren(beginIndex = 0, endIndex?: number, dispose = false) {
+        removeChildren(_beginIndex = 0, _endIndex?: number, _dispose = false) {
             calls.push({ container: "GRoot", action: "removeChildren" });
         },
         getChildAt(_index: number) {

@@ -5,7 +5,6 @@ import {
     LOBBY_LIST_ENTRY,
 } from "./catalog";
 import type {
-    EntryPageHandle,
     GameLobbyHost,
 } from "./host";
 import {
@@ -13,11 +12,11 @@ import {
     type GameLobby,
 } from "./lobby";
 
-/** 列表页流：持有会话编排（lobby）与列表页句柄，UI 就绪后打开列表页并装配点击。 */
+/** 列表页流：持有会话编排（lobby），UI 就绪后打开列表页并装配点击。 */
 export interface GameListFlow {
     /** 打开游戏列表页；UI 根未就绪时按固定间隔重试（对齐宿主原语 ensureUiReady 幂等语义）。 */
     openListPageWithRetry(retryLeft?: number): void;
-    /** 释放列表流持有的会话编排与页面句柄引用；幂等。 */
+    /** 释放列表流持有的会话编排引用；幂等。 */
     dispose(): void;
 }
 
@@ -30,7 +29,6 @@ export interface GameListFlow {
  */
 export function createGameListFlow(host: GameLobbyHost, logger: Logger): GameListFlow {
     const lobby: GameLobby = createGameLobby(host);
-    let lobbyPage: EntryPageHandle | undefined;
     let disposed = false;
 
     function openListPageWithRetry(retryLeft = 20): void {
@@ -66,7 +64,6 @@ export function createGameListFlow(host: GameLobbyHost, logger: Logger): GameLis
         await host.ensureSharedUiDependencies();
 
         const handle = await host.openGlobalPage(LOBBY_LIST_ENTRY);
-        lobbyPage = handle;
 
         // 列表项点击：按 catalog 可玩品类登记进入回调（节点名 btn_<id>）
         for (const info of gameTypeCatalog) {
@@ -93,9 +90,8 @@ export function createGameListFlow(host: GameLobbyHost, logger: Logger): GameLis
                 return;
             }
             disposed = true;
-            // 释放活动会话（若有）并丢弃列表页句柄；全局列表页本身随宿主作用域释放
+            // 释放活动会话（若有）；全局列表页本身随宿主作用域释放
             void lobby.exit();
-            lobbyPage = undefined;
         },
     };
 }

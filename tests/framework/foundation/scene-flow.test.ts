@@ -4,9 +4,7 @@ import { createResourceProvider } from "../../../assets/framework/core/resource/
 import type { ResourceKey } from "../../../assets/framework/contracts/resource/Resource";
 import {
     createSceneFlow,
-    type SceneFlow,
     type SceneResources,
-    type SceneSwitchResult,
 } from "../../../assets/framework/core/scene/SceneFlow";
 
 interface ControlledDeferred {
@@ -385,7 +383,7 @@ describe("SceneFlow failed switch", () => {
 
 describe("SceneFlow releasable scope", () => {
     test("disposing the flow cancels an in-flight switch and is idempotent", async () => {
-        const { loader, pending } = createControlledLoader();
+        const { loader, pending: _pending } = createControlledLoader();
         const activated: string[] = [];
         const provider = createResourceProvider({ loader, unloadBundle: () => { } });
         const flow = createSceneFlow({

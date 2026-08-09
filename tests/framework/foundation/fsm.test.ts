@@ -519,8 +519,7 @@ describe("StateMachine unregistered source state", () => {
 describe("StateMachine reentrant send", () => {
     test("a reentrant send from inside a hook is rejected without corrupting state", () => {
         const { failures, onTransitionError } = createFailures();
-        let machine: StateMachine<DoorState, DoorEvent>;
-        machine = createStateMachine<DoorState, DoorEvent>({
+        const machine = createStateMachine<DoorState, DoorEvent>({
             initial: "closed",
             transitions: DOOR_TRANSITIONS,
             onTransitionError,

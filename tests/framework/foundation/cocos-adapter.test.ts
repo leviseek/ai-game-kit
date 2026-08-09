@@ -13,8 +13,6 @@ mock.module("cc", () => ({
     },
 }));
 
-import type { Application } from "../../../assets/framework";
-
 interface ApplicationLike {
     readonly state: string;
     pause(): Promise<void>;
@@ -112,12 +110,12 @@ describe("CocosApplicationAdapter", () => {
         const CocosAdapter = await loadAdapter();
 
         let hideCallback: (() => void) | undefined;
-        let showCallback: (() => void) | undefined;
+        let _showCallback: (() => void) | undefined;
 
         const mockGame: CocosGameLike = {
-            on(event, callback, target) {
+            on(event, callback, _target) {
                 if (event === "game_hide") hideCallback = callback;
-                if (event === "game_show") showCallback = callback;
+                if (event === "game_show") _showCallback = callback;
             },
             off() { },
         };
@@ -142,12 +140,12 @@ describe("CocosApplicationAdapter", () => {
     test("show event triggers Application.resume", async () => {
         const CocosAdapter = await loadAdapter();
 
-        let hideCallback: (() => void) | undefined;
+        let _hideCallback: (() => void) | undefined;
         let showCallback: (() => void) | undefined;
 
         const mockGame: CocosGameLike = {
-            on(event, callback, target) {
-                if (event === "game_hide") hideCallback = callback;
+            on(event, callback, _target) {
+                if (event === "game_hide") _hideCallback = callback;
                 if (event === "game_show") showCallback = callback;
             },
             off() { },
@@ -179,7 +177,7 @@ describe("CocosApplicationAdapter", () => {
         const offCalls: Array<[string, () => void, unknown]> = [];
 
         const mockGame: CocosGameLike = {
-            on(event, callback, target) {
+            on(event, callback, _target) {
                 if (event === "game_hide") hideCallback = callback;
                 if (event === "game_show") showCallback = callback;
             },

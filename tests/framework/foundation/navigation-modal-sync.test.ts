@@ -22,7 +22,7 @@ interface FairyGuiContainerLike {
     get numChildren(): number;
 }
 
-interface FairyGuiRootLike extends FairyGuiContainerLike { }
+type FairyGuiRootLike = FairyGuiContainerLike;
 
 interface FairyGuiViewLike {
     readonly name: string;

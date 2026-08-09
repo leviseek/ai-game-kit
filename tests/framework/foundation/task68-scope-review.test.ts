@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { resolve, sep } from "node:path";
 import { describe, expect, test } from "bun:test";
 

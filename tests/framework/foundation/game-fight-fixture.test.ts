@@ -267,7 +267,7 @@ describe.skipIf(!assemblyExists)(
 
             // 显式复用：归还后再次借出得到同一对象，工厂不再创建
             const first = fixture.pool.acquire();
-            const second = fixture.pool.acquire();
+            const _second = fixture.pool.acquire();
             fixture.pool.release(first);
             const reused = fixture.pool.acquire();
             expect(reused).toBe(first);

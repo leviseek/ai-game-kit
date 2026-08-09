@@ -1,11 +1,10 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, test } from "bun:test";
 
 import type {
     ApplicationContext,
-    ApplicationState,
     Logger,
 } from "../../../assets/framework";
 import { MemoryLogger } from "../support/MemoryLogger";
@@ -154,7 +153,7 @@ describe("ApplicationContext implementation", () => {
 
         // The root entry must not leak this internal API
         const rootSource = resolve(projectRoot, "assets/framework/index.ts");
-        const content = require("node:fs").readFileSync(rootSource, "utf8");
+        const content = readFileSync(rootSource, "utf8");
 
         expect(content).not.toMatch(
             /\bcreateApplicationContext\b/,
