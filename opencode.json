@@ -5,6 +5,11 @@
       "type": "local",
       "command": ["codegraph", "serve", "--mcp"],
       "enabled": true
+    },
+    "fgui-mcp": {
+      "type": "local",
+      "command": ["bun", "run", "fgui-mcp"],
+      "enabled": true
     }
   }
 }

@@ -35,10 +35,10 @@
 
 ## 5. 阶段 4（Run() 已复测通过，可推进）
 
-- [ ] 5.1 实现 `fgui_trigger_publish` 全自动发布工具：`new PublishHandler(pkg, activeBranch)` + `Run()`，等待 `onComplete` 并返回 `isSuccess`/`exportPath`；branch 默认取 `project.activeBranch`（空串合法），合法值由 `allBranches` 动态生成，禁止硬编码分支名
-- [ ] 5.2 实测一次大包发布，确认 Run() 主线程阻塞表现；若阻塞明显，工具返回中提示"发布期间编辑器卡顿"
-- [ ] 5.3 HttpListener 增强通道：复测通过后（回调线程可读编辑器 API 已确认）作为主通道候选或加速通道；文件邮箱仍为默认主通道
-- [ ] 5.4 端到端全自动验证：意图 → 组件操作 → 发布 → 检测，无人工干预
+- [x] 5.1 实现 `fgui_trigger_publish` 全自动发布工具：`new PublishHandler(pkg, activeBranch)` + `Run()`，等待 `onComplete` 并返回 `isSuccess`/`exportPath`；branch 默认取 `project.activeBranch`（空串合法），合法值由 `allBranches` 动态生成，禁止硬编码分支名
+- [ ] 5.2 实测一次大包发布（AutoBattle），确认 Run() 主线程阻塞表现；若阻塞明显，工具返回中提示"发布期间编辑器卡顿"——需编辑器实机执行 `fgui_trigger_publish --package AutoBattle`
+- [ ] 5.3 HttpListener 增强通道：复测通过后（回调线程可读编辑器 API 已确认）作为主通道候选或加速通道；文件邮箱仍为默认主通道——需复测后台可用性
+- [ ] 5.4 端到端全自动验证：意图 → 组件操作 → 发布 → 检测，无人工干预——需编辑器实机跑通全链路
 
 ## 6. 收尾
 

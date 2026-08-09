@@ -4,30 +4,18 @@ exports.handleInsertComponent = exports.handleRefreshProject = exports.handleRes
 var FairyEditor = CS.FairyEditor;
 const App = FairyEditor.App;
 const READONLY_KEYS = new Set(["fileName"]);
-function copySetting(target, source) {
-    for (const key of Object.keys(source)) {
-        if (READONLY_KEYS.has(key))
-            continue;
-        if (!(key in target))
-            continue;
-        const element = source[key];
-        if (element === null || element === undefined)
-            continue;
-        if (typeof element === "object") {
-            copySetting(target[key], element);
-        }
-        else {
-            target[key] = element;
-        }
-    }
-}
+const PUBLISH_SETTINGS_FIELDS = [
+    "path", "branchPath", "fileExtension", "packageCount", "compressDesc", "binaryFormat",
+    "jpegQuality", "compressPNG", "codeGeneration", "includeHighResolution", "branchProcessing",
+    "seperatedAtlasForBranch", "atlasSetting", "include2x", "include3x", "include4x",
+];
 function snapshotSettings(obj) {
     const out = {};
-    for (const key of Object.keys(obj)) {
+    for (const key of PUBLISH_SETTINGS_FIELDS) {
         if (READONLY_KEYS.has(key))
             continue;
         const value = obj[key];
-        if (typeof value === "function")
+        if (value === undefined || typeof value === "function")
             continue;
         out[key] = value;
     }
@@ -39,7 +27,11 @@ function applySettingsSnapshot(settings, snapshot) {
             continue;
         if (!(key in settings))
             continue;
-        settings[key] = snapshot[key];
+        try {
+            settings[key] = snapshot[key];
+        }
+        catch {
+        }
     }
 }
 const handleSwitchPublishSettings = (params) => {
@@ -59,8 +51,12 @@ const handleSwitchPublishSettings = (params) => {
         }
         if (!(key in settings))
             continue;
-        settings[key] = overrides[key];
-        appliedKeys.push(key);
+        try {
+            settings[key] = overrides[key];
+            appliedKeys.push(key);
+        }
+        catch {
+        }
     }
     if (params["projectType"] !== undefined) {
         project.type = params["projectType"];

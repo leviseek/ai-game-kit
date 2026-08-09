@@ -16,6 +16,7 @@ const server_1 = require("./mailbox/server");
 const handlers_1 = require("./mailbox/handlers");
 const handlers_write_1 = require("./mailbox/handlers-write");
 const publish_signal_1 = require("./mailbox/publish-signal");
+const handlers_publish_1 = require("./mailbox/handlers-publish");
 const App = FairyEditor.App;
 globalThis.__fguiMcpProbe_onPublishFired = false;
 let mailboxServer = null;
@@ -53,6 +54,7 @@ function buildMailboxServer(objsPath) {
     mailboxServer.register("restore_publish_settings", handlers_write_1.handleRestorePublishSettings);
     mailboxServer.register("refresh_project", handlers_write_1.handleRefreshProject);
     mailboxServer.register("insert_component", handlers_write_1.handleInsertComponent);
+    mailboxServer.register("trigger_publish", (0, handlers_publish_1.createTriggerPublishHandler)(mailboxServer));
     const server = mailboxServer;
     updateHandler = () => {
         server.tick();

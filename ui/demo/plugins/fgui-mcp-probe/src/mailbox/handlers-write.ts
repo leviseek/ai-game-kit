@@ -6,39 +6,35 @@ const App = FairyEditor.App;
 /** 只读字段白名单：切换发布配置时禁止覆写（与 MenuMain_Publish.CopySetting 一致）。 */
 const READONLY_KEYS = new Set(["fileName"]);
 
-/** 递归拷贝可写字段；对象字段递归，标量直接赋值。 */
-function copySetting(target: any, source: any): void {
-    for (const key of Object.keys(source)) {
-        if (READONLY_KEYS.has(key)) continue;
-        if (!(key in target)) continue;
-        const element = source[key];
-        if (element === null || element === undefined) continue;
-        if (typeof element === "object") {
-            copySetting(target[key], element);
-        } else {
-            target[key] = element;
-        }
-    }
-}
+/** 全局发布设置的可写字段（来自 editor.d.ts GlobalPublishSettings 声明）。 */
+const PUBLISH_SETTINGS_FIELDS = [
+    "path", "branchPath", "fileExtension", "packageCount", "compressDesc", "binaryFormat",
+    "jpegQuality", "compressPNG", "codeGeneration", "includeHighResolution", "branchProcessing",
+    "seperatedAtlasForBranch", "atlasSetting", "include2x", "include3x", "include4x",
+] as const;
 
-/** 深拷贝一个可序列化的设置快照（用于回滚）。 */
+/** 深拷贝一个可序列化的设置快照（用于回滚）。obj 为 C# 对象时按声明字段读取。 */
 function snapshotSettings(obj: any): Record<string, unknown> {
     const out: Record<string, unknown> = {};
-    for (const key of Object.keys(obj)) {
+    for (const key of PUBLISH_SETTINGS_FIELDS) {
         if (READONLY_KEYS.has(key)) continue;
         const value = obj[key];
-        if (typeof value === "function") continue;
+        if (value === undefined || typeof value === "function") continue;
         out[key] = value;
     }
     return out;
 }
 
-/** 写入全局发布设置快照（可同时用于切换与回滚）。 */
+/** 写入全局发布设置快照（可同时用于切换与回滚）。只读属性（如 codeGeneration/atlasSetting 嵌套对象）赋值失败时跳过，不中断整体。 */
 function applySettingsSnapshot(settings: any, snapshot: Record<string, unknown>): void {
     for (const key of Object.keys(snapshot)) {
         if (READONLY_KEYS.has(key)) continue;
         if (!(key in settings)) continue;
-        settings[key] = snapshot[key];
+        try {
+            settings[key] = snapshot[key];
+        } catch {
+            /* 只读属性（C# getter）赋值失败，跳过该字段 */
+        }
     }
 }
 
@@ -53,7 +49,7 @@ export const handleSwitchPublishSettings: MailboxHandler = (params) => {
     const before = snapshotSettings(settings);
     const projectTypeBefore = project.type;
 
-    // 应用参数覆盖（仅限参数中出现且非只读的字段）
+    // 应用参数覆盖（仅限参数中出现且非只读的字段；只读属性赋值失败时跳过）
     const appliedKeys: string[] = [];
     const overrides = (params["settings"] ?? {}) as Record<string, unknown>;
     for (const key of Object.keys(overrides)) {
@@ -61,8 +57,12 @@ export const handleSwitchPublishSettings: MailboxHandler = (params) => {
             throw new Error(`只读字段不可覆写: ${key}`);
         }
         if (!(key in settings)) continue;
-        settings[key] = overrides[key];
-        appliedKeys.push(key);
+        try {
+            settings[key] = overrides[key];
+            appliedKeys.push(key);
+        } catch {
+            /* 只读属性（C# getter）赋值失败，跳过该字段 */
+        }
     }
     if (params["projectType"] !== undefined) {
         project.type = params["projectType"] as string;

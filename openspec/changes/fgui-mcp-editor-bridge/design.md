@@ -47,6 +47,7 @@ MCP server（`tools/fgui-mcp/`，标准 MCP SDK devDependency，**已实现**：
 - 首期：MCP 全自动做配置切换 + 检测，发布动作留在用户点击边界。
 - 检测：三重证据——`onPublishEnd` 邮箱通知（含包列表/时间戳）、`isSuccess`（`editor.d.ts:19224`）、外部 `bun run fgui validate --strict` + 产物 mtime/hash 新鲜度。
 - 全自动：`PublishHandler.Run()` **复测已通过**（空 branch 构造合法、同步返回、onComplete/isSuccess/onPublish 钩子全部触发）——阶段 4 开放条件已具备；建议实现前实测一次大包发布确认主线程阻塞表现（小包 299ms 未能完全暴露阻塞影响）。
+- **阶段 4 已实现**：插件侧 `mailbox/handlers-publish.ts`（`trigger_publish`，deferred 异步响应：`Run()` 后等待 onComplete 经 `MailboxServer.writeResponse` 补写响应，同时写发布信号供 `fgui_check_publish` 复用）；MCP 侧 `fgui_trigger_publish` 工具（branch 默认 activeBranch 空串合法、`redirectToScratch` 默认 true 重定向到 .objs）。MailboxServer 新增 deferred 协议（`isDeferredResult` 纯函数于 `protocol.ts`）。大包阻塞、HttpListener 后台可用性、端到端全自动需编辑器实机验证（tasks 5.2-5.4）。
 - **分支处理**：发布/分支相关工具参数中 branch 为可选，默认取 `project.activeBranch`（允许空串 = 主干/无分支），合法值由 `allBranches` 动态生成，**禁止硬编码分支名**。
 
 ### 5. 一致性检测不解析 bin，用增量证据

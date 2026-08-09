@@ -50,6 +50,8 @@ async function main(): Promise<void> {
                 settings: z.record(z.string(), z.any()).optional().describe("发布设置字段覆盖"),
                 projectType: z.string().optional().describe("工程类型"),
                 snapshot: z.record(z.string(), z.any()).optional().describe("回滚快照（switch 返回的 before.settings）"),
+                branch: z.string().optional().describe("分支（默认 activeBranch，空串=主干）"),
+                redirectToScratch: z.boolean().optional().describe("发布重定向到 .objs（默认 true；false 走真实产物路径）"),
             },
         }, async (args) => {
             // 写工具均为编辑器侧操作，先做桥可达性检查

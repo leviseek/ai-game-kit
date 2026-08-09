@@ -18,12 +18,13 @@ function joinTempDir(): string {
 }
 
 describe("写工具注册表", () => {
-    it("注册 4 个写工具且描述非空", () => {
+    it("注册 5 个写工具且描述非空", () => {
         expect(Object.keys(WRITE_TOOLS).sort()).toEqual([
             "fgui_insert_component",
             "fgui_refresh_project",
             "fgui_restore_publish_settings",
             "fgui_switch_publish_settings",
+            "fgui_trigger_publish",
         ]);
         for (const tool of Object.values(WRITE_TOOLS)) {
             expect(tool.description.length).toBeGreaterThan(0);

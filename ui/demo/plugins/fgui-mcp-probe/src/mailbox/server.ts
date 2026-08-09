@@ -1,4 +1,5 @@
 import FairyEditor = CS.FairyEditor;
+import { isDeferredResult, type DeferredResponse } from "./protocol";
 
 /**
  * 邮箱请求分发：MCP server 侧发起的读/写请求。
@@ -18,6 +19,9 @@ export interface MailboxHandlerResponse {
 }
 
 export type MailboxHandler = (params: Record<string, unknown>) => unknown;
+
+export { isDeferredResult };
+export type { DeferredResponse };
 
 /** 邮箱服务器：每帧轮询 requests 目录，把请求交给注册的 handler 处理，结果写回 responses 目录。 */
 export class MailboxServer {
@@ -39,6 +43,22 @@ export class MailboxServer {
     /** 注册请求方法处理器；重复注册覆盖。 */
     register(method: string, handler: MailboxHandler): void {
         this.handlers.set(method, handler);
+    }
+
+    /** 异步请求的响应写入（deferred handler 在操作完成后调用）。 */
+    writeResponse(id: string, resp: Omit<MailboxHandlerResponse, "id">): void {
+        const File = CS.System.IO.File;
+        try {
+            CS.System.IO.Directory.CreateDirectory(this.responsesDir);
+            const full: MailboxHandlerResponse = { id, ...resp };
+            const tmp = CS.System.IO.Path.Combine(this.responsesDir, `${id}.json.tmp`);
+            const target = CS.System.IO.Path.Combine(this.responsesDir, `${id}.json`);
+            File.WriteAllText(tmp, JSON.stringify(full));
+            if (File.Exists(target)) File.Delete(target);
+            File.Move(tmp, target);
+        } catch (e: any) {
+            console.log(`[fgui-mcp-probe] 写异步响应 ${id} 异常: ${e}`);
+        }
     }
 
     /** 每帧驱动（配合 App.add_onUpdate 调用）。按时间间隔轮询，不依赖帧率。 */
@@ -86,7 +106,13 @@ export class MailboxServer {
                 resp = { id: req.id, ok: false, error: `未注册的方法: ${req.method}` };
             } else {
                 try {
-                    const result = handler(req.params ?? {});
+                    // 注入请求 id，供异步（deferred）handler 回写响应时定位
+                    const params = Object.assign({}, req.params ?? {}, { __requestId: req.id });
+                    const result = handler(params);
+                    if (isDeferredResult(result)) {
+                        // 异步请求：响应由 handler 稍后经 writeResponse 写入；请求文件已读完，无需在此写
+                        return;
+                    }
                     resp = { id: req.id, ok: true, result };
                 } catch (e: any) {
                     resp = { id: req.id, ok: false, error: String(e && e.message ? e.message : e) };

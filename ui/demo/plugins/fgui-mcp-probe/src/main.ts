@@ -21,6 +21,7 @@ import {
     handleSwitchPublishSettings,
 } from "./mailbox/handlers-write";
 import { writePublishSignal } from "./mailbox/publish-signal";
+import { createTriggerPublishHandler } from "./mailbox/handlers-publish";
 
 const App = FairyEditor.App;
 
@@ -73,6 +74,7 @@ function buildMailboxServer(objsPath: string): void {
     mailboxServer.register("restore_publish_settings", handleRestorePublishSettings);
     mailboxServer.register("refresh_project", handleRefreshProject);
     mailboxServer.register("insert_component", handleInsertComponent);
+    mailboxServer.register("trigger_publish", createTriggerPublishHandler(mailboxServer));
     const server = mailboxServer;
 
     // 双驱动轮询：add_onUpdate（有帧时响应）与 Timers.inst（真实时间调度）。

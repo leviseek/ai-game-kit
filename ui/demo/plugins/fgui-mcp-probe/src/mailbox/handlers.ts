@@ -65,6 +65,13 @@ export const handleQueryDependencies: MailboxHandler = (params) => {
     };
 };
 
+/** 全局发布设置的可读字段（来自 editor.d.ts GlobalPublishSettings 声明）。 */
+const PUBLISH_SETTINGS_FIELDS = [
+    "path", "branchPath", "fileExtension", "packageCount", "compressDesc", "binaryFormat",
+    "jpegQuality", "compressPNG", "codeGeneration", "includeHighResolution", "branchProcessing",
+    "seperatedAtlasForBranch", "atlasSetting", "include2x", "include3x", "include4x",
+] as const;
+
 /** 返回全局发布设置（GetSettings("Publish") 的公开字段快照）。 */
 export const handleReadPublishSettings: MailboxHandler = () => {
     const project = App.project;
@@ -72,11 +79,10 @@ export const handleReadPublishSettings: MailboxHandler = () => {
     const settings = project.GetSettings("Publish") as any;
     if (!settings) throw new Error("读取发布设置失败（GetSettings('Publish') 为空）");
 
+    // C# 属性是 getter，不在 Object.keys 内，必须显式按声明字段读取
     const snapshot: Record<string, unknown> = {};
-    for (const key of Object.keys(settings)) {
-        const value = settings[key];
-        if (typeof value === "function") continue;
-        snapshot[key] = value;
+    for (const key of PUBLISH_SETTINGS_FIELDS) {
+        snapshot[key] = settings[key];
     }
     return {
         projectType: project.type,

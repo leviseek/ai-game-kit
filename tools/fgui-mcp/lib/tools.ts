@@ -119,6 +119,13 @@ export const WRITE_TOOLS: Record<string, { description: string; run: (bridge: Ma
             "返回 inserted/isModified/childrenDelta/opDocIsActive；可见性需人工或截图确认。",
         run: (bridge, params) => bridgeResult(bridge, "insert_component", params),
     },
+    fgui_trigger_publish: {
+        description:
+            "全自动发布指定包（PublishHandler.Run()）。参数: package（包名）、可选 branch（默认 activeBranch，空串=主干）、" +
+            "可选 redirectToScratch（默认 true 重定向到 .objs 不碰真实产物；false 走真实发布路径）。" +
+            "发布为异步操作，等待 onComplete 后返回 isSuccess/exportPath/elapsedMs；期间编辑器可能卡顿。",
+        run: (bridge, params) => bridgeResult(bridge, "trigger_publish", params),
+    },
 };
 
 /**

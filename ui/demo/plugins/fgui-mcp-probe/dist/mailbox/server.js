@@ -1,7 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MailboxServer = void 0;
+exports.MailboxServer = exports.isDeferredResult = void 0;
 exports.listToArray = listToArray;
+const protocol_1 = require("./protocol");
+Object.defineProperty(exports, "isDeferredResult", { enumerable: true, get: function () { return protocol_1.isDeferredResult; } });
 class MailboxServer {
     requestsDir;
     responsesDir;
@@ -16,6 +18,22 @@ class MailboxServer {
     }
     register(method, handler) {
         this.handlers.set(method, handler);
+    }
+    writeResponse(id, resp) {
+        const File = CS.System.IO.File;
+        try {
+            CS.System.IO.Directory.CreateDirectory(this.responsesDir);
+            const full = { id, ...resp };
+            const tmp = CS.System.IO.Path.Combine(this.responsesDir, `${id}.json.tmp`);
+            const target = CS.System.IO.Path.Combine(this.responsesDir, `${id}.json`);
+            File.WriteAllText(tmp, JSON.stringify(full));
+            if (File.Exists(target))
+                File.Delete(target);
+            File.Move(tmp, target);
+        }
+        catch (e) {
+            console.log(`[fgui-mcp-probe] 写异步响应 ${id} 异常: ${e}`);
+        }
     }
     tick() {
         const now = Date.now();
@@ -60,7 +78,11 @@ class MailboxServer {
             }
             else {
                 try {
-                    const result = handler(req.params ?? {});
+                    const params = Object.assign({}, req.params ?? {}, { __requestId: req.id });
+                    const result = handler(params);
+                    if ((0, protocol_1.isDeferredResult)(result)) {
+                        return;
+                    }
                     resp = { id: req.id, ok: true, result };
                 }
                 catch (e) {
