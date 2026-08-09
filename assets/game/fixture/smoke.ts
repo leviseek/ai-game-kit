@@ -20,7 +20,7 @@ import {
  */
 export async function runFixtureSmoke(
     fixtureId: string,
-    registry: GameFixtureRegistry = gameFixtureRegistry,
+    registry?: GameFixtureRegistry,
 ): Promise<void> {
     const report = (step: string, ok: boolean, detail = "") => {
         console.log(
@@ -28,7 +28,11 @@ export async function runFixtureSmoke(
         );
     };
 
-    const factory = registry[fixtureId];
+    // registry 在调用时解析：samples 未加载时经 gameFixtureRegistry() 返回空表，
+    // 工厂缺失按既有语义报告 fixture-unknown，不抛错
+    const resolved = registry ?? gameFixtureRegistry();
+
+    const factory = resolved[fixtureId];
 
     if (factory === undefined) {
         report("fixture-unknown", false, `no factory for "${fixtureId}"`);

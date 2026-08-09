@@ -1,48 +1,34 @@
-import type { ViewModelNode } from "../../framework";
+import { lookupBundle } from "../../framework";
 import type { GameFixture } from "../fixture/GameFixture";
 import {
     gameFixtureRegistry,
     type GameFixtureRegistry,
 } from "../fixture/registry";
-import {
-    gamePresenterRegistry,
-    type GamePresenter,
-    type GamePresenterFactory,
+import type {
+    GamePresenter,
+    GamePresenterFactory,
 } from "./presenter";
 import {
     gameTypeCatalog,
-    type GameEntryInfo,
     type GameTypeInfo,
 } from "./catalog";
+import type {
+    EntryPageHandle,
+    GameLobbyHost,
+} from "./host";
 
-/**
- * 品类会话编排的宿主接缝：真实 UI 宿主（boot/AppRoot）注入打开/关闭入口页
- * 的能力。lobby 保持引擎无关，页面呈现细节（package 加载、pageAdapter、
- * FairyGuiViewHandle 节点解析器）留在宿主实现，lobby 只编排夹具生命周期、
- * 呈现器装配与会话作用域顺序（design decision 3：AppRoot 只做薄转发）。
- */
-export interface GameLobbyHost {
-    /**
-     * 打开品类入口页并返回会话页面句柄。会话资源作用域（品类 package 持有）
-     * 由宿主在此建立并绑定到句柄，exit 时经 closeEntryPage 逆序释放。
-     * 句柄暴露真实页面的节点解析器，供 lobby 装配品类呈现器（ViewModelRenderer）。
-     */
-    openEntryPage(entry: GameEntryInfo): Promise<EntryPageHandle>;
-    /** 关闭入口页并释放会话作用域。重复关闭幂等。 */
-    closeEntryPage(handle: EntryPageHandle): Promise<void>;
+// 类型经 host.ts 共享给 boot 与 game；fixture/lobby.ts 的薄转发依赖本文件
+// 继续 re-export 这两个类型（boot 仅 `import type`）。
+export type { EntryPageHandle, GameLobbyHost } from "./host";
+
+interface SamplesPresenterModule {
+    readonly presenters: Readonly<Record<string, GamePresenterFactory>>;
 }
 
-/**
- * 会话页面句柄：承载"页面关闭 → 会话退出"联动与真实页面节点解析器。
- * 宿主把关闭回调登记进真实页面作用域（如 UiPage.addDisposable），导航关闭
- * 页面时触发；重复登记幂等。页面关闭联动保证返回键只关页面也能触发会话
- * 清理，不遗留运行中的夹具。
- */
-export interface EntryPageHandle {
-    /** 真实页面节点解析器：按名解析 fgui 节点，供呈现器装配渲染。 */
-    readonly node: (name: string) => ViewModelNode | undefined;
-    /** 注册页面关闭回调：导航关闭该页面时触发一次（幂等）。 */
-    onClose(callback: () => void): void;
+/** 品类呈现器运行时登记表：从 samples bundle 的全局注册读取；samples 未加载时为空。 */
+function gamePresenterRegistry(): Readonly<Record<string, GamePresenterFactory>> {
+    const samples = lookupBundle("samples") as SamplesPresenterModule | undefined;
+    return samples?.presenters ?? {};
 }
 
 /** 品类会话：活动中的夹具 + 已打开的入口页句柄 + 呈现器。 */
@@ -92,8 +78,6 @@ export function createGameLobby(
     options: GameLobbyOptions = {},
 ): GameLobby {
     const catalog = options.catalog ?? gameTypeCatalog;
-    const registry = options.registry ?? gameFixtureRegistry;
-    const presenters = options.presenters ?? gamePresenterRegistry;
 
     let active: GameSession | undefined;
 
@@ -120,6 +104,13 @@ export function createGameLobby(
             if (!info.playable || info.entry === undefined) {
                 throw new Error(`game lobby: game type "${id}" is not playable`);
             }
+
+            // 先确保 samples bundle 脚本已执行（登记完成），再解析运行时登记表。
+            // 解析放在 enter 调用时而非 createGameLobby 构造时，避免 samples 未
+            // 加载前固化空表（host.loadBundle 幂等，未实现时以 `?.()` 空转）。
+            await host.loadBundle?.("samples");
+            const registry = options.registry ?? gameFixtureRegistry();
+            const presenters = options.presenters ?? gamePresenterRegistry();
 
             const factory = registry[id];
             if (factory === undefined) {

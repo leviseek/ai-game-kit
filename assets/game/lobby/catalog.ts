@@ -1,5 +1,3 @@
-import { CARD_BATTLE_ROUTE } from "../../samples/game_card/models";
-
 /**
  * 品类入口描述：route 与 FGUI 资源定位（包名/组件名）。列表页与宿主据此
  * 打开真实页面；不可玩品类不登记入口。
@@ -35,7 +33,7 @@ export const gameTypeCatalog: readonly GameTypeInfo[] = [
         title: "卡牌对战",
         subtitle: "回合制卡牌",
         entry: {
-            route: CARD_BATTLE_ROUTE,
+            route: "card/battle",
             packageName: "CardGame",
             resName: "BattleView",
         },

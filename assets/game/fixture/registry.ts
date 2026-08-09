@@ -1,29 +1,23 @@
 import type { GameFixture } from "./GameFixture";
-import { createRpgFixture } from "../../samples/game_rpg/assembly";
-import { createCardFixture } from "../../samples/game_card/assembly";
-import { createIdleFixture } from "../../samples/game_idle/assembly";
-import { createTycoonFixture } from "../../samples/game_tycoon/assembly";
-import { createFightFixture } from "../../samples/game_fight/assembly";
+import { lookupBundle } from "../../framework";
 
 /** 品类夹具工厂：无参构造一个 GameFixture。 */
 export type GameFixtureFactory = () => GameFixture;
 
-/**
- * 品类夹具登记表：品类标识 → 夹具工厂。组合清单显式、不自动扫描；
- * 未登记的品类不参与装配（对齐 design decision 2/3）。
- */
+/** 品类夹具登记表：品类标识 → 夹具工厂。 */
 export type GameFixtureRegistry = Readonly<Record<string, GameFixtureFactory>>;
 
+/** samples bundle 注册的品类模块描述符（fixtures 部分）。 */
+export interface SamplesModule {
+    readonly fixtures: Readonly<Record<string, GameFixtureFactory>>;
+}
+
 /**
- * 品类夹具登记表：由各品类 change 在 2.x-6.x 阶段登记
- * （RPG 由 task 2.3、卡牌由 task 3.3、挂机由 task 4.3、经营由 task 5.3、
- * 格斗由 task 6.3 登记）。
- * 装配入口（boot/AppRoot）只经此表做薄转发，组合逻辑留在游戏层夹具内。
+ * 品类夹具运行时登记表：从 samples bundle 的全局注册读取；samples 未加载时
+ * 为空表（组合根须先经 host.loadBundle 确保 samples 脚本执行）。装配入口只经
+ * 此表做薄转发，组合逻辑留在游戏层夹具内。
  */
-export const gameFixtureRegistry: GameFixtureRegistry = Object.freeze({
-    rpg: createRpgFixture,
-    card: createCardFixture,
-    idle: createIdleFixture,
-    tycoon: createTycoonFixture,
-    fight: createFightFixture,
-});
+export function gameFixtureRegistry(): Readonly<Record<string, GameFixtureFactory>> {
+    const samples = lookupBundle("samples") as SamplesModule | undefined;
+    return samples?.fixtures ?? {};
+}

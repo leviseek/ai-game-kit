@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test";
 
 import type { Module } from "../../../assets/framework";
+// 副作用导入 samples/entry：触发 samples bundle 单点登记，使运行时夹具登记表非空
+import "../../../assets/samples/entry";
 import {
     createGameFixture,
     type GameFixture,
@@ -33,13 +35,13 @@ const fixtureIds = ["rpg", "card", "idle", "tycoon", "fight"] as const;
 
 describe("8.6 unified lifecycle test", () => {
     test("the registry exposes exactly the five declared fixtures", () => {
-        const registered = Object.keys(gameFixtureRegistry).sort();
+        const registered = Object.keys(gameFixtureRegistry()).sort();
         expect(registered).toEqual([...fixtureIds].sort());
     });
 
     for (const fixtureId of fixtureIds) {
         test(`fixture "${fixtureId}" passes the unified lifecycle driver`, async () => {
-            const fixture = gameFixtureRegistry[fixtureId]();
+            const fixture = gameFixtureRegistry()[fixtureId]();
             expect(fixture.id).toBe(fixtureId);
             expect(Array.isArray(fixture.modules)).toBe(true);
             expect(fixture.modules.length).toBeGreaterThan(0);
@@ -144,7 +146,7 @@ describe("8.6 failure rollback leaves no half-started state", () => {
         // 每类夹具的 failRollback 探针复用同一批模块实例但独立状态机：
         // 探针后夹具自身 app 仍保持 running，pause/resume 接缝可继续驱动
         for (const fixtureId of fixtureIds) {
-            const fixture = gameFixtureRegistry[fixtureId]();
+            const fixture = gameFixtureRegistry()[fixtureId]();
             await fixture.start();
             await fixture.failRollback();
 
