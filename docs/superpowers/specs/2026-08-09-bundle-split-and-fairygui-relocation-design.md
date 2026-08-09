@@ -108,5 +108,6 @@ lookupBundleModule(name)                 // bundle 加载后查询
 ## 风险与回退
 
 - 跨 bundle 脚本引用的真实构建行为（3.8 是警告重复打进还是报错）以阶段 B/C 实测构建日志为准；若 samples 契约类型 import 触发构建器抱怨，改在 samples 内独立内联契约类型。
+- **实测结论（Task 3 spike，web-desktop 3.8.8）**：bundle 脚本静态 import main（framework）代码时，Cocos 3.8 构建为**共享 main**，不重复打进 bundle chunk。证据：临时 `_spike_bundle`（`spike.ts` 静态 `import { createStateMachine } from "../framework"`）构建后其 `index.js` 仅 1333 字节，只含 bundle 包装器与 `spike.ts` 自身模块，`System.register` 对 `createStateMachine` 以 `./index6.ts`/`./StateMachine.ts` 两个 chunk id 引用；这两个 chunk 的 `System.register` 定义位于 `build/web-desktop/assets/main/index.js`（main 含完整 `createStateMachine` 实现与转移表处理，main/index.js 1.66MB）。构建日志无跨 bundle 脚本警告/报错（仅 2 条非失败 BABEL deoptimise 警告）。⇒ samples/game bundle 内代码可安全静态 import framework，无需把 fixture 的 framework 依赖面最小化。
 - 全局桥属跨 bundle 运行时约定，重命名/清空语义需固化（`register` 幂等、`lookup` 只在加载后调用），避免隐式时序耦合。
 - 阶段 A 独立可回退；阶段 B/C/D 为结构性改动，逐阶段构建验证后推进。
