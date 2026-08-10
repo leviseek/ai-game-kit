@@ -15,8 +15,7 @@
     <component id="ab_restart" name="btn_restart" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="540,376" size="200,52">
       <Button title="重新开始" titleColor="#ffffff"/>
     </component>
-    <text id="ab_txt_speed" name="txt_speed" xy="580,448" size="120,28" fontSize="20" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="x1"/>
-    <component id="ab_btn_speed" name="btn_speed" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="580,484" size="120,48">
+    <component id="ab_btn_speed" name="btn_speed" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="580,448" size="120,48">
       <Button title="x1" titleColor="#ffffff"/>
     </component>
   </displayList>
