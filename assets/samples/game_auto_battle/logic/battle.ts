@@ -17,11 +17,13 @@ import {
     snapshotUnits,
     type MutableUnit,
 } from "./units";
+import { createMapGrid } from "./grid";
 import type {
     AutoBattleEvent,
     AutoBattlePhase,
     AutoBattleSide,
     AutoBattleState,
+    AutoBattleUnit,
 } from "../models";
 
 /** 战斗控制器选项：时钟用于事件时间戳，事件经 onEvent 广播。 */
@@ -76,11 +78,26 @@ export function createAutoBattleBattle(
         report(full);
     }
 
+    /** 开战实例化：由配置编队（lineup 展开的双方单位清单）创建单位快照，并
+     *  把每个单位分配到己方/敌方布阵区格（MapGrid 占用表）。战斗单位是 config
+     *  数据的只读消费副本，改动不回流配置/编队（解耦）。change 05 阶段坐标
+     *  只读静态出发点，距离移动留 change 08。 */
     function resetUnits(): void {
-        units = [
-            ...config.ally.map((def) => createMutableUnit(def)),
-            ...config.enemy.map((def) => createMutableUnit(def)),
-        ];
+        const grid = createMapGrid();
+        units = [];
+        const placeSide = (
+            side: AutoBattleSide,
+            defs: readonly AutoBattleUnit[],
+        ): void => {
+            const cells = grid.formationCells(side);
+            defs.forEach((def, index) => {
+                const gridKey = cells[index] ?? cells[cells.length - 1]!;
+                grid.place(def.id, gridKey);
+                units.push(createMutableUnit(def, gridKey));
+            });
+        };
+        placeSide("ally", config.ally);
+        placeSide("enemy", config.enemy);
     }
 
     function unitById(id: string): MutableUnit | undefined {

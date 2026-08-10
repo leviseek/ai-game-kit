@@ -111,12 +111,12 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)(
                 createAutoBattleFixture({
                     configContent: configContent({ ally: team("a", 7) }),
                 }),
-            ).toThrow(/at most 6 units/);
+            ).toThrow(/at most 6 heroes/);
             expect(() =>
                 createAutoBattleFixture({
                     configContent: configContent({ enemy: team("e", 7) }),
                 }),
-            ).toThrow(/at most 6 units/);
+            ).toThrow(/at most 6 heroes/);
         });
 
         test("existing 3v3 configuration still parses and finishes as a win", async () => {

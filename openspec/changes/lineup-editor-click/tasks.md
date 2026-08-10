@@ -13,9 +13,9 @@
 
 ## 3. 战斗实例化与开战装配（logic）
 
-- [ ] 3.1 `createAutoBattleBattle` 开战由 lineup 实例化战斗单位到布阵区对应格；战斗内部持单位快照，与存档 lineup 解耦（战斗内改动不回流存档）
-- [ ] 3.2 敌方默认阵容配置接入（配置固定敌方 lineup），开战双方阵容来源统一走 lineup 实例化
-- [ ] 3.3 确定性测试：同一 lineup 对局事件序列可重放；既有 battle/formation 测试迁移到 lineup 格式后保持全绿
+- [x] 3.1 `createAutoBattleBattle` 开战由 lineup 实例化战斗单位到布阵区对应格；战斗内部持单位快照，与存档 lineup 解耦（战斗内改动不回流存档）
+- [x] 3.2 敌方默认阵容配置接入（配置固定敌方 lineup），开战双方阵容来源统一走 lineup 实例化
+- [x] 3.3 确定性测试：同一 lineup 对局事件序列可重放；既有 battle/formation 测试迁移到 lineup 格式后保持全绿
 
 ## 4. FGUI 组件（委派 fgui-designer）
 

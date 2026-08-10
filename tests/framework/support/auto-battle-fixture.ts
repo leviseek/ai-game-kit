@@ -179,10 +179,14 @@ export function configContent(opts: {
     energyGainAttacker?: number;
     energyGainTarget?: number;
 } = {}): Record<string, unknown> {
+    // 新格式：heroes 池 + lineups（英雄 id 序列）；既有测试经此统一走 lineup 实例化
+    const ally = opts.ally ?? [unit("a", "Tank")];
+    const enemy = opts.enemy ?? [unit("e", "Slime")];
     return {
-        teams: {
-            ally: opts.ally ?? [unit("a", "Tank")],
-            enemy: opts.enemy ?? [unit("e", "Slime")],
+        heroes: [...ally, ...enemy],
+        lineups: {
+            ally: ally.map((entry) => entry.id as string),
+            enemy: enemy.map((entry) => entry.id as string),
         },
         energyGainAttacker: opts.energyGainAttacker ?? 10,
         energyGainTarget: opts.energyGainTarget ?? 5,

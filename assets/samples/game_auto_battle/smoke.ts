@@ -64,8 +64,14 @@ function scaleConfigContent(scale: number): Record<string, unknown> {
                 energyCost: 20,
             },
         }));
+    const ally = team("a");
+    const enemy = team("e");
     return {
-        teams: { ally: team("a"), enemy: team("e") },
+        heroes: [...ally, ...enemy],
+        lineups: {
+            ally: ally.map((entry) => entry.id),
+            enemy: enemy.map((entry) => entry.id),
+        },
         energyGainAttacker: 10,
         energyGainTarget: 5,
     };

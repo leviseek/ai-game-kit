@@ -57,10 +57,12 @@ export interface AutoBattleLineup {
     readonly slots: readonly (string | null)[];
 }
 
-/** 战斗中单位运行时快照：静态属性 + 当前 HP/能量。 */
+/** 战斗中单位运行时快照：静态属性 + 当前 HP/能量 + 当前所在网格格。 */
 export interface AutoBattleUnitState extends AutoBattleUnit {
     readonly hp: number;
     readonly energy: number;
+    /** 当前所在网格格（change 05 阶段 = 布阵出发点，固定不变；距离移动留 change 08）。 */
+    readonly gridKey: string;
 }
 
 /** 战斗事件类型：日志回放与冒烟断言依赖的判别维度。 */

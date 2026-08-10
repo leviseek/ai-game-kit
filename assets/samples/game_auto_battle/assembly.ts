@@ -39,19 +39,19 @@ import {
 /** 挡位循环次序：1x → 2x → 3x → 1x（与 presenter 共用同一循环语义）。 */
 const SPEED_CYCLE: readonly AutoBattleSpeed[] = [1, 2, 3];
 
-/** 缺省自动战斗配置：3v3 阵列与能量规则在夹具层内建，测试可注入覆盖。 */
+/** 缺省自动战斗配置：3v3 阵列（heroes 池 + lineup）与能量规则在夹具层内建，测试可注入覆盖。 */
 const DEFAULT_AUTO_BATTLE_CONFIG_CONTENT: Record<string, unknown> = {
-    teams: {
-        ally: [
-            { id: "ally-tank", name: "坦克", position: "front", maxHp: 60, attack: 6, speed: 8, energyMax: 20, skill: { id: "ally-tank-skill", name: "重击", kind: "damage", value: 12, energyCost: 20 } },
-            { id: "ally-mage", name: "法师", position: "mid", maxHp: 45, attack: 11, speed: 7, energyMax: 20, skill: { id: "ally-mage-skill", name: "火球", kind: "damage", value: 15, energyCost: 20 } },
-            { id: "ally-priest", name: "牧师", position: "back", maxHp: 40, attack: 4, speed: 6, energyMax: 20, skill: { id: "ally-priest-skill", name: "治疗", kind: "heal", value: 10, energyCost: 20 } },
-        ],
-        enemy: [
-            { id: "enemy-tank", name: "骷髅", position: "front", maxHp: 60, attack: 6, speed: 8, energyMax: 20, skill: { id: "enemy-tank-skill", name: "爪击", kind: "damage", value: 12, energyCost: 20 } },
-            { id: "enemy-mage", name: "巫妖", position: "mid", maxHp: 45, attack: 9, speed: 7, energyMax: 20, skill: { id: "enemy-mage-skill", name: "暗影", kind: "damage", value: 15, energyCost: 20 } },
-            { id: "enemy-shaman", name: "萨满", position: "back", maxHp: 40, attack: 4, speed: 6, energyMax: 20, skill: { id: "enemy-shaman-skill", name: "妖术", kind: "damage", value: 8, energyCost: 20 } },
-        ],
+    heroes: [
+        { id: "ally-tank", name: "坦克", position: "front", maxHp: 60, attack: 6, speed: 8, energyMax: 20, skill: { id: "ally-tank-skill", name: "重击", kind: "damage", value: 12, energyCost: 20 } },
+        { id: "ally-mage", name: "法师", position: "mid", maxHp: 45, attack: 11, speed: 7, energyMax: 20, skill: { id: "ally-mage-skill", name: "火球", kind: "damage", value: 15, energyCost: 20 } },
+        { id: "ally-priest", name: "牧师", position: "back", maxHp: 40, attack: 4, speed: 6, energyMax: 20, skill: { id: "ally-priest-skill", name: "治疗", kind: "heal", value: 10, energyCost: 20 } },
+        { id: "enemy-tank", name: "骷髅", position: "front", maxHp: 60, attack: 6, speed: 8, energyMax: 20, skill: { id: "enemy-tank-skill", name: "爪击", kind: "damage", value: 12, energyCost: 20 } },
+        { id: "enemy-mage", name: "巫妖", position: "mid", maxHp: 45, attack: 9, speed: 7, energyMax: 20, skill: { id: "enemy-mage-skill", name: "暗影", kind: "damage", value: 15, energyCost: 20 } },
+        { id: "enemy-shaman", name: "萨满", position: "back", maxHp: 40, attack: 4, speed: 6, energyMax: 20, skill: { id: "enemy-shaman-skill", name: "妖术", kind: "damage", value: 8, energyCost: 20 } },
+    ],
+    lineups: {
+        ally: ["ally-tank", "ally-mage", "ally-priest"],
+        enemy: ["enemy-tank", "enemy-mage", "enemy-shaman"],
     },
     energyGainAttacker: 10,
     energyGainTarget: 5,
