@@ -40,6 +40,23 @@ async function bridgeResult(bridge: MailboxBridge, method: string, params: Recor
     };
 }
 
+/**
+ * 截图目标文档归一化：编辑器侧 capture_preview 只消费 `doc`（组件名），
+ * 不传 `doc` 时回退截当前活动文档（App.activeDoc）——历史事故根因是调用方
+ * 传 `component` 被静默忽略。此处把 `component` 归一到 `doc`：两者都不传时
+ * 保持原样（按活动文档截图，与规格一致）。
+ */
+export function normalizeCaptureParams(params: Record<string, unknown>): Record<string, unknown> {
+    if (params["doc"] !== undefined) {
+        return params;
+    }
+    const component = params["component"];
+    if (component === undefined) {
+        return params;
+    }
+    return { ...params, doc: component };
+}
+
 /** 读工具集：包/资源/依赖/发布配置/活动上下文 走编辑器桥；validate 走 fgui CLI。 */
 export const READ_TOOLS: Record<string, { description: string; run: (bridge: MailboxBridge, params: Record<string, unknown>) => Promise<ToolResult> }> = {
     fgui_list_packages: {
@@ -271,8 +288,9 @@ export const WRITE_TOOLS: Record<string, { description: string; run: (bridge: Ma
     fgui_capture_preview: {
         description:
             "截图采集（FairyGUI 官方路径：GetScreenShot + ImageConversion.EncodeToPNG），返回 PNG 路径供 visual-verifier 视觉核对（mode=fgui）。" +
+            "参数: package、可选 doc/component（目标文档组件名，component 自动归一到 doc）；两者都不传时截当前活动文档（App.activeDoc）。" +
             "编辑器不可达/截图失败返回结构化错误，不产生半截图像。",
-        run: (bridge, params) => bridgeResult(bridge, "capture_preview", params),
+        run: (bridge, params) => bridgeResult(bridge, "capture_preview", normalizeCaptureParams(params)),
     },
     fgui_open_component: {
         description:

@@ -1148,7 +1148,10 @@ export function createCapturePreviewHandler(server: import("./server").MailboxSe
 
         const doCapture = (): void => {
             try {
-                const docArg = params["doc"] as string | undefined;
+                // 目标文档：优先 doc，兼容 component（调用方按其它工具习惯传 component）。
+                // 两者都不传时回退截 App.activeDoc——调用方应校验返回的 doc 与目标一致。
+                const docArg = (params["doc"] as string | undefined)
+                    ?? (params["component"] as string | undefined);
                 let activeDoc: any = App.activeDoc;
                 if (docArg) {
                     const pkg = project.GetPackageByName(params["package"] as string ?? "Demo");

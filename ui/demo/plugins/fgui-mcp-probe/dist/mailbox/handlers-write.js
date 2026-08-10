@@ -1139,7 +1139,8 @@ function createCapturePreviewHandler(server) {
         const outPng = `${outDir}/capture_${Date.now()}.png`;
         const doCapture = () => {
             try {
-                const docArg = params["doc"];
+                const docArg = params["doc"]
+                    ?? params["component"];
                 let activeDoc = App.activeDoc;
                 if (docArg) {
                     const pkg = project.GetPackageByName(params["package"] ?? "Demo");
