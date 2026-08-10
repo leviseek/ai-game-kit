@@ -15,6 +15,9 @@ export interface AutoBattleUnitView {
     readonly energyMax: number;
 }
 
+/** 观战加速挡位：只改变驱动节拍，不改变战斗结果。 */
+export type AutoBattleSpeed = 1 | 2 | 3;
+
 /** 战场页 ViewModel：从战斗状态与事件日志派生的纯呈现数据。 */
 export interface AutoBattleViewModel {
     readonly round: number;
@@ -22,11 +25,15 @@ export interface AutoBattleViewModel {
     readonly units: readonly AutoBattleUnitView[];
     readonly log: readonly string[];
     readonly result: "win" | "lose" | undefined;
+    /** 当前观战加速挡位。 */
+    readonly speed: AutoBattleSpeed;
 }
 
-/** 战场页绑定命令：重开，由调用方注入战斗操作。 */
+/** 战场页绑定命令：重开与挡位切换，由调用方注入战斗/驱动操作。 */
 export interface AutoBattleCommands {
     restart(): void;
+    /** 循环切换加速挡位（1x → 2x → 3x → 1x）。 */
+    cycleSpeed(): void;
 }
 
 /** 单位运行时快照 → 页面呈现数据。 */
@@ -45,12 +52,14 @@ function toUnitView(unit: AutoBattleUnitState): AutoBattleUnitView {
 export function createAutoBattleViewModel(
     state: AutoBattleState,
     log: readonly string[],
+    speed: AutoBattleSpeed,
 ): AutoBattleViewModel {
     return {
         round: state.round,
         units: state.units.map(toUnitView),
         log,
         result: state.result,
+        speed,
     };
 }
 
@@ -113,7 +122,13 @@ export function createAutoBattleBindings(
             get: (vm) =>
                 vm.result === "win" ? "胜利" : vm.result === "lose" ? "战败" : "",
         },
+        {
+            kind: "text",
+            node: "txt_speed",
+            get: (vm) => `x${vm.speed}`,
+        },
         { kind: "command", node: "btn_restart", run: () => commands.restart() },
+        { kind: "command", node: "btn_speed", run: () => commands.cycleSpeed() },
     ];
 
     for (let index = 0; index < 6; index += 1) {

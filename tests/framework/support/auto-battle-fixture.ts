@@ -85,9 +85,13 @@ export interface AutoBattleState {
     readonly units: readonly AutoBattleUnitState[];
 }
 
+export type AutoBattleSpeed = 1 | 2 | 3;
+
 export interface AutoBattleClock {
     now(): number;
     advance(milliseconds: number): void;
+    readonly timeScale: number;
+    setTimeScale(rate: number): void;
 }
 
 export interface AutoBattleFixtureOptions {
@@ -120,6 +124,10 @@ export interface AutoBattleFixtureHooks {
         readonly ally: readonly AutoBattleUnit[];
         readonly enemy: readonly AutoBattleUnit[];
     };
+    /** 当前观战加速挡位（1x/2x/3x）。 */
+    readonly speed: AutoBattleSpeed;
+    /** 循环切换加速挡位并同步模拟时钟倍率。 */
+    cycleSpeed(): void;
     readonly navigator: UiNavigator;
     readonly viewModel: {
         readonly node: (name: string) => AutoBattleViewNode;

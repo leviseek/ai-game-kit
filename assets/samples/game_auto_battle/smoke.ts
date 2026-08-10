@@ -118,6 +118,9 @@ export async function runAutoBattleSmoke(
             restart: () => {
                 fixture.battle.restart();
             },
+            cycleSpeed: () => {
+                fixture.cycleSpeed();
+            },
         }),
     });
 
@@ -128,7 +131,9 @@ export async function runAutoBattleSmoke(
         const log = fixture.battle.events.map((event) =>
             formatAutoBattleEvent(event, nameOf),
         );
-        renderer.setViewModel(createAutoBattleViewModel(state, log));
+        renderer.setViewModel(
+            createAutoBattleViewModel(state, log, fixture.speed),
+        );
     };
 
     render();
@@ -152,6 +157,18 @@ export async function runAutoBattleSmoke(
         `round=${endState.round} result=${endState.result ?? "none"}`,
     );
 
+    // 挡位切换：cycleSpeed 循环到 2x 并同步时钟倍率，状态文本随 VM 刷新。
+    // 经夹具内存渲染器显式刷新，保证真实 fgui 与回退路径都能断言状态文本。
+    const firstResult = endState.result;
+    fixture.cycleSpeed();
+    fixture.viewModel.render();
+    const speedNode = fixture.viewModel.node("txt_speed").text;
+    report(
+        "speed-cycle",
+        fixture.speed === 2 && speedNode === "x2",
+        `speed=${fixture.speed} txt=${speedNode ?? "none"}`,
+    );
+
     // 重开重置
     fixture.battle.restart();
     render();
@@ -163,6 +180,19 @@ export async function runAutoBattleSmoke(
                 (unit) => unit.hp === unit.maxHp && unit.energy === 0,
             ),
         `round=${restartState.round}`,
+    );
+
+    // 切换挡位后重开驱动到终局：结果与首次终局一致（挡位不改变战斗结果）
+    let rerunGuard = 0;
+    while (fixture.battle.state.phase === "fighting" && rerunGuard < 1000) {
+        fixture.battle.tick();
+        rerunGuard += 1;
+    }
+    const rerunState = fixture.battle.state;
+    report(
+        "speed-result-unchanged",
+        rerunState.phase === "over" && rerunState.result === firstResult,
+        `speed=${fixture.speed} result=${rerunState.result ?? "none"}`,
     );
 
     await fixture.dispose();

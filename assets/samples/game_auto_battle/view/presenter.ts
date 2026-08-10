@@ -13,8 +13,10 @@ import {
 /**
  * 自动战斗战场呈现器：把 auto_battle 夹具战斗状态绑定到 BattleView 节点。
  * 固定节拍驱动模拟时钟前进并逐行动 tick（每 tick 一个行动），然后按当前
- * 状态与事件日志重渲染；战斗终局后停止 tick（页面保留终局画面）。dispose
- * 清理渲染器与时钟驱动。
+ * 状态与事件日志重渲染；战斗终局后停止 tick（页面保留终局画面）。挡位只
+ * 改变驱动节拍：按当前倍率放大模拟时间推进量与每节拍的 tick 次数，不改
+ * tick 内容与战斗结果；挡位状态以夹具为准（fixture.speed/cycleSpeed）。
+ * dispose 清理渲染器与时钟驱动。
  */
 export function createAutoBattlePresenter(
     fixture: GameFixture,
@@ -32,6 +34,11 @@ export function createAutoBattlePresenter(
                 autoBattle.battle.restart();
                 render();
             },
+            cycleSpeed: () => {
+                // 挡位切换委派夹具（内部循环并同步时钟倍率），随后刷新挡位文本
+                autoBattle.cycleSpeed();
+                render();
+            },
         } satisfies AutoBattleCommands),
     });
 
@@ -42,17 +49,22 @@ export function createAutoBattlePresenter(
         const log = autoBattle.battle.events.map((event) =>
             formatAutoBattleEvent(event, nameOf),
         );
-        renderer.setViewModel(createAutoBattleViewModel(state, log));
+        renderer.setViewModel(
+            createAutoBattleViewModel(state, log, autoBattle.speed),
+        );
     }
 
     // 固定节拍驱动模拟时钟前进并按当前状态刷新页面；终局后不再推进行动，
-    // 只保留渲染（与冒烟的手动 tick 驱动对齐，渲染永远基于不可变 state 快照）
+    // 只保留渲染（与冒烟的手动 tick 驱动对齐，渲染永远基于不可变 state 快照）。
+    // 挡位放大每节拍的模拟时间与行动数：x2/x3 下同节拍推进更多行动。
     timer = setInterval(() => {
         const now = Date.now();
-        autoBattle.clock.advance(now - lastTick);
+        autoBattle.clock.advance((now - lastTick) * autoBattle.speed);
         lastTick = now;
         if (autoBattle.battle.state.phase === "fighting") {
-            autoBattle.battle.tick();
+            for (let index = 0; index < autoBattle.speed; index += 1) {
+                autoBattle.battle.tick();
+            }
         }
         render();
     }, 100);

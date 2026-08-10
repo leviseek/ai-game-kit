@@ -33,7 +33,11 @@ import {
     createAutoBattleViewModel,
     formatAutoBattleEvent,
     type AutoBattleCommands,
+    type AutoBattleSpeed,
 } from "./view/view";
+
+/** 挡位循环次序：1x → 2x → 3x → 1x（与 presenter 共用同一循环语义）。 */
+const SPEED_CYCLE: readonly AutoBattleSpeed[] = [1, 2, 3];
 
 /** 缺省自动战斗配置：3v3 阵列与能量规则在夹具层内建，测试可注入覆盖。 */
 const DEFAULT_AUTO_BATTLE_CONFIG_CONTENT: Record<string, unknown> = {
@@ -112,6 +116,10 @@ export interface AutoBattleFixture extends GameFixture {
         readonly ally: readonly AutoBattleUnit[];
         readonly enemy: readonly AutoBattleUnit[];
     };
+    /** 当前观战加速挡位（1x/2x/3x），只改变驱动节拍。 */
+    readonly speed: AutoBattleSpeed;
+    /** 循环切换加速挡位并同步模拟时钟倍率。 */
+    cycleSpeed(): void;
     /** UI 导航器：route 打开/关闭。 */
     readonly navigator: UiNavigator;
     /**
@@ -144,6 +152,14 @@ export function createAutoBattleFixture(
         },
     });
     const navigator: UiNavigator = createUiNavigator();
+
+    // 观战加速挡位：夹具持当前挡位并联动时钟倍率，测试经 cycleSpeed 驱动
+    let speed: AutoBattleSpeed = 1;
+    const cycleSpeed = (): void => {
+        const nextIndex = (SPEED_CYCLE.indexOf(speed) + 1) % SPEED_CYCLE.length;
+        speed = SPEED_CYCLE[nextIndex] as AutoBattleSpeed;
+        clock.setTimeScale(speed);
+    };
 
     const modules: Module[] = [
         createAutoBattleClockModule(clock),
@@ -182,6 +198,9 @@ export function createAutoBattleFixture(
             restart: () => {
                 battle.restart();
             },
+            cycleSpeed: () => {
+                cycleSpeed();
+            },
         } satisfies AutoBattleCommands),
     });
 
@@ -204,6 +223,10 @@ export function createAutoBattleFixture(
             ally: config.ally,
             enemy: config.enemy,
         },
+        get speed(): AutoBattleSpeed {
+            return speed;
+        },
+        cycleSpeed,
         navigator,
         viewModel: {
             node: ensureViewNode,
@@ -216,7 +239,7 @@ export function createAutoBattleFixture(
                     formatAutoBattleEvent(event, nameOf),
                 );
                 viewModelRenderer.setViewModel(
-                    createAutoBattleViewModel(state, log),
+                    createAutoBattleViewModel(state, log, speed),
                 );
             },
         },
