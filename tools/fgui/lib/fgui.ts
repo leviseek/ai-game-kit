@@ -590,6 +590,17 @@ export function validateComponentSemantics(
                     });
                     continue;
                 }
+                // 跨包引用只允许指向 Common 系通用资源包；业务包互引或指向官方库
+                // Basic/Builder 均违规，直接报错避免继续做资源定位产生噪音
+                const isCommon =
+                    crossPkg.name === "Common" || crossPkg.name.startsWith("Common_");
+                if (!isCommon) {
+                    issues.push({
+                        severity: "error",
+                        message: `list "${node.attrs.name ?? ""}" 的 defaultItem "${defaultItem}" 跨包引用仅允许指向 Common 包（当前指向 "${crossPkg.name}"）`,
+                    });
+                    continue;
+                }
                 targetPkg = crossPkg;
                 resId = target.slice(crossPkg.id.length);
             }

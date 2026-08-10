@@ -88,6 +88,9 @@ export function createLineupEditorPresenter(
         renderer.setViewModel(vm);
         if (candidateList !== undefined) {
             candidateList.setItems(vm.candidates);
+            // 内容变化需重绘 deployed 标记：候选长度常不变（点击仅翻转单项状态），
+            // 长度相同时 numItems setter 可能短路，显式 refresh 保证 itemRenderer 重跑
+            candidateList.refresh();
         }
     }
 

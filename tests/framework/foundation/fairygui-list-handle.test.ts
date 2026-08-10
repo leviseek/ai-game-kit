@@ -18,12 +18,14 @@ interface FairyGuiListHandle<T> {
     setItems(items: readonly T[]): void;
     setItemRenderer(renderer: (view: FairyGuiListItemView<T>) => void): void;
     setItemClick(handler: (index: number, item: T) => void): void;
+    refresh(): void;
 }
 
 interface FairyGuiListLike {
     name: string;
     itemRenderer: ((index: number, obj: unknown) => void) | null;
     numItems: number;
+    refreshVirtualList: () => void;
 }
 
 // ---- Adapter 契约（红期锁定，实现必须匹配）----
@@ -50,14 +52,18 @@ async function loadFactory(): Promise<FairyGuiListHandleExports> {
     return exports as FairyGuiListHandleExports;
 }
 
-/** 记录型 GList：暴露最小运行时（itemRenderer/numItems），手动驱动渲染。 */
+/** 记录型 GList：暴露最小运行时（itemRenderer/numItems/refreshVirtualList），手动驱动渲染。 */
 function createListRecorder() {
     const list: FairyGuiListLike = {
         name: "candidate_list",
         itemRenderer: null,
         numItems: 0,
+        refreshVirtualList() {
+            refreshVirtualListCalls += 1;
+        },
     };
     const renderedCalls: Array<{ index: number; obj: unknown }> = [];
+    let refreshVirtualListCalls = 0;
     return {
         list,
         // 由测试手动驱动渲染（模拟 fgui 对可视项调用 itemRenderer）
@@ -67,6 +73,9 @@ function createListRecorder() {
         },
         get renderedCount(): number {
             return renderedCalls.length;
+        },
+        get refreshVirtualListCalls(): number {
+            return refreshVirtualListCalls;
         },
     };
 }
@@ -105,6 +114,19 @@ describe("FairyGuiListHandle", () => {
         expect(list.numItems).toBe(3);
         handle.setItems([]);
         expect(list.numItems).toBe(0);
+    });
+
+    test("refresh forces re-render via refreshVirtualList", async () => {
+        const factory = await loadFactory();
+        const recorder = createListRecorder();
+        const handle = factory.createFairyGuiListHandle!(recorder.list);
+
+        handle.setItems(["a"]);
+        expect(recorder.refreshVirtualListCalls).toBe(0);
+        handle.refresh();
+        expect(recorder.refreshVirtualListCalls).toBe(1);
+        handle.refresh();
+        expect(recorder.refreshVirtualListCalls).toBe(2);
     });
 
     test("itemRenderer renders each visible item with dynamic index", async () => {

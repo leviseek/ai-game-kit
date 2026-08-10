@@ -62,6 +62,9 @@ export function createFairyGuiListHandle<T>(list: GList): FairyGuiListHandle<T> 
         setItemClick(next: (index: number, item: T) => void): void {
             clickHandler = next;
         },
+        refresh(): void {
+            list.refreshVirtualList();
+        },
     };
 }
 

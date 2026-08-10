@@ -69,6 +69,7 @@ function recordingListHandle(): {
             state.itemClick =
                 handler as (index: number, item: { heroId: string; deployed: boolean }) => void;
         },
+        refresh: () => {},
     };
     return {
         get itemClick() {
@@ -121,6 +122,7 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)(
                 },
                 setItemRenderer: () => {},
                 setItemClick: () => {},
+                refresh: () => {},
             };
             const list = (name: string) =>
                 name === "candidate_list" ? candidateList : undefined;

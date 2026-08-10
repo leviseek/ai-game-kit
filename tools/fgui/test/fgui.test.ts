@@ -398,6 +398,33 @@ describe("validateComponentSemantics", () => {
         }
     });
 
+    test("list defaultItem 跨包指向非 Common 包报 error", () => {
+        const dir = mkdtempSync(join(tmpdir(), "fgui-sem-cross-biz-"));
+        try {
+            writeFileSync(join(dir, "demo.fairy"), `<?xml version="1.0" encoding="utf-8"?>\n<projectDescription id="t" type="CocosCreator" version="5.0"/>`);
+            const demoDir = join(dir, "assets", "Demo");
+            const battleDir = join(dir, "assets", "Battle");
+            mkdirSync(demoDir, { recursive: true });
+            mkdirSync(battleDir, { recursive: true });
+            writeFileSync(join(demoDir, "package.xml"), `<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="testid"><resources><component id="aa11" name="A.xml" path="/" exported="true"/></resources></packageDescription>`);
+            writeFileSync(join(demoDir, "A.xml"), `<?xml version="1.0" encoding="utf-8"?>
+<component size="200,300">
+  <displayList>
+    <list id="n1" name="list" defaultItem="ui://btl00001com04" overflow="scroll" selectionMode="single"/>
+  </displayList>
+</component>`);
+            writeFileSync(join(battleDir, "package.xml"), `<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="btl00001"><resources><component id="com04" name="CandidateItem.xml" path="/" exported="true"/></resources></packageDescription>`);
+            writeFileSync(join(battleDir, "CandidateItem.xml"), `<?xml version="1.0" encoding="utf-8"?>\n<component size="280,54"><displayList/></component>`);
+            const project = locateProject(dir);
+            const pkg = readPackage(project, "Demo");
+            const comp = readComponent(project, "Demo", "A.xml");
+            const errors = validateComponentSemantics(project, pkg, comp).filter((i) => i.severity === "error");
+            expect(errors.some((i) => i.message.includes("仅允许指向 Common"))).toBe(true);
+        } finally {
+            rmSync(dir, { recursive: true, force: true });
+        }
+    });
+
     test("合法 relation sidePair 通过", () => {
         const { project, pkg, comp } = setupFixture(`<?xml version="1.0" encoding="utf-8"?>
 <component size="200,200">
