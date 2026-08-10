@@ -113,6 +113,11 @@ export type {
 } from "./contracts/ui/ViewModel";
 
 export type {
+    FairyGuiListItemView,
+    FairyGuiListHandle,
+} from "./contracts/ui/List";
+
+export type {
     ViewModelRenderer,
     ViewModelRendererOptions,
 } from "./core/ui/ViewModelRenderer";
