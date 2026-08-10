@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <packageDescription id="abpk0001">
   <resources>
+    <component id="ab003" name="BattlefieldUnitsCom.xml" path="/" exported="true"/>
     <image id="slt00" name="formation_slot.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
     <image id="pnl00" name="panel_lineup_bg.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
     <component id="ab002" name="LineupEditorView.xml" path="/" exported="true"/>

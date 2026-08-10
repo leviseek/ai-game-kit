@@ -4,106 +4,13 @@
     <image id="ab_bg" name="bg_battle" src="ab000" fileName="img/bg_battle.png" xy="0,0" size="1280,720">
       <relation target="" sidePair="width-width,height-height"/>
     </image>
-    <text id="ab_txt_enemy_0_name" name="txt_unit_6_name" xy="20,60" size="220,20" group="ab_unit_3" fontSize="16" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="骷髅"/>
-    <text id="ab_txt_enemy_0_hp" name="txt_unit_6_hp" xy="20,82" size="220,16" group="ab_unit_3" fontSize="14" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="HP 60/60"/>
-    <component id="ab_bar_enemy_0_hp" name="bar_unit_6_hp" src="com02" fileName="CommonProgressBarHp.xml" pkg="cmn00001" xy="20,100" size="220,14" group="ab_unit_3">
-      <ProgressBar value="100" max="100"/>
-    </component>
-    <component id="ab_bar_enemy_0_energy" name="bar_unit_6_energy" src="com01" fileName="CommonProgressBar.xml" pkg="cmn00001" xy="20,116" size="220,12" group="ab_unit_3">
-      <ProgressBar value="100" max="100"/>
-    </component>
-    <text id="ab_txt_enemy_1_name" name="txt_unit_7_name" xy="20,132" size="220,20" group="ab_unit_4" fontSize="16" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="巫妖"/>
-    <text id="ab_txt_enemy_1_hp" name="txt_unit_7_hp" xy="20,154" size="220,16" group="ab_unit_4" fontSize="14" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="HP 45/45"/>
-    <component id="ab_bar_enemy_1_hp" name="bar_unit_7_hp" src="com02" fileName="CommonProgressBarHp.xml" pkg="cmn00001" xy="20,172" size="220,14" group="ab_unit_4">
-      <ProgressBar value="100" max="100"/>
-    </component>
-    <component id="ab_bar_enemy_1_energy" name="bar_unit_7_energy" src="com01" fileName="CommonProgressBar.xml" pkg="cmn00001" xy="20,188" size="220,12" group="ab_unit_4">
-      <ProgressBar value="100" max="100"/>
-    </component>
-    <text id="ab_txt_enemy_2_name" name="txt_unit_8_name" xy="20,204" size="220,20" group="ab_unit_5" fontSize="16" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="萨满"/>
-    <text id="ab_txt_enemy_2_hp" name="txt_unit_8_hp" xy="20,226" size="220,16" group="ab_unit_5" fontSize="14" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="HP 40/40"/>
-    <component id="ab_bar_enemy_2_hp" name="bar_unit_8_hp" src="com02" fileName="CommonProgressBarHp.xml" pkg="cmn00001" xy="20,244" size="220,14" group="ab_unit_5">
-      <ProgressBar value="100" max="100"/>
-    </component>
-    <component id="ab_bar_enemy_2_energy" name="bar_unit_8_energy" src="com01" fileName="CommonProgressBar.xml" pkg="cmn00001" xy="20,260" size="220,12" group="ab_unit_5">
-      <ProgressBar value="100" max="100"/>
+    <component id="ab_units_container" name="container_units" src="ab003" fileName="BattlefieldUnitsCom.xml" xy="0,0" size="1280,500">
+      <relation target="" sidePair="width-width"/>
     </component>
     <text id="ab_round" name="txt_round" xy="440,24" size="400,40" fontSize="28" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="第 1 回合">
       <relation target="" sidePair="center-center"/>
     </text>
     <text id="ab_log" name="txt_log" xy="40,520" size="260,170" fontSize="16" color="#cccccc" autoSize="none" text="战斗开始&#xA;等待行动..."/>
-    <text id="ab_txt_ally_0_name" name="txt_unit_0_name" xy="1040,60" size="220,20" group="ab_unit_0" fontSize="16" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="坦克"/>
-    <text id="ab_txt_ally_0_hp" name="txt_unit_0_hp" xy="1040,82" size="220,16" group="ab_unit_0" fontSize="14" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="HP 60/60"/>
-    <component id="ab_bar_ally_0_hp" name="bar_unit_0_hp" src="com02" fileName="CommonProgressBarHp.xml" pkg="cmn00001" xy="1040,100" size="220,14" group="ab_unit_0">
-      <ProgressBar value="100" max="100"/>
-    </component>
-    <component id="ab_bar_ally_0_energy" name="bar_unit_0_energy" src="com01" fileName="CommonProgressBar.xml" pkg="cmn00001" xy="1040,116" size="220,12" group="ab_unit_0">
-      <ProgressBar value="100" max="100"/>
-    </component>
-    <text id="ab_txt_ally_1_name" name="txt_unit_1_name" xy="1040,132" size="220,20" group="ab_unit_1" fontSize="16" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="法师"/>
-    <text id="ab_txt_ally_1_hp" name="txt_unit_1_hp" xy="1040,154" size="220,16" group="ab_unit_1" fontSize="14" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="HP 45/45"/>
-    <component id="ab_bar_ally_1_hp" name="bar_unit_1_hp" src="com02" fileName="CommonProgressBarHp.xml" pkg="cmn00001" xy="1040,172" size="220,14" group="ab_unit_1">
-      <ProgressBar value="100" max="100"/>
-    </component>
-    <component id="ab_bar_ally_1_energy" name="bar_unit_1_energy" src="com01" fileName="CommonProgressBar.xml" pkg="cmn00001" xy="1040,188" size="220,12" group="ab_unit_1">
-      <ProgressBar value="100" max="100"/>
-    </component>
-    <text id="ab_txt_ally_2_name" name="txt_unit_2_name" xy="1040,204" size="220,20" group="ab_unit_2" fontSize="16" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="牧师"/>
-    <text id="ab_txt_ally_2_hp" name="txt_unit_2_hp" xy="1040,226" size="220,16" group="ab_unit_2" fontSize="14" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="HP 40/40"/>
-    <component id="ab_bar_ally_2_hp" name="bar_unit_2_hp" src="com02" fileName="CommonProgressBarHp.xml" pkg="cmn00001" xy="1040,244" size="220,14" group="ab_unit_2">
-      <ProgressBar value="100" max="100"/>
-    </component>
-    <component id="ab_bar_ally_2_energy" name="bar_unit_2_energy" src="com01" fileName="CommonProgressBar.xml" pkg="cmn00001" xy="1040,260" size="220,12" group="ab_unit_2">
-      <ProgressBar value="100" max="100"/>
-    </component>
-    <text id="ab_txt_ally_3_name" name="txt_unit_3_name" xy="1040,276" size="220,20" group="ab_unit_6" fontSize="16" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="单位"/>
-    <text id="ab_txt_ally_3_hp" name="txt_unit_3_hp" xy="1040,298" size="220,16" group="ab_unit_6" fontSize="14" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="HP 0/0"/>
-    <component id="ab_bar_ally_3_hp" name="bar_unit_3_hp" src="com02" fileName="CommonProgressBarHp.xml" pkg="cmn00001" xy="1040,316" size="220,14" group="ab_unit_6">
-      <ProgressBar value="100" max="100"/>
-    </component>
-    <component id="ab_bar_ally_3_energy" name="bar_unit_3_energy" src="com01" fileName="CommonProgressBar.xml" pkg="cmn00001" xy="1040,332" size="220,12" group="ab_unit_6">
-      <ProgressBar value="100" max="100"/>
-    </component>
-    <text id="ab_txt_ally_4_name" name="txt_unit_4_name" xy="1040,348" size="220,20" group="ab_unit_7" fontSize="16" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="单位"/>
-    <text id="ab_txt_ally_4_hp" name="txt_unit_4_hp" xy="1040,370" size="220,16" group="ab_unit_7" fontSize="14" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="HP 0/0"/>
-    <component id="ab_bar_ally_4_hp" name="bar_unit_4_hp" src="com02" fileName="CommonProgressBarHp.xml" pkg="cmn00001" xy="1040,388" size="220,14" group="ab_unit_7">
-      <ProgressBar value="100" max="100"/>
-    </component>
-    <component id="ab_bar_ally_4_energy" name="bar_unit_4_energy" src="com01" fileName="CommonProgressBar.xml" pkg="cmn00001" xy="1040,404" size="220,12" group="ab_unit_7">
-      <ProgressBar value="100" max="100"/>
-    </component>
-    <text id="ab_txt_ally_5_name" name="txt_unit_5_name" xy="1040,420" size="220,20" group="ab_unit_8" fontSize="16" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="单位"/>
-    <text id="ab_txt_ally_5_hp" name="txt_unit_5_hp" xy="1040,442" size="220,16" group="ab_unit_8" fontSize="14" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="HP 0/0"/>
-    <component id="ab_bar_ally_5_hp" name="bar_unit_5_hp" src="com02" fileName="CommonProgressBarHp.xml" pkg="cmn00001" xy="1040,460" size="220,14" group="ab_unit_8">
-      <ProgressBar value="100" max="100"/>
-    </component>
-    <component id="ab_bar_ally_5_energy" name="bar_unit_5_energy" src="com01" fileName="CommonProgressBar.xml" pkg="cmn00001" xy="1040,476" size="220,12" group="ab_unit_8">
-      <ProgressBar value="100" max="100"/>
-    </component>
-    <text id="ab_txt_enemy_9_name" name="txt_unit_9_name" xy="20,276" size="220,20" group="ab_unit_9" fontSize="16" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="单位"/>
-    <text id="ab_txt_enemy_9_hp" name="txt_unit_9_hp" xy="20,298" size="220,16" group="ab_unit_9" fontSize="14" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="HP 0/0"/>
-    <component id="ab_bar_enemy_9_hp" name="bar_unit_9_hp" src="com02" fileName="CommonProgressBarHp.xml" pkg="cmn00001" xy="20,316" size="220,14" group="ab_unit_9">
-      <ProgressBar value="100" max="100"/>
-    </component>
-    <component id="ab_bar_enemy_9_energy" name="bar_unit_9_energy" src="com01" fileName="CommonProgressBar.xml" pkg="cmn00001" xy="20,332" size="220,12" group="ab_unit_9">
-      <ProgressBar value="100" max="100"/>
-    </component>
-    <text id="ab_txt_enemy_10_name" name="txt_unit_10_name" xy="20,348" size="220,20" group="ab_unit_10" fontSize="16" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="单位"/>
-    <text id="ab_txt_enemy_10_hp" name="txt_unit_10_hp" xy="20,370" size="220,16" group="ab_unit_10" fontSize="14" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="HP 0/0"/>
-    <component id="ab_bar_enemy_10_hp" name="bar_unit_10_hp" src="com02" fileName="CommonProgressBarHp.xml" pkg="cmn00001" xy="20,388" size="220,14" group="ab_unit_10">
-      <ProgressBar value="100" max="100"/>
-    </component>
-    <component id="ab_bar_enemy_10_energy" name="bar_unit_10_energy" src="com01" fileName="CommonProgressBar.xml" pkg="cmn00001" xy="20,404" size="220,12" group="ab_unit_10">
-      <ProgressBar value="100" max="100"/>
-    </component>
-    <text id="ab_txt_enemy_11_name" name="txt_unit_11_name" xy="20,420" size="220,20" group="ab_unit_11" fontSize="16" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="单位"/>
-    <text id="ab_txt_enemy_11_hp" name="txt_unit_11_hp" xy="20,442" size="220,16" group="ab_unit_11" fontSize="14" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="HP 0/0"/>
-    <component id="ab_bar_enemy_11_hp" name="bar_unit_11_hp" src="com02" fileName="CommonProgressBarHp.xml" pkg="cmn00001" xy="20,460" size="220,14" group="ab_unit_11">
-      <ProgressBar value="100" max="100"/>
-    </component>
-    <component id="ab_bar_enemy_11_energy" name="bar_unit_11_energy" src="com01" fileName="CommonProgressBar.xml" pkg="cmn00001" xy="20,476" size="220,12" group="ab_unit_11">
-      <ProgressBar value="100" max="100"/>
-    </component>
     <text id="ab_result" name="txt_result" xy="440,280" size="400,80" visible="false" fontSize="40" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="胜利"/>
     <component id="ab_restart" name="btn_restart" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="540,376" size="200,52">
       <Button title="重新开始" titleColor="#ffffff"/>
@@ -112,17 +19,5 @@
     <component id="ab_btn_speed" name="btn_speed" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="580,484" size="120,48">
       <Button title="x1" titleColor="#ffffff"/>
     </component>
-    <group id="ab_unit_3" name="unit_6" xy="20,60" size="220,70" advanced="true"/>
-    <group id="ab_unit_4" name="unit_7" xy="20,132" size="220,70" advanced="true"/>
-    <group id="ab_unit_5" name="unit_8" xy="20,204" size="220,70" advanced="true"/>
-    <group id="ab_unit_0" name="unit_0" xy="1040,60" size="220,70" advanced="true"/>
-    <group id="ab_unit_1" name="unit_1" xy="1040,132" size="220,70" advanced="true"/>
-    <group id="ab_unit_2" name="unit_2" xy="1040,204" size="220,70" advanced="true"/>
-    <group id="ab_unit_6" name="unit_3" xy="1040,276" size="220,70" advanced="true"/>
-    <group id="ab_unit_7" name="unit_4" xy="1040,348" size="220,70" advanced="true"/>
-    <group id="ab_unit_8" name="unit_5" xy="1040,420" size="220,70" advanced="true"/>
-    <group id="ab_unit_9" name="unit_9" xy="20,276" size="220,70" advanced="true"/>
-    <group id="ab_unit_10" name="unit_10" xy="20,348" size="220,70" advanced="true"/>
-    <group id="ab_unit_11" name="unit_11" xy="20,420" size="220,70" advanced="true"/>
   </displayList>
 </component>
