@@ -16,7 +16,7 @@ import {
  * 固定节拍驱动模拟时钟前进并逐行动 tick（每 tick 一个行动），然后按当前
  * 状态与事件日志重渲染；战斗终局后停止 tick（页面保留终局画面）。挡位只
  * 改变驱动节拍：按当前倍率放大模拟时间推进量与每节拍的 tick 次数，不改
- * tick 内容与战斗结果；挡位状态以夹具为准（fixture.speed/cycleSpeed）。
+ * tick 内容与战斗结果；挡位状态以夹具为准（fixture.getSpeed/cycleSpeed）。
  * dispose 清理渲染器与时钟驱动。
  */
 export function createAutoBattlePresenter(
@@ -35,7 +35,7 @@ export function createAutoBattlePresenter(
         },
         cycleSpeed: () => {
             // 挡位由 fixture 持有（唯一真相源）；presenter 不复制 speed——渲染与
-            // 驱动节拍统一读 fixture.speed，避免双源不同步
+            // 驱动节拍统一读 fixture.getSpeed()，避免双源不同步
             autoBattle.cycleSpeed();
             render();
         },
@@ -53,7 +53,7 @@ export function createAutoBattlePresenter(
         const log = autoBattle.battle.events.map((event) =>
             formatAutoBattleEvent(event, nameOf),
         );
-        const vm = createAutoBattleViewModel(state, log, autoBattle.speed);
+        const vm = createAutoBattleViewModel(state, log, autoBattle.getSpeed());
         renderer.setBindings(buildAutoBattleBindings(autoBattleCommands, vm));
         renderer.setViewModel(vm);
     }
@@ -62,10 +62,10 @@ export function createAutoBattlePresenter(
     // 挡位放大每节拍的模拟时间与行动数：x2/x3 下同节拍推进更多行动。
     timer = setInterval(() => {
         const now = Date.now();
-        autoBattle.clock.advance((now - lastTick) * autoBattle.speed);
+        autoBattle.clock.advance((now - lastTick) * autoBattle.getSpeed());
         lastTick = now;
         if (autoBattle.battle.state.phase === "fighting") {
-            for (let index = 0; index < autoBattle.speed; index += 1) {
+            for (let index = 0; index < autoBattle.getSpeed(); index += 1) {
                 autoBattle.battle.tick();
             }
         }

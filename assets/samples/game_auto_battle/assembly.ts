@@ -140,8 +140,10 @@ export interface AutoBattleFixture extends GameFixture {
         /** 英雄池（编队页候选来源）。 */
         readonly heroes: readonly AutoBattleHero[];
     };
-    /** 当前观战加速挡位（1x/2x/3x），只改变驱动节拍。 */
-    readonly speed: AutoBattleSpeed;
+    /** 当前观战加速挡位（1x/2x/3x），只改变驱动节拍。闭包方法而非 getter： */
+    /** Cocos 转译 `...base` 展开时经 Object.assign 固化顶层 getter 为 data 值， */
+    /** 方法引用不受影响，跨 Bun/Cocos 语义一致。 */
+    getSpeed(): AutoBattleSpeed;
     /** 循环切换加速挡位并同步模拟时钟倍率。 */
     cycleSpeed(): void;
     /** UI 导航器：route 打开/关闭。 */
@@ -269,7 +271,9 @@ export function createAutoBattleFixture(
         },
     };
 
-    // 观战加速挡位：夹具持当前挡位并联动时钟倍率，测试经 cycleSpeed 驱动
+    // 观战加速挡位：夹具持当前挡位并联动时钟倍率，测试经 cycleSpeed 驱动。
+    // 挡位经 getSpeed() 闭包方法读取而非顶层 getter：Cocos 转译 `...base` 展开
+    // 时经 Object.assign 固化顶层 getter 为 data 值，闭包方法引用不受影响。
     let speed: AutoBattleSpeed = clock.timeScale as AutoBattleSpeed;
     const cycleSpeed = (): void => {
         const nextIndex = (SPEED_CYCLE.indexOf(speed) + 1) % SPEED_CYCLE.length;
@@ -343,9 +347,7 @@ export function createAutoBattleFixture(
             enemy: config.enemy,
             heroes: config.heroes,
         },
-        get speed(): AutoBattleSpeed {
-            return speed;
-        },
+        getSpeed: (): AutoBattleSpeed => speed,
         cycleSpeed,
         navigator,
         viewModel: {

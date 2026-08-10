@@ -112,11 +112,11 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)(
 
             expect(view.nodes.get("btn_speed")?.text).toBe("x1");
             view.nodes.get("btn_speed")?.clickHandler?.();
-            expect(fixture.speed).toBe(2);
+            expect(fixture.getSpeed()).toBe(2);
             expect(view.nodes.get("btn_speed")?.text).toBe("x2");
 
             view.nodes.get("btn_speed")?.clickHandler?.();
-            expect(fixture.speed).toBe(3);
+            expect(fixture.getSpeed()).toBe(3);
             expect(view.nodes.get("btn_speed")?.text).toBe("x3");
 
             presenter.dispose();

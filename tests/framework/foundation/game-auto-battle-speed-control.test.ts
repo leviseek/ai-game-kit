@@ -67,19 +67,19 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)(
             const fixture = createAutoBattleFixture();
             await fixture.start();
 
-            expect(fixture.speed).toBe(1);
+            expect(fixture.getSpeed()).toBe(1);
             expect(fixture.clock.timeScale).toBe(1);
 
             fixture.cycleSpeed();
-            expect(fixture.speed).toBe(2);
+            expect(fixture.getSpeed()).toBe(2);
             expect(fixture.clock.timeScale).toBe(2);
 
             fixture.cycleSpeed();
-            expect(fixture.speed).toBe(3);
+            expect(fixture.getSpeed()).toBe(3);
             expect(fixture.clock.timeScale).toBe(3);
 
             fixture.cycleSpeed();
-            expect(fixture.speed).toBe(1);
+            expect(fixture.getSpeed()).toBe(1);
             expect(fixture.clock.timeScale).toBe(1);
 
             await fixture.dispose();

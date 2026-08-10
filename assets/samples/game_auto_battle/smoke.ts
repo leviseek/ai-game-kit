@@ -165,7 +165,7 @@ export async function runAutoBattleSmoke(
         const log = fixture.battle.events.map((event) =>
             formatAutoBattleEvent(event, nameOf),
         );
-        const vm = createAutoBattleViewModel(state, log, fixture.speed);
+        const vm = createAutoBattleViewModel(state, log, fixture.getSpeed());
         renderer.setBindings(
             buildAutoBattleBindings(
                 {
@@ -212,8 +212,8 @@ export async function runAutoBattleSmoke(
     const speedNode = fixture.viewModel.node("btn_speed").text;
     report(
         "speed-cycle",
-        fixture.speed === 2 && speedNode === "x2",
-        `speed=${fixture.speed} title=${speedNode ?? "none"}`,
+        fixture.getSpeed() === 2 && speedNode === "x2",
+        `speed=${fixture.getSpeed()} title=${speedNode ?? "none"}`,
     );
 
     // 重开重置
@@ -239,7 +239,7 @@ export async function runAutoBattleSmoke(
     report(
         "speed-result-unchanged",
         rerunState.phase === "over" && rerunState.result === firstResult,
-        `speed=${fixture.speed} result=${rerunState.result ?? "none"}`,
+        `speed=${fixture.getSpeed()} result=${rerunState.result ?? "none"}`,
     );
 
     await fixture.dispose();
