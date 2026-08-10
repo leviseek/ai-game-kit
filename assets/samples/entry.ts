@@ -6,9 +6,10 @@ import { createRpgFixture } from "./game_rpg/assembly";
 import { createTycoonFixture } from "./game_tycoon/assembly";
 import { createAutoBattleFixture } from "./game_auto_battle/assembly";
 import { createCardBattlePresenter } from "./game_card/view/presenter";
-import { createAutoBattlePresenter } from "./game_auto_battle/view/presenter";
+import { createLineupEditorPresenter } from "./game_auto_battle/view/lineup-presenter";
 import { runCardBattleSmoke } from "./game_card/smoke";
 import { runAutoBattleSmoke } from "./game_auto_battle/smoke";
+import { AUTO_BATTLE_UNIT_NODE_MAPPING } from "./game_auto_battle/view/unit-node-mapping";
 
 // samples bundle 顶层副作用：单点合并登记品类模块描述符，避免多文件各自
 // register 互相覆盖。各 game_*/assembly.ts 不自行 registerBundle。
@@ -23,10 +24,17 @@ registerBundle("samples", {
     },
     presenters: {
         card: createCardBattlePresenter,
-        auto_battle: createAutoBattlePresenter,
+        // auto_battle 进入先落编队页（编辑布阵），点"开始战斗"经会话导航切战场页
+        auto_battle: createLineupEditorPresenter,
     },
     smokes: {
         cardBattle: runCardBattleSmoke,
         autoBattle: runAutoBattleSmoke,
+    },
+    // 真实 fgui 页面节点映射：boot 装配层经 lookupBundle 运行时读取（不静态
+    // import game bundle，保持 boot 边界）；当前只有 auto_battle 战场需要
+    // 动态单位实例化
+    unitNodeMappings: {
+        auto_battle: AUTO_BATTLE_UNIT_NODE_MAPPING,
     },
 });

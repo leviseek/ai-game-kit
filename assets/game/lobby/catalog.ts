@@ -44,9 +44,9 @@ export const gameTypeCatalog: readonly GameTypeInfo[] = [
         title: "自动战斗",
         subtitle: "卡牌自动战斗",
         entry: {
-            route: "auto_battle/battle",
+            route: "auto_battle/lineup",
             packageName: "AutoBattle",
-            resName: "AutoBattleView",
+            resName: "LineupEditorView",
         },
         playable: true,
     },
@@ -69,4 +69,14 @@ export const LOBBY_LIST_ENTRY: GameEntryInfo = {
     route: "lobby/list",
     packageName: "Demo",
     resName: "LobbyView",
+};
+
+/**
+ * 自动战斗战场页入口：编队页点"开始战斗"后经会话内页面切换打开（进入品类
+ * 先落编队页编辑布阵，开战再切战场页）。
+ */
+export const AUTO_BATTLE_BATTLE_ENTRY: GameEntryInfo = {
+    route: "auto_battle/battle",
+    packageName: "AutoBattle",
+    resName: "AutoBattleView",
 };

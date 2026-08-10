@@ -15,6 +15,11 @@ export interface GameLobbyHost {
      * 句柄暴露真实页面的节点解析器，供 lobby 装配品类呈现器（ViewModelRenderer）。
      */
     openEntryPage(entry: GameEntryInfo): Promise<EntryPageHandle>;
+    /**
+     * 会话内切换到另一入口页：关闭当前入口页并释放其作用域，再打开新入口页
+     * （同一品类会话的多页面流程，如 auto_battle 编队页 → 战场页）。幂等。
+     */
+    switchEntryPage(entry: GameEntryInfo): Promise<EntryPageHandle>;
     /** 关闭入口页并释放会话作用域。重复关闭幂等。 */
     closeEntryPage(handle: EntryPageHandle): Promise<void>;
     /** 打开全局常驻页（列表页），持有于全局作用域，不占用会话槽位。 */

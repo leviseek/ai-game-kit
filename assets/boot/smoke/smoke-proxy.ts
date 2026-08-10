@@ -9,6 +9,7 @@ import {
 } from "../../framework";
 import { profiler } from "cc";
 import { createFairyGuiViewHandle } from "../../framework/adapters/cocos/ui/FairyGuiViewHandle";
+import { createDynamicComponentViewHandle } from "../../framework/adapters/cocos/ui/DynamicComponentViewHandle";
 import type { GameLobbyHostImpl } from "../host/GameLobbyHostImpl";
 import type { UiHost } from "../host/UiHost";
 import {
@@ -230,12 +231,24 @@ export class SmokeProxy {
         const search = typeof window === "undefined" ? "" : window.location.search;
         const rawScale = new URLSearchParams(search).get("scale");
         const scale = rawScale === null ? undefined : Number(rawScale);
+        // 战场动态单位映射经 samples bundle 运行时读取（boot 不静态 import game bundle）
+        const unitMapping = (
+            lookupBundle("samples") as {
+                readonly unitNodeMappings?: Readonly<Record<string, unknown>>;
+            }
+        )?.unitNodeMappings?.["auto_battle"];
         await smoke(
             this.uiHost,
             () => this.lobbyHost.ensureSharedUiDependencies(),
-            // 注入真实 fgui 渲染接缝：验证 AutoBattle/AutoBattleView 与 viewModel 节点名对齐
+            // 注入真实 fgui 渲染接缝：战场页动态单位按存活单位实例化 UnitSlot
             {
-                nodeResolver: (view) => createFairyGuiViewHandle(view as never),
+                nodeResolver: (view) =>
+                    unitMapping === undefined
+                        ? createFairyGuiViewHandle(view as never)
+                        : createDynamicComponentViewHandle(
+                              view as never,
+                              unitMapping as never,
+                          ),
                 scale: Number.isFinite(scale) ? (scale as number) : undefined,
             },
         );

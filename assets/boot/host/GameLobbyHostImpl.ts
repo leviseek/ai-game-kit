@@ -1,7 +1,8 @@
 import type { Logger, ResourceScope } from "../../framework";
-import type { IResourceProvider } from "../../framework";
+import { lookupBundle, type IResourceProvider } from "../../framework";
 import type { FairyGuiPageHandle } from "../../framework/adapters/cocos/ui/FairyGuiPageAdapter";
 import { createFairyGuiViewHandle } from "../../framework/adapters/cocos/ui/FairyGuiViewHandle";
+import { createDynamicComponentViewHandle } from "../../framework/adapters/cocos/ui/DynamicComponentViewHandle";
 import type { GameEntryInfo } from "../../game/lobby/catalog";
 import type {
     EntryPageHandle,
@@ -101,8 +102,22 @@ export class GameLobbyHostImpl implements GameLobbyHost {
         const navPage = navResult?.ok === true ? navResult.page : undefined;
 
         // 节点解析器：渲染器与游戏层只消费 ViewModelNode 契约，fgui 类型不出
-        // 组合根（design decision 7 边界）
-        const node = createFairyGuiViewHandle(page.view as never);
+        // 组合根（design decision 7 边界）。战场页（AutoBattleView）用品类动态
+        // 单位映射装配通用动态组件解析器——`unit_{id}` 系列节点运行时实例化
+        // UnitSlot。映射配置经 samples bundle 运行时读取（boot 不静态 import
+        // game bundle，维护 boot 边界）
+        const unitMapping = (
+            lookupBundle("samples") as {
+                readonly unitNodeMappings?: Readonly<Record<string, unknown>>;
+            }
+        )?.unitNodeMappings?.["auto_battle"];
+        const node =
+            entry.resName === "AutoBattleView" && unitMapping !== undefined
+                ? createDynamicComponentViewHandle(
+                      page.view as never,
+                      unitMapping as never,
+                  )
+                : createFairyGuiViewHandle(page.view as never);
 
         const handle: EntryPageHandle = {
             node,
@@ -114,6 +129,16 @@ export class GameLobbyHostImpl implements GameLobbyHost {
         this.lobbyPage = page;
         this.lobbyScope = scope;
         return handle;
+    }
+
+    /**
+     * GameLobbyHost.switchEntryPage：会话内切换到另一入口页——先关闭当前
+     * 页面（触发登记的退出联动前由调用方处理）并释放作用域，再打开新页建立
+     * 新作用域。供多页面品类（auto_battle 编队页 → 战场页）切换使用。
+     */
+    async switchEntryPage(entry: GameEntryInfo): Promise<EntryPageHandle> {
+        await this.closeEntryPage(undefined as unknown as EntryPageHandle);
+        return this.openEntryPage(entry);
     }
 
     /**

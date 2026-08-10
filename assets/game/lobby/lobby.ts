@@ -7,9 +7,11 @@ import {
 import type {
     GamePresenter,
     GamePresenterFactory,
+    GameSessionNavigator,
 } from "./presenter";
 import {
     gameTypeCatalog,
+    type GameEntryInfo,
     type GameTypeInfo,
 } from "./catalog";
 import type {
@@ -85,6 +87,52 @@ export function createGameLobby(
         return catalog.find((info) => info.id === id);
     }
 
+    /** 退出会话：释放呈现器、关闭入口页、释放夹具。幂等。 */
+    async function doExit(): Promise<void> {
+        const session = active;
+        if (session === undefined) {
+            return;
+        }
+        // 先清空活动会话，使 onClose 触发的重入 exit 直接返回（防互调循环）
+        active = undefined;
+
+        session.presenter?.dispose();
+        await host.closeEntryPage(session.page);
+        await session.fixture.dispose();
+    }
+
+    /**
+     * 会话内页面切换：供多页面品类（auto_battle 编队页 → 战场页）的呈现器经
+     * GameSessionNavigator 调用。顺序：先释放当前呈现器 → 解除活动身份（使旧页
+     * 关闭触发的"退出会话"联动因 active 不再指向本会话而跳过）→ 宿主切换入口页
+     * → 装配新呈现器 → 重建活动会话并登记新页退出联动。
+     */
+    async function switchEntry(
+        session: GameSession,
+        entry: GameEntryInfo,
+        presenterFactory: GamePresenterFactory,
+        navigate: GameSessionNavigator,
+    ): Promise<void> {
+        session.presenter?.dispose();
+        active = undefined;
+
+        const page = await host.switchEntryPage(entry);
+        const presenter = presenterFactory(session.fixture, page.node, navigate);
+        const next: GameSession = {
+            id: session.id,
+            fixture: session.fixture,
+            page,
+            presenter,
+        };
+        active = next;
+
+        page.onClose(() => {
+            if (active === next) {
+                void doExit();
+            }
+        });
+    }
+
     return {
         get active() {
             return active;
@@ -120,6 +168,21 @@ export function createGameLobby(
             const fixture = factory();
             await fixture.start();
 
+            // 会话内页面导航：多页面品类经呈现器切换入口页（如 auto_battle 编队 → 战场）。
+            // openEntry 延迟到微任务执行——呈现器工厂装配期间 active/装配尚未就绪，
+            // 立即执行会读到空会话而丢切换
+            const navigate: GameSessionNavigator = {
+                openEntry: (entry, presenterFactory) => {
+                    queueMicrotask(() => {
+                        const session = active;
+                        if (session === undefined) {
+                            return;
+                        }
+                        void switchEntry(session, entry, presenterFactory, navigate);
+                    });
+                },
+            };
+
             // 打开入口页：宿主在此建立会话资源作用域并装配真实页面
             const page = await host.openEntryPage(info.entry);
 
@@ -128,30 +191,23 @@ export function createGameLobby(
             const presenter =
                 presenterFactory === undefined
                     ? undefined
-                    : presenterFactory(fixture, page.node);
+                    : presenterFactory(fixture, page.node, navigate);
 
             const session: GameSession = { id, fixture, page, presenter };
             active = session;
 
-            // 页面关闭联动：导航关闭入口页时触发会话退出（幂等兜底）
+            // 页面关闭联动：导航关闭当前入口页时触发会话退出（幂等兜底）
             page.onClose(() => {
-                void this.exit();
+                if (active === session) {
+                    void doExit();
+                }
             });
 
             return session;
         },
 
         async exit(): Promise<void> {
-            const session = active;
-            if (session === undefined) {
-                return;
-            }
-            // 先清空活动会话，使 onClose 触发的重入 exit 直接返回（防互调循环）
-            active = undefined;
-
-            session.presenter?.dispose();
-            await host.closeEntryPage(session.page);
-            await session.fixture.dispose();
+            await doExit();
         },
     };
 }
