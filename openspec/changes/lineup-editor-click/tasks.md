@@ -30,14 +30,14 @@
 - [x] 5.2 绑定声明演进：从预置 `2*MAX_TEAM_SIZE` 槽位 + visible 显隐，演进为按网格存活单位动态装配 UnitSlot 实例（节点名 `unit_{id}`，位置经 `setXY` 写入）；同步更新绑定声明、fixture `viewNodes` 记录型节点
 - [x] 5.3 编队页 VM 与命令绑定：候选英雄区 + 布阵区呈现、点击填充/替换/卸下命令接线、持久化触发
 - [x] 5.4 `assembly.ts` 接线：编队 → 开战 → 布阵区格 → 动态装配 UnitSlot；fixture 暴露 lineup / lineupStore 能力钩子
-- [ ] 5.5 冒烟与截图更新：`?smoke=auto-battle` 链路验证编队→开战→动态渲染；AutoBattleView/LineupEditorView 截图核对
+- [x] 5.5 冒烟与截图更新：`?smoke=auto-battle` 链路验证编队→开战→动态渲染；AutoBattleView/LineupEditorView 截图核对
 
 ## 6. 测试与验证
 
-- [ ] 6.1 覆盖三个 delta spec 场景的测试：`auto-battle-lineup-editor`（池/可变编队/持久化/开战）、`auto-battle-battlefield-layout`（网格/布阵区/动态实例化）、`auto-battle-playable`（lineup 实例化/动态绑定）
-- [ ] 6.2 既有测试收敛：teams 兼容读取器测试保留或标注 deprecated；确认无回归
-- [ ] 6.3 类型检查 / lint / 相关单测 / 冒烟全绿
+- [x] 6.1 覆盖三个 delta spec 场景的测试：`auto-battle-lineup-editor`（池/可变编队/持久化/开战）、`auto-battle-battlefield-layout`（网格/布阵区/动态实例化）、`auto-battle-playable`（lineup 实例化/动态绑定）
+- [x] 6.2 既有测试收敛：teams 兼容读取器测试保留或标注 deprecated；确认无回归
+- [x] 6.3 类型检查 / lint / 相关单测 / 冒烟全绿
 
 ## 7. ADR 检查
 
-- [ ] 7.1 ADR 检查：本 change 落地编队 + 战场模型边界（HeroPool/Lineup、MapGrid/布阵区、MAX_TEAM_SIZE 语义、UnitSlot 契约、持久化 schema 兼容 09），按 `doc/decisions/ADR-NNN-<slug>.md` 约定落档 ADR-026（lineup-data-model）
+- [x] 7.1 ADR 检查：本 change 落地编队 + 战场模型边界（HeroPool/Lineup、MapGrid/布阵区、MAX_TEAM_SIZE 语义、UnitSlot 契约、持久化 schema 兼容 09），按 `doc/decisions/ADR-NNN-<slug>.md` 约定落档 ADR-026（lineup-data-model）
