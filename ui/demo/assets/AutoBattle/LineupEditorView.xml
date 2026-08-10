@@ -33,6 +33,15 @@
     <component id="lineup_slot_button_5" name="slot_5" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="575,315" size="180,150" alpha="0">
       <Button title="" titleColor="#ffffff"/>
     </component>
+    <component id="lineup_slot_button_6" name="slot_6" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="175,485" size="180,150" alpha="0">
+      <Button title="" titleColor="#ffffff"/>
+    </component>
+    <component id="lineup_slot_button_7" name="slot_7" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="375,485" size="180,150" alpha="0">
+      <Button title="" titleColor="#ffffff"/>
+    </component>
+    <component id="lineup_slot_button_8" name="slot_8" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="575,485" size="180,150" alpha="0">
+      <Button title="" titleColor="#ffffff"/>
+    </component>
     <image id="lineup_slot_selected_0" name="slot_selected_0" src="slt00" fileName="img/formation_slot.png" xy="175,145" size="180,150" visible="false" alpha="0.65" color="#4a90e2" touchable="false"/>
     <image id="lineup_slot_selected_1" name="slot_selected_1" src="slt00" fileName="img/formation_slot.png" xy="375,145" size="180,150" visible="false" alpha="0.65" color="#4a90e2" touchable="false"/>
     <image id="lineup_slot_selected_2" name="slot_selected_2" src="slt00" fileName="img/formation_slot.png" xy="575,145" size="180,150" visible="false" alpha="0.65" color="#4a90e2" touchable="false"/>
@@ -51,30 +60,7 @@
     <text id="lineup_slot_name_6" name="txt_slot_6_name" xy="190,538" size="150,44" touchable="false" fontSize="20" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text=""/>
     <text id="lineup_slot_name_7" name="txt_slot_7_name" xy="390,538" size="150,44" touchable="false" fontSize="20" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text=""/>
     <text id="lineup_slot_name_8" name="txt_slot_8_name" xy="590,538" size="150,44" touchable="false" fontSize="20" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text=""/>
-    <component id="lineup_candidate_0" name="candidate_0" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="940,140" size="280,54">
-      <Button title="" titleColor="#ffffff"/>
-    </component>
-    <component id="lineup_candidate_1" name="candidate_1" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="940,206" size="280,54">
-      <Button title="" titleColor="#ffffff"/>
-    </component>
-    <component id="lineup_candidate_2" name="candidate_2" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="940,272" size="280,54">
-      <Button title="" titleColor="#ffffff"/>
-    </component>
-    <component id="lineup_candidate_3" name="candidate_3" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="940,338" size="280,54">
-      <Button title="" titleColor="#ffffff"/>
-    </component>
-    <component id="lineup_candidate_4" name="candidate_4" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="940,404" size="280,54">
-      <Button title="" titleColor="#ffffff"/>
-    </component>
-    <component id="lineup_candidate_5" name="candidate_5" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="940,470" size="280,54">
-      <Button title="" titleColor="#ffffff"/>
-    </component>
-    <text id="lineup_candidate_name_0" name="txt_candidate_0_name" xy="956,151" size="248,32" touchable="false" fontSize="18" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text=""/>
-    <text id="lineup_candidate_name_1" name="txt_candidate_1_name" xy="956,217" size="248,32" touchable="false" fontSize="18" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text=""/>
-    <text id="lineup_candidate_name_2" name="txt_candidate_2_name" xy="956,283" size="248,32" touchable="false" fontSize="18" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text=""/>
-    <text id="lineup_candidate_name_3" name="txt_candidate_3_name" xy="956,349" size="248,32" touchable="false" fontSize="18" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text=""/>
-    <text id="lineup_candidate_name_4" name="txt_candidate_4_name" xy="956,415" size="248,32" touchable="false" fontSize="18" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text=""/>
-    <text id="lineup_candidate_name_5" name="txt_candidate_5_name" xy="956,481" size="248,32" touchable="false" fontSize="18" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text=""/>
+    <list id="lineup_candidate_list" name="candidate_list" xy="940,140" size="280,414" overflow="scroll" scrollBar="hidden" selectionMode="single" lineGap="12" defaultItem="ui://cmn00001com04" autoClearItems="true"/>
     <text id="lineup_title" name="txt_title" xy="390,28" size="500,48" fontSize="32" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="自动战斗 · 编队">
       <relation target="" sidePair="center-center"/>
     </text>

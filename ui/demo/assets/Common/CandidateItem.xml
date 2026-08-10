@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="280,54" extention="Button">
+  <controller name="button" pages="0,up,1,down,2,over,3,selectedOver" selected="0"/>
+  <displayList>
+    <component id="candidate_button_bg" name="btn_candidate" src="com00" fileName="CommonButton.xml" xy="0,0" size="280,54" touchable="false">
+      <relation target="" sidePair="width-width,height-height"/>
+      <Button title="" titleColor="#ffffff"/>
+    </component>
+    <text id="candidate_name" name="txt_candidate_name" xy="16,0" size="180,54" touchable="false" fontSize="18" color="#ffffff" vAlign="middle" autoSize="none" singleLine="true" text="">
+      <relation target="" sidePair="height-height"/>
+    </text>
+    <text id="candidate_deployed" name="mark_deployed" xy="196,0" size="68,54" touchable="false" visible="false" fontSize="14" color="#7fd6ff" align="right" vAlign="middle" autoSize="none" singleLine="true" text="已上阵">
+      <relation target="" sidePair="right-right,height-height"/>
+    </text>
+  </displayList>
+  <Button mode="Radio"/>
+</component>
