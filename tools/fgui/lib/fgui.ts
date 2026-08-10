@@ -572,16 +572,32 @@ export function validateComponentSemantics(
         if (node.name !== "list") continue;
         const defaultItem = node.attrs.defaultItem;
         if (!defaultItem) continue;
-        // ui://<pkgid><resid> 或裸资源 id（本包）。ui:// 形式按包 id 长度切分。
+        // ui://<pkgid><resid> 或裸资源 id（本包）。跨包时定位目标包后校验组件资源。
+        let targetPkg = pkg;
         let resId: string;
         if (defaultItem.startsWith("ui://")) {
             const target = defaultItem.slice(5);
-            // 目标可能指向本包（pkg.id）或跨包；资源 id 是包 id 之后的部分
-            resId = target.startsWith(pkg.id) ? target.slice(pkg.id.length) : target;
+            if (target.startsWith(pkg.id)) {
+                resId = target.slice(pkg.id.length);
+            } else {
+                const crossPkg = listPackages(project)
+                    .map((packageName) => readPackage(project, packageName))
+                    .find((candidate) => target.startsWith(candidate.id));
+                if (crossPkg === undefined) {
+                    issues.push({
+                        severity: "error",
+                        message: `list "${node.attrs.name ?? ""}" 的 defaultItem "${defaultItem}" 未指向已登记组件`,
+                    });
+                    continue;
+                }
+                targetPkg = crossPkg;
+                resId = target.slice(crossPkg.id.length);
+            }
         } else {
             resId = defaultItem;
         }
-        if (!pkgId.has(resId)) {
+        const resource = targetPkg.resources.find((candidate) => candidate.id === resId);
+        if (resource?.kind !== "component") {
             issues.push({
                 severity: "error",
                 message: `list "${node.attrs.name ?? ""}" 的 defaultItem "${defaultItem}" 未指向已登记组件`,

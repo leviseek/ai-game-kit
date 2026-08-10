@@ -371,6 +371,33 @@ describe("validateComponentSemantics", () => {
         expect(errors.filter((i) => i.message.includes("defaultItem"))).toEqual([]);
     });
 
+    test("list defaultItem 指向跨包已登记组件通过", () => {
+        const dir = mkdtempSync(join(tmpdir(), "fgui-sem-cross-list-"));
+        try {
+            writeFileSync(join(dir, "demo.fairy"), `<?xml version="1.0" encoding="utf-8"?>\n<projectDescription id="t" type="CocosCreator" version="5.0"/>`);
+            const demoDir = join(dir, "assets", "Demo");
+            const commonDir = join(dir, "assets", "Common");
+            mkdirSync(demoDir, { recursive: true });
+            mkdirSync(commonDir, { recursive: true });
+            writeFileSync(join(demoDir, "package.xml"), `<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="testid"><resources><component id="aa11" name="A.xml" path="/" exported="true"/></resources></packageDescription>`);
+            writeFileSync(join(demoDir, "A.xml"), `<?xml version="1.0" encoding="utf-8"?>
+<component size="200,300">
+  <displayList>
+    <list id="n1" name="list" defaultItem="ui://cmn00001com04" overflow="scroll" selectionMode="single"/>
+  </displayList>
+</component>`);
+            writeFileSync(join(commonDir, "package.xml"), `<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="cmn00001"><resources><component id="com04" name="CandidateItem.xml" path="/" exported="true"/></resources></packageDescription>`);
+            writeFileSync(join(commonDir, "CandidateItem.xml"), `<?xml version="1.0" encoding="utf-8"?>\n<component size="280,54"><displayList/></component>`);
+            const project = locateProject(dir);
+            const pkg = readPackage(project, "Demo");
+            const comp = readComponent(project, "Demo", "A.xml");
+            const errors = validateComponentSemantics(project, pkg, comp).filter((i) => i.severity === "error");
+            expect(errors.filter((i) => i.message.includes("defaultItem"))).toEqual([]);
+        } finally {
+            rmSync(dir, { recursive: true, force: true });
+        }
+    });
+
     test("合法 relation sidePair 通过", () => {
         const { project, pkg, comp } = setupFixture(`<?xml version="1.0" encoding="utf-8"?>
 <component size="200,200">
