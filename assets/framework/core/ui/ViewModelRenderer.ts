@@ -1,6 +1,7 @@
 import type {
     Bindable,
     Binding,
+    PositionBinding,
     ViewModelNode,
 } from "../../contracts/ui/ViewModel";
 
@@ -116,6 +117,11 @@ export function createViewModelRenderer<VM>(
             return;
         }
 
+        if (binding.kind === "position") {
+            applyPositionBinding(index, binding, view);
+            return;
+        }
+
         const next = binding.get(vm as VM_);
         const last = lastValues[index];
         // diff：值未变化（Object.is 相等）则不重复写入节点
@@ -135,8 +141,27 @@ export function createViewModelRenderer<VM>(
                 view.setVisible(next as boolean);
                 break;
             default:
+                // exhaustiveness 兜底：新增绑定 kind 未在此分发时，binding 收窄
+                // 不为 never，传给 assertNever 触发编译期报错
+                assertNever(binding);
                 break;
         }
+    }
+
+    // 坐标绑定：get 返回对象字面量，每次新引用使 Object.is 恒 false，须按 x/y
+    // 分量与上次值做结构比较，坐标未变不重复写入；节点未实现 setXY 时忽略不中断
+    function applyPositionBinding<VM_>(
+        index: number,
+        binding: PositionBinding<VM_>,
+        view: ViewModelNode,
+    ): void {
+        const next = binding.get(vm as VM_);
+        const last = lastValues[index] as { x: number; y: number } | undefined;
+        if (last !== undefined && last.x === next.x && last.y === next.y) {
+            return;
+        }
+        lastValues[index] = next;
+        view.setXY?.(next.x, next.y);
     }
 
     return {
@@ -166,4 +191,12 @@ export function createViewModelRenderer<VM>(
             views.fill(undefined);
         },
     };
+}
+
+/**
+ * 穷尽性兜底：applyBinding 的 switch 应覆盖全部绑定 kind；新增 kind 未分发时
+ * binding 收窄不为 never，此处赋给 never 参数触发编译期报错。
+ */
+function assertNever(binding: never): void {
+    void binding;
 }

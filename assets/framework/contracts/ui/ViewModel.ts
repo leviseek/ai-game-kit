@@ -21,6 +21,11 @@ export interface ViewModelNode {
     setVisible(value: boolean): void;
     /** 注册点击回调；渲染器在绑定建立时调用一次。 */
     onClick(handler: () => void): void;
+    /**
+     * 可选坐标写入：把 VM 位置数据映射到节点坐标。向后兼容扩展，节点未实现
+     * 时渲染器忽略该操作（spec 的"不支持坐标的节点不中断"）。
+     */
+    setXY?(x: number, y: number): void;
 }
 
 /** 文本绑定：把 VM 字段格式化后写入节点文本。 */
@@ -44,6 +49,13 @@ export interface VisibleBinding<VM> {
     readonly get: (vm: VM) => boolean;
 }
 
+/** 坐标绑定：把 VM 的位置数据（屏幕坐标）映射到节点坐标。 */
+export interface PositionBinding<VM> {
+    readonly kind: "position";
+    readonly node: string;
+    readonly get: (vm: VM) => { x: number; y: number };
+}
+
 /** 命令绑定：节点点击触发 VM 命令回调。 */
 export interface CommandBinding<VM> {
     readonly kind: "command";
@@ -56,4 +68,5 @@ export type Binding<VM> =
     | TextBinding<VM>
     | ProgressBinding<VM>
     | VisibleBinding<VM>
+    | PositionBinding<VM>
     | CommandBinding<VM>;

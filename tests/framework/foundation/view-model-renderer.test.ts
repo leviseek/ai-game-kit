@@ -15,6 +15,8 @@ interface RecordingNode {
     text: string | undefined;
     progress: number | undefined;
     visible: boolean | undefined;
+    /** 最近一次坐标写入（position 绑定经 setXY 记录）。 */
+    xy: { x: number; y: number } | undefined;
     /** 最近一次注册的点击回调（onClick 注册语义）。 */
     clickHandler: (() => void) | undefined;
 }
@@ -24,6 +26,7 @@ function recordNode(): RecordingNode {
         text: undefined,
         progress: undefined,
         visible: undefined,
+        xy: undefined,
         clickHandler: undefined,
     };
 }
@@ -39,6 +42,9 @@ function toNode(recording: RecordingNode): ViewModelNode {
         },
         setVisible: (value: boolean) => {
             recording.visible = value;
+        },
+        setXY: (x: number, y: number) => {
+            recording.xy = { x, y };
         },
         onClick: (handler: () => void) => {
             recording.clickHandler = handler;
@@ -139,6 +145,115 @@ describe("ViewModelRenderer binding declarations", () => {
         });
         renderer.setViewModel({ hp: 10, name: "Hero", showResult: true });
         expect(resultNode.visible).toBe(true);
+    });
+
+    test("position binding writes coordinates to the node", () => {
+        const view = makeView();
+        const unitNode = recordNode();
+        view.nodes.set("unit_0", unitNode);
+        const renderer: ViewModelRenderer<DemoViewModel> = createViewModelRenderer({
+            node: view.node,
+            bindings: [
+                {
+                    kind: "position",
+                    node: "unit_0",
+                    get: (_vm) => ({ x: 100, y: 200 }),
+                },
+            ],
+        });
+        renderer.setViewModel({ hp: 10, name: "Hero", showResult: false });
+        expect(unitNode.xy).toEqual({ x: 100, y: 200 });
+    });
+
+    test("position binding skips the write when coordinates are unchanged", () => {
+        const view = makeView();
+        const unitNode = recordNode();
+        view.nodes.set("unit_0", unitNode);
+        const renderer: ViewModelRenderer<DemoViewModel> = createViewModelRenderer({
+            node: view.node,
+            bindings: [
+                {
+                    kind: "position",
+                    node: "unit_0",
+                    get: (vm) => ({ x: vm.hp, y: 100 }),
+                },
+            ],
+        });
+        renderer.setViewModel({ hp: 50, name: "Hero", showResult: false });
+        expect(unitNode.xy).toEqual({ x: 50, y: 100 });
+
+        // 坐标未变（对象字面量新引用但 x/y 分量相同）：结构比较后不重复写入
+        renderer.setViewModel({ hp: 50, name: "Hero", showResult: false });
+        expect(unitNode.xy).toEqual({ x: 50, y: 100 });
+    });
+
+    test("position binding writes again when a component changes", () => {
+        const view = makeView();
+        const unitNode = recordNode();
+        view.nodes.set("unit_0", unitNode);
+        const renderer: ViewModelRenderer<DemoViewModel> = createViewModelRenderer({
+            node: view.node,
+            bindings: [
+                {
+                    kind: "position",
+                    node: "unit_0",
+                    get: (vm) => ({ x: vm.hp, y: 100 }),
+                },
+            ],
+        });
+        renderer.setViewModel({ hp: 50, name: "Hero", showResult: false });
+        expect(unitNode.xy).toEqual({ x: 50, y: 100 });
+
+        renderer.setViewModel({ hp: 60, name: "Hero", showResult: false });
+        expect(unitNode.xy).toEqual({ x: 60, y: 100 });
+    });
+
+    test("a node without setXY ignores position writes without breaking others", () => {
+        const view = makeView();
+        // 未实现 setXY 的节点：position 绑定应被安全忽略，其余绑定正常
+        const legacyNode: RecordingNode & { xy?: never } = {
+            ...recordNode(),
+            xy: undefined,
+        };
+        view.nodes.set("unit_0", legacyNode);
+        const nameNode = recordNode();
+        view.nodes.set("txt_name", nameNode);
+        const renderer: ViewModelRenderer<DemoViewModel> = createViewModelRenderer({
+            node: (name: string) => {
+                const recording = view.nodes.get(name);
+                if (recording === undefined) {
+                    return undefined;
+                }
+                // legacyNode 只实现 setText，不实现 setXY
+                return {
+                    setText: (value: string) => {
+                        recording.text = value;
+                    },
+                    setProgress: (value: number) => {
+                        recording.progress = value;
+                    },
+                    setVisible: (value: boolean) => {
+                        recording.visible = value;
+                    },
+                    onClick: (handler: () => void) => {
+                        recording.clickHandler = handler;
+                    },
+                };
+            },
+            bindings: [
+                {
+                    kind: "position",
+                    node: "unit_0",
+                    get: (vm) => ({ x: vm.hp, y: 100 }),
+                },
+                { kind: "text", node: "txt_name", get: (vm) => vm.name },
+            ],
+        });
+        expect(() => {
+            renderer.setViewModel({ hp: 50, name: "Hero", showResult: false });
+        }).not.toThrow();
+        expect(legacyNode.xy).toBeUndefined();
+        expect(nameNode.text).toBe("Hero");
     });
 
     test("command binding wires node click to the handler", () => {

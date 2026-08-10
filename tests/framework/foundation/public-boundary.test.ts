@@ -549,6 +549,7 @@ describe("framework public boundary", () => {
             "ObjectPool",
             "ObjectPoolOptions",
             "PlatformStorage",
+            "PositionBinding",
             "ProgressBinding",
             "ReadonlyConfigSnapshot",
             "registerBundle",

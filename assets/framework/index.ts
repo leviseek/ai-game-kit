@@ -105,6 +105,7 @@ export type {
     Bindable,
     Binding,
     CommandBinding,
+    PositionBinding,
     ProgressBinding,
     TextBinding,
     ViewModelNode,
