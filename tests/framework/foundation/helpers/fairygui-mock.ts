@@ -183,10 +183,6 @@ export function createFairyGuiMock(): {
             set numItems(value: number) {
                 this._numItems = value;
             }
-            refreshVirtualListCalls = 0;
-            refreshVirtualList() {
-                this.refreshVirtualListCalls += 1;
-            }
             on(_type: string, _callback: () => void, _target?: unknown) { }
             off(_type: string, _callback: () => void, _target?: unknown) { }
             getChild(_name: string): unknown {
@@ -232,8 +228,6 @@ export interface FairyGuiGListMock {
     opaque: boolean;
     itemRenderer: ((index: number, obj: unknown) => void) | null;
     numItems: number;
-    refreshVirtualListCalls: number;
-    refreshVirtualList(): void;
     on(type: string, callback: () => void, target?: unknown): void;
     off(type: string, callback: () => void, target?: unknown): void;
     getChild(name: string): unknown;

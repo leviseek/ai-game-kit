@@ -25,7 +25,6 @@ interface FairyGuiListLike {
     name: string;
     itemRenderer: ((index: number, obj: unknown) => void) | null;
     numItems: number;
-    refreshVirtualList: () => void;
 }
 
 // ---- Adapter 契约（红期锁定，实现必须匹配）----
@@ -52,18 +51,23 @@ async function loadFactory(): Promise<FairyGuiListHandleExports> {
     return exports as FairyGuiListHandleExports;
 }
 
-/** 记录型 GList：暴露最小运行时（itemRenderer/numItems/refreshVirtualList），手动驱动渲染。 */
+/** 记录型 GList：暴露最小运行时（itemRenderer/numItems），手动驱动渲染。 */
 function createListRecorder() {
+    const renderedCalls: Array<{ index: number; obj: unknown }> = [];
+    let numItemsValue = 0;
+    let numItemsSets = 0;
     const list: FairyGuiListLike = {
         name: "candidate_list",
         itemRenderer: null,
-        numItems: 0,
-        refreshVirtualList() {
-            refreshVirtualListCalls += 1;
+        get numItems() {
+            return numItemsValue;
+        },
+        // 模拟真实 GList setter：设置（含相同值）即认为触发一次渲染调度
+        set numItems(value: number) {
+            numItemsValue = value;
+            numItemsSets += 1;
         },
     };
-    const renderedCalls: Array<{ index: number; obj: unknown }> = [];
-    let refreshVirtualListCalls = 0;
     return {
         list,
         // 由测试手动驱动渲染（模拟 fgui 对可视项调用 itemRenderer）
@@ -74,8 +78,8 @@ function createListRecorder() {
         get renderedCount(): number {
             return renderedCalls.length;
         },
-        get refreshVirtualListCalls(): number {
-            return refreshVirtualListCalls;
+        get numItemsSets(): number {
+            return numItemsSets;
         },
     };
 }
@@ -116,17 +120,18 @@ describe("FairyGuiListHandle", () => {
         expect(list.numItems).toBe(0);
     });
 
-    test("refresh forces re-render via refreshVirtualList", async () => {
+    test("refresh re-assigns numItems to force re-render", async () => {
         const factory = await loadFactory();
         const recorder = createListRecorder();
         const handle = factory.createFairyGuiListHandle!(recorder.list);
 
         handle.setItems(["a"]);
-        expect(recorder.refreshVirtualListCalls).toBe(0);
+        expect(recorder.numItemsSets).toBe(1);
         handle.refresh();
-        expect(recorder.refreshVirtualListCalls).toBe(1);
+        // 重设相同值仍触发一次 numItems 写入（非虚拟列表 itemRenderer 据此重跑）
+        expect(recorder.numItemsSets).toBe(2);
         handle.refresh();
-        expect(recorder.refreshVirtualListCalls).toBe(2);
+        expect(recorder.numItemsSets).toBe(3);
     });
 
     test("itemRenderer renders each visible item with dynamic index", async () => {

@@ -63,7 +63,10 @@ export function createFairyGuiListHandle<T>(list: GList): FairyGuiListHandle<T> 
             clickHandler = next;
         },
         refresh(): void {
-            list.refreshVirtualList();
+            // 重设 numItems 强制重绘：非虚拟列表 setter 在值相同时仍无条件重跑
+            // itemRenderer（refreshVirtualList 只适用于虚拟列表，非虚拟调用会因
+            // _virtualItems 未初始化崩溃）。虚拟列表 setter 同样总是触发刷新。
+            list.numItems = list.numItems;
         },
     };
 }

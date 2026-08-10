@@ -38,9 +38,9 @@ export interface FairyGuiListHandle<T> {
      */
     setItemClick(handler: (index: number, item: T) => void): void;
     /**
-     * 强制刷新可视项渲染（包装 GList.refreshVirtualList）。数据内容变化但长度
-     * 不变时（如单项状态翻转）调用，确保 itemRenderer 重跑；部分引擎的 numItems
-     * setter 在值相同时可能短路不触发重绘，显式 refresh 消除该隐式依赖。
+     * 强制刷新可视项渲染。数据内容变化但长度不变时（如单项状态翻转）调用，
+     * 确保 itemRenderer 重跑。实现经重设 numItems 达成（非虚拟列表 setter 在
+     * 值相同时仍无条件重跑 itemRenderer），对虚拟与非虚拟列表均安全。
      */
     refresh(): void;
 }
