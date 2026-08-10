@@ -19,8 +19,8 @@
 
 ## 4. FGUI 组件（委派 fgui-designer）
 
-- [ ] 4.1 `ui/demo/assets/Common/UnitSlot.xml`：UnitSlot 可复用组件（名称/HP 文本/HP 条/能量条，引用 Common 进度条），位置不内嵌、由 `setXY` 写入
-- [ ] 4.2 `ui/demo/assets/AutoBattle/LineupEditorView.xml`：编队页（候选英雄区 + 布阵区），敌左己右语义可选沿用
+- [x] 4.1 `ui/demo/assets/Common/UnitSlot.xml`：UnitSlot 可复用组件（名称/HP 文本/HP 条/能量条，引用 Common 进度条），位置不内嵌、由 `setXY` 写入
+- [x] 4.2 `ui/demo/assets/AutoBattle/LineupEditorView.xml`：编队页（候选英雄区 + 布阵区），敌左己右语义可选沿用
 - [ ] 4.3 `ui/demo/assets/AutoBattle/AutoBattleView.xml`：战场容器化——从固定 12 槽演进为"空战场容器 + 运行时动态实例化 UnitSlot"
 - [ ] 4.4 每个 FGUI 变更经 `bun run fgui validate --strict` 通过后由编辑器发布（产物不手改）
 

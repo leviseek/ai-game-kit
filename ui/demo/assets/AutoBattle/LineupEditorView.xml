@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="1280,720">
+  <displayList>
+    <image id="lineup_bg" name="bg_lineup" src="ab000" fileName="img/bg_battle.png" xy="0,0" size="1280,720">
+      <relation target="" sidePair="width-width,height-height"/>
+    </image>
+    <image id="lineup_formation_panel" name="bg_formation_panel" src="pnl00" fileName="img/panel_lineup_bg.png" xy="40,92" size="850,560"/>
+    <image id="lineup_slot_0" name="img_slot_0" src="slt00" fileName="img/formation_slot.png" xy="175,145" size="180,150"/>
+    <image id="lineup_slot_1" name="img_slot_1" src="slt00" fileName="img/formation_slot.png" xy="375,145" size="180,150"/>
+    <image id="lineup_slot_2" name="img_slot_2" src="slt00" fileName="img/formation_slot.png" xy="575,145" size="180,150"/>
+    <image id="lineup_slot_3" name="img_slot_3" src="slt00" fileName="img/formation_slot.png" xy="175,315" size="180,150"/>
+    <image id="lineup_slot_4" name="img_slot_4" src="slt00" fileName="img/formation_slot.png" xy="375,315" size="180,150"/>
+    <image id="lineup_slot_5" name="img_slot_5" src="slt00" fileName="img/formation_slot.png" xy="575,315" size="180,150"/>
+    <image id="lineup_slot_6" name="img_slot_6" src="slt00" fileName="img/formation_slot.png" xy="175,485" size="180,150"/>
+    <image id="lineup_slot_7" name="img_slot_7" src="slt00" fileName="img/formation_slot.png" xy="375,485" size="180,150"/>
+    <image id="lineup_slot_8" name="img_slot_8" src="slt00" fileName="img/formation_slot.png" xy="575,485" size="180,150"/>
+    <image id="lineup_candidates_panel" name="bg_candidates_panel" src="pnl00" fileName="img/panel_lineup_bg.png" xy="920,92" size="320,480"/>
+    <list id="lineup_candidates" name="list_candidates" xy="940,140" size="280,412" overflow="scroll" scrollBar="hidden" selectionMode="single" autoClearItems="true"/>
+    <text id="lineup_title" name="txt_title" xy="390,28" size="500,48" fontSize="32" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="自动战斗 · 编队">
+      <relation target="" sidePair="center-center"/>
+    </text>
+    <text id="lineup_formation_title" name="txt_formation_title" xy="60,104" size="500,28" fontSize="20" color="#ffffff" vAlign="middle" autoSize="none" singleLine="true" text="己方布阵 3×3（最多上阵 6）"/>
+    <text id="lineup_candidates_title" name="txt_candidates_title" xy="940,104" size="200,28" fontSize="20" color="#ffffff" vAlign="middle" autoSize="none" singleLine="true" text="候选英雄"/>
+    <component id="lineup_start" name="btn_start" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="980,596" size="200,52">
+      <Button title="开始战斗" titleColor="#ffffff"/>
+    </component>
+  </displayList>
+</component>

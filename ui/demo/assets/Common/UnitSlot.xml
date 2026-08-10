@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="140,110">
+  <displayList>
+    <text id="unit_slot_name" name="txt_name" xy="0,0" size="140,24" fontSize="18" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="单位">
+      <relation target="" sidePair="width-width"/>
+    </text>
+    <text id="unit_slot_hp" name="txt_hp" xy="0,26" size="140,18" fontSize="14" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="HP 0/0">
+      <relation target="" sidePair="width-width"/>
+    </text>
+    <component id="unit_slot_bar_hp" name="bar_hp" src="com02" fileName="CommonProgressBarHp.xml" xy="0,48" size="140,18">
+      <relation target="" sidePair="width-width"/>
+      <ProgressBar value="100" max="100"/>
+    </component>
+    <component id="unit_slot_bar_energy" name="bar_energy" src="com01" fileName="CommonProgressBar.xml" xy="0,72" size="140,14">
+      <relation target="" sidePair="width-width"/>
+      <ProgressBar value="0" max="100"/>
+    </component>
+  </displayList>
+</component>
