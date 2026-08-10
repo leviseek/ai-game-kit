@@ -8,8 +8,8 @@
 
 ## 2. 编队持久化
 
-- [ ] 2.1 新增 lineup 存储封装：`createVersionedStorage`（namespace `auto_battle` / key `lineup` / schema v1，payload `{ slots: heroId[] }`），迁移器映射预留
-- [ ] 2.2 持久化单测：保存后加载一致、重启恢复、损坏记录报错、schema 版本迁移预留
+- [x] 2.1 新增 lineup 存储封装：`createLineupStore`（自持版本化，对齐 game_idle `createIdleSave` 先例——`createVersionedStorage` 不在 framework 白名单；namespace `auto_battle` / key `lineup` / schema v1，payload `{ slots: (string|null)[] }`），迁移器映射预留
+- [x] 2.2 持久化单测：保存后加载一致、重启恢复、损坏记录报错、schema 版本迁移预留
 
 ## 3. 战斗实例化与开战装配（logic）
 

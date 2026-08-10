@@ -40,10 +40,10 @@
 保留 `MAX_TEAM_SIZE=6`（`config.ts` 常量，上阵上限，校验语义不变）；新增 `FORMATION_GRID_SIZE`（布阵区容量 9）。两者解耦：布阵区允许空余格，上阵数仍受上限约束。
 理由：草案评审结论——不破坏 change 04 的超规模断言与既有测试。
 
-### D5 持久化：LineupStore 基于 versioned-storage
+### D5 持久化：LineupStore 自持版本化（对齐 game_idle 先例）
 
-新增 lineup 存储封装：`createVersionedStorage({ storage, currentVersion: 1 })`，namespace `auto_battle`、key `lineup`，payload 为 `{ version, slots: heroId[] }`（附带 schema 版本）。迁移器映射预留（v1 为空）。复用 ADR-013 能力，未来 09 挂机按同一 namespace 演进。
-理由：与 framework 存储契约一致；schema 版本化保证 09 消费兼容。
+`createVersionedStorage` 不在 framework 公开 API 白名单（`assets/framework/index.ts` 明确"不直接深层导入"），故对齐同层挂机品类 `game_idle/logic/save.ts` 的 `createIdleSave` 自持模式：LineupStore 自编码 `{ version, data }` 记录（version=1），namespace `auto_battle` / key `lineup`，payload 为 `{ slots: (string|null)[] }`；迁移器映射按版本注册（v1 为空，预留）。损坏/未来版本拒绝抛错，旧版本逐级迁移。
+理由：遵循白名单边界与 sample 层既有模式；schema 版本化保证未来 09 挂机消费兼容。
 
 ### D6 呈现抽离：UnitSlot 动态实例化
 
