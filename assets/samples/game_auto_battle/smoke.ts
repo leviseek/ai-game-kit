@@ -204,7 +204,8 @@ export async function runAutoBattleSmoke(
     );
 
     // 挡位切换：cycleSpeed 循环到 2x 并同步时钟倍率，按钮标题随 VM 刷新。
-    // 经夹具内存渲染器显式刷新，保证真实 fgui 与回退路径都能断言按钮标题。
+    // 断言走夹具内存渲染路径（fixture.viewModel.render），真实 fgui 路径由
+    // 运行时 presenter 每帧重写绑定驱动，此处不重复断言。
     const firstResult = endState.result;
     fixture.cycleSpeed();
     fixture.viewModel.render();
