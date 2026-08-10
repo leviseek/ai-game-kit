@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="200,20" extention="ProgressBar">
+  <displayList>
+    <image id="pb_track" name="img_track" src="pb000" fileName="img/progress_track.png" xy="0,0" size="200,20">
+      <relation target="" sidePair="width-width,height-height"/>
+    </image>
+    <image id="pb_fill" name="bar" src="pb002" fileName="img/progress_fill_hp.png" xy="0,0" size="200,20">
+      <relation target="" sidePair="width-width,height-height"/>
+    </image>
+  </displayList>
+  <ProgressBar/>
+</component>

@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <packageDescription id="cmn00001">
   <resources>
+    <component id="com02" name="CommonProgressBarHp.xml" path="/" exported="true"/>
+    <image id="pb002" name="progress_fill_hp.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
     <component id="com01" name="CommonProgressBar.xml" path="/" exported="true"/>
     <component id="com00" name="CommonButton.xml" path="/" exported="true"/>
     <image id="pb001" name="progress_fill.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
