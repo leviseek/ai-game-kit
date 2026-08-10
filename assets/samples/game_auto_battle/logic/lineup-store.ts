@@ -1,9 +1,9 @@
 import type { Module, PlatformStorage } from "../../../framework";
 import type { AutoBattleLineup } from "../models";
-import { MAX_TEAM_SIZE } from "./config";
+import { FORMATION_GRID_SIZE } from "./grid";
 
 /** lineup 存档 schema 版本：升级时递增，迁移器映射按版本注册。 */
-export const LINEUP_SAVE_VERSION = 1;
+export const LINEUP_SAVE_VERSION = 2;
 
 /** 底层存储键：命名空间 + 存档键编码，供测试直接播种旧版本/损坏记录。 */
 export const LINEUP_STORAGE_KEY = "auto-battle:auto_battle:lineup";
@@ -11,12 +11,25 @@ export const LINEUP_STORAGE_KEY = "auto-battle:auto_battle:lineup";
 /** 迁移器：把某旧版本的 lineup 存档数据升级为下一版本数据。 */
 export type LineupSaveMigrator = (data: unknown) => unknown;
 
+/**
+ * v1 → v2 迁移器：布阵区容量扩到 9，旧 6 长度 slots 补齐到 9（尾部补 null）。
+ * 玩家上阵数据不变，仅扩展可操作槽位数。
+ */
+export const MIGRATE_V1_TO_V2: LineupSaveMigrator = (data) => {
+    const record = data as { slots: readonly (string | null)[] };
+    const slots: (string | null)[] = Array.from(
+        { length: FORMATION_GRID_SIZE },
+        (_, index) => record.slots[index] ?? null,
+    );
+    return { slots };
+};
+
 /** lineup 存储选项：注入平台存储，可选指定当前版本与迁移器映射（测试/未来演进）。 */
 export interface LineupStoreOptions {
     readonly storage: PlatformStorage;
     /** 当前 schema version；缺省为 LINEUP_SAVE_VERSION。 */
     readonly currentVersion?: number;
-    /** 迁移映射：源版本 → 升级到源版本+1 的迁移器；缺省表示不支持任何旧版本。 */
+    /** 迁移映射：源版本 → 升级到源版本+1 的迁移器；缺省内置 v1→v2，可覆盖。 */
     readonly migrators?: Readonly<Record<number, LineupSaveMigrator>>;
 }
 
@@ -32,7 +45,7 @@ export interface LineupStore {
 }
 
 /**
- * 校验存档数据是合法 lineup：对象、slots 为定长（0..MAX_TEAM_SIZE-1）数组且
+ * 校验存档数据是合法 lineup：对象、slots 为定长（0..FORMATION_GRID_SIZE-1）数组且
  * 元素均为 heroId 字符串或 null。形状不符视为数据损坏，读取时抛错而非静默降级。
  */
 function isLineupRecord(value: unknown): value is AutoBattleLineup {
@@ -40,7 +53,7 @@ function isLineupRecord(value: unknown): value is AutoBattleLineup {
         return false;
     }
     const slots = (value as { slots?: unknown }).slots;
-    if (!Array.isArray(slots) || slots.length !== MAX_TEAM_SIZE) {
+    if (!Array.isArray(slots) || slots.length !== FORMATION_GRID_SIZE) {
         return false;
     }
     return slots.every((slot) => slot === null || typeof slot === "string");
@@ -59,7 +72,8 @@ function corrupt(reason: string): Error {
 export function createLineupStore(options: LineupStoreOptions): LineupStore {
     const { storage } = options;
     const currentVersion = options.currentVersion ?? LINEUP_SAVE_VERSION;
-    const migrators = options.migrators ?? {};
+    // 默认迁移器：内置 v1→v2（slots 6→9 补齐）；调用方可覆盖
+    const migrators = options.migrators ?? { 1: MIGRATE_V1_TO_V2 };
 
     function migrate(data: unknown, fromVersion: number): unknown {
         let migrated = data;
