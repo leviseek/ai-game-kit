@@ -4,10 +4,12 @@ import type { GameFixture } from "../../../game/fixture/GameFixture";
 import type { GamePresenter } from "../../../game/lobby/presenter";
 import type { AutoBattleFixture } from "../assembly";
 import {
-    createAutoBattleBindings,
+    buildAutoBattleBindings,
     createAutoBattleViewModel,
     formatAutoBattleEvent,
     type AutoBattleCommands,
+    type AutoBattleSpeed,
+    type AutoBattleViewModel,
 } from "./view";
 
 /**
@@ -27,19 +29,22 @@ export function createAutoBattlePresenter(
     let lastTick = Date.now();
     let timer: ReturnType<typeof setInterval> | undefined;
 
-    const renderer = createViewModelRenderer({
+    const autoBattleCommands: AutoBattleCommands = {
+        restart: () => {
+            autoBattle.battle.restart();
+            render();
+        },
+        cycleSpeed: () => {
+            // 挡位由 fixture 持有（唯一真相源）；presenter 不复制 speed——渲染与
+            // 驱动节拍统一读 fixture.speed，避免双源不同步
+            autoBattle.cycleSpeed();
+            render();
+        },
+    };
+
+    const renderer = createViewModelRenderer<AutoBattleViewModel>({
         node,
-        bindings: createAutoBattleBindings({
-            restart: () => {
-                autoBattle.battle.restart();
-                render();
-            },
-            cycleSpeed: () => {
-                // 挡位切换委派夹具（内部循环并同步时钟倍率），随后刷新挡位文本
-                autoBattle.cycleSpeed();
-                render();
-            },
-        } satisfies AutoBattleCommands),
+        bindings: [],
     });
 
     function render(): void {
@@ -49,13 +54,12 @@ export function createAutoBattlePresenter(
         const log = autoBattle.battle.events.map((event) =>
             formatAutoBattleEvent(event, nameOf),
         );
-        renderer.setViewModel(
-            createAutoBattleViewModel(state, log, autoBattle.speed),
-        );
+        const vm = createAutoBattleViewModel(state, log, autoBattle.speed);
+        renderer.setBindings(buildAutoBattleBindings(autoBattleCommands, vm));
+        renderer.setViewModel(vm);
     }
 
-    // 固定节拍驱动模拟时钟前进并按当前状态刷新页面；终局后不再推进行动，
-    // 只保留渲染（与冒烟的手动 tick 驱动对齐，渲染永远基于不可变 state 快照）。
+    // 固定节拍驱动模拟时钟前进并按当前状态刷新页面；终局后不再推进行动。
     // 挡位放大每节拍的模拟时间与行动数：x2/x3 下同节拍推进更多行动。
     timer = setInterval(() => {
         const now = Date.now();

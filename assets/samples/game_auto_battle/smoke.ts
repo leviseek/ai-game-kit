@@ -3,9 +3,10 @@ import {
     toViewModelNode,
 } from "./assembly";
 import {
-    createAutoBattleBindings,
+    buildAutoBattleBindings,
     createAutoBattleViewModel,
     formatAutoBattleEvent,
+    type AutoBattleViewModel,
 } from "./view/view";
 import { createViewModelRenderer, type ViewModelNode } from "../../framework";
 
@@ -151,16 +152,10 @@ export async function runAutoBattleSmoke(
                   toViewModelNode(fixture.viewModel.node(name))
             : resolver(page.view);
 
-    const renderer = createViewModelRenderer({
+    const renderer = createViewModelRenderer<AutoBattleViewModel>({
         node,
-        bindings: createAutoBattleBindings({
-            restart: () => {
-                fixture.battle.restart();
-            },
-            cycleSpeed: () => {
-                fixture.cycleSpeed();
-            },
-        }),
+        // 绑定集在 render 时按存活单位动态重建
+        bindings: [],
     });
 
     const render = (): void => {
@@ -170,9 +165,21 @@ export async function runAutoBattleSmoke(
         const log = fixture.battle.events.map((event) =>
             formatAutoBattleEvent(event, nameOf),
         );
-        renderer.setViewModel(
-            createAutoBattleViewModel(state, log, fixture.speed),
+        const vm = createAutoBattleViewModel(state, log, fixture.speed);
+        renderer.setBindings(
+            buildAutoBattleBindings(
+                {
+                    restart: () => {
+                        fixture.battle.restart();
+                    },
+                    cycleSpeed: () => {
+                        fixture.cycleSpeed();
+                    },
+                },
+                vm,
+            ),
         );
+        renderer.setViewModel(vm);
     };
 
     render();

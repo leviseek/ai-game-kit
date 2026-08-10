@@ -1,5 +1,4 @@
 import type { Binding } from "../../../framework";
-import { MAX_TEAM_SIZE } from "../logic/config";
 import type {
     AutoBattleEvent,
     AutoBattleSide,
@@ -7,15 +6,33 @@ import type {
     AutoBattleUnitState,
 } from "../models";
 
-/** 槽位列横坐标：敌左（20）、己右（1040），1280×720 布局口径。 */
-const SLOT_COLUMN_X: Readonly<Record<AutoBattleSide, number>> = {
-    ally: 1040,
-    enemy: 20,
-};
+/** 战场网格屏幕布局（1280×720）：敌左 3 列、己右 3 列、3 行（与 AutoBattleView 容器化对齐）。 */
+const GRID_COL_STRIDE = 140;
+const GRID_ROW_STRIDE = 130;
+const GRID_TOP = 100;
+const ENEMY_LEFT = 20;
+const ALLY_LEFT = 840;
+/** 战场网格列数：敌左半 3 列、己右半 3 列（对齐逻辑层 BATTLEFIELD_COLS）。 */
+const GRID_COLS_PER_SIDE = 3;
 
-/** 槽位纵向带：起点与固定步进，6 槽/侧在带内自上而下排布（末槽底避开日志区）。 */
-const SLOT_BAND_TOP = 60;
-const SLOT_BAND_STRIDE = 72;
+/**
+ * 网格格（`row:col`）→ 屏幕坐标映射（敌左、己右）：由逻辑网格行列推导
+ * 单位实例在战场页的屏幕坐标，纯函数单向推导，不反向回写逻辑。列 < 3 为敌方
+ * 半场、>= 3 为己方半场；行/列递增分别映射 y/x 递增。
+ */
+export function gridToXY(gridKey: string): { readonly x: number; readonly y: number } {
+    const match = /^(\d+):(\d+)$/.exec(gridKey);
+    if (match === null) {
+        throw new Error(`auto-battle view: invalid grid key "${gridKey}"`);
+    }
+    const row = Number(match[1]);
+    const col = Number(match[2]);
+    const left = col < GRID_COLS_PER_SIDE ? ENEMY_LEFT : ALLY_LEFT;
+    return {
+        x: left + (col % GRID_COLS_PER_SIDE) * GRID_COL_STRIDE,
+        y: GRID_TOP + row * GRID_ROW_STRIDE,
+    };
+}
 
 /** 单位页面呈现数据：只承载节点需要的字段，不含战斗逻辑。 */
 export interface AutoBattleUnitView {
@@ -24,29 +41,12 @@ export interface AutoBattleUnitView {
     readonly side: AutoBattleSide;
     /** 队内逻辑槽位序号 0..N-1（镜像逻辑层 index，用于槽位寻址与映射推导）。 */
     readonly index: number;
+    /** 当前所在网格格（屏幕坐标由 gridToXY 单向推导）。 */
+    readonly gridKey: string;
     readonly hp: number;
     readonly hpMax: number;
     readonly energy: number;
     readonly energyMax: number;
-}
-
-/**
- * 槽位 → 屏幕坐标映射（敌左、己右）：由队内槽位序号与单侧规模推导坐标，
- * 纯函数单向推导，不反向回写逻辑。slotIndex 为队内参数（0..N-1），teamSize
- * 为单侧规模，两侧各自独立推导；团队块在带内垂直居中，较小规模整块下移。
- * 渲染绑定节点名使用全局索引 = side 偏移（己方 0、敌方 MAX_TEAM_SIZE）+
- * 队内 slotIndex，避免 6v6 时敌我两侧队内序号相同而拼出冲突节点名。
- */
-export function slotToXY(
-    side: AutoBattleSide,
-    slotIndex: number,
-    teamSize: number,
-): { x: number; y: number } {
-    const blockOffset = ((MAX_TEAM_SIZE - teamSize) * SLOT_BAND_STRIDE) / 2;
-    return {
-        x: SLOT_COLUMN_X[side],
-        y: SLOT_BAND_TOP + blockOffset + slotIndex * SLOT_BAND_STRIDE,
-    };
 }
 
 /** 观战加速挡位：只改变驱动节拍，不改变战斗结果。 */
@@ -70,13 +70,14 @@ export interface AutoBattleCommands {
     cycleSpeed(): void;
 }
 
-/** 单位运行时快照 → 页面呈现数据：side/index 承载槽位寻址与映射推导。 */
+/** 单位运行时快照 → 页面呈现数据：side/index/gridKey 承载槽位与网格寻址。 */
 function toUnitView(unit: AutoBattleUnitState): AutoBattleUnitView {
     return {
         id: unit.id,
         name: unit.name,
         side: unit.side,
         index: unit.index,
+        gridKey: unit.gridKey,
         hp: unit.hp,
         hpMax: unit.maxHp,
         energy: unit.energy,
@@ -127,35 +128,16 @@ export function formatAutoBattleEvent(
     }
 }
 
-/** 在 VM 单位清单中按 side + 队内槽位序号定位单位；未上阵返回 undefined。 */
-function unitAtSlot(
-    units: readonly AutoBattleUnitView[],
-    side: AutoBattleSide,
-    slotIndex: number,
-): AutoBattleUnitView | undefined {
-    return units.find((unit) => unit.side === side && unit.index === slotIndex);
-}
-
-/** 单侧上阵单位数（teamSize 口径：各侧独立推导，供 slotToXY 映射）。 */
-function sideTeamSize(
-    units: readonly AutoBattleUnitView[],
-    side: AutoBattleSide,
-): number {
-    return units.filter((unit) => unit.side === side).length;
-}
-
 /**
- * 战场页绑定声明：描述 VM 字段到 FGUI 节点名的映射（纯数据，不含渲染逻辑，
- * 不导入 fgui）。节点名与 BattleView.xml 子元素名对齐（txt_/bar_/btn_ 前缀）。
- * 单位按 MAX_TEAM_SIZE 预置全局槽位（先己方后敌方，全局索引 = side 偏移 +
- * 队内 slotIndex，己方偏移 0、敌方偏移 MAX_TEAM_SIZE），超出实际规模的槽位
- * 由 visible 绑定整组隐藏，position 绑定经 slotToXY 映射到屏幕坐标；文本/
- * 进度绑定节点名约定不变，仍按全局索引寻址。
+ * 战场页绑定声明（静态标量部分）：描述 VM 标量字段到 FGUI 节点名的映射
+ * （纯数据，不含渲染逻辑，不导入 fgui）。节点名与 BattleView.xml 子元素名
+ * 对齐（txt_/bar_/btn_ 前缀）。单位实例绑定不在此——按存活单位动态生成
+ * （见 createAutoBattleUnitBindings / buildAutoBattleBindings）。
  */
 export function createAutoBattleBindings(
     commands: AutoBattleCommands,
 ): readonly Binding<AutoBattleViewModel>[] {
-    const bindings: Binding<AutoBattleViewModel>[] = [
+    return [
         {
             kind: "text",
             node: "txt_round",
@@ -185,63 +167,80 @@ export function createAutoBattleBindings(
         { kind: "command", node: "btn_restart", run: () => commands.restart() },
         { kind: "command", node: "btn_speed", run: () => commands.cycleSpeed() },
     ];
+}
 
-    // 预置 2*MAX_TEAM_SIZE 个全局槽位（unit_{全局索引}），按单位是否存在驱动
-    // 显隐、按 slotToXY 映射驱动坐标；文本/进度沿用 txt_unit_/bar_unit_ 约定。
-    for (let globalIndex = 0; globalIndex < MAX_TEAM_SIZE * 2; globalIndex += 1) {
-        const side: AutoBattleSide =
-            globalIndex < MAX_TEAM_SIZE ? "ally" : "enemy";
-        const slotIndex =
-            globalIndex < MAX_TEAM_SIZE ? globalIndex : globalIndex - MAX_TEAM_SIZE;
-        const unitAt = (vm: AutoBattleViewModel): AutoBattleUnitView | undefined =>
-            unitAtSlot(vm.units, side, slotIndex);
+/**
+ * 单个单位的动态绑定：节点名按单位 id（`unit_{id}` / `txt_unit_{id}_name` /
+ * `bar_unit_{id}_hp` / `bar_unit_{id}_energy`），位置经 gridToXY 由网格坐标
+ * 单向派生；文本/进度从当前 VM 按 id 解析（存活单位始终可见）。单位阵亡或
+ * 卸下后不再生成绑定，对应实例节点随之消失（动态实例化语义，对齐 spec）。
+ */
+export function createAutoBattleUnitBindings(
+    unitId: string,
+    gridKey: string,
+): readonly Binding<AutoBattleViewModel>[] {
+    const unitAt = (vm: AutoBattleViewModel): AutoBattleUnitView | undefined =>
+        vm.units.find((unit) => unit.id === unitId);
 
-        bindings.push(
-            {
-                kind: "visible",
-                node: `unit_${globalIndex}`,
-                get: (vm) => unitAt(vm) !== undefined,
+    return [
+        {
+            kind: "visible",
+            node: `unit_${unitId}`,
+            get: () => true,
+        },
+        {
+            kind: "position",
+            node: `unit_${unitId}`,
+            get: () => gridToXY(gridKey),
+        },
+        {
+            kind: "text",
+            node: `txt_unit_${unitId}_name`,
+            get: (vm) => unitAt(vm)?.name ?? "",
+        },
+        {
+            kind: "text",
+            node: `txt_unit_${unitId}_hp`,
+            get: (vm) => {
+                const unit = unitAt(vm);
+                return unit === undefined ? "" : `HP ${unit.hp}/${unit.hpMax}`;
             },
-            {
-                kind: "position",
-                node: `unit_${globalIndex}`,
-                get: (vm) => slotToXY(side, slotIndex, sideTeamSize(vm.units, side)),
+        },
+        {
+            kind: "progress",
+            node: `bar_unit_${unitId}_hp`,
+            get: (vm) => {
+                const unit = unitAt(vm);
+                return unit !== undefined && unit.hpMax > 0
+                    ? unit.hp / unit.hpMax
+                    : 0;
             },
-            {
-                kind: "text",
-                node: `txt_unit_${globalIndex}_name`,
-                get: (vm) => unitAt(vm)?.name ?? "",
+        },
+        {
+            kind: "progress",
+            node: `bar_unit_${unitId}_energy`,
+            get: (vm) => {
+                const unit = unitAt(vm);
+                return unit !== undefined && unit.energyMax > 0
+                    ? unit.energy / unit.energyMax
+                    : 0;
             },
-            {
-                kind: "text",
-                node: `txt_unit_${globalIndex}_hp`,
-                get: (vm) => {
-                    const unit = unitAt(vm);
-                    return unit === undefined ? "" : `HP ${unit.hp}/${unit.hpMax}`;
-                },
-            },
-            {
-                kind: "progress",
-                node: `bar_unit_${globalIndex}_hp`,
-                get: (vm) => {
-                    const unit = unitAt(vm);
-                    return unit !== undefined && unit.hpMax > 0
-                        ? unit.hp / unit.hpMax
-                        : 0;
-                },
-            },
-            {
-                kind: "progress",
-                node: `bar_unit_${globalIndex}_energy`,
-                get: (vm) => {
-                    const unit = unitAt(vm);
-                    return unit !== undefined && unit.energyMax > 0
-                        ? unit.energy / unit.energyMax
-                        : 0;
-                },
-            },
-        );
-    }
+        },
+    ];
+}
 
-    return bindings;
+/**
+ * 装配完整绑定集：静态标量绑定 + 按当前 VM 存活单位动态生成的单位绑定。
+ * 每次渲染调用（绑定集随存活单位增删重建，渲染器经 setBindings 全量刷新）。
+ */
+export function buildAutoBattleBindings(
+    commands: AutoBattleCommands,
+    vm: AutoBattleViewModel,
+): readonly Binding<AutoBattleViewModel>[] {
+    const unitBindings = vm.units.reduce<Binding<AutoBattleViewModel>[]>(
+        (acc, unit) =>
+            acc.concat(createAutoBattleUnitBindings(unit.id, unit.gridKey)),
+        [],
+    );
+    return [...createAutoBattleBindings(commands), ...unitBindings];
 }

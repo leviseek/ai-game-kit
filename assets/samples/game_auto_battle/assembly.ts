@@ -1,6 +1,7 @@
 import type {
     GameFixture,
     Module,
+    PlatformStorage,
     UiNavigator,
 } from "../../framework";
 import {
@@ -9,7 +10,13 @@ import {
     createViewModelRenderer,
     type ViewModelNode,
 } from "../../framework";
-import type { AutoBattleEvent, AutoBattleState, AutoBattleUnit } from "./models";
+import type {
+    AutoBattleEvent,
+    AutoBattleHero,
+    AutoBattleLineup,
+    AutoBattleState,
+    AutoBattleUnit,
+} from "./models";
 import {
     createAutoBattleClock,
     createAutoBattleClockModule,
@@ -18,6 +25,7 @@ import {
 import {
     createAutoBattleConfig,
     createAutoBattleConfigModule,
+    MAX_TEAM_SIZE,
     type AutoBattleConfigHandle,
 } from "./logic/config";
 import { createAutoBattleSkillsModule } from "./logic/skills";
@@ -27,14 +35,21 @@ import {
     createAutoBattleBattleModule,
     type AutoBattleBattleHandle,
 } from "./logic/battle";
+import { editLineup } from "./logic/lineup";
+import {
+    createLineupStore,
+    type LineupStore,
+} from "./logic/lineup-store";
 import { createAutoBattleUiModule } from "./view/ui";
 import {
-    createAutoBattleBindings,
+    buildAutoBattleBindings,
     createAutoBattleViewModel,
     formatAutoBattleEvent,
     type AutoBattleCommands,
     type AutoBattleSpeed,
+    type AutoBattleViewModel,
 } from "./view/view";
+import type { LineupEditorCommands } from "./view/lineup";
 
 /** 挡位循环次序：1x → 2x → 3x → 1x（与 presenter 共用同一循环语义）。 */
 const SPEED_CYCLE: readonly AutoBattleSpeed[] = [1, 2, 3];
@@ -66,6 +81,8 @@ export interface AutoBattleFixtureOptions {
     readonly clock?: AutoBattleClock;
     /** 配置内容：驱动单位/技能/能量规则；缺省为内建缺省配置。 */
     readonly configContent?: Record<string, unknown>;
+    /** 平台存储后端：缺省为内存存储；观察编队存档写入/读取。 */
+    readonly storage?: PlatformStorage;
     /** 事件回调：战斗事件广播接缝（测试据此断言回放顺序）。 */
     readonly onEvent?: (event: AutoBattleEvent) => void;
 }
@@ -116,10 +133,12 @@ export interface AutoBattleFixture extends GameFixture {
     };
     /** 可控模拟时钟：now() 供事件时间戳，advance 供呈现器推进。 */
     readonly clock: AutoBattleClock;
-    /** 配置驱动数值：双方单位清单来自不可变配置表。 */
+    /** 配置驱动数值：双方单位清单与英雄池来自不可变配置表。 */
     readonly config: {
         readonly ally: readonly AutoBattleUnit[];
         readonly enemy: readonly AutoBattleUnit[];
+        /** 英雄池（编队页候选来源）。 */
+        readonly heroes: readonly AutoBattleHero[];
     };
     /** 当前观战加速挡位（1x/2x/3x），只改变驱动节拍。 */
     readonly speed: AutoBattleSpeed;
@@ -135,6 +154,54 @@ export interface AutoBattleFixture extends GameFixture {
         readonly node: (name: string) => AutoBattleViewNode;
         render(): void;
     };
+    /** 编队编辑：玩家可变编队 + 点击选择操作 + 持久化（lineup-store）。 */
+    readonly lineup: {
+        /** 当前编队快照（定长槽位序列，空槽 null）。 */
+        readonly value: AutoBattleLineup;
+        /** 当前选中的布阵格；null = 未选中。 */
+        readonly selectedSlot: number | null;
+        /** 点击布阵格：未选中则选中；已选中的已上阵格二次点击卸下。 */
+        selectSlot(slot: number): void;
+        /** 点击候选英雄：填入选中的布阵格，否则填入第一个空槽。 */
+        selectHero(heroId: string): void;
+        /** 卸下指定槽位英雄。 */
+        removeFromSlot(slot: number): void;
+        /** 以当前编队重开对局（开战由 lineup 实例化，战斗实例化后与编队解耦）。 */
+        startBattle(): void;
+        /** 编队持久化存储（versioned-storage，schema v1）。 */
+        readonly store: LineupStore;
+        /** 从存储恢复上次编队（重启后调用）；无存档则保持当前编队。 */
+        restoreLineup(): Promise<void>;
+    };
+}
+
+/** 缺省内存平台存储：实现 PlatformStorage，供测试与非 Cocos 环境使用。 */
+class MemoryStorage implements PlatformStorage {
+    private readonly entries = new Map<string, string>();
+
+    async get(key: string): Promise<string | null> {
+        return this.entries.get(key) ?? null;
+    }
+
+    async set(key: string, value: string): Promise<void> {
+        this.entries.set(key, value);
+    }
+
+    async delete(key: string): Promise<void> {
+        this.entries.delete(key);
+    }
+}
+
+/** 压缩 heroId 序列 → 定长编队（空槽 null）；不足 MAX_TEAM_SIZE 的部分留空。 */
+function toFullLineup(ids: readonly string[]): AutoBattleLineup {
+    const slots: (string | null)[] = Array.from(
+        { length: MAX_TEAM_SIZE },
+        () => null,
+    );
+    ids.forEach((heroId, index) => {
+        slots[index] = heroId;
+    });
+    return { slots };
 }
 
 /**
@@ -149,14 +216,57 @@ export function createAutoBattleFixture(
     const config: AutoBattleConfigHandle = createAutoBattleConfig(
         options.configContent ?? DEFAULT_AUTO_BATTLE_CONFIG_CONTENT,
     );
+    const navigator: UiNavigator = createUiNavigator();
+
+    // 玩家编队：可变状态（定长槽位），初始 = 配置初始编队；经点击命令编辑并持久化
+    const lineupStore = createLineupStore({
+        storage: options.storage ?? new MemoryStorage(),
+    });
+    let lineup: AutoBattleLineup = toFullLineup(config.lineups.ally);
+    let selectedSlot: number | null = null;
+
     const battle: AutoBattleBattleHandle = createAutoBattleBattle({
         clock,
         config,
+        // 开战编队由当前玩家编队（己方）+ 配置固定敌方阵容派生；战斗实例化后
+        // 持单位快照，后续编队改动只影响下一次重开
+        lineups: () => ({
+            ally: lineup.slots.filter((heroId): heroId is string => heroId !== null),
+            enemy: config.lineups.enemy,
+        }),
         onEvent: (event) => {
             options.onEvent?.(event);
         },
     });
-    const navigator: UiNavigator = createUiNavigator();
+
+    const persistLineup = (): void => {
+        void lineupStore.save(lineup);
+    };
+
+    const lineupCommands: LineupEditorCommands = {
+        selectSlot(slot) {
+            selectedSlot = slot < 0 ? null : slot;
+        },
+        selectHero(heroId) {
+            // 优先填入选中的布阵格（替换语义），否则填第一个空槽；满编拒绝
+            const target =
+                selectedSlot !== null && selectedSlot < MAX_TEAM_SIZE
+                    ? selectedSlot
+                    : lineup.slots.findIndex((heroIdAt) => heroIdAt === null);
+            if (target === -1) {
+                return;
+            }
+            lineup = editLineup(lineup, { type: "fill", slot: target, heroId });
+            persistLineup();
+        },
+        removeFromSlot(slot) {
+            lineup = editLineup(lineup, { type: "remove", slot });
+            persistLineup();
+        },
+        startBattle() {
+            battle.restart();
+        },
+    };
 
     // 观战加速挡位：夹具持当前挡位并联动时钟倍率，测试经 cycleSpeed 驱动
     let speed: AutoBattleSpeed = 1;
@@ -198,16 +308,18 @@ export function createAutoBattleFixture(
         }
         return recording;
     };
-    const viewModelRenderer = createViewModelRenderer({
+    const autoBattleCommands: AutoBattleCommands = {
+        restart: () => {
+            battle.restart();
+        },
+        cycleSpeed: () => {
+            cycleSpeed();
+        },
+    };
+    const viewModelRenderer = createViewModelRenderer<AutoBattleViewModel>({
         node: (name: string) => toViewModelNode(ensureViewNode(name)),
-        bindings: createAutoBattleBindings({
-            restart: () => {
-                battle.restart();
-            },
-            cycleSpeed: () => {
-                cycleSpeed();
-            },
-        } satisfies AutoBattleCommands),
+        // 绑定集在 render 时按存活单位动态重建（见 render 内的 buildAutoBattleBindings）
+        bindings: [],
     });
 
     let disposed = false;
@@ -228,6 +340,7 @@ export function createAutoBattleFixture(
         config: {
             ally: config.ally,
             enemy: config.enemy,
+            heroes: config.heroes,
         },
         get speed(): AutoBattleSpeed {
             return speed;
@@ -237,16 +350,38 @@ export function createAutoBattleFixture(
         viewModel: {
             node: ensureViewNode,
             render: () => {
-                // 按当前战斗状态派生 VM，事件日志经单位名解析后格式化
+                // 按当前战斗状态派生 VM，事件日志经单位名解析后格式化；单位绑定
+                // 集随存活单位动态重建（静态标量 + 每单位一组动态绑定）
                 const state = battle.state;
                 const nameOf = (id: string): string =>
                     state.units.find((unit) => unit.id === id)?.name ?? id;
                 const log = battle.events.map((event) =>
                     formatAutoBattleEvent(event, nameOf),
                 );
-                viewModelRenderer.setViewModel(
-                    createAutoBattleViewModel(state, log, speed),
+                const vm = createAutoBattleViewModel(state, log, speed);
+                viewModelRenderer.setBindings(
+                    buildAutoBattleBindings(autoBattleCommands, vm),
                 );
+                viewModelRenderer.setViewModel(vm);
+            },
+        },
+        lineup: {
+            get value() {
+                return lineup;
+            },
+            get selectedSlot() {
+                return selectedSlot;
+            },
+            selectSlot: (slot: number) => lineupCommands.selectSlot(slot),
+            selectHero: (heroId: string) => lineupCommands.selectHero(heroId),
+            removeFromSlot: (slot: number) => lineupCommands.removeFromSlot(slot),
+            startBattle: () => lineupCommands.startBattle(),
+            store: lineupStore,
+            restoreLineup: async () => {
+                const loaded = await lineupStore.load();
+                if (loaded !== null) {
+                    lineup = loaded.data;
+                }
             },
         },
         dispose: async () => {

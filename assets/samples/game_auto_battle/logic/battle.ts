@@ -23,13 +23,23 @@ import type {
     AutoBattlePhase,
     AutoBattleSide,
     AutoBattleState,
-    AutoBattleUnit,
 } from "../models";
+
+/** 开战编队（每侧 heroId 序列，压缩序 = 上阵顺序）。 */
+export interface AutoBattleLineupPair {
+    readonly ally: readonly string[];
+    readonly enemy: readonly string[];
+}
 
 /** 战斗控制器选项：时钟用于事件时间戳，事件经 onEvent 广播。 */
 export interface AutoBattleBattleOptions {
     readonly clock: AutoBattleClock;
     readonly config: AutoBattleConfigHandle;
+    /**
+     * 开战编队（heroId 序列）；缺省用 config.lineups（初始编队）。函数形式让
+     * 调用方（编队页）在玩家编辑后切换编队并重开对局。
+     */
+    readonly lineups?: () => AutoBattleLineupPair;
     readonly onEvent?: (event: AutoBattleEvent) => void;
 }
 
@@ -78,26 +88,35 @@ export function createAutoBattleBattle(
         report(full);
     }
 
-    /** 开战实例化：由配置编队（lineup 展开的双方单位清单）创建单位快照，并
-     *  把每个单位分配到己方/敌方布阵区格（MapGrid 占用表）。战斗单位是 config
-     *  数据的只读消费副本，改动不回流配置/编队（解耦）。change 05 阶段坐标
-     *  只读静态出发点，距离移动留 change 08。 */
+    /** 开战实例化：由编队（heroId 序列，缺省 config.lineups）从英雄池展开单位
+     *  快照，并把每个单位分配到己方/敌方布阵区格（MapGrid 占用表）。战斗单位是
+     *  英雄池数据的只读消费副本，改动不回流配置/编队（解耦）。change 05 阶段
+     *  坐标只读静态出发点，距离移动留 change 08。 */
     function resetUnits(): void {
         const grid = createMapGrid();
         units = [];
+        const lineups = options.lineups === undefined ? config.lineups : options.lineups();
+        const heroById = new Map(config.heroes.map((hero) => [hero.id, hero]));
+
         const placeSide = (
             side: AutoBattleSide,
-            defs: readonly AutoBattleUnit[],
+            heroIds: readonly string[],
         ): void => {
             const cells = grid.formationCells(side);
-            defs.forEach((def, index) => {
+            heroIds.forEach((heroId, index) => {
+                const hero = heroById.get(heroId);
+                if (hero === undefined) {
+                    throw new Error(
+                        `auto-battle battle: lineup references unknown hero "${heroId}"`,
+                    );
+                }
                 const gridKey = cells[index] ?? cells[cells.length - 1]!;
-                grid.place(def.id, gridKey);
-                units.push(createMutableUnit(def, gridKey));
+                grid.place(heroId, gridKey);
+                units.push(createMutableUnit({ ...hero, side, index }, gridKey));
             });
         };
-        placeSide("ally", config.ally);
-        placeSide("enemy", config.enemy);
+        placeSide("ally", lineups.ally);
+        placeSide("enemy", lineups.enemy);
     }
 
     function unitById(id: string): MutableUnit | undefined {
