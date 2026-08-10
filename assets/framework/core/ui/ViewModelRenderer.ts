@@ -18,6 +18,11 @@ export interface ViewModelRendererOptions<VM> {
 export interface ViewModelRenderer<VM> {
     /** 设置并渲染 ViewModel：首次全量，后续按绑定 diff 只更新变化项。 */
     setViewModel(vm: VM): void;
+    /**
+     * 重置绑定集：以新绑定数组重建 diff 状态并全量渲染。供动态绑定集使用
+     * （绑定数量/节点名随运行时可变的实体集合增删，如单位实例）。
+     */
+    setBindings(bindings: readonly Binding<VM>[]): void;
     /** 强制全量渲染全部绑定。 */
     refresh(): void;
     /** 清理订阅与命令回调，幂等；dispose 后不再渲染。 */
@@ -63,11 +68,14 @@ export function createBindable<T>(initial: T): Bindable<T> {
 export function createViewModelRenderer<VM>(
     options: ViewModelRendererOptions<VM>,
 ): ViewModelRenderer<VM> {
+    // 绑定集可变：setBindings 重建后 diff 状态随之重建（供动态实体集合使用）
+    let bindings: readonly Binding<VM>[] = options.bindings;
     // 记录每个绑定上次渲染的 get 结果，diff 依据；未渲染过为 undefined 哨兵
-    const lastValues: (unknown | undefined)[] = new Array(options.bindings.length);
-    // 命令回调已注册标记：每个命令绑定只注册一次点击回调
-    const commandRegistered: boolean[] = new Array(options.bindings.length);
-    const views: (ViewModelNode | undefined)[] = new Array(options.bindings.length);
+    let lastValues: (unknown | undefined)[] = new Array(bindings.length);
+    // 已注册命令的节点名集合：跨 setBindings 保留——避免动态重建绑定集时对同一
+    // 节点重复注册 onClick（Adapter 的 onClick 通常是追加监听，重复注册会累积）
+    const registeredCommandNodes = new Set<string>();
+    let views: (ViewModelNode | undefined)[] = new Array(bindings.length);
     let vm: VM | undefined;
     let disposed = false;
 
@@ -75,8 +83,8 @@ export function createViewModelRenderer<VM>(
         if (disposed || vm === undefined) {
             return;
         }
-        for (let index = 0; index < options.bindings.length; index += 1) {
-            const binding = options.bindings[index];
+        for (let index = 0; index < bindings.length; index += 1) {
+            const binding = bindings[index];
             if (binding === undefined) {
                 continue;
             }
@@ -103,11 +111,11 @@ export function createViewModelRenderer<VM>(
         return resolved;
     }
 
-    // 按绑定类型写入节点并记录上次值；命令绑定只注册一次点击回调
+    // 按绑定类型写入节点并记录上次值；命令绑定只注册一次点击回调（按节点名去重）
     function applyBinding<VM_>(index: number, binding: Binding<VM_>, view: ViewModelNode): void {
         if (binding.kind === "command") {
-            if (!commandRegistered[index]) {
-                commandRegistered[index] = true;
+            if (!registeredCommandNodes.has(binding.node)) {
+                registeredCommandNodes.add(binding.node);
                 view.onClick(() => {
                     if (!disposed && vm !== undefined) {
                         binding.run(vm as VM_);
@@ -170,6 +178,17 @@ export function createViewModelRenderer<VM>(
                 return;
             }
             vm = next;
+            renderAll();
+        },
+        setBindings(next: readonly Binding<VM>[]): void {
+            if (disposed) {
+                return;
+            }
+            // 绑定集变化：重建 diff 状态（全量）；已注册命令节点名集合保留，
+            // 同一节点的命令回调不重复注册
+            bindings = next;
+            lastValues = new Array(next.length);
+            views = new Array(next.length);
             renderAll();
         },
         refresh(): void {
