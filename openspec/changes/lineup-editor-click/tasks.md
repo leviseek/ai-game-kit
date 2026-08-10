@@ -21,15 +21,15 @@
 
 - [x] 4.1 `ui/demo/assets/Common/UnitSlot.xml`：UnitSlot 可复用组件（名称/HP 文本/HP 条/能量条，引用 Common 进度条），位置不内嵌、由 `setXY` 写入
 - [x] 4.2 `ui/demo/assets/AutoBattle/LineupEditorView.xml`：编队页（候选英雄区 + 布阵区），敌左己右语义可选沿用
-- [ ] 4.3 `ui/demo/assets/AutoBattle/AutoBattleView.xml`：战场容器化——从固定 12 槽演进为"空战场容器 + 运行时动态实例化 UnitSlot"
-- [ ] 4.4 每个 FGUI 变更经 `bun run fgui validate --strict` 通过后由编辑器发布（产物不手改）
+- [x] 4.3 `ui/demo/assets/AutoBattle/AutoBattleView.xml`：战场容器化——从固定 12 槽演进为"空战场容器 + 运行时动态实例化 UnitSlot"
+- [x] 4.4 每个 FGUI 变更经 `bun run fgui validate --strict` 通过后由编辑器发布（产物不手改）
 
 ## 5. 呈现层与装配
 
-- [ ] 5.1 `view/view.ts` 演进：新增网格坐标→屏幕坐标映射（沿用 `slotToXY` 思路改造为网格输入）；`AutoBattleUnitView` 增加 `gridKey`/出发格位
-- [ ] 5.2 绑定声明演进：从预置 `2*MAX_TEAM_SIZE` 槽位 + visible 显隐，演进为按网格存活单位动态装配 UnitSlot 实例（节点名 `unit_{id}`，位置经 `setXY` 写入）；同步更新绑定声明、fixture `viewNodes` 记录型节点
-- [ ] 5.3 编队页 VM 与命令绑定：候选英雄区 + 布阵区呈现、点击填充/替换/卸下命令接线、持久化触发
-- [ ] 5.4 `assembly.ts` 接线：编队 → 开战 → 布阵区格 → 动态装配 UnitSlot；fixture 暴露 lineup / lineupStore 能力钩子
+- [x] 5.1 `view/view.ts` 演进：新增网格坐标→屏幕坐标映射（沿用 `slotToXY` 思路改造为网格输入）；`AutoBattleUnitView` 增加 `gridKey`/出发格位
+- [x] 5.2 绑定声明演进：从预置 `2*MAX_TEAM_SIZE` 槽位 + visible 显隐，演进为按网格存活单位动态装配 UnitSlot 实例（节点名 `unit_{id}`，位置经 `setXY` 写入）；同步更新绑定声明、fixture `viewNodes` 记录型节点
+- [x] 5.3 编队页 VM 与命令绑定：候选英雄区 + 布阵区呈现、点击填充/替换/卸下命令接线、持久化触发
+- [x] 5.4 `assembly.ts` 接线：编队 → 开战 → 布阵区格 → 动态装配 UnitSlot；fixture 暴露 lineup / lineupStore 能力钩子
 - [ ] 5.5 冒烟与截图更新：`?smoke=auto-battle` 链路验证编队→开战→动态渲染；AutoBattleView/LineupEditorView 截图核对
 
 ## 6. 测试与验证
