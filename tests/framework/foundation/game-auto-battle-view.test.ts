@@ -1,8 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import {
-    createAutoBattleBindings,
-    slotToXY,
+    buildAutoBattleBindings,
+    gridToXY,
     type AutoBattleUnitView,
+    type AutoBattleViewModel,
 } from "../../../assets/samples/game_auto_battle/view/view";
 import { createViewModelRenderer, type ViewModelNode } from "../../../assets/framework";
 /** 记录型视图节点：记录 setter 调用，供断言绑定 diff 行为。 */
@@ -48,13 +49,19 @@ function recordingView(): {
         },
     };
 }
-/** 构造 N 个指定阵营单位（id/side/index 齐全，供 VM 消费）。 */
-function unit(id: string, side: "ally" | "enemy", index: number): AutoBattleUnitView {
+/** 构造指定阵营单位（id/side/index/gridKey 齐全，供 VM 消费）。 */
+function unit(
+    id: string,
+    side: "ally" | "enemy",
+    index: number,
+    gridKey = "0:0",
+): AutoBattleUnitView {
     return {
         id,
         name: id,
         side,
         index,
+        gridKey,
         hp: 100,
         hpMax: 100,
         energy: 0,
@@ -71,107 +78,144 @@ function vm(units: readonly AutoBattleUnitView[]): {
 } {
     return { round: 1, units, log: [], result: undefined, speed: 1 };
 }
-describe("Auto-battle slotToXY mapping table", () => {
-    test("ally is right and enemy is left for both 3v3 and 6v6", () => {
-        // 3v3：己方右侧、敌方左侧
-        const ally3 = slotToXY("ally", 0, 3);
-        const enemy3 = slotToXY("enemy", 0, 3);
-        expect(ally3.x).toBeGreaterThan(enemy3.x);
-        expect(enemy3.x).toBeLessThan(ally3.x);
-        // 6v6：同样敌左、己右
-        const ally6 = slotToXY("ally", 0, 6);
-        const enemy6 = slotToXY("enemy", 0, 6);
-        expect(ally6.x).toBeGreaterThan(enemy6.x);
-        expect(enemy6.x).toBeLessThan(ally6.x);
+describe("Auto-battle gridToXY mapping table", () => {
+    test("enemy cells (left half) map left of ally cells", () => {
+        const enemy = gridToXY("0:0");
+        const ally = gridToXY("0:3");
+        expect(enemy.x).toBeLessThan(ally.x);
+        // 敌左 3 列、己右 3 列：敌列 2 仍在己列 3 左侧
+        expect(gridToXY("0:2").x).toBeLessThan(gridToXY("0:3").x);
     });
-    test("y is derived from slotIndex within the team band", () => {
-        const ally0 = slotToXY("ally", 0, 6);
-        const ally1 = slotToXY("ally", 1, 6);
-        expect(ally1.y).toBeGreaterThan(ally0.y);
+
+    test("row increases y and col increases x within a side", () => {
+        expect(gridToXY("1:0").y).toBeGreaterThan(gridToXY("0:0").y);
+        expect(gridToXY("0:1").x).toBeGreaterThan(gridToXY("0:0").x);
+        expect(gridToXY("0:4").x).toBeGreaterThan(gridToXY("0:3").x);
     });
-    test("coordinates are stable within the max team size", () => {
-        // 同一 side/slotIndex 输入产生确定性输出（纯函数无随机/可变状态）
-        expect(slotToXY("enemy", 2, 6)).toEqual(slotToXY("enemy", 2, 6));
-        expect(slotToXY("ally", 5, 6)).toEqual(slotToXY("ally", 5, 6));
+
+    test("coordinates are deterministic for the same grid key", () => {
+        expect(gridToXY("2:5")).toEqual(gridToXY("2:5"));
+    });
+
+    test("an invalid grid key is rejected", () => {
+        expect(() => gridToXY("abc")).toThrow();
+        expect(() => gridToXY("-1:0")).toThrow();
     });
 });
-describe("Auto-battle dynamic slot bindings", () => {
-    test("bindings pre-allocate MAX_TEAM_SIZE slots per side with global indices", () => {
+describe("Auto-battle dynamic unit bindings", () => {
+    const commands = { restart: () => {}, cycleSpeed: () => {} };
+
+    /** 模拟渲染流程：初始空绑定集，render 时按存活单位重建绑定集并 setViewModel。 */
+    function renderUnits(units: readonly AutoBattleUnitView[]): {
+        view: ReturnType<typeof recordingView>;
+        renderer: ReturnType<typeof createViewModelRenderer<AutoBattleViewModel>>;
+    } {
         const view = recordingView();
-        const renderer = createViewModelRenderer({
+        const renderer = createViewModelRenderer<AutoBattleViewModel>({
             node: view.node,
-            bindings: createAutoBattleBindings({ restart: () => {}, cycleSpeed: () => {} }),
+            bindings: [],
         });
-        // 1v1 只上阵两个单位
-        const units = [unit("a", "ally", 0), unit("e", "enemy", 0)];
-        renderer.setViewModel(vm(units));
-        // 己方 slot 0 → 全局索引 0，敌方 slot 0 → 全局索引 MAX_TEAM_SIZE(6)
-        expect(view.nodes.get("txt_unit_0_name")?.text).toBe("a");
-        expect(view.nodes.get("txt_unit_6_name")?.text).toBe("e");
-        // 未上阵槽位节点保持空文本
-        expect(view.nodes.get("txt_unit_1_name")?.text).toBe("");
+        const vmValue = vm(units);
+        renderer.setBindings(buildAutoBattleBindings(commands, vmValue));
+        renderer.setViewModel(vmValue);
+        return { view, renderer };
+    }
+
+    test("bindings are generated per surviving unit by id", () => {
+        const { view } = renderUnits([
+            unit("a", "ally", 0, "0:3"),
+            unit("e", "enemy", 0, "0:0"),
+        ]);
+
+        expect(view.nodes.get("txt_unit_a_name")?.text).toBe("a");
+        expect(view.nodes.get("txt_unit_e_name")?.text).toBe("e");
+        // 存活单位实例可见
+        expect(view.nodes.get("unit_a")?.visible).toBe(true);
     });
-    test("position binding maps the unit group to slotToXY coordinates", () => {
-        const view = recordingView();
-        const renderer = createViewModelRenderer({
-            node: view.node,
-            bindings: createAutoBattleBindings({ restart: () => {}, cycleSpeed: () => {} }),
-        });
-        const units = [unit("a", "ally", 0), unit("e", "enemy", 0)];
-        renderer.setViewModel(vm(units));
-        // 单位组 unit_{全局索引} 被写到 slotToXY 坐标
-        expect(view.nodes.get("unit_0")?.xy).toEqual(slotToXY("ally", 0, 1));
-        expect(view.nodes.get("unit_6")?.xy).toEqual(slotToXY("enemy", 0, 1));
+
+    test("position binding maps each unit to its grid coordinates", () => {
+        const { view } = renderUnits([
+            unit("a", "ally", 0, "0:3"),
+            unit("e", "enemy", 0, "0:0"),
+        ]);
+
+        expect(view.nodes.get("unit_a")?.xy).toEqual(gridToXY("0:3"));
+        expect(view.nodes.get("unit_e")?.xy).toEqual(gridToXY("0:0"));
     });
-    test("visible binding hides out-of-scale slots and keeps bound slots visible", () => {
-        const view = recordingView();
-        const renderer = createViewModelRenderer({
-            node: view.node,
-            bindings: createAutoBattleBindings({ restart: () => {}, cycleSpeed: () => {} }),
-        });
-        // 3v3：只上阵 6 单位，超出规模的预置槽位（如全局 9..11）隐藏
-        const units = [
-            unit("a0", "ally", 0),
-            unit("a1", "ally", 1),
-            unit("a2", "ally", 2),
-            unit("e0", "enemy", 0),
-            unit("e1", "enemy", 1),
-            unit("e2", "enemy", 2),
-        ];
-        renderer.setViewModel(vm(units));
-        expect(view.nodes.get("unit_0")?.visible).toBe(true);
-        expect(view.nodes.get("unit_6")?.visible).toBe(true);
-        expect(view.nodes.get("unit_9")?.visible).toBe(false);
-        expect(view.nodes.get("unit_11")?.visible).toBe(false);
+
+    test("progress and text bindings reflect hp and energy for each unit", () => {
+        const { view } = renderUnits([
+            unit("a", "ally", 0, "0:3"),
+            unit("e", "enemy", 0, "0:0"),
+        ]);
+
+        expect(view.nodes.get("txt_unit_a_hp")?.text).toBe("HP 100/100");
+        expect(view.nodes.get("bar_unit_a_hp")?.progress).toBe(1);
+        expect(view.nodes.get("bar_unit_a_energy")?.progress).toBe(0);
+        expect(view.nodes.get("bar_unit_e_hp")?.progress).toBe(1);
     });
-    test("VM scale change diff rewrites affected slots", () => {
+
+    test("re-rendering with a changed unit set rebinds the surviving units", () => {
         const view = recordingView();
-        const renderer = createViewModelRenderer({
+        const renderer = createViewModelRenderer<AutoBattleViewModel>({
             node: view.node,
-            bindings: createAutoBattleBindings({ restart: () => {}, cycleSpeed: () => {} }),
+            bindings: [],
         });
-        // 1v1 → 6v6：规模变化后各槽位文本/显隐/坐标随之更新
-        const one = [unit("a0", "ally", 0), unit("e0", "enemy", 0)];
-        renderer.setViewModel(vm(one));
-        expect(view.nodes.get("unit_6")?.visible).toBe(true);
-        expect(view.nodes.get("unit_7")?.visible).toBe(false);
-        const six = [
-            unit("a0", "ally", 0),
-            unit("a1", "ally", 1),
-            unit("a2", "ally", 2),
-            unit("a3", "ally", 3),
-            unit("a4", "ally", 4),
-            unit("a5", "ally", 5),
-            unit("e0", "enemy", 0),
-            unit("e1", "enemy", 1),
-            unit("e2", "enemy", 2),
-            unit("e3", "enemy", 3),
-            unit("e4", "enemy", 4),
-            unit("e5", "enemy", 5),
-        ];
-        renderer.setViewModel(vm(six));
-        expect(view.nodes.get("unit_7")?.visible).toBe(true);
-        expect(view.nodes.get("unit_11")?.visible).toBe(true);
-        expect(view.nodes.get("txt_unit_7_name")?.text).toBe("e1");
+
+        const first = vm([
+            unit("a", "ally", 0, "0:3"),
+            unit("e", "enemy", 0, "0:0"),
+        ]);
+        renderer.setBindings(buildAutoBattleBindings(commands, first));
+        renderer.setViewModel(first);
+        expect(view.nodes.get("txt_unit_a_hp")?.text).toBe("HP 100/100");
+
+        // 单位 e 阵亡（从 VM 移除）：重新渲染只保留存活单位绑定
+        const second = vm([unit("a", "ally", 0, "0:3")]);
+        renderer.setBindings(buildAutoBattleBindings(commands, second));
+        renderer.setViewModel(second);
+        expect(view.nodes.get("txt_unit_a_hp")?.text).toBe("HP 100/100");
+    });
+
+    test("static bindings (round/log/result/speed) still apply alongside unit bindings", () => {
+        const { view } = renderUnits([unit("a", "ally", 0, "0:3")]);
+
+        expect(view.nodes.get("txt_round")?.text).toBe("第 1 回合");
+        expect(view.nodes.get("txt_result")?.visible).toBe(false);
+    });
+
+    test("rebinding the unit set does not re-register command callbacks", () => {
+        // 渲染器命令注册按节点名去重：动态重建绑定集时，同一命令节点不重复
+        // 注册 onClick（否则真实 Adapter 的追加监听会随每次 render 累积触发）
+        let clickRegistrations = 0;
+        const view = recordingView();
+        const node = (name: string): ViewModelNode | undefined => {
+            const resolved = view.node(name);
+            if (resolved === undefined) {
+                return undefined;
+            }
+            const originalOnClick = resolved.onClick.bind(resolved);
+            return {
+                ...resolved,
+                onClick: (handler: () => void) => {
+                    clickRegistrations += 1;
+                    originalOnClick(handler);
+                },
+            };
+        };
+        const renderer = createViewModelRenderer<AutoBattleViewModel>({
+            node,
+            bindings: [],
+        });
+        const commands = { restart: () => {}, cycleSpeed: () => {} };
+        const units = [unit("a", "ally", 0, "0:3")];
+
+        renderer.setBindings(buildAutoBattleBindings(commands, vm(units)));
+        renderer.setViewModel(vm(units));
+        renderer.setBindings(buildAutoBattleBindings(commands, vm(units)));
+        renderer.setViewModel(vm(units));
+
+        // 两次重建绑定集：btn_restart / btn_speed 各只注册一次 onClick
+        expect(clickRegistrations).toBe(2);
     });
 });

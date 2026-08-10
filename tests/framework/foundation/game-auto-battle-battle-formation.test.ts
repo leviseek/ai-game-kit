@@ -148,4 +148,26 @@ describe("Auto-battle determinism and lineup decoupling", () => {
 
         battle.dispose();
     });
+
+    test("a battle can switch lineup on restart via the lineup provider", () => {
+        const config = createAutoBattleConfig(lineupContent(["a", "b"], ["e"]));
+        const clock = createAutoBattleClock();
+        let pair = { ally: ["a", "b"], enemy: ["e"] };
+        const battle = createAutoBattleBattle({
+            clock,
+            config,
+            lineups: () => pair,
+        });
+
+        const idsOf = (): string[] =>
+            battle.state.units.map((u) => u.id).sort();
+        expect(idsOf()).toEqual(["a", "b", "e"]);
+
+        // 玩家改编队后重开：战斗按新编队重新实例化
+        pair = { ally: ["b"], enemy: ["e"] };
+        battle.restart();
+        expect(idsOf()).toEqual(["b", "e"]);
+
+        battle.dispose();
+    });
 });

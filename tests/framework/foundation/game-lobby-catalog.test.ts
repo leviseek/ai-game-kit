@@ -3,7 +3,10 @@ import { describe, expect, test } from "bun:test";
 // 副作用导入 samples/entry：触发 samples bundle 单点登记，使运行时夹具登记表非空
 import "../../../assets/samples/entry";
 import { gameFixtureRegistry } from "../../../assets/game/fixture/registry";
-import { gameTypeCatalog } from "../../../assets/game/lobby/catalog";
+import {
+    AUTO_BATTLE_BATTLE_ENTRY,
+    gameTypeCatalog,
+} from "../../../assets/game/lobby/catalog";
 
 describe("game lobby catalog", () => {
     test("every catalog id aligns with the fixture registry", () => {
@@ -29,10 +32,17 @@ describe("game lobby catalog", () => {
         });
     });
 
-    test("auto_battle entry matches the auto-battle smoke contract", () => {
+    test("auto_battle entry opens the lineup editor first, then the battle page", () => {
         const autoBattle = gameTypeCatalog.find((info) => info.id === "auto_battle");
         expect(autoBattle?.playable).toBe(true);
+        // 进入品类先落编队页编辑布阵
         expect(autoBattle?.entry).toEqual({
+            route: "auto_battle/lineup",
+            packageName: "AutoBattle",
+            resName: "LineupEditorView",
+        });
+        // 编队页点"开始战斗"后切到战场页
+        expect(AUTO_BATTLE_BATTLE_ENTRY).toEqual({
             route: "auto_battle/battle",
             packageName: "AutoBattle",
             resName: "AutoBattleView",

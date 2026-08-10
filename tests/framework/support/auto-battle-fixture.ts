@@ -3,7 +3,10 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import type { GameFixture } from "../../../assets/game/fixture/GameFixture";
-import type { UiNavigator } from "../../../assets/framework";
+import type {
+    PlatformStorage,
+    UiNavigator,
+} from "../../../assets/framework";
 
 /** 项目根与 auto_battle 品类关键路径（契约/边界断言复用）。 */
 export const AUTO_BATTLE_PROJECT_ROOT = resolve(import.meta.dir, "../../..");
@@ -87,6 +90,31 @@ export interface AutoBattleState {
 
 export type AutoBattleSpeed = 1 | 2 | 3;
 
+/** 玩家编队：定长槽位序列（slot 0..MAX_TEAM_SIZE-1 → 英雄 id），空槽 null。 */
+export interface AutoBattleLineup {
+    readonly slots: readonly (string | null)[];
+}
+
+/** 英雄静态配置：英雄池条目（编队候选），形状为 AutoBattleUnit 去掉 side/index。 */
+export interface AutoBattleHero {
+    readonly id: string;
+    readonly name: string;
+    readonly position: AutoBattlePosition;
+    readonly maxHp: number;
+    readonly attack: number;
+    readonly speed: number;
+    readonly energyMax: number;
+    readonly skill: AutoBattleSkill;
+}
+
+/** 编队持久化存储：versioned-storage 语义（schema 版本化 + 迁移预留）。 */
+export interface LineupStore {
+    readonly currentVersion: number;
+    save(lineup: AutoBattleLineup): Promise<void>;
+    load(): Promise<{ readonly version: number; readonly data: AutoBattleLineup } | null>;
+    delete(): Promise<void>;
+}
+
 export interface AutoBattleClock {
     now(): number;
     advance(milliseconds: number): void;
@@ -99,6 +127,8 @@ export interface AutoBattleFixtureOptions {
     readonly clock?: AutoBattleClock;
     /** 配置内容：驱动单位/技能/能量规则；缺省为夹具内建缺省配置。 */
     readonly configContent?: Record<string, unknown>;
+    /** 平台存储后端：缺省为内存存储；观察编队存档写入/读取。 */
+    readonly storage?: PlatformStorage;
     /** 事件回调：战斗事件广播接缝（测试据此断言回放顺序）。 */
     readonly onEvent?: (event: AutoBattleEvent) => void;
 }
@@ -123,6 +153,8 @@ export interface AutoBattleFixtureHooks {
     readonly config: {
         readonly ally: readonly AutoBattleUnit[];
         readonly enemy: readonly AutoBattleUnit[];
+        /** 英雄池（编队页候选来源）。 */
+        readonly heroes: readonly AutoBattleHero[];
     };
     /** 当前观战加速挡位（1x/2x/3x）。 */
     readonly speed: AutoBattleSpeed;
@@ -132,6 +164,25 @@ export interface AutoBattleFixtureHooks {
     readonly viewModel: {
         readonly node: (name: string) => AutoBattleViewNode;
         render(): void;
+    };
+    /** 编队编辑：玩家可变编队 + 点击选择操作 + 持久化。 */
+    readonly lineup: {
+        /** 当前编队快照（定长槽位序列，空槽 null）。 */
+        readonly value: AutoBattleLineup;
+        /** 当前选中的布阵格；null = 未选中。 */
+        readonly selectedSlot: number | null;
+        /** 点击布阵格：未选中则选中；已选中的已上阵格二次点击卸下。 */
+        selectSlot(slot: number): void;
+        /** 点击候选英雄：填入选中的布阵格，否则填入第一个空槽。 */
+        selectHero(heroId: string): void;
+        /** 卸下指定槽位英雄。 */
+        removeFromSlot(slot: number): void;
+        /** 以当前编队重开对局（开战由 lineup 实例化）。 */
+        startBattle(): void;
+        /** 编队持久化存储。 */
+        readonly store: LineupStore;
+        /** 从存储恢复上次编队（重启后调用）；无存档则保持当前编队。 */
+        restoreLineup(): Promise<void>;
     };
 }
 

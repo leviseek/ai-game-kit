@@ -218,20 +218,19 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)(
 
             fixture.viewModel.render();
 
-            // 初始状态映射到静态槽位节点（先己方后敌方）
+            // 初始状态映射到动态单位节点（按单位 id 寻址，先己方后敌方）
             expect(fixture.viewModel.node("txt_round").text).toBe("第 1 回合");
-            expect(fixture.viewModel.node("txt_unit_0_name").text).toBe("A");
-            expect(fixture.viewModel.node("txt_unit_0_hp").text).toBe("HP 100/100");
-            expect(fixture.viewModel.node("bar_unit_0_hp").progress).toBe(1);
-            expect(fixture.viewModel.node("bar_unit_0_energy").progress).toBe(0);
+            expect(fixture.viewModel.node("txt_unit_a_name").text).toBe("A");
+            expect(fixture.viewModel.node("txt_unit_a_hp").text).toBe("HP 100/100");
+            expect(fixture.viewModel.node("bar_unit_a_hp").progress).toBe(1);
+            expect(fixture.viewModel.node("bar_unit_a_energy").progress).toBe(0);
             expect(fixture.viewModel.node("txt_result").visible).toBe(false);
 
             // 一回合后：敌方受击血量下降、攻击方能量增长
-            // （敌方位移 = MAX_TEAM_SIZE，1v1 下敌方槽位全局索引为 6）
             fixture.battle.tick();
             fixture.viewModel.render();
-            expect(fixture.viewModel.node("txt_unit_6_hp").text).toBe("HP 90/100");
-            expect(fixture.viewModel.node("bar_unit_0_energy").progress).toBe(0.1);
+            expect(fixture.viewModel.node("txt_unit_x_hp").text).toBe("HP 90/100");
+            expect(fixture.viewModel.node("bar_unit_a_energy").progress).toBe(0.1);
 
             await fixture.dispose();
         });

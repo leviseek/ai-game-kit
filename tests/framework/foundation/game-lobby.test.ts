@@ -47,6 +47,16 @@ function createRecordingHost(log: string[]): {
                 };
                 return handle;
             },
+            switchEntryPage: async (entry) => {
+                log.push(`switch:${entry.route}`);
+                const handle: EntryPageHandle = {
+                    node: () => undefined,
+                    onClose: (callback: () => void) => {
+                        closeCallbacks.push(callback);
+                    },
+                };
+                return handle;
+            },
             closeEntryPage: async () => {
                 log.push("close");
             },
@@ -204,6 +214,59 @@ describe("game lobby orchestration", () => {
         await lobby.exit();
         await Promise.resolve();
         expect(log).toEqual(["presenter.dispose", "close", "dispose:card"]);
+    });
+
+    test("session navigator switches to another entry page and rebinds the presenter", async () => {
+        const log: string[] = [];
+        const { host } = createRecordingHost(log);
+        const lobby = createGameLobby(host, {
+            catalog: TEST_CATALOG,
+            registry: createTestRegistry(log),
+            presenters: {
+                // 装配时立即触发页面切换（模拟 auto_battle 编队页点"开始战斗"）
+                card: (_fixture, _node, session) => {
+                    log.push("attach:lineup");
+                    if (session !== undefined) {
+                        void session.openEntry(
+                            {
+                                route: "card/battle2",
+                                packageName: "CardGame",
+                                resName: "CardBattleView",
+                            },
+                            () => ({
+                                render: () => {},
+                                dispose: () => {
+                                    log.push("dispose:battle");
+                                },
+                            }),
+                        );
+                    }
+                    return {
+                        render: () => {},
+                        dispose: () => {
+                            log.push("dispose:lineup");
+                        },
+                    };
+                },
+            },
+        });
+
+        await lobby.enter("card");
+        // 切换是 fire-and-forget 异步：等一个事件循环让整条微任务链落定
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        // 切换：释放编队呈现器 → 打开战场页 → 装配战场呈现器
+        expect(log).toEqual([
+            "start:card",
+            "open:card/battle",
+            "attach:lineup",
+            "dispose:lineup",
+            "switch:card/battle2",
+        ]);
+        expect(lobby.active?.id).toBe("card");
+        // 新页 presenter 已装配（战场呈现器 dispose 路径可触发）
+        await lobby.exit();
+        expect(log).toContain("dispose:battle");
     });
 
     test("unknown game type is rejected", async () => {
