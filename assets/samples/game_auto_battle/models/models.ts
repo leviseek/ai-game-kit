@@ -40,6 +40,23 @@ export interface AutoBattleUnit {
     readonly skill: AutoBattleSkill;
 }
 
+/** 英雄静态配置：英雄池条目（编队引用对象），形状为 AutoBattleUnit 去掉 side/index（开战实例化时推导）。 */
+export interface AutoBattleHero {
+    readonly id: string;
+    readonly name: string;
+    readonly position: AutoBattlePosition;
+    readonly maxHp: number;
+    readonly attack: number;
+    readonly speed: number;
+    readonly energyMax: number;
+    readonly skill: AutoBattleSkill;
+}
+
+/** 玩家编队：定长槽位序列（slot 0..MAX_TEAM_SIZE-1 → 英雄 id），空槽为 null；可变、可持久化。 */
+export interface AutoBattleLineup {
+    readonly slots: readonly (string | null)[];
+}
+
 /** 战斗中单位运行时快照：静态属性 + 当前 HP/能量。 */
 export interface AutoBattleUnitState extends AutoBattleUnit {
     readonly hp: number;
