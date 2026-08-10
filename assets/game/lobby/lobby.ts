@@ -117,7 +117,7 @@ export function createGameLobby(
         active = undefined;
 
         const page = await host.switchEntryPage(entry);
-        const presenter = presenterFactory(session.fixture, page.node, navigate);
+        const presenter = presenterFactory(session.fixture, page.node, navigate, page.list);
         const next: GameSession = {
             id: session.id,
             fixture: session.fixture,
@@ -191,7 +191,7 @@ export function createGameLobby(
             const presenter =
                 presenterFactory === undefined
                     ? undefined
-                    : presenterFactory(fixture, page.node, navigate);
+                    : presenterFactory(fixture, page.node, navigate, page.list);
 
             const session: GameSession = { id, fixture, page, presenter };
             active = session;

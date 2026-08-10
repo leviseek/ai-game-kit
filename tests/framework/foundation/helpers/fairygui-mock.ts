@@ -8,6 +8,7 @@
  * - UIPackage：静态注册表 API 桩
  * - GComponent：可实例化容器类（name/setSize/touchable/opaque 可写，对齐 4.2 遮罩语义）
  * - GGraph：可实例化图形类（对齐 GRoot._modalLayer 模式，记录 drawRect 的填充色）
+ * - GList：可实例化列表类（支撑虚拟列表适配层的 instanceof 判定与最小运行时）
  * - UIConfig：提供 modalLayerColor（半透明黑），遮罩可见性来源于此
  *
  * 测试文件只依赖本 fixture 的符号存在性与形态，不依赖具体行为；真实 GRoot/
@@ -26,6 +27,7 @@ export function createFairyGuiMock(): {
     GComponent: new () => FairyGuiGComponentMock;
     GObject: new () => FairyGuiGComponentMock;
     GGraph: new () => FairyGuiGGraphMock;
+    GList: new () => FairyGuiGListMock;
     UIConfig: {
         modalLayerColor: FairyGuiColorMock;
     };
@@ -165,6 +167,28 @@ export function createFairyGuiMock(): {
                 this.fillColor = fillColor;
             }
         },
+        // GList：虚拟列表句柄适配层经 instanceof GList 判定并按名解析；符号必须
+        // 存在（ESM 具名导入链接），itemRenderer/numItems/getChild 支撑最小运行时
+        GList: class {
+            name = "";
+            width = 0;
+            height = 0;
+            touchable = false;
+            opaque = false;
+            itemRenderer: ((index: number, obj: unknown) => void) | null = null;
+            private _numItems = 0;
+            get numItems() {
+                return this._numItems;
+            }
+            set numItems(value: number) {
+                this._numItems = value;
+            }
+            on(_type: string, _callback: () => void, _target?: unknown) { }
+            off(_type: string, _callback: () => void, _target?: unknown) { }
+            getChild(_name: string): unknown {
+                return null;
+            }
+        },
         UIConfig: {
             modalLayerColor: { r: 0x33, g: 0x33, b: 0x33, a: 0x33 },
         },
@@ -194,6 +218,19 @@ export interface FairyGuiGComponentMock {
     addChild(child: unknown): unknown;
     removeChild(child: unknown): unknown;
     removeChildren(): void;
+}
+
+export interface FairyGuiGListMock {
+    name: string;
+    width: number;
+    height: number;
+    touchable: boolean;
+    opaque: boolean;
+    itemRenderer: ((index: number, obj: unknown) => void) | null;
+    numItems: number;
+    on(type: string, callback: () => void, target?: unknown): void;
+    off(type: string, callback: () => void, target?: unknown): void;
+    getChild(name: string): unknown;
 }
 
 export interface FairyGuiColorMock {

@@ -523,6 +523,8 @@ describe("framework public boundary", () => {
             "DisposeHandle",
             "DuplicateOpenPolicy",
             "EventMap",
+            "FairyGuiListHandle",
+            "FairyGuiListItemView",
             "FrameworkError",
             "FrameworkErrorOptions",
             "getBundleModuleRegistry",

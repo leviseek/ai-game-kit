@@ -1,4 +1,5 @@
 import type { ViewModelNode } from "../../framework";
+import type { FairyGuiListHandle } from "../../framework";
 import type { GameFixture } from "../fixture/GameFixture";
 import type { GameEntryInfo } from "./catalog";
 
@@ -20,9 +21,10 @@ export interface GameSessionNavigator {
     openEntry(entry: GameEntryInfo, presenterFactory: GamePresenterFactory): void;
 }
 
-/** 呈现器工厂：按品类装配 ViewModelRenderer 到注入的节点解析器。 */
+/** 呈现器工厂：按品类装配 ViewModelRenderer 到注入的节点解析器；可选注入列表解析器。 */
 export type GamePresenterFactory = (
     fixture: GameFixture,
     node: (name: string) => ViewModelNode | undefined,
     session?: GameSessionNavigator,
+    list?: (name: string) => FairyGuiListHandle<unknown> | undefined,
 ) => GamePresenter;

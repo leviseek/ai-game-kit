@@ -2,6 +2,7 @@ import type { Logger, ResourceScope } from "../../framework";
 import { lookupBundle, type IResourceProvider } from "../../framework";
 import type { FairyGuiPageHandle } from "../../framework/adapters/cocos/ui/FairyGuiPageAdapter";
 import { createFairyGuiViewHandle } from "../../framework/adapters/cocos/ui/FairyGuiViewHandle";
+import { createFairyGuiListViewHandle } from "../../framework/adapters/cocos/ui/FairyGuiListHandle";
 import { createDynamicComponentViewHandle } from "../../framework/adapters/cocos/ui/DynamicComponentViewHandle";
 import type { GameEntryInfo } from "../../game/lobby/catalog";
 import type {
@@ -119,8 +120,16 @@ export class GameLobbyHostImpl implements GameLobbyHost {
                   )
                 : createFairyGuiViewHandle(page.view as never);
 
+        // 编队页（LineupEditorView）含候选英雄 GList 虚拟列表：装配列表解析器，
+        // presenter 经 page.list 驱动候选渲染（对齐战场页动态单位映射装配路径）
+        const list =
+            entry.resName === "LineupEditorView"
+                ? createFairyGuiListViewHandle(page.view as never)
+                : undefined;
+
         const handle: EntryPageHandle = {
             node,
+            list,
             onClose: (callback: () => void) => {
                 // 登记到导航页作用域：导航关闭页面时触发一次（幂等）
                 navPage?.addDisposable({ dispose: callback });

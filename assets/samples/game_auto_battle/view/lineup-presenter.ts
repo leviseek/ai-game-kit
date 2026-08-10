@@ -1,4 +1,5 @@
 import type { ViewModelNode } from "../../../framework";
+import type { FairyGuiListHandle } from "../../../framework";
 import { createViewModelRenderer } from "../../../framework";
 import type { GamePresenter } from "../../../game/lobby/presenter";
 import type { GameSessionNavigator } from "../../../game/lobby/presenter";
@@ -8,6 +9,7 @@ import type { AutoBattleFixture } from "../assembly";
 import {
     createLineupEditorBindings,
     createLineupEditorViewModel,
+    type LineupCandidateView,
     type LineupEditorViewModel,
 } from "./lineup";
 import { createAutoBattlePresenter } from "./presenter";
@@ -15,15 +17,34 @@ import { createAutoBattlePresenter } from "./presenter";
 /**
  * 编队页呈现器：把玩家编队（fixture.lineup）+ 候选英雄区渲染到
  * LineupEditorView 节点。候选 = 英雄池中非敌方阵容的英雄（玩家可上阵，敌方
- * 固定阵容不可选）；点击选择（D3）经命令接线编辑编队并持久化（fixture 内触发）。
- * startBattle 经会话导航切换到战场页并装配战场呈现器。dispose 清理渲染器。
+ * 固定阵容不可选）；候选区为 GList 虚拟列表，经注入的 list 解析器装配句柄在
+ * render 时 setItems 驱动，点击候选经列表点击回调接线编辑编队并持久化（fixture
+ * 内触发）。布阵区/开始按钮仍走预置绑定。startBattle 经会话导航切换到战场页
+ * 并装配战场呈现器。dispose 清理渲染器。
  */
 export function createLineupEditorPresenter(
     fixture: GameFixture,
     node: (name: string) => ViewModelNode | undefined,
     session?: GameSessionNavigator,
+    list?: (name: string) => FairyGuiListHandle<unknown> | undefined,
 ): GamePresenter {
     const autoBattle = fixture as AutoBattleFixture;
+
+    // 候选英雄 GList 句柄：编队页候选区为虚拟列表，presenter 在 render 时
+    // setItems 驱动；节点不存在（内存测试/非真实页面）时退化，候选不渲染
+    const candidateList = list?.("candidate_list") as
+        | FairyGuiListHandle<LineupCandidateView>
+        | undefined;
+    if (candidateList !== undefined) {
+        candidateList.setItemRenderer((view) => {
+            view.field("txt_candidate_name")?.setText(view.item.heroName);
+            view.field("mark_deployed")?.setVisible(view.item.deployed);
+        });
+        candidateList.setItemClick((_index, candidate) => {
+            autoBattle.lineup.selectHero(candidate.heroId);
+            render();
+        });
+    }
 
     const renderer = createViewModelRenderer<LineupEditorViewModel>({
         node,
@@ -58,13 +79,16 @@ export function createLineupEditorPresenter(
         const candidates = autoBattle.config.heroes.filter(
             (hero) => !enemyIds.has(hero.id),
         );
-        renderer.setViewModel(
-            createLineupEditorViewModel(
-                candidates,
-                autoBattle.lineup.value,
-                autoBattle.lineup.selectedSlot,
-            ),
+        // VM 派生候选数据（含 deployed 上阵态）供列表句柄消费，避免重复派生
+        const vm = createLineupEditorViewModel(
+            candidates,
+            autoBattle.lineup.value,
+            autoBattle.lineup.selectedSlot,
         );
+        renderer.setViewModel(vm);
+        if (candidateList !== undefined) {
+            candidateList.setItems(vm.candidates);
+        }
     }
 
     render();

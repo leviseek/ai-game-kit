@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import type { ViewModelNode } from "../../../assets/framework";
+import type { FairyGuiListHandle } from "../../../assets/framework";
 import { createLineupEditorPresenter } from "../../../assets/samples/game_auto_battle/view/lineup-presenter";
 import {
     AUTO_BATTLE_ASSEMBLY_EXISTS,
@@ -51,6 +52,32 @@ function recordingView(): {
     };
 }
 
+/** 记录型候选列表句柄：保存 itemClick 回调供测试触发（模拟 GList 项点击）。 */
+function recordingListHandle(): {
+    itemClick: ((index: number, item: { heroId: string; deployed: boolean }) => void) | undefined;
+    list: (name: string) => FairyGuiListHandle<unknown> | undefined;
+} {
+    const state: {
+        itemClick: ((index: number, item: { heroId: string; deployed: boolean }) => void) | undefined;
+    } = {
+        itemClick: undefined,
+    };
+    const handle: FairyGuiListHandle<unknown> = {
+        setItems: () => {},
+        setItemRenderer: () => {},
+        setItemClick: (handler) => {
+            state.itemClick =
+                handler as (index: number, item: { heroId: string; deployed: boolean }) => void;
+        },
+    };
+    return {
+        get itemClick() {
+            return state.itemClick;
+        },
+        list: (name: string) => (name === "candidate_list" ? handle : undefined),
+    };
+}
+
 /** 编队场景配置：池含 a..e，初始己方 [a,b]、敌方 [e]，候选 = 池中非敌方。 */
 function hero(id: string, name: string): Record<string, unknown> {
     return {
@@ -77,7 +104,39 @@ function lineupContent(): Record<string, unknown> {
 describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)(
     "Auto-battle lineup editor presenter",
     () => {
-        test("renders candidates (excluding enemy lineup) and deployed slots", async () => {
+        test("candidates are rendered through the list handle", async () => {
+            const createAutoBattleFixture = await loadCreateAutoBattleFixture();
+            const fixture = createAutoBattleFixture({
+                configContent: lineupContent(),
+            });
+            await fixture.start();
+            const view = recordingView();
+            // 记录型列表解析器：捕获 candidate_list 句柄的 setItems 调用
+            const listCalls: {
+                items: readonly { heroId: string; deployed: boolean }[];
+            }[] = [];
+            const candidateList = {
+                setItems: (items: readonly { heroId: string; deployed: boolean }[]) => {
+                    listCalls.push({ items });
+                },
+                setItemRenderer: () => {},
+                setItemClick: () => {},
+            };
+            const list = (name: string) =>
+                name === "candidate_list" ? candidateList : undefined;
+            const presenter = createLineupEditorPresenter(fixture, view.node, undefined, list);
+
+            // 候选 = 池中非敌方 [a,b,c,d]；e 是敌方固定阵容，不出现
+            expect(listCalls[0]?.items.map((c) => c.heroId)).toEqual(["a", "b", "c", "d"]);
+            // 初始己方 [a,b] 已上阵
+            expect(listCalls[0]?.items.find((c) => c.heroId === "a")?.deployed).toBe(true);
+            expect(listCalls[0]?.items.find((c) => c.heroId === "d")?.deployed).toBe(false);
+
+            presenter.dispose();
+            await fixture.dispose();
+        });
+
+        test("renders deployed lineup slots", async () => {
             const createAutoBattleFixture = await loadCreateAutoBattleFixture();
             const fixture = createAutoBattleFixture({
                 configContent: lineupContent(),
@@ -85,15 +144,6 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)(
             await fixture.start();
             const view = recordingView();
             const presenter = createLineupEditorPresenter(fixture, view.node);
-
-            // 候选 = 池中非敌方 [a,b,c,d]；e 是敌方固定阵容，不出现
-            expect(view.nodes.get("txt_candidate_0_name")?.text).toBe("a");
-            expect(view.nodes.get("txt_candidate_1_name")?.text).toBe("b");
-            expect(view.nodes.get("txt_candidate_2_name")?.text).toBe("c");
-            expect(view.nodes.get("txt_candidate_3_name")?.text).toBe("d");
-            // 池英雄不足 6 时剩余候选位隐藏
-            expect(view.nodes.get("candidate_4")?.visible).toBe(false);
-            expect(view.nodes.get("candidate_5")?.visible).toBe(false);
 
             // 布阵区显示已上阵英雄
             expect(view.nodes.get("txt_slot_0_name")?.text).toBe("a");
@@ -111,9 +161,15 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)(
             });
             await fixture.start();
             const view = recordingView();
-            const presenter = createLineupEditorPresenter(fixture, view.node);
+            const candidateList = recordingListHandle();
+            const presenter = createLineupEditorPresenter(
+                fixture,
+                view.node,
+                undefined,
+                candidateList.list,
+            );
 
-            view.nodes.get("candidate_2")?.clickHandler?.(); // 选择 c → 第一个空槽
+            candidateList.itemClick?.(2, { heroId: "c", deployed: false }); // 选择 c → 第一个空槽
             expect(fixture.lineup.value.slots[2]).toBe("c");
             expect(view.nodes.get("txt_slot_2_name")?.text).toBe("c");
 
@@ -147,9 +203,15 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)(
             });
             await fixture.start();
             const view = recordingView();
-            const presenter = createLineupEditorPresenter(fixture, view.node);
+            const candidateList = recordingListHandle();
+            const presenter = createLineupEditorPresenter(
+                fixture,
+                view.node,
+                undefined,
+                candidateList.list,
+            );
 
-            view.nodes.get("candidate_2")?.clickHandler?.(); // 上阵 c
+            candidateList.itemClick?.(2, { heroId: "c", deployed: false }); // 上阵 c
             view.nodes.get("btn_start")?.clickHandler?.();
 
             const allyIds = fixture.battle.state.units
