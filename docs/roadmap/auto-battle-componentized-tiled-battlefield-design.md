@@ -1,6 +1,6 @@
-# 自动战斗组件化与平铺战场设计草案（Design Draft）
+# 自动战斗组件化与平铺战场设计（空间模型阶段二设计引用）
 
-> 定位：**设计草案**，供后续 change（05 布阵 / 06 锁定目标 / 08 位移）实施时引用。本草案只确定目标架构与分批边界，不进入实现，也不推翻已归档的 `battle-scale-config`（其"每侧 ≤6 槽 + 固定映射"为阶段决策，见 ADR-025）。
+> 定位：**空间模型阶段二设计引用**（正式归档）。本草案已并入 `docs/roadmap/auto-battle-evolution-umbrella.md`（3.4 空间模型、change-05、change-08），供后续 change（05 布阵 / 06 锁定目标 / 08 位移）实施时引用。本草案只确定目标架构与分批边界，不进入实现，也不推翻已归档的 `battle-scale-config`（其"每侧 ≤6 槽 + 固定映射"为阶段决策，见 ADR-025）。
 > 关联：`docs/roadmap/auto-battle-evolution-umbrella.md`、`doc/decisions/ADR-025-coordinate-battle-unit-model.md`。
 > 触发来源：评审 `battle-scale-config` 实现时指出——真实刀塔传奇式战斗的槽位是**平铺整个战场地图**的密集网格（远多于 12 个），布阵只在己方边缘若干格内放置英雄；战斗中近战/远程按攻击距离自动前移至满足射程的槽位才普攻，技能可触发换位。
 
@@ -83,24 +83,26 @@ MoveResolver（攻击距离移动）    ──事件──►  位移/瞬移动�
 | 呈现抽离 | `UnitSlot` 组件放 Common，位置经 `setXY` 写入，容器动态实例化 | 05 |
 | 布阵区 | 首版 3×3=9 格（可配置常量），点选填充（D3，change 05） | 05 |
 
-## 4. 分批边界（对 roadmap 的补充）
+## 4. 分批边界（对 roadmap 的补充，已按 ai-sensei 评审合并）
 
-- **change-05 lineup-editor-click**（布阵编辑）：引入 `MapGrid` + `Lineup` + 布阵区；`UnitSlot` 组件落地；编队页点选。**坐标仍可先静态**（布阵决定出发点），距离移动留 08。
-- **change-06 target-lock**（锁定目标）：不受此草案影响，`position` + 距离修正后可顺延（锁定目标 + 距离判断）。
-- **change-08 unit-motion**（入场/移动/瞬移）：引入 `MoveResolver`（攻击距离移动）与技能换位；**此处修订 ADR-025 决策 3**，逻辑层开始消费坐标，呈现层按 state 快照 + `move`/`teleport` 事件驱动位移动画。
-- 已归档的 `battle-scale-config` **不回溯**：其"每侧 ≤6 槽 + 固定映射"被本草案的"布阵区 + 动态坐标"取代，作为过渡阶段保留历史。
+- **change-05 lineup-editor-click**（布阵编辑）：引入 `MapGrid` + `Lineup` + 布阵区；`UnitSlot` 组件落地；编队页点选。**坐标仍可先静态**（布阵决定出发点），距离移动留 08；**MAX_TEAM_SIZE 语义决策**：拆分"布阵区容量（首版 9，网格常量）"与"实际上阵上限（保留 `MAX_TEAM_SIZE=6`，配置可调）"，不回溯 change 04。
+- **change-06 target-lock**（锁定目标）：**独立先行**（不是"顺延"）——以静态 `position` 语义完成锁定（目标存活期间不换、死亡后顺延前排），须在 08 之前落地；08 的 `MoveResolver` 在此基础上叠加距离修正（锁定 + 距离判断），避免在动态坐标下增加锁定复杂度。
+- **change-08 unit-motion**（入场/移动/瞬移）：拆两段——**08a（逻辑）**引入 `MoveResolver`（攻击距离移动）与技能换位，**此处修订 ADR-025 决策 3**（坐标真源移至逻辑层），逻辑层开始持有并更新坐标，`move`/`teleport` 事件入事件流；**08b（表现）**呈现层按 state 快照 + `move`/`teleport` 事件驱动位移动画。
+- 已归档的 `battle-scale-config` **不回溯**：其"每侧 ≤6 槽 + 固定映射"被本草案的"布阵区 + 动态坐标"取代，作为过渡阶段保留历史（`MAX_TEAM_SIZE=6` 继续作为上阵上限常量）。
 
 ## 5. 风险与权衡
 
-- **ADR-025 边界修订**：需在 change 08 落地前先更新 ADR-025（或落 ADR-029）明确"坐标真源移至逻辑层"，避免两个 change 语义打架。
+- **ADR-025 边界修订**：**修订 ADR-025 决策 3**（ADR-025 决策 5 的"待演进"段已预告该演进，兑现预留即可），明确"坐标真源移至逻辑层"，避免 05/08 语义打架；**不另立 ADR-029**（除非坚持 ADR-025 决策 3 文本一字不改，才新增 ADR-029 并让决策 5 指向它）。
 - **确定性**：移动/换位必须纯函数结算 + `move` 事件保序；动画是事件投影（对齐 roadmap 3.2），终态回到 state 快照。
 - **FGUI 动态实例化**：`AutoBattleView` 从静态 12 槽改为容器 + 动态 `UnitSlot`，需 fgui-designer 评估（容器 size/锚点、UnitSlot 跨包引用、运行时 createObject 路径）；发布产物由编辑器生成。
-- **布阵区与规模上限**：上阵上限从"每队 ≤6"变为"≤ 布阵区格数（首版 9）"，`MAX_TEAM_SIZE` 语义需在 05 中重新定义（布阵区容量 vs 每队上限）。
+- **布阵区与规模上限**：`MAX_TEAM_SIZE` 语义在 05 中**拆分**为"布阵区容量（首版 9，网格常量）"与"实际上阵上限（保留 `MAX_TEAM_SIZE=6`，配置可调）"，避免破坏 change 04 的上限断言与既有测试。
 - **近战/远程数值**：`attackRange` 需配置化（hero 属性），涉及 `config` 解析演进与既有测试更新。
 
-## 6. 建议落地顺序
+## 6. 建议落地顺序（已按 ai-sensei 评审合并进 roadmap）
 
-1. 本草案评审确认 → 并入 `docs/roadmap/auto-battle-evolution-umbrella.md`（或独立归档）。
-2. change-05（布阵编辑）：`MapGrid` + `Lineup` + `UnitSlot`，`MAX_TEAM_SIZE` 语义演进为布阵区容量。
-3. change-08（位移）：`MoveResolver` + 攻击距离 + 技能换位，先修订 ADR-025 决策 3 再实现。
-4. 每个 change 走 `propose → apply → archive`，末尾 ADR 检查任务落档。
+1. 本草案作为**空间模型阶段二设计引用**独立归档；`umbrella` 3.4 / change-05 / change-08 已同步引用。
+2. change-05（布阵编辑，下一批第一）：`MapGrid` + `Lineup` + 布阵区 + `UnitSlot`；`MAX_TEAM_SIZE` 语义拆分（布阵区容量 9 / 上阵上限 6）；坐标先静态（只读出发点）。扩展落 ADR-026。
+3. change-06（锁定目标，独立先行）：以静态 `position` 语义完成，须在 08 之前。
+4. change-07（命中反馈特效）：特效锚点挂 UnitSlot，依赖 05，排在 05 之后。
+5. change-08（位移，第二批）：拆 **08a（逻辑：`MoveResolver` + `move`/`teleport` 事件 + 修订 ADR-025 决策 3）→ 08b（表现：位移动画消费事件）**，扩展落 ADR-027。
+6. 每个 change 走 `propose → apply → archive`，末尾 ADR 检查任务落档。
