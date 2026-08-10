@@ -52,7 +52,7 @@ export interface AutoBattleHero {
     readonly skill: AutoBattleSkill;
 }
 
-/** 玩家编队：定长槽位序列（slot 0..MAX_TEAM_SIZE-1 → 英雄 id），空槽为 null；可变、可持久化。 */
+/** 玩家编队：定长布阵区容量槽位序列（slot 0..FORMATION_GRID_SIZE-1 → 英雄 id），非空数受上阵上限 MAX_TEAM_SIZE 约束；空槽为 null；可变、可持久化。 */
 export interface AutoBattleLineup {
     readonly slots: readonly (string | null)[];
 }

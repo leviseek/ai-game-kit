@@ -8,7 +8,6 @@ import {
     createAutoBattleViewModel,
     formatAutoBattleEvent,
     type AutoBattleCommands,
-    type AutoBattleSpeed,
     type AutoBattleViewModel,
 } from "./view";
 
