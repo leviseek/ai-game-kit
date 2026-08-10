@@ -30,7 +30,7 @@ export interface AutoBattleUnit {
     readonly id: string;
     readonly name: string;
     readonly side: AutoBattleSide;
-    /** 队内阵列序号（0-2），同排取靠前者的依据。 */
+    /** 队内逻辑槽位序号 0..N-1（实例化顺序与同排稳定次序身份），与 position（目标选择语义）分工。 */
     readonly index: number;
     readonly position: AutoBattlePosition;
     readonly maxHp: number;

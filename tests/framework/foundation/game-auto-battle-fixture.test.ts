@@ -132,7 +132,7 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)(
                 }),
             ).toThrow();
 
-            // 超规模抛错：MVP 固定 6 静态槽位，每队至多 3 单位，超规模会"参战不渲染"
+            // 超规模抛错：每队至多 6 单位（MAX_TEAM_SIZE），超过上限配置拒绝开战
             expect(() =>
                 createAutoBattleFixture({
                     configContent: configContent({
@@ -141,6 +141,9 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)(
                             unit("a1", "Mage"),
                             unit("a2", "Priest"),
                             unit("a3", "Extra"),
+                            unit("a4", "Extra2"),
+                            unit("a5", "Extra3"),
+                            unit("a6", "Extra4"),
                         ],
                     }),
                 }),
@@ -153,6 +156,9 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)(
                             unit("e1", "Raider"),
                             unit("e2", "Shaman"),
                             unit("e3", "Extra"),
+                            unit("e4", "Extra2"),
+                            unit("e5", "Extra3"),
+                            unit("e6", "Extra4"),
                         ],
                     }),
                 }),
@@ -221,9 +227,10 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)(
             expect(fixture.viewModel.node("txt_result").visible).toBe(false);
 
             // 一回合后：敌方受击血量下降、攻击方能量增长
+            // （敌方位移 = MAX_TEAM_SIZE，1v1 下敌方槽位全局索引为 6）
             fixture.battle.tick();
             fixture.viewModel.render();
-            expect(fixture.viewModel.node("txt_unit_1_hp").text).toBe("HP 90/100");
+            expect(fixture.viewModel.node("txt_unit_6_hp").text).toBe("HP 90/100");
             expect(fixture.viewModel.node("bar_unit_0_energy").progress).toBe(0.1);
 
             await fixture.dispose();

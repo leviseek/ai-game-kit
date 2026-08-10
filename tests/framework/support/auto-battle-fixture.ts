@@ -39,7 +39,7 @@ export interface AutoBattleUnit {
     readonly name: string;
     readonly side: AutoBattleSide;
     readonly position: AutoBattlePosition;
-    /** 队内阵列序号（0-2）。 */
+    /** 队内逻辑槽位序号 0..N-1（镜像逻辑层 index，实例化顺序与同排稳定次序身份）。 */
     readonly index: number;
     readonly maxHp: number;
     readonly attack: number;

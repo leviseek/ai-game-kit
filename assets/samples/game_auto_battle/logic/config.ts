@@ -12,6 +12,12 @@ import type {
     AutoBattleUnit,
 } from "../models";
 
+/**
+ * 每队单位数量上限：战斗规模可配置为 1..MAX_TEAM_SIZE（首版 1v1..6v6）。
+ * 配置解析按该上限校验，超出即拒绝开战；上限是战斗常量而非可调数据。
+ */
+export const MAX_TEAM_SIZE = 6;
+
 /** 配置读取句柄：把不可变配置表解析为双方单位清单与能量规则。 */
 export interface AutoBattleConfigHandle {
     readonly ally: readonly AutoBattleUnit[];
@@ -87,10 +93,10 @@ function readTeam(
     if (raw.length === 0) {
         throw new Error(`auto-battle config: team "${key}" must not be empty`);
     }
-    // MVP 固定 6 静态槽位：每队至多 3 单位，超规模单位会"参战但页面不渲染"
-    if (raw.length > 3) {
+    // 逻辑槽位 0..N-1：每队至多 MAX_TEAM_SIZE 单位，超规模配置拒绝开战
+    if (raw.length > MAX_TEAM_SIZE) {
         throw new Error(
-            `auto-battle config: team "${key}" must have at most 3 units`,
+            `auto-battle config: team "${key}" must have at most ${MAX_TEAM_SIZE} units`,
         );
     }
     return raw.map((entry, index) => {
