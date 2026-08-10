@@ -1,18 +1,19 @@
 import { describe, expect, test } from "bun:test";
 
+import { FORMATION_GRID_SIZE } from "../../../assets/samples/game_auto_battle/logic/grid";
 import { MAX_TEAM_SIZE } from "../../../assets/samples/game_auto_battle/logic/config";
 import { editLineup } from "../../../assets/samples/game_auto_battle/logic/lineup";
 import type { AutoBattleLineup } from "../../../assets/samples/game_auto_battle/models";
 
-/** 构造定长空编队（空槽为 null）。 */
+/** 构造定长空编队（空槽为 null），长度为布阵区容量 FORMATION_GRID_SIZE。 */
 function emptyLineup(): AutoBattleLineup {
-    return { slots: Array.from({ length: MAX_TEAM_SIZE }, () => null) };
+    return { slots: Array.from({ length: FORMATION_GRID_SIZE }, () => null) };
 }
 
 /** 构造带指定占用槽的编队：{[slot]: heroId}。 */
 function lineupWith(occupied: Readonly<Record<number, string>>): AutoBattleLineup {
     const slots = Array.from<unknown, string | null>(
-        { length: MAX_TEAM_SIZE },
+        { length: FORMATION_GRID_SIZE },
         () => null,
     );
     for (const [slot, heroId] of Object.entries(occupied)) {
@@ -80,16 +81,64 @@ describe("Auto-battle lineup editor", () => {
         expect(editLineup(lineup, { type: "remove", slot: 0 })).toBe(lineup);
     });
 
-    test("fill beyond the team size upper bound is rejected", () => {
+    test("fill beyond the formation size is rejected", () => {
         const lineup = lineupWith({ 0: "h1" });
         const result = editLineup(lineup, {
             type: "fill",
-            slot: MAX_TEAM_SIZE,
+            slot: FORMATION_GRID_SIZE,
             heroId: "h2",
         });
 
-        // 拒绝 = 返回原对象（引用不变），上阵数不超过 MAX_TEAM_SIZE
+        // 拒绝 = 返回原对象（引用不变），槽位不超出布阵区容量
         expect(result).toBe(lineup);
+    });
+
+    test("fill beyond the deploy cap is rejected when the target slot is empty", () => {
+        // 已上阵 MAX_TEAM_SIZE 个英雄，再填新英雄到空槽应被拒
+        const occupied: Record<number, string> = {};
+        for (let slot = 0; slot < MAX_TEAM_SIZE; slot += 1) {
+            occupied[slot] = `h${slot}`;
+        }
+        const lineup = lineupWith(occupied);
+        const result = editLineup(lineup, {
+            type: "fill",
+            slot: MAX_TEAM_SIZE,
+            heroId: "new",
+        });
+
+        expect(result).toBe(lineup);
+    });
+
+    test("replacing an occupied slot is allowed even when the deploy cap is reached", () => {
+        const occupied: Record<number, string> = {};
+        for (let slot = 0; slot < MAX_TEAM_SIZE; slot += 1) {
+            occupied[slot] = `h${slot}`;
+        }
+        const lineup = lineupWith(occupied);
+        const result = editLineup(lineup, {
+            type: "fill",
+            slot: 0,
+            heroId: "new",
+        });
+
+        expect(result.slots[0]).toBe("new");
+    });
+
+    test("moving a hero into an empty slot is allowed when the deploy cap is reached", () => {
+        // 满编后把 h0 从 slot0 移到空 slot6（不增加上阵数）
+        const occupied: Record<number, string> = {};
+        for (let slot = 0; slot < MAX_TEAM_SIZE; slot += 1) {
+            occupied[slot] = `h${slot}`;
+        }
+        const lineup = lineupWith(occupied);
+        const result = editLineup(lineup, {
+            type: "fill",
+            slot: MAX_TEAM_SIZE,
+            heroId: "h0",
+        });
+
+        expect(result.slots[0]).toBeNull();
+        expect(result.slots[MAX_TEAM_SIZE]).toBe("h0");
     });
 
     test("fill with a negative slot is rejected", () => {

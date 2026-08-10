@@ -1,4 +1,5 @@
 import { MAX_TEAM_SIZE } from "./config";
+import { FORMATION_GRID_SIZE } from "./grid";
 import type { AutoBattleLineup } from "../models";
 
 /** 编队编辑动作：填充/替换指定槽，或卸下指定槽。 */
@@ -8,17 +9,19 @@ export type LineupAction =
 
 /**
  * 编队 reducer：纯函数状态变换，返回新的 AutoBattleLineup（不可变，输入不被
- * 修改）。槽位越界（< 0 或 >= 上阵上限）视为拒绝——返回原对象（引用不变），
- * 给交互层可预期的拒绝语义。fill 保证英雄唯一：同一英雄已占别的槽时先清空该
- * 槽再填入目标槽。slot 语义 = 定长编队槽位（含空槽），与开战实例化时的压缩
- * index（只含已上阵序）解耦（见 design.md D1 衔接说明）。
+ * 修改）。槽位越界（< 0 或 >= 布阵区容量 FORMATION_GRID_SIZE）视为拒绝——返回
+ * 原对象（引用不变），给交互层可预期的拒绝语义。fill 保证英雄唯一：同一英雄
+ * 已占别的槽时先清空该槽再填入目标槽。上阵上限约束：目标槽为空且当前非空数
+ * 已达 MAX_TEAM_SIZE 时拒绝（不增加上阵数）；目标槽已占（替换）不受此限。
+ * slot 语义 = 定长编队槽位（含空槽），与开战实例化时的压缩 index（只含已上阵
+ * 序）解耦（见 design.md D1 衔接说明）。
  */
 export function editLineup(
     lineup: AutoBattleLineup,
     action: LineupAction,
 ): AutoBattleLineup {
     const slot = action.slot;
-    if (slot < 0 || slot >= MAX_TEAM_SIZE) {
+    if (slot < 0 || slot >= FORMATION_GRID_SIZE) {
         return lineup;
     }
 
@@ -39,6 +42,16 @@ export function editLineup(
     // 目标槽已是该英雄：无实际变化，返回原对象保持幂等
     if (next[slot] === action.heroId) {
         return lineup;
+    }
+    // 上阵上限：目标槽为空且当前非空数已达上限，拒绝新增上阵
+    if (next[slot] === null) {
+        const occupiedCount = next.reduce<number>(
+            (count, heroId) => (heroId === null ? count : count + 1),
+            0,
+        );
+        if (occupiedCount >= MAX_TEAM_SIZE) {
+            return lineup;
+        }
     }
     next[slot] = action.heroId;
     return { slots: next };
