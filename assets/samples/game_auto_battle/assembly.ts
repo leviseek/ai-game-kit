@@ -75,6 +75,8 @@ export interface AutoBattleViewNode {
     text: string | undefined;
     progress: number | undefined;
     visible: boolean | undefined;
+    /** 最近一次坐标写入（position 绑定经 setXY 记录）。 */
+    xy: { x: number; y: number } | undefined;
     clickHandler: (() => void) | undefined;
 }
 
@@ -93,6 +95,9 @@ export function toViewModelNode(recording: AutoBattleViewNode): ViewModelNode {
         },
         setVisible: (value: boolean) => {
             recording.visible = value;
+        },
+        setXY: (x: number, y: number) => {
+            recording.xy = { x, y };
         },
         onClick: (handler: () => void) => {
             recording.clickHandler = handler;
@@ -186,6 +191,7 @@ export function createAutoBattleFixture(
                 text: undefined,
                 progress: undefined,
                 visible: undefined,
+                xy: undefined,
                 clickHandler: undefined,
             };
             viewNodes.set(name, recording);

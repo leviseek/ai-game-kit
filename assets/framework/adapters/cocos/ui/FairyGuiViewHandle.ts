@@ -33,6 +33,10 @@ export function createFairyGuiViewHandle(
             setVisible: (value: boolean) => {
                 child.visible = value;
             },
+            setXY: (x: number, y: number) => {
+                // 坐标写入：经 GObject.setPosition 一次性更新 x/y，避免两次 setter
+                child.setPosition(x, y);
+            },
             onClick: (handler: () => void) => {
                 child.on(Event.CLICK, () => {
                     handler();

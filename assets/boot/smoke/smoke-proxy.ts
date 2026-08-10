@@ -42,7 +42,10 @@ interface SamplesSmokeModule {
         readonly autoBattle: (
             host: unknown,
             ensureSharedDependencies: () => Promise<void>,
-            options?: { readonly nodeResolver?: (view: unknown) => (name: string) => unknown },
+            options?: {
+                readonly nodeResolver?: (view: unknown) => (name: string) => unknown;
+                readonly scale?: number;
+            },
         ) => Promise<void>;
     };
 }
@@ -222,12 +225,18 @@ export class SmokeProxy {
         if (smoke === undefined) {
             throw new Error(`[smoke] samples module has no autoBattle smoke`);
         }
+        // 规模参数经 URL 注入（?smoke=auto-battle&scale=6v6）：缺省 3v3，
+        // 传 6 走 6v6 全规模上限渲染验证
+        const search = typeof window === "undefined" ? "" : window.location.search;
+        const rawScale = new URLSearchParams(search).get("scale");
+        const scale = rawScale === null ? undefined : Number(rawScale);
         await smoke(
             this.uiHost,
             () => this.lobbyHost.ensureSharedUiDependencies(),
             // 注入真实 fgui 渲染接缝：验证 AutoBattle/AutoBattleView 与 viewModel 节点名对齐
             {
                 nodeResolver: (view) => createFairyGuiViewHandle(view as never),
+                scale: Number.isFinite(scale) ? (scale as number) : undefined,
             },
         );
     }

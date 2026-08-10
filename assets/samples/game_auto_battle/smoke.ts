@@ -38,9 +38,37 @@ export interface AutoBattleSmokeHost {
     nodeResolver?: (view: unknown) => (name: string) => ViewModelNode | undefined;
 }
 
-/** 冒烟运行选项：真实 fgui 渲染接缝由 boot 侧注入。 */
+/** 冒烟运行选项：真实 fgui 渲染接缝由 boot 侧注入，规模配置可选覆盖。 */
 export interface AutoBattleSmokeOptions {
     readonly nodeResolver?: (view: unknown) => (name: string) => ViewModelNode | undefined;
+    /** 单侧规模（NvN，1..MAX_TEAM_SIZE）：缺省 3v3，注入 6v6 验证规模上限渲染。 */
+    readonly scale?: number;
+}
+
+/** 按单侧规模生成对称 NvN 配置：属性对齐缺省配置口径，保证冒烟自然终局。 */
+function scaleConfigContent(scale: number): Record<string, unknown> {
+    const team = (prefix: string): Record<string, unknown>[] =>
+        Array.from({ length: scale }, (_, index) => ({
+            id: `${prefix}${index}`,
+            name: `${prefix}${index}`,
+            position: "front",
+            maxHp: 60,
+            attack: 6,
+            speed: 8,
+            energyMax: 20,
+            skill: {
+                id: `${prefix}${index}-skill`,
+                name: "重击",
+                kind: "damage",
+                value: 12,
+                energyCost: 20,
+            },
+        }));
+    return {
+        teams: { ally: team("a"), enemy: team("e") },
+        energyGainAttacker: 10,
+        energyGainTarget: 5,
+    };
 }
 
 /**
@@ -102,7 +130,12 @@ export async function runAutoBattleSmoke(
     report("battle-open", true);
 
     // 4. 驱动游戏层完整对局：渲染器写视图节点，命令绑定接入重开
-    const fixture = createAutoBattleFixture();
+    //    规模配置按选项注入：缺省 3v3，注入 6v6 验证规模上限渲染与槽位显隐
+    const fixture = createAutoBattleFixture(
+        options.scale !== undefined && options.scale !== 3
+            ? { configContent: scaleConfigContent(options.scale) }
+            : {},
+    );
     await fixture.start();
 
     const resolver = options.nodeResolver ?? host.nodeResolver;
