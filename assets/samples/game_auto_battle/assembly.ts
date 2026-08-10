@@ -25,11 +25,11 @@ import {
 import {
     createAutoBattleConfig,
     createAutoBattleConfigModule,
-    MAX_TEAM_SIZE,
     type AutoBattleConfigHandle,
 } from "./logic/config";
 import { createAutoBattleSkillsModule } from "./logic/skills";
 import { createAutoBattleFormationModule } from "./logic/formation";
+import { FORMATION_GRID_SIZE } from "./logic/grid";
 import {
     createAutoBattleBattle,
     createAutoBattleBattleModule,
@@ -192,10 +192,10 @@ class MemoryStorage implements PlatformStorage {
     }
 }
 
-/** 压缩 heroId 序列 → 定长编队（空槽 null）；不足 MAX_TEAM_SIZE 的部分留空。 */
+/** 压缩 heroId 序列 → 定长编队（空槽 null）；不足布阵区容量 FORMATION_GRID_SIZE 的部分留空。 */
 function toFullLineup(ids: readonly string[]): AutoBattleLineup {
     const slots: (string | null)[] = Array.from(
-        { length: MAX_TEAM_SIZE },
+        { length: FORMATION_GRID_SIZE },
         () => null,
     );
     ids.forEach((heroId, index) => {
@@ -248,9 +248,10 @@ export function createAutoBattleFixture(
             selectedSlot = slot < 0 ? null : slot;
         },
         selectHero(heroId) {
-            // 优先填入选中的布阵格（替换语义），否则填第一个空槽；满编拒绝
+            // 优先填入选中的布阵格（替换语义），否则填第一个空槽；满编（MAX_TEAM_SIZE）
+            // 由 reducer 拒绝，空槽查找仍遍历全部布阵格
             const target =
-                selectedSlot !== null && selectedSlot < MAX_TEAM_SIZE
+                selectedSlot !== null && selectedSlot < FORMATION_GRID_SIZE
                     ? selectedSlot
                     : lineup.slots.findIndex((heroIdAt) => heroIdAt === null);
             if (target === -1) {
@@ -269,7 +270,7 @@ export function createAutoBattleFixture(
     };
 
     // 观战加速挡位：夹具持当前挡位并联动时钟倍率，测试经 cycleSpeed 驱动
-    let speed: AutoBattleSpeed = 1;
+    let speed: AutoBattleSpeed = clock.timeScale as AutoBattleSpeed;
     const cycleSpeed = (): void => {
         const nextIndex = (SPEED_CYCLE.indexOf(speed) + 1) % SPEED_CYCLE.length;
         speed = SPEED_CYCLE[nextIndex] as AutoBattleSpeed;
