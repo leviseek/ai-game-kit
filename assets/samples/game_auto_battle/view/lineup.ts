@@ -1,9 +1,6 @@
 import type { Binding } from "../../../framework";
-import { MAX_TEAM_SIZE } from "../logic/config";
+import { FORMATION_GRID_SIZE } from "../logic/grid";
 import type { AutoBattleHero, AutoBattleLineup } from "../models";
-
-/** 编队页候选区预置位数量（FGUI 预置候选槽位，运行时按英雄池填充）。 */
-export const LINEUP_CANDIDATE_SLOTS = 6;
 
 /** 编队页布阵区格位呈现：占用英雄或空。 */
 export interface LineupSlotView {
@@ -19,7 +16,7 @@ export interface LineupCandidateView {
     readonly deployed: boolean;
 }
 
-/** 编队页 ViewModel：候选英雄区 + 布阵区（定长 MAX_TEAM_SIZE 槽） + 选中格。 */
+/** 编队页 ViewModel：候选英雄区 + 布阵区（容量 FORMATION_GRID_SIZE 槽，上阵上限 MAX_TEAM_SIZE） + 选中格。 */
 export interface LineupEditorViewModel {
     readonly candidates: readonly LineupCandidateView[];
     readonly slots: readonly LineupSlotView[];
@@ -65,9 +62,10 @@ export function createLineupEditorViewModel(
 }
 
 /**
- * 编队页绑定声明：候选区预置位（`candidate_{i}`）、布阵区格（`slot_{i}` +
- * 选中态 `slot_selected_{i}`）与开始按钮。布阵格点击：未选中则选中、已选中且
- * 该格已上阵则卸下（spec：点击已上阵英雄卸下）。
+ * 编队页绑定声明：布阵区格（`slot_{i}` + 选中态 `slot_selected_{i}`）与开始按钮；
+ * 槽位循环覆盖全部布阵格（FORMATION_GRID_SIZE）。候选区渲染移交给 presenter
+ * 的列表句柄（GList），不再走预置绑定。布阵格点击：未选中则选中、已选中且该格
+ * 已上阵则卸下（spec：点击已上阵英雄卸下）。
  */
 export function createLineupEditorBindings(
     commands: LineupEditorCommands,
@@ -76,34 +74,7 @@ export function createLineupEditorBindings(
         { kind: "command", node: "btn_start", run: () => commands.startBattle() },
     ];
 
-    for (let index = 0; index < LINEUP_CANDIDATE_SLOTS; index += 1) {
-        const candidateAt = (vm: LineupEditorViewModel): LineupCandidateView | undefined =>
-            vm.candidates[index];
-        bindings.push(
-            {
-                kind: "visible",
-                node: `candidate_${index}`,
-                get: (vm) => candidateAt(vm) !== undefined,
-            },
-            {
-                kind: "text",
-                node: `txt_candidate_${index}_name`,
-                get: (vm) => candidateAt(vm)?.heroName ?? "",
-            },
-            {
-                kind: "command",
-                node: `candidate_${index}`,
-                run: (vm) => {
-                    const candidate = candidateAt(vm);
-                    if (candidate !== undefined) {
-                        commands.selectHero(candidate.heroId);
-                    }
-                },
-            },
-        );
-    }
-
-    for (let slot = 0; slot < MAX_TEAM_SIZE; slot += 1) {
+    for (let slot = 0; slot < FORMATION_GRID_SIZE; slot += 1) {
         const slotAt = (vm: LineupEditorViewModel): LineupSlotView | undefined =>
             vm.slots[slot];
         bindings.push(

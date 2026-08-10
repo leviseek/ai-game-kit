@@ -7,6 +7,7 @@ import {
     type LineupEditorCommands,
     type LineupEditorViewModel,
 } from "../../../assets/samples/game_auto_battle/view/lineup";
+import { FORMATION_GRID_SIZE } from "../../../assets/samples/game_auto_battle/logic/grid";
 import type {
     AutoBattleHero,
     AutoBattleLineup,
@@ -71,7 +72,9 @@ function hero(id: string, name: string): AutoBattleHero {
 }
 
 function lineup(slots: readonly (string | null)[]): AutoBattleLineup {
-    return { slots: Array.from({ length: 6 }, (_, i) => slots[i] ?? null) };
+    return {
+        slots: Array.from({ length: FORMATION_GRID_SIZE }, (_, i) => slots[i] ?? null),
+    };
 }
 
 const HEROES: readonly AutoBattleHero[] = ["a", "b", "c"].map((id) => hero(id, id));
@@ -114,22 +117,29 @@ describe("Auto-battle lineup editor bindings", () => {
         return { view };
     }
 
-    test("clicking a candidate selects that hero", () => {
+    test("slot bindings cover the full formation size (9 slots)", () => {
         const calls: string[] = [];
-        const vm = createLineupEditorViewModel(HEROES, lineup([]), null);
-        const { view } = render(
-            {
-                selectSlot: (s) => calls.push(`slot:${s}`),
-                selectHero: (h) => calls.push(`hero:${h}`),
-                removeFromSlot: (s) => calls.push(`remove:${s}`),
-                startBattle: () => calls.push("start"),
-            },
-            vm,
+        const heroes: readonly AutoBattleHero[] = Array.from(
+            { length: 9 },
+            (_, i) => hero(`h${i}`, `H${i}`),
         );
+        const vm = createLineupEditorViewModel(heroes, lineup(["h0", null, "h2", "h3", null, "h5", "h6", null, "h8"]), null);
+        const view = recordingView();
+        const renderer = createViewModelRenderer<LineupEditorViewModel>({
+            node: view.node,
+            bindings: createLineupEditorBindings({
+                selectSlot: (s) => calls.push(`slot:${s}`),
+                selectHero: () => {},
+                removeFromSlot: (s) => calls.push(`remove:${s}`),
+                startBattle: () => {},
+            }),
+        });
+        renderer.setViewModel(vm);
 
-        expect(view.nodes.get("txt_candidate_1_name")?.text).toBe("b");
-        view.nodes.get("candidate_1")?.clickHandler?.();
-        expect(calls).toEqual(["hero:b"]);
+        expect(view.nodes.get("txt_slot_0_name")?.text).toBe("H0");
+        expect(view.nodes.get("txt_slot_6_name")?.text).toBe("H6");
+        expect(view.nodes.get("txt_slot_8_name")?.text).toBe("H8");
+        expect(view.nodes.get("slot_8")?.clickHandler).toBeDefined();
     });
 
     test("clicking an unselected slot selects it; clicking again removes the hero", () => {
