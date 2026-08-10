@@ -159,12 +159,12 @@ export function createAutoBattleBindings(
             get: (vm) =>
                 vm.result === "win" ? "胜利" : vm.result === "lose" ? "战败" : "",
         },
+        { kind: "command", node: "btn_restart", run: () => commands.restart() },
         {
             kind: "text",
-            node: "txt_speed",
+            node: "btn_speed",
             get: (vm) => `x${vm.speed}`,
         },
-        { kind: "command", node: "btn_restart", run: () => commands.restart() },
         { kind: "command", node: "btn_speed", run: () => commands.cycleSpeed() },
     ];
 }

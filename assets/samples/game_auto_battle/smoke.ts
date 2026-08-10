@@ -203,16 +203,16 @@ export async function runAutoBattleSmoke(
         `round=${endState.round} result=${endState.result ?? "none"}`,
     );
 
-    // 挡位切换：cycleSpeed 循环到 2x 并同步时钟倍率，状态文本随 VM 刷新。
-    // 经夹具内存渲染器显式刷新，保证真实 fgui 与回退路径都能断言状态文本。
+    // 挡位切换：cycleSpeed 循环到 2x 并同步时钟倍率，按钮标题随 VM 刷新。
+    // 经夹具内存渲染器显式刷新，保证真实 fgui 与回退路径都能断言按钮标题。
     const firstResult = endState.result;
     fixture.cycleSpeed();
     fixture.viewModel.render();
-    const speedNode = fixture.viewModel.node("txt_speed").text;
+    const speedNode = fixture.viewModel.node("btn_speed").text;
     report(
         "speed-cycle",
         fixture.speed === 2 && speedNode === "x2",
-        `speed=${fixture.speed} txt=${speedNode ?? "none"}`,
+        `speed=${fixture.speed} title=${speedNode ?? "none"}`,
     );
 
     // 重开重置

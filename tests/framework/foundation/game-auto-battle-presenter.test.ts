@@ -93,7 +93,7 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)(
             const presenter = createAutoBattlePresenter(fixture, view.node);
 
             expect(view.nodes.get("txt_round")?.text).toBe("第 1 回合");
-            expect(view.nodes.get("txt_speed")?.text).toBe("x1");
+            expect(view.nodes.get("btn_speed")?.text).toBe("x1");
             // 动态单位绑定：存活单位按 id 生成（节点名 unit_{id} 系列）
             expect(view.nodes.get("txt_unit_a_name")?.text).toBe("a");
             expect(view.nodes.get("txt_unit_b_name")?.text).toBe("b");
@@ -110,14 +110,14 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)(
             const view = recordingView();
             const presenter = createAutoBattlePresenter(fixture, view.node);
 
-            expect(view.nodes.get("txt_speed")?.text).toBe("x1");
+            expect(view.nodes.get("btn_speed")?.text).toBe("x1");
             view.nodes.get("btn_speed")?.clickHandler?.();
             expect(fixture.speed).toBe(2);
-            expect(view.nodes.get("txt_speed")?.text).toBe("x2");
+            expect(view.nodes.get("btn_speed")?.text).toBe("x2");
 
             view.nodes.get("btn_speed")?.clickHandler?.();
             expect(fixture.speed).toBe(3);
-            expect(view.nodes.get("txt_speed")?.text).toBe("x3");
+            expect(view.nodes.get("btn_speed")?.text).toBe("x3");
 
             presenter.dispose();
             await fixture.dispose();

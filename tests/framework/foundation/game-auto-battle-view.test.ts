@@ -181,6 +181,7 @@ describe("Auto-battle dynamic unit bindings", () => {
         const { view } = renderUnits([unit("a", "ally", 0, "0:3")]);
 
         expect(view.nodes.get("txt_round")?.text).toBe("第 1 回合");
+        expect(view.nodes.get("btn_speed")?.text).toBe("x1");
         expect(view.nodes.get("txt_result")?.visible).toBe(false);
     });
 

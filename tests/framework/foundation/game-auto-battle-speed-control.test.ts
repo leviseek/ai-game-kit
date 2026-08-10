@@ -85,21 +85,21 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)(
             await fixture.dispose();
         });
 
-        test("the speed command updates the txt_speed binding via VM", async () => {
+        test("the speed command updates the btn_speed title via VM", async () => {
             const createAutoBattleFixture = await loadCreateAutoBattleFixture();
             const fixture = createAutoBattleFixture();
             await fixture.start();
 
             fixture.viewModel.render();
-            expect(fixture.viewModel.node("txt_speed").text).toBe("x1");
+            expect(fixture.viewModel.node("btn_speed").text).toBe("x1");
 
             fixture.cycleSpeed();
             fixture.viewModel.render();
-            expect(fixture.viewModel.node("txt_speed").text).toBe("x2");
+            expect(fixture.viewModel.node("btn_speed").text).toBe("x2");
 
             fixture.cycleSpeed();
             fixture.viewModel.render();
-            expect(fixture.viewModel.node("txt_speed").text).toBe("x3");
+            expect(fixture.viewModel.node("btn_speed").text).toBe("x3");
 
             await fixture.dispose();
         });
