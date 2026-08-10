@@ -3,9 +3,7 @@
 ## Purpose
 
 让自动战斗卡牌 RPG 品类（`game_auto_battle`）具备真实可玩的自动战斗闭环：双方多单位阵列按速度自动行动、能量积满自动释放技能、前排优先目标选择、胜负终局判定，并经 ViewModel 绑定到真实 FairyGUI 战场页呈现，Cocos 冒烟可驱动完整对局。
-
 ## Requirements
-
 ### Requirement: 多单位阵列自动战斗推进
 
 `game_auto_battle` 战斗 SHALL 以双方多单位阵列（每队 3 单位）进行，单位各自持有独立 HP/攻击/速度/能量/站位（前排/中排/后排）；战斗按轮次推进，每轮存活单位按速度降序各行动一次（同速以稳定次序保证确定性），玩家不做操作（观战型）。
@@ -97,7 +95,7 @@
 
 ### Requirement: 战场 ViewModel 绑定
 
-`game_auto_battle` 战场页 SHALL 经 ViewModel 绑定声明把战斗状态映射到 FairyGUI 页面节点：各单位血条/血量文本/能量条/名称文本、轮次文本、战斗日志文本、胜负提示显隐、重开按钮命令；单位组 SHALL 以敌左我右的左右对阵布局呈现（敌方在左、己方在右），布局不改变单位槽位序与绑定节点名。
+`game_auto_battle` 战场页 SHALL 经 ViewModel 绑定声明把战斗状态映射到 FairyGUI 页面节点：各单位血条/血量文本/能量条/名称文本、轮次文本、战斗日志文本、胜负提示显隐、重开按钮命令；单位组 SHALL 以敌左我右的左右对阵布局呈现（敌方在左、己方在右），布局不改变单位槽位序与绑定节点名；各单位血条与能量条 SHALL 以视觉可区分的方式呈现（颜色/尺寸/标签至少一项不同），区分不改变绑定节点名与 progress 语义。
 
 #### Scenario: 战斗状态反映到页面
 
@@ -114,6 +112,11 @@
 - **WHEN** 战场页渲染单位组
 - **THEN** 敌方单位组位于屏幕左侧、己方单位组位于屏幕右侧，且单位文本/血条/能量条仍按既有槽位序绑定
 
+#### Scenario: 血条与能量条视觉可区分
+
+- **WHEN** 战场页初始化渲染单位组
+- **THEN** 每个单位的 HP 条与能量条在颜色、尺寸或标签上存在可辨识的差异，且二者仍按既有节点名（`bar_unit_{index}_hp` / `bar_unit_{index}_energy`）绑定并反映对应数据
+
 ### Requirement: Cocos 冒烟驱动
 
 Cocos 运行环境 SHALL 提供 `?smoke=auto-battle` 冒烟入口，装配渲染器与自动战斗 BattleView 并驱动完整对局到终局，console 输出 `[auto-battle]` 标记，验证真实页面可用。
@@ -122,3 +125,4 @@ Cocos 运行环境 SHALL 提供 `?smoke=auto-battle` 冒烟入口，装配渲染
 
 - **WHEN** 以 `?smoke=auto-battle` 启动 Cocos 预览
 - **THEN** 装配成功、输出 `[auto-battle]` 标记、页面可打开并自动推进到终局
+
