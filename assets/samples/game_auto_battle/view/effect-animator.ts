@@ -17,7 +17,7 @@ const FLASH_PEAK = 0.5;
 const SHAKE_OFFSET = 4;
 /** 位移动画参数：move 插值时长；入场淡入时长（与 presenter 入场阶段一致）；入场上浮高度。 */
 const MOVE_DURATION_MS = 300;
-const ENTRANCE_DURATION_MS = 3000;
+const ENTRANCE_DURATION_MS = 1500;
 const ENTRANCE_RISE = 80;
 
 /** 进行中的单个动画：按开始时间与时长插值 alpha/xy。 */

@@ -303,15 +303,15 @@ describe("Auto-battle effect animator", () => {
         expect(unitNode.alpha).toBe(0);
         expect(unitNode.xy).toEqual({ x: 840, y: 180 });
 
-        advance(1500);
+        advance(750);
         animator.step();
-        // 中段：上浮中、alpha 上升（3000ms 时长的一半）
+        // 中段：上浮中、alpha 上升（1500ms 时长的一半）
         expect(unitNode.alpha!).toBeGreaterThan(0);
         expect(unitNode.alpha!).toBeLessThan(1);
         expect(unitNode.xy!.y).toBeGreaterThan(100);
         expect(unitNode.xy!.y).toBeLessThan(180);
 
-        advance(3000);
+        advance(1500);
         animator.step();
         // 结束：到位（y=100）、alpha=1、active 清空
         expect(unitNode.alpha).toBe(1);
