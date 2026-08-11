@@ -1,9 +1,18 @@
 import type { ViewModelNode } from "../../framework";
+import { WallClock } from "../../framework/core/time/WallClock";
+import { createCocosDeviceInfo } from "../../framework/adapters/cocos/device/CocosDeviceInfo";
+import { createDevOverlayView } from "../../framework/adapters/cocos/ui/DevOverlayViewHandle";
+import type { GRootLike } from "../../framework/adapters/cocos/ui/CocosUiRoot";
 import {
     createDevBallController,
     type DevBallController,
 } from "./dev-ball";
-import type { DevInfoSampler } from "./dev-info";
+import { createDevPresentationClock } from "./dev-clock";
+import {
+    createDevInfoSampler,
+    type DevInfoSampler,
+} from "./dev-info";
+import { sampleProfilerStats } from "../profiler";
 
 /** 交互事件桥：与 fgui 适配器的 DevOverlayView 形状同构（结构匹配）。 */
 export interface DevOverlayInteractionHandlers {
@@ -22,9 +31,12 @@ export interface DevOverlayViewSeam {
     dispose(): void;
 }
 
+/** UI 根容器（GRoot）：设计分辨率边界 + 挂载/移除能力（复用权威 GRootLike 形状）。 */
+export type DevOverlayRoot = GRootLike;
+
 export interface DevOverlayMountOptions {
     /** UI 根容器（GRoot）：设计分辨率边界来源，同时作为幂等键。 */
-    readonly root: { readonly width: number; readonly height: number };
+    readonly root: DevOverlayRoot;
     /** 环境开关：dev 关闭时挂载为 no-op（不创建、零开销）。 */
     readonly isDevEnabled: () => boolean;
     /** 信息采样器。 */
@@ -38,7 +50,7 @@ export interface DevOverlayMountOptions {
      * （组合根/AppRoot 注入）。缺省无操作。
      */
     readonly onTap?: () => void;
-    /** 推进驱动：缺省 100ms 间隔循环调用控制器 step；测试可注入手动驱动。 */
+    /** 推进驱动：缺省 16ms 间隔循环调用控制器 step；测试可注入手动驱动。 */
     readonly drive?: (tick: () => void) => { dispose(): void };
 }
 
@@ -49,7 +61,9 @@ export interface DevOverlayMountHandle {
     dispose(): void;
 }
 
-const DEFAULT_DRIVE_INTERVAL_MS = 100;
+// 动画时长（吸附 300ms / 淡入淡出 180ms）需要 >3 帧才能平滑；16ms ≈ 60fps 驱动，
+// 保证首帧进度不因驱动间隔过大而跳到 70%（对齐 easeOutCubic 曲线）。
+const DEFAULT_DRIVE_INTERVAL_MS = 16;
 
 function defaultDrive(tick: () => void): { dispose(): void } {
     const timer = setInterval(tick, DEFAULT_DRIVE_INTERVAL_MS);
@@ -61,7 +75,9 @@ function defaultDrive(tick: () => void): { dispose(): void } {
 }
 
 // 幂等表：同一 root 重复挂载只创建一次（design D5）。dispose 后移除条目，
-// 再次挂载可重建；测试用各自 mock root，互不串扰。
+// 再次挂载可重建；测试用各自 mock root，互不串扰。注意：root 对象是全局幂等键，
+// 跨 AppRoot 实例共享——若两个实例用同一 root，后挂载者 dispose 会释放先挂载
+// 者的 overlay（正常仅一个 persistRootNode，此约定记录以免误用）。
 const mountedByRoot = new WeakMap<object, DevOverlayMountHandle>();
 
 function createOverlayHandle(
@@ -76,7 +92,7 @@ function createOverlayHandle(
     const controller: DevBallController = createDevBallController({
         node: view.node,
         ballSize: view.ballSize,
-        bounds: { width: options.root.width, height: options.root.height },
+        readBounds: () => ({ width: options.root.width, height: options.root.height }),
         timeSource: options.timeSource,
         sampler: options.sampler,
         onTap: options.onTap,
@@ -103,9 +119,9 @@ function createOverlayHandle(
 }
 
 /**
- * 装配入口：GRoot 就绪后把 dev overlay 挂载到全局 UI 常驻作用域（最上层）。
+ * 挂载入口：GRoot 就绪后把 dev overlay 挂到全局 UI 常驻作用域（最上层）。
  * dev 关闭默认不创建（release 无残留）；同一 root 幂等（重复调用只创建一次）；
- * 返回 dispose 句柄供 AppRoot 生命周期释放。
+ * 返回 dispose 句柄供宿主生命周期释放。
  */
 export function mountDevOverlay(options: DevOverlayMountOptions): DevOverlayMountHandle {
     if (!options.isDevEnabled()) {
@@ -119,4 +135,147 @@ export function mountDevOverlay(options: DevOverlayMountOptions): DevOverlayMoun
     const handle = createOverlayHandle(key, options);
     mountedByRoot.set(key, handle);
     return handle;
+}
+
+/** 宿主装配入口消费的 UI 根宿主窄接口。 */
+export interface DevOverlayHost {
+    /** 当前 GRoot；未就绪为 undefined。 */
+    readonly root: DevOverlayRoot | undefined;
+    /** 加载 FairyGUI 包到全局常驻作用域；返回加载结果标识。 */
+    readonly loadPackage: (bundle: string, path: string) => Promise<{ readonly state: string }>;
+}
+
+export interface DevOverlayHostSetupOptions {
+    /** UI 根宿主（组合根注入 UiHost 窄接口）。 */
+    readonly host: DevOverlayHost;
+    /** 结构化诊断日志（组合根注入）。 */
+    readonly logger: {
+        warn(message: string): void;
+        error(message: string, context?: unknown, error?: Error): void;
+    };
+    /** 环境开关：dev 关闭时装配为 no-op。 */
+    readonly isDevEnabled: () => boolean;
+    /** 点击（轻点）预留回调（日后接入 GM 面板）。 */
+    readonly onTap?: () => void;
+    /** 推进驱动：缺省内部定时器（GameClock 推进 + step）。测试可注入。 */
+    readonly drive?: (tick: () => void) => { dispose(): void };
+}
+
+export interface DevOverlaySetupHandle {
+    /** 是否已实际挂载（dev 关闭/创建失败为 false；GRoot 未就绪时内部重试）。 */
+    readonly mounted: boolean;
+    /** 取消挂载与重试、释放 overlay。幂等。 */
+    dispose(): void;
+}
+
+const GRootRetryOptions = { maxAttempts: 20, intervalMs: 100 } as const;
+
+/**
+ * 宿主装配入口：把 loadPackage → 信息采样器 → 表现时钟 → 挂载 的组装收敛到
+ * dev 模块内部（对齐 SmokeProxy 先例，AppRoot 只保留一行调用 + dispose）。
+ * GRoot 未就绪时按 list.ts ensureUiReady 语义延迟重试；异步挂载期间 dispose
+ * 会取消（AppRoot 销毁场景不残留）。dev 关闭返回 mounted=false 零开销。
+ */
+export function setupDevOverlay(options: DevOverlayHostSetupOptions): DevOverlaySetupHandle {
+    if (!options.isDevEnabled()) {
+        return { mounted: false, dispose(): void { } };
+    }
+
+    let disposed = false;
+    let attemptCount = 0;
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
+    let handle: DevOverlayMountHandle | undefined;
+    let mounted = false;
+
+    function clearRetry(): void {
+        if (retryTimer !== undefined) {
+            clearTimeout(retryTimer);
+            retryTimer = undefined;
+        }
+    }
+
+    function attempt(): void {
+        if (disposed || handle !== undefined) {
+            return;
+        }
+        const root = options.host.root;
+        if (root === undefined) {
+            // GRoot 未就绪：延迟重试（对齐 game/lobby/list 的 ensureUiReady 语义）
+            attemptCount += 1;
+            if (attemptCount < GRootRetryOptions.maxAttempts) {
+                retryTimer = setTimeout(attempt, GRootRetryOptions.intervalMs);
+            } else {
+                options.logger.warn("[dev] dev overlay skipped: GRoot not ready");
+            }
+            return;
+        }
+
+        void (async () => {
+            try {
+                const loadHandle = await options.host.loadPackage("ui", "DevOverlay/DevOverlay");
+                if (disposed) {
+                    return;
+                }
+                if (loadHandle.state !== "ready") {
+                    options.logger.warn(`[dev] DevOverlay package load failed: ${loadHandle.state}`);
+                    return;
+                }
+                if (disposed) {
+                    return;
+                }
+                // 墙钟供运行时间采样；GameClock（表现时间）供悬浮球动画插值（ADR-029）
+                const sampler = createDevInfoSampler({
+                    clock: new WallClock(),
+                    device: createCocosDeviceInfo(),
+                    navigator: typeof navigator === "undefined" ? undefined : navigator,
+                    perf: sampleProfilerStats,
+                });
+                const devClock = createDevPresentationClock();
+                handle = mountDevOverlay({
+                    root,
+                    isDevEnabled: options.isDevEnabled,
+                    sampler,
+                    timeSource: devClock.timeSource,
+                    createView: () => createDevOverlayView({ root }),
+                    onTap: options.onTap,
+                    drive:
+                        options.drive ??
+                        ((tick) => {
+                            // 每帧用真实墙钟增量推进表现时钟，再推进控制器动画
+                            const timer = setInterval(() => {
+                                devClock.tick(Date.now());
+                                tick();
+                            }, DEFAULT_DRIVE_INTERVAL_MS);
+                            return { dispose: () => clearInterval(timer) };
+                        }),
+                });
+                mounted = handle.mounted;
+            } catch (error) {
+                if (!disposed) {
+                    options.logger.error(
+                        "[dev] dev overlay mount failed",
+                        undefined,
+                        error instanceof Error ? error : undefined,
+                    );
+                }
+            }
+        })();
+    }
+
+    attempt();
+
+    return {
+        get mounted(): boolean {
+            return mounted;
+        },
+        dispose(): void {
+            if (disposed) {
+                return;
+            }
+            disposed = true;
+            clearRetry();
+            handle?.dispose();
+            handle = undefined;
+        },
+    };
 }

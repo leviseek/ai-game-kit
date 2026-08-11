@@ -54,21 +54,12 @@ import {
     createSmokeProxy,
     type SmokeProxy,
 } from "./smoke/smoke-proxy";
-import { createCocosDeviceInfo } from "../framework/adapters/cocos/device/CocosDeviceInfo";
-import { createDevOverlayView } from "../framework/adapters/cocos/ui/DevOverlayViewHandle";
-import {
-    createDevPresentationClock,
-} from "./dev/dev-clock";
 import { createIsDevEnabled } from "./dev/dev-env";
 import {
-    createDevInfoSampler,
-    type DevInfoSampler,
-} from "./dev/dev-info";
-import {
-    mountDevOverlay,
-    type DevOverlayMountHandle,
+    setupDevOverlay,
+    type DevOverlayRoot,
+    type DevOverlaySetupHandle,
 } from "./dev/dev-overlay";
-import { sampleProfilerStats } from "./dev/dev-profiler";
 
 const { ccclass } = _decorator;
 
@@ -186,8 +177,7 @@ export class AppRoot extends Component {
     private logger?: Logger;
     private validateAssembly?: () => void;
     private isDevEnabled?: () => boolean;
-    private devSampler?: DevInfoSampler;
-    private devOverlay?: DevOverlayMountHandle;
+    private devOverlay?: DevOverlaySetupHandle;
 
     onLoad(): void {
         const {
@@ -240,12 +230,15 @@ export class AppRoot extends Component {
             getSearch: () => (typeof window === "undefined" ? "" : window.location.search),
             onGameSceneActive: () => this.openGameListPage(),
         });
-        // dev overlay 环境开关：cc/env 的 DEBUG 宏为主，URL ?dev=0/?dev=1 强制覆盖；
-        // release 构建默认关闭（不创建悬浮球，design D2）。
-        this.isDevEnabled = createIsDevEnabled({
-            ccDebug: DEBUG,
-            search: typeof window === "undefined" ? "" : window.location.search,
-        });
+        // dev overlay 环境开关：仅 debug 构建初始化（release 下 `if (DEBUG)` 编译期
+        // 折叠，为 bundler DCE 创造条件，dev 分支代码不进 release 产物）；cc/env
+        // DEBUG 宏为主，URL ?dev=0/?dev=1 强制覆盖（design D2）。
+        if (DEBUG) {
+            this.isDevEnabled = createIsDevEnabled({
+                ccDebug: DEBUG,
+                search: typeof window === "undefined" ? "" : window.location.search,
+            });
+        }
         director.addPersistRootNode(this.node);
     }
 
@@ -289,8 +282,8 @@ export class AppRoot extends Component {
 
     /** game 场景激活后经注册桥装配列表页流：组合根无 game 运行时依赖。 */
     private openGameListPage(): void {
-        // dev overlay 挂在全局常驻作用域（GRoot 最上层），先于列表页装配
-        void this.mountDevOverlayIfEnabled();
+        // 发起 dev overlay 挂载（与列表页并行，GRoot 未就绪由 setupDevOverlay 内部重试）
+        this.setupDevOverlayIfEnabled();
         const gameModule = lookupBundle("game") as GameModule | undefined;
         if (gameModule?.createListFlow === undefined) {
             this.logger?.warn(
@@ -306,64 +299,32 @@ export class AppRoot extends Component {
     }
 
     /**
-     * BootFlow UI 根就绪后按环境开关挂载 dev overlay；dev 关闭、已挂载或 GRoot
-     * 未就绪时 no-op。overlay 常驻全局作用域（跨品类会话），随 AppRoot 生命周期
-     * 释放。采样墙钟用 WallClock（运行时间不可控真实流逝），表现动画用 GameClock
-     * （ADR-029，动画器只读 now()）。
+     * 按环境开关装配 dev overlay（薄转发）：组装逻辑（loadPackage/采样器/时钟/
+     * 重试/竞态守卫）收敛到 dev 模块，AppRoot 只持句柄并在 onDestroy 释放。
+     * dev 关闭或已装配时 no-op；overlay 常驻全局作用域（跨品类会话）。
      */
-    private async mountDevOverlayIfEnabled(): Promise<void> {
-        if (this.isDevEnabled === undefined || !this.isDevEnabled()) {
+    private setupDevOverlayIfEnabled(): void {
+        if (this.isDevEnabled === undefined || this.devOverlay !== undefined) {
             return;
         }
-        if (
-            this.devOverlay !== undefined ||
-            this.uiHost === undefined ||
-            this.logger === undefined
-        ) {
+        if (this.uiHost === undefined || this.logger === undefined) {
             return;
         }
-        const root = this.uiHost.root;
-        if (root === undefined) {
-            return;
-        }
-        try {
-            // 先加载 DevOverlay 包到全局常驻 uiScope：createObject 依赖包已注册
-            const handle = await this.uiHost.loadPackage("ui", "DevOverlay/DevOverlay");
-            if (handle.state !== "ready") {
-                this.logger.warn(
-                    `[dev] DevOverlay package load failed: ${handle.state}`,
-                );
-                return;
-            }
-            this.devSampler = createDevInfoSampler({
-                clock: new WallClock(),
-                device: createCocosDeviceInfo(),
-                navigator: typeof navigator === "undefined" ? undefined : navigator,
-                perf: sampleProfilerStats,
-            });
-            const devClock = createDevPresentationClock();
-            this.devOverlay = mountDevOverlay({
-                root,
-                isDevEnabled: this.isDevEnabled,
-                sampler: this.devSampler,
-                timeSource: devClock.timeSource,
-                createView: () => createDevOverlayView({ root }),
-                drive: (tick) => {
-                    // 每帧用真实墙钟增量推进表现时钟，再推进控制器动画
-                    const timer = setInterval(() => {
-                        devClock.tick(Date.now());
-                        tick();
-                    }, 100);
-                    return { dispose: () => clearInterval(timer) };
+        const uiHost = this.uiHost;
+        const appLogger = this.logger;
+        this.devOverlay = setupDevOverlay({
+            host: {
+                // root 动态读取：GRoot 就绪由 setupDevOverlay 内部重试
+                get root(): DevOverlayRoot | undefined {
+                    return uiHost.root;
                 },
-            });
-        } catch (error) {
-            this.logger.error(
-                "[dev] dev overlay mount failed",
-                undefined,
-                error instanceof Error ? error : undefined,
-            );
-        }
+                loadPackage: (bundle, path) =>
+                    uiHost.loadPackage(bundle, path) ??
+                    Promise.resolve({ state: "failed" }),
+            },
+            logger: appLogger,
+            isDevEnabled: this.isDevEnabled,
+        });
     }
 
     openEntryPage(entry: GameEntryInfo): Promise<EntryPageHandle> {
@@ -384,10 +345,9 @@ export class AppRoot extends Component {
 
     onDestroy(): void {
         this.adapter?.unbind();
-        // 释放 dev overlay：停驱动、销毁控制器与视图（幂等）
+        // 释放 dev overlay：取消重试、停驱动、销毁控制器与视图（幂等）
         this.devOverlay?.dispose();
         this.devOverlay = undefined;
-        this.devSampler = undefined;
         // 释放冒烟代理：清理冒烟交互钩子（闭包持有组件，常驻根销毁时一并释放）
         this.smoke?.dispose();
         this.smoke = undefined;

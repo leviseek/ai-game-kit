@@ -71,8 +71,8 @@ export interface DevBallOptions {
     readonly node: (name: string) => ViewModelNode | undefined;
     /** 球组件尺寸（GRoot 坐标系），供贴边露头计算。 */
     readonly ballSize: { readonly width: number; readonly height: number };
-    /** 屏幕边界（GRoot 设计分辨率）。 */
-    readonly bounds: { readonly width: number; readonly height: number };
+    /** 实时屏幕边界读取器（GRoot 设计分辨率）；窗口 resize 后取当前值，勿用创建时快照。 */
+    readonly readBounds: () => { readonly width: number; readonly height: number };
     /** 表现时间源（GameClock 注入）；动画器只读 now()，不自行乘 rate。 */
     readonly timeSource: () => number;
     /** 信息采样器：收缩态刷新 FPS 徽标，展开态刷新全量信息。 */
@@ -111,7 +111,8 @@ export interface DevBallController {
 export function createDevBallController(
     options: DevBallOptions,
 ): DevBallController {
-    const { node, ballSize, bounds, timeSource, sampler } = options;
+    const { node, ballSize, timeSource, sampler } = options;
+    const getBounds = options.readBounds;
     const now = timeSource;
 
     let state: DevBallState = "collapsed";
@@ -135,7 +136,20 @@ export function createDevBallController(
             readonly end: number;
         }
         | undefined;
+    // 面板当前 alpha：淡入/淡出以实际值为起点，避免打断后闪回 1 再淡出
+    let panelAlpha = 0;
     let lastRefreshAt = Number.NEGATIVE_INFINITY;
+
+    /** 把球位置钳制在设计分辨率边界内（拖动中避免把球拖出屏外丢失）。 */
+    function clampToBounds(value: XY): XY {
+        const b = getBounds();
+        const maxX = Math.max(0, b.width - ballSize.width);
+        const maxY = Math.max(0, b.height - ballSize.height);
+        return {
+            x: Math.min(Math.max(0, value.x), maxX),
+            y: Math.min(Math.max(0, value.y), maxY),
+        };
+    }
 
     function writeBallXY(value: XY): void {
         node(BALL_NODE)?.setXY?.(value.x, value.y);
@@ -146,23 +160,23 @@ export function createDevBallController(
     }
 
     function setPanelAlpha(value: number): void {
-        node(PANEL_NODE)?.setAlpha?.(clamp01(value));
+        panelAlpha = clamp01(value);
+        node(PANEL_NODE)?.setAlpha?.(panelAlpha);
     }
 
     function setText(name: string, value: string): void {
         node(name)?.setText(value);
     }
 
-    /** 展开：面板淡入；悬停展开不锁定，轻点展开锁定。 */
+    /** 展开：面板淡入（从当前实际 alpha 起，打断后不闪回）。 */
     function expand(): void {
         if (state === "expanded") {
             return;
         }
         state = "expanded";
         setPanelVisible(true);
-        setPanelAlpha(0);
         panelAnim = {
-            fromAlpha: 0,
+            fromAlpha: panelAlpha,
             toAlpha: 1,
             start: now(),
             end: now() + FADE_DURATION_MS,
@@ -170,14 +184,14 @@ export function createDevBallController(
         refreshExpandedInfo();
     }
 
-    /** 收起：面板淡出后隐藏。 */
+    /** 收起：面板淡出后隐藏（从当前实际 alpha 起）。 */
     function collapse(): void {
         if (state === "collapsed") {
             return;
         }
         state = "collapsed";
         panelAnim = {
-            fromAlpha: 1,
+            fromAlpha: panelAlpha,
             toAlpha: 0,
             start: now(),
             end: now() + FADE_DURATION_MS,
@@ -230,6 +244,12 @@ export function createDevBallController(
             stateAtTouchBegin = state;
             // 拖动开始即停用吸附：取消进行中的吸附/面板动画
             snapTween = undefined;
+            // 面板淡出中被拖拽打断：立即完成隐藏，避免半透明残留（淡入中打断
+            // 保持展开语义，拖动结束由 collapse 收尾）
+            if (panelAnim !== undefined && panelAnim.toAlpha <= 0) {
+                setPanelAlpha(0);
+                setPanelVisible(false);
+            }
             panelAnim = undefined;
             state = "dragging";
         },
@@ -243,7 +263,10 @@ export function createDevBallController(
             if (Math.abs(dx) > TAP_THRESHOLD || Math.abs(dy) > TAP_THRESHOLD) {
                 moved = true;
             }
-            position = { x: startPosition.x + dx, y: startPosition.y + dy };
+            position = clampToBounds({
+                x: startPosition.x + dx,
+                y: startPosition.y + dy,
+            });
             writeBallXY(position);
         },
 
@@ -267,7 +290,7 @@ export function createDevBallController(
                 collapse();
             }
             const from = position;
-            const target = computeSnapTarget(position, ballSize, bounds);
+            const target = computeSnapTarget(position, ballSize, getBounds());
             snapTween = createMotionTween({
                 timeSource: { now: timeSource },
                 durationMs: SNAP_DURATION_MS,

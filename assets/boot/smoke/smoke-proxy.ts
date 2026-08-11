@@ -22,7 +22,7 @@ import {
     runModalClickSmoke,
 } from "./modal-click";
 import type { PerfSample } from "../../game/fixture/perf";
-import { sampleProfilerStats } from "../dev/dev-profiler";
+import { sampleProfilerStats } from "../profiler";
 
 /** game bundle 冒烟模块的结构性子集（经全局注册桥读取，运行时经 lookupBundle）。 */
 interface GameSmokeModule {
