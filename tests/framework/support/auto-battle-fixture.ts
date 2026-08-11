@@ -90,7 +90,7 @@ export interface AutoBattleState {
 
 export type AutoBattleSpeed = 1 | 2 | 3;
 
-/** 玩家编队：定长槽位序列（slot 0..MAX_TEAM_SIZE-1 → 英雄 id），空槽 null。 */
+/** 玩家编队：定长槽位序列（slot 0..布阵区容量-1 → 英雄 id），空槽 null。 */
 export interface AutoBattleLineup {
     readonly slots: readonly (string | null)[];
 }
@@ -171,8 +171,8 @@ export interface AutoBattleFixtureHooks {
         readonly value: AutoBattleLineup;
         /** 当前选中的布阵格；null = 未选中。 */
         readonly selectedSlot: number | null;
-        /** 点击布阵格：未选中则选中；已选中的已上阵格二次点击卸下。 */
-        selectSlot(slot: number): void;
+        /** 点击布阵格：未选中则选中；已选中则取消选中（null = 取消选中）。 */
+        selectSlot(slot: number | null): void;
         /** 点击候选英雄：填入选中的布阵格，否则填入第一个空槽。 */
         selectHero(heroId: string): void;
         /** 卸下指定槽位英雄。 */

@@ -1,6 +1,9 @@
 import { describe, expect, test } from "bun:test";
 
-import { createAutoBattleBattle } from "../../../assets/samples/game_auto_battle/logic/battle";
+import {
+    createAutoBattleBattle,
+    type AutoBattleLineupPair,
+} from "../../../assets/samples/game_auto_battle/logic/battle";
 import { createAutoBattleClock } from "../../../assets/samples/game_auto_battle/logic/clock";
 import {
     createAutoBattleConfig,
@@ -95,6 +98,32 @@ describe("Auto-battle opening instantiation from lineup", () => {
         battle.dispose();
     });
 
+    test("a unit is placed onto the grid cell matching its lineup slot", () => {
+        const config = createAutoBattleConfig(
+            lineupContent(["a", "b"], ["e"]),
+        );
+        const clock = createAutoBattleClock();
+        const pair: AutoBattleLineupPair = {
+            ally: [
+                { slot: 8, heroId: "a" },
+                { slot: 0, heroId: "b" },
+            ],
+            enemy: [{ slot: 2, heroId: "e" }],
+        };
+        const battle = createAutoBattleBattle({ clock, config, lineups: () => pair });
+
+        const { units } = battle.state;
+        const byId = new Map(units.map((u) => [u.id, u.gridKey]));
+
+        // 布阵区 ally 侧格序：row-major，col 从 3 起，slot 8 即 (2,5)
+        expect(byId.get("a")).toBe("2:5");
+        expect(byId.get("b")).toBe("0:3");
+        // 布阵区 enemy 侧格序：col 从 0 起，slot 2 即 (0,2)
+        expect(byId.get("e")).toBe("0:2");
+
+        battle.dispose();
+    });
+
     test("opening units match the configured lineup", () => {
         const battle = createBattle(
             lineupContent(["a0", "a1", "a2"], ["e0"]),
@@ -152,7 +181,13 @@ describe("Auto-battle determinism and lineup decoupling", () => {
     test("a battle can switch lineup on restart via the lineup provider", () => {
         const config = createAutoBattleConfig(lineupContent(["a", "b"], ["e"]));
         const clock = createAutoBattleClock();
-        let pair = { ally: ["a", "b"], enemy: ["e"] };
+        let pair: AutoBattleLineupPair = {
+            ally: [
+                { slot: 0, heroId: "a" },
+                { slot: 1, heroId: "b" },
+            ],
+            enemy: [{ slot: 0, heroId: "e" }],
+        };
         const battle = createAutoBattleBattle({
             clock,
             config,
@@ -164,10 +199,49 @@ describe("Auto-battle determinism and lineup decoupling", () => {
         expect(idsOf()).toEqual(["a", "b", "e"]);
 
         // 玩家改编队后重开：战斗按新编队重新实例化
-        pair = { ally: ["b"], enemy: ["e"] };
+        pair = { ally: [{ slot: 2, heroId: "b" }], enemy: [{ slot: 0, heroId: "e" }] };
         battle.restart();
         expect(idsOf()).toEqual(["b", "e"]);
 
         battle.dispose();
+    });
+
+    test("an empty ally lineup ends the battle immediately as a loss", () => {
+        const config = createAutoBattleConfig(lineupContent(["a"], ["e"]));
+        const clock = createAutoBattleClock();
+        const battle = createAutoBattleBattle({
+            clock,
+            config,
+            lineups: () => ({
+                ally: [],
+                enemy: [{ slot: 0, heroId: "e" }],
+            }),
+        });
+
+        const state = battle.state;
+        expect(state.phase).toBe("over");
+        expect(state.result).toBe("lose");
+
+        battle.dispose();
+    });
+
+    test("a dynamic lineup exceeding the team size is rejected", () => {
+        const config = createAutoBattleConfig(lineupContent(["a"], ["e"]));
+        const clock = createAutoBattleClock();
+        expect(() =>
+            createAutoBattleBattle({
+                clock,
+                config,
+                lineups: () => ({
+                    ally: Array.from({ length: 7 }, (_, slot) => ({
+                        slot,
+                        heroId: "a",
+                    })),
+                    enemy: [{ slot: 0, heroId: "e" }],
+                }),
+            }),
+        ).toThrow(/at most 6/);
+
+        clock.dispose?.();
     });
 });

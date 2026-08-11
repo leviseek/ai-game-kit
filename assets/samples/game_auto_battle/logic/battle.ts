@@ -1,5 +1,6 @@
 import type { Module } from "../../../framework";
 import type { AutoBattleClock } from "./clock";
+import { MAX_TEAM_SIZE } from "./config";
 import type { AutoBattleConfigHandle } from "./config";
 import {
     applyAutoBattleDamage,
@@ -25,10 +26,33 @@ import type {
     AutoBattleState,
 } from "../models";
 
-/** 开战编队（每侧 heroId 序列，压缩序 = 上阵顺序）。 */
+/** 开战编队单位：slot = 布阵区格位（0..FORMATION_GRID_SIZE-1），heroId 引用英雄池。 */
+export interface AutoBattlePlacedUnit {
+    readonly slot: number;
+    readonly heroId: string;
+}
+
+/** 开战编队（每侧按 slot 排列的已上阵单位）。 */
 export interface AutoBattleLineupPair {
+    readonly ally: readonly AutoBattlePlacedUnit[];
+    readonly enemy: readonly AutoBattlePlacedUnit[];
+}
+
+/**
+ * 把配置初始编队（压缩 id 数组，语义 = 已上阵序）转换为 placement 格式：
+ * slot 按 0..n-1 连续映射到布阵区前段格（无空槽，与玩家编队定长结构互为转换）。
+ * 玩家编队（含空槽）由装配层显式构造 placement，不经此转换。
+ */
+export function toLineupPair(lineups: {
     readonly ally: readonly string[];
     readonly enemy: readonly string[];
+}): AutoBattleLineupPair {
+    const toPlacement = (ids: readonly string[]): readonly AutoBattlePlacedUnit[] =>
+        ids.map((heroId, slot) => ({ slot, heroId }));
+    return {
+        ally: toPlacement(lineups.ally),
+        enemy: toPlacement(lineups.enemy),
+    };
 }
 
 /** 战斗控制器选项：时钟用于事件时间戳，事件经 onEvent 广播。 */
@@ -88,29 +112,42 @@ export function createAutoBattleBattle(
         report(full);
     }
 
-    /** 开战实例化：由编队（heroId 序列，缺省 config.lineups）从英雄池展开单位
-     *  快照，并把每个单位分配到己方/敌方布阵区格（MapGrid 占用表）。战斗单位是
-     *  英雄池数据的只读消费副本，改动不回流配置/编队（解耦）。change 05 阶段
+    /** 开战实例化：由编队（placement：slot + heroId，缺省 config.lineups 按已上阵
+     *  序映射到布阵区前段格）从英雄池展开单位快照，并把每个单位分配到己方/敌方
+     *  布阵区格（slot 决定布阵出发点，index 为压缩序只用于战斗内寻址）。战斗单位
+     *  是英雄池数据的只读消费副本，改动不回流配置/编队（解耦）。change 05 阶段
      *  坐标只读静态出发点，距离移动留 change 08。 */
     function resetUnits(): void {
         const grid = createMapGrid();
         units = [];
-        const lineups = options.lineups === undefined ? config.lineups : options.lineups();
+        const lineups: AutoBattleLineupPair =
+            options.lineups === undefined ? toLineupPair(config.lineups) : options.lineups();
         const heroById = new Map(config.heroes.map((hero) => [hero.id, hero]));
 
         const placeSide = (
             side: AutoBattleSide,
-            heroIds: readonly string[],
+            placed: readonly AutoBattlePlacedUnit[],
         ): void => {
             const cells = grid.formationCells(side);
-            heroIds.forEach((heroId, index) => {
+            if (placed.length > MAX_TEAM_SIZE) {
+                throw new Error(
+                    `auto-battle battle: ${side} lineup must have at most ${MAX_TEAM_SIZE} units`,
+                );
+            }
+            placed.forEach((placement, index) => {
+                const { slot, heroId } = placement;
                 const hero = heroById.get(heroId);
                 if (hero === undefined) {
                     throw new Error(
                         `auto-battle battle: lineup references unknown hero "${heroId}"`,
                     );
                 }
-                const gridKey = cells[index] ?? cells[cells.length - 1]!;
+                if (slot < 0 || slot >= cells.length) {
+                    throw new Error(
+                        `auto-battle battle: ${side} slot ${slot} out of formation bounds`,
+                    );
+                }
+                const gridKey = cells[slot]!;
                 grid.place(heroId, gridKey);
                 units.push(createMutableUnit({ ...hero, side, index }, gridKey));
             });
@@ -255,9 +292,12 @@ export function createAutoBattleBattle(
     }
 
     // 构造即就绪：从配置初始化单位阵列并开启第 1 回合（广播 round-start），
-    // 使首次 tick 即可消费已构建的行动序列
+    // 使首次 tick 即可消费已构建的行动序列；若开战即有一方为空（空编队），
+    // 立即进入终局（不开启回合，避免战斗永远僵持在 fighting）
     resetUnits();
-    beginRound(1);
+    if (!checkGameOver()) {
+        beginRound(1);
+    }
 
     return {
         get state(): AutoBattleState {
@@ -303,7 +343,10 @@ export function createAutoBattleBattle(
             events.length = 0;
             seq = 0;
             emit({ type: "restart", sourceId: "" });
-            beginRound(1);
+            // 空编队重开同样立即终局（不开启回合）
+            if (!checkGameOver()) {
+                beginRound(1);
+            }
         },
         dispose(): void {
             if (disposed) {

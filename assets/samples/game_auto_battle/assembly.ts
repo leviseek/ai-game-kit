@@ -34,6 +34,7 @@ import {
     createAutoBattleBattle,
     createAutoBattleBattleModule,
     type AutoBattleBattleHandle,
+    type AutoBattlePlacedUnit,
 } from "./logic/battle";
 import { editLineup } from "./logic/lineup";
 import {
@@ -162,8 +163,8 @@ export interface AutoBattleFixture extends GameFixture {
         readonly value: AutoBattleLineup;
         /** 当前选中的布阵格；null = 未选中。 */
         readonly selectedSlot: number | null;
-        /** 点击布阵格：未选中则选中；已选中的已上阵格二次点击卸下。 */
-        selectSlot(slot: number): void;
+        /** 点击布阵格：未选中则选中；已选中则取消选中（null = 取消选中）。 */
+        selectSlot(slot: number | null): void;
         /** 点击候选英雄：填入选中的布阵格，否则填入第一个空槽。 */
         selectHero(heroId: string): void;
         /** 卸下指定槽位英雄。 */
@@ -230,11 +231,18 @@ export function createAutoBattleFixture(
     const battle: AutoBattleBattleHandle = createAutoBattleBattle({
         clock,
         config,
-        // 开战编队由当前玩家编队（己方）+ 配置固定敌方阵容派生；战斗实例化后
-        // 持单位快照，后续编队改动只影响下一次重开
+        // 开战编队由当前玩家编队（己方）+ 配置固定敌方阵容派生；己方按真实布阵
+        // 格位（slot）输出，敌方压缩序映射到布阵区前段格。战斗实例化后持单位
+        // 快照，后续编队改动只影响下一次重开
         lineups: () => ({
-            ally: lineup.slots.filter((heroId): heroId is string => heroId !== null),
-            enemy: config.lineups.enemy,
+            ally: lineup.slots.reduce<AutoBattlePlacedUnit[]>(
+                (placed, heroId, slot) =>
+                    heroId === null
+                        ? placed
+                        : placed.concat([{ slot, heroId }]),
+                [],
+            ),
+            enemy: config.lineups.enemy.map((heroId, slot) => ({ slot, heroId })),
         }),
         onEvent: (event) => {
             options.onEvent?.(event);
@@ -242,12 +250,15 @@ export function createAutoBattleFixture(
     });
 
     const persistLineup = (): void => {
-        void lineupStore.save(lineup);
+        // 存储写失败不中断交互，经 console.error 报告（对齐框架 SaveCoordinator 缺省语义）
+        void lineupStore.save(lineup).catch((error: unknown) => {
+            console.error(error);
+        });
     };
 
     const lineupCommands: LineupEditorCommands = {
         selectSlot(slot) {
-            selectedSlot = slot < 0 ? null : slot;
+            selectedSlot = slot;
         },
         selectHero(heroId) {
             // 优先填入选中的布阵格（替换语义），否则填第一个空槽；满编（MAX_TEAM_SIZE）
@@ -382,9 +393,26 @@ export function createAutoBattleFixture(
             store: lineupStore,
             restoreLineup: async () => {
                 const loaded = await lineupStore.load();
-                if (loaded !== null) {
-                    lineup = loaded.data;
+                if (loaded === null) {
+                    return;
                 }
+                // 恢复前校验非空 heroId 均在英雄池内：损坏/手工构造存档含未知
+                // 英雄时拒绝恢复（保留当前编队），避免未知 id 进入编队页
+                const heroIds = new Set(config.heroes.map((hero) => hero.id));
+                const unknown = loaded.data.slots.find(
+                    (heroId) => heroId !== null && !heroIds.has(heroId),
+                );
+                if (unknown !== undefined) {
+                    throw new Error(
+                        `auto-battle lineup: restored lineup references unknown hero "${unknown}"`,
+                    );
+                }
+                lineup = loaded.data;
+                // 迁移回写：旧版本存档经 load 逐级迁移后立即落盘当前版本，
+                // 避免每次重启重复执行迁移链
+                void lineupStore.save(lineup).catch((error: unknown) => {
+                    console.error(error);
+                });
             },
         },
         dispose: async () => {

@@ -68,8 +68,7 @@ describe("Auto-battle lineup store corruption and version guards", () => {
 
     test("rejects a record whose data is not a valid lineup shape", async () => {
         const storage = new MemoryPlatform();
-        // 当前版本存档直接过 isLineupRecord 形状校验（v1 数据会先走迁移路径，
-        // 无 slots 的损坏形状在迁移器内即抛 TypeError，不再回落到 corrupt）
+        // 当前版本存档直接过 isLineupRecord 形状校验；形状不符按损坏拒绝
         await seed(
             storage,
             JSON.stringify({ version: LINEUP_SAVE_VERSION, data: { foo: "bar" } }),
@@ -88,6 +87,28 @@ describe("Auto-battle lineup store corruption and version guards", () => {
         await expect(
             createLineupStore({ storage }).load(),
         ).rejects.toThrow(/newer/);
+    });
+
+    test("rejects a record exceeding the deploy cap", async () => {
+        const storage = new MemoryPlatform();
+        // 手工构造超上限存档：7 个非空槽（MAX_TEAM_SIZE=6），绕过 reducer 上限
+        const tooMany = Array.from<unknown, string | null>(
+            { length: FORMATION_GRID_SIZE },
+            () => null,
+        );
+        for (let slot = 0; slot < MAX_TEAM_SIZE + 1; slot += 1) {
+            tooMany[slot] = `h${slot}`;
+        }
+        await seed(
+            storage,
+            JSON.stringify({
+                version: LINEUP_SAVE_VERSION,
+                data: { slots: tooMany },
+            }),
+        );
+        await expect(
+            createLineupStore({ storage }).load(),
+        ).rejects.toThrow(/corrupted/);
     });
 });
 
@@ -176,6 +197,16 @@ describe("Auto-battle lineup store schema migration", () => {
         await expect(
             createLineupStore({ storage, currentVersion: 3, migrators: {} }).load(),
         ).rejects.toThrow(/migration/);
+    });
+
+    test("rejects a malformed legacy v1 record as corrupted (not a raw TypeError)", async () => {
+        const storage = new MemoryPlatform();
+        // 畸形 v1：缺 slots 字段——迁移器不应抛裸 TypeError，最终按损坏拒绝
+        await seed(storage, JSON.stringify({ version: 1, data: { foo: "bar" } }));
+
+        await expect(
+            createLineupStore({ storage }).load(),
+        ).rejects.toThrow(/corrupted/);
     });
 
     test("save always writes at the current version", async () => {

@@ -111,6 +111,30 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)(
             await restarted.dispose();
         });
 
+        test("restoreLineup rejects a saved lineup referencing unknown heroes", async () => {
+            const createAutoBattleFixture = await loadCreateAutoBattleFixture();
+            const storage = new MemoryPlatform();
+            const fixture = createAutoBattleFixture({
+                configContent: lineupContent(),
+                storage,
+            });
+            await fixture.start();
+
+            // 手工播种含未知英雄 id 的存档（绕过编辑 reducer 的正常写入路径）
+            const store = fixture.lineup.store;
+            await store.save({
+                slots: ["ghost", "a", null, null, null, null, null, null, null],
+            });
+
+            await expect(fixture.lineup.restoreLineup()).rejects.toThrow(
+                /unknown hero/,
+            );
+            // 恢复失败保持当前编队不变
+            expect(fixture.lineup.value.slots[0]).toBe("a");
+
+            await fixture.dispose();
+        });
+
         test("startBattle reopens the battle with the current lineup", async () => {
             const createAutoBattleFixture = await loadCreateAutoBattleFixture();
             const fixture = createAutoBattleFixture({
