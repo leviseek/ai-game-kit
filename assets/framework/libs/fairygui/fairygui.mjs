@@ -6138,8 +6138,18 @@ class GTextField extends GObject {
         var text2 = this._text;
         if (this._templateVars)
             text2 = this.parseTemplate(text2);
-        if (this._ubbEnabled) //不支持同一个文本不同样式
+        if (this._ubbEnabled) { //
             text2 = defaultParser.parse(text2, true);
+            // UBB single-color/single-size semantics: consume lastColor/lastSize.
+            if (defaultParser.lastColor)
+                this.assignFontColor(this._label, new Color().fromHEX(defaultParser.lastColor));
+            else
+                this.assignFontColor(this._label, this._color);
+            if (defaultParser.lastSize)
+                this._label.fontSize = parseInt(defaultParser.lastSize);
+            else
+                this._label.fontSize = this._fontSize;
+        }
         this._label.string = text2;
     }
     assignFont(label, value) {
