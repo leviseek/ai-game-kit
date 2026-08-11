@@ -7,7 +7,6 @@ import {
     type SceneSwitchResult,
     type UiLayer,
 } from "../../framework";
-import { profiler } from "cc";
 import { createFairyGuiViewHandle } from "../../framework/adapters/cocos/ui/FairyGuiViewHandle";
 import { createDynamicComponentViewHandle } from "../../framework/adapters/cocos/ui/DynamicComponentViewHandle";
 import type { GameLobbyHostImpl } from "../host/GameLobbyHostImpl";
@@ -23,6 +22,7 @@ import {
     runModalClickSmoke,
 } from "./modal-click";
 import type { PerfSample } from "../../game/fixture/perf";
+import { sampleProfilerStats } from "../dev/dev-profiler";
 
 /** game bundle 冒烟模块的结构性子集（经全局注册桥读取，运行时经 lookupBundle）。 */
 interface GameSmokeModule {
@@ -48,27 +48,6 @@ interface SamplesSmokeModule {
                 readonly scale?: number;
             },
         ) => Promise<void>;
-    };
-}
-
-/**
- * 性能采样器：读取 Cocos Profiler 当前帧的引擎运行状态。stats 未就绪时
- * 返回 null（由游戏层 runFixturePerf 跳过本次采样）。每项为引擎计时器或
- * 渲染统计的实时值；纹理/缓冲区内存单位为 MB。采样器是唯一允许依赖 cc 的
- * 装配层职责，游戏层 runner 保持引擎无关。
- */
-function sampleProfilerStats(): PerfSample | null {
-    const stats = profiler.stats;
-    if (stats === null) {
-        return null;
-    }
-    return {
-        fps: stats.fps.counter.value,
-        frameMs: stats.frame.counter.value,
-        logicMs: stats.logic.counter.value,
-        draws: stats.draws.counter.value,
-        textureMemoryMB: stats.textureMemory.counter.value,
-        bufferMemoryMB: stats.bufferMemory.counter.value,
     };
 }
 
