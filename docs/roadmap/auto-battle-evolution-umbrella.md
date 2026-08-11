@@ -210,7 +210,7 @@ HeroPool（英雄池，静态配置/不可变） → Lineup（玩家编队，可
 - **不做什么**：不做服务器同步/账号（D5 非目标）；不做收益消耗系统（成长系统非目标）；收益速率第一版可固定或由 lineup 规模/星级加权（可选）。
 - **核心交付物**：`IdleRewardStore` 端口（本地实现 + 未来远程替换点）；纯函数收益计算；挂机状态版本化 schema；挂机 FGUI 页面；测试（离线分钟结算、重启保留、schema 迁移）。
 - **依赖**：`05 →`（lineup 可作为速率输入，可选）；framework platform-storage/versioned-storage（已有）。
-- **建议顺序**：Stage 3 第一（本阶段唯一）。**建议落 ADR-028**（挂机收益本地存储边界与服务器迁移点）。
+- **建议顺序**：Stage 3 第一（本阶段唯一）。**建议落 ADR-030**（挂机收益本地存储边界与服务器迁移点，原预判 ADR-028 编号已被 `third-party-library-submodule-hosting` 占用，顺延）。
 
 **Stage 3 里程碑**：离线 N 分钟返回收益正确；重启后收益保留；schema 可版本化迁移；服务器迁移点文档明确。
 
@@ -237,9 +237,9 @@ openspec 约定每个 change 的 tasks.md 末尾必须有 ADR 检查任务。本
 | ADR-025 | coordinate-battle-unit-model | 04（已落）；**08 修订** | 空间语义如何从标签式（front/mid/back）演进为坐标式？谁是真源？ | 阶段一（已归档）：保留 position 标签 + 新增 `side+index` 逻辑槽位与 slot→xy 映射；**08 修订决策 3**：坐标真源移至逻辑层（gridKey 由逻辑层持有并更新，渲染仅消费） |
 | ADR-026 | lineup-data-model | 05 | HeroPool 与 Lineup 如何建模、谁拥有可变性、何时持久化？战场组件化边界如何定？ | HeroPool 静态不可变；Lineup 可变、versioned-storage 持久化、开战实例化后解耦；**扩展**：Lineup↔布阵区映射、UnitSlot 契约（setXY 写入、跨包 Common）、MAX_TEAM_SIZE 语义（布阵区容量 9 / 上阵上限 6 分离）、持久化 schema 兼容 09 消费 |
 | ADR-027 | event-driven-presentation | 07/08 | 特效/位移如何建立在事件层上而不破坏确定性？ | 事件投影 + state 快照为准；动画可打断、终态回到快照姿态；逻辑层不等动画完成；**扩展**：move/teleport 事件为一等公民（保序、可回放），动画终态语义在逻辑坐标真源下简化 |
-| ADR-028 | idle-reward-local-storage-boundary | 09 | 本地挂机存储的边界在哪？服务器迁移点如何预留？ | 收益纯函数化 + `IdleRewardStore` 端口抽象 + schema 版本化；时间源区分（战斗模拟钟 / 挂机墙钟）；未来服务器权威校验 |
+| ADR-030 | idle-reward-local-storage-boundary | 09 | 本地挂机存储的边界在哪？服务器迁移点如何预留？ | 收益纯函数化 + `IdleRewardStore` 端口抽象 + schema 版本化；时间源区分（战斗模拟钟 / 挂机墙钟）；未来服务器权威校验 |
 
-> 说明：加速挡位实现（timeScale vs 节流换算）、FGUI 槽位预置策略等属于**局部决策**，在 change 内记录决策依据即可，不必单独 ADR。
+> 说明：加速挡位实现（timeScale vs 节流换算）、FGUI 槽位预置策略等属于**局部决策**，在 change 内记录决策依据即可，不必单独 ADR。原预判 ADR-028 编号已被 `third-party-library-submodule-hosting` 占用，挂机边界 ADR 顺延为 ADR-030。
 
 ---
 
