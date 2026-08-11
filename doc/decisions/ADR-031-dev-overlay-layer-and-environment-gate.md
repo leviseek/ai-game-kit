@@ -47,8 +47,16 @@ Accepted
 
 ## 影响
 
-- 新增 `assets/boot/dev/`（dev-env/dev-info/dev-ball/dev-overlay/dev-clock/dev-profiler）；`AppRoot` 增加 dev overlay 装配分支（`isDevEnabled` 门控 + `mountDevOverlayIfEnabled`）。
+- 新增 `assets/boot/dev/`（dev-env/dev-info/dev-ball/dev-overlay/dev-clock）；`AppRoot` 经 `setupDevOverlay` 薄转发装配（`isDevEnabled` 门控 + GRoot 重试 + dispose）。
 - 新增 `CocosDeviceInfo` 适配器（`assets/framework/adapters/cocos/device/`）与 `DevOverlayViewHandle`（`adapters/cocos/ui/`），均不进 framework 公开 API 白名单。
+- Profiler 采样 `sampleProfilerStats` 归置 `assets/boot/profiler.ts`（冒烟与 dev overlay 共用，避免冒烟反向依赖 dev 模块）。
 - FGUI 新包 `DevOverlay`（`DevOverlayBall`/`DevOverlayPanel`），独立发布 `assets/ui/DevOverlay/`，不触碰既有包产物。
 - 无破坏性变更：不改 framework 白名单、不改 `DeviceInfo` 契约形状、不动品类生命周期。
 - 落地 change：`dev-overlay`。
+
+## 审查补充（ai-sensei 深度审查后确认）
+
+- **dev 专用 fgui 视图临时借住 adapters**：`DevOverlayViewHandle` 是 dev-overlay 专用、不实现 framework 契约，但为集中 fgui 类型边界（AGENTS 强约束）暂放 `adapters/cocos/ui/`；未来不得继续向 adapters 塞业务专用文件。
+- **`MotionTween` 不进白名单**：纯 TS 通用动画能力，当前唯一消费者是 dev-ball（boot 层），符合 ADR-031"不新增公开 API"；若 samples（vs-entrance/effect-animator 自实现 ease）未来迁移复用，需重新评估进白名单。
+- **AppRoot 装配外移**：dev overlay 组装（loadPackage/采样器/时钟/重试/竞态守卫）收敛到 `setupDevOverlay`，对齐 SmokeProxy 外移先例；AppRoot 只保留薄转发 + dispose。
+- **已知限制**：AppRoot 的 dev 开启全链路（DEBUG=true）因 bun mock.module 全局共享（cc/env 首个注册生效）无法可靠单测，装配核心由 `setupDevOverlay` 测试覆盖；AppRoot 接线由 source 断言 + DEBUG=false 路径兜底。
