@@ -10,6 +10,8 @@
   "track": "#3a3a3a",
   "fill": "#4a90e2",
   "fill_hp": "#d95f59",
+  "float_damage": "#ff5252",
+  "float_heal": "#6fd96f",
   "grip_up": "#5aa0f2",
   "grip_down": "#3a76bd",
   "item_hover": "#335577",

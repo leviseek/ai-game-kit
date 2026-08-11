@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="140,110" touchable="false">
+  <displayList>
+    <image id="fx_feedback_flash" name="fx_flash" src="fx000" fileName="img/hit_flash_white.png" xy="0,0" size="140,110" alpha="0" touchable="false">
+      <relation target="" sidePair="width-width,height-height"/>
+    </image>
+    <text id="fx_feedback_float" name="fx_float" xy="0,8" size="140,36" alpha="0" fontSize="24" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" ubb="true" strokeColor="#000000" text="[color=#d95f59]-0[/color]">
+      <relation target="" sidePair="width-width"/>
+    </text>
+  </displayList>
+</component>

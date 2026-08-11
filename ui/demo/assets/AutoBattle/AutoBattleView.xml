@@ -7,6 +7,9 @@
     <component id="ab_units_container" name="container_units" src="ab003" fileName="BattlefieldUnitsCom.xml" xy="0,0" size="1280,500">
       <relation target="" sidePair="width-width"/>
     </component>
+    <component id="ab_effects_container" name="container_effects" src="ab003" fileName="BattlefieldUnitsCom.xml" xy="0,0" size="1280,500" touchable="false">
+      <relation target="" sidePair="width-width"/>
+    </component>
     <text id="ab_round" name="txt_round" xy="440,24" size="400,40" fontSize="28" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="第 1 回合">
       <relation target="" sidePair="center-center"/>
     </text>
