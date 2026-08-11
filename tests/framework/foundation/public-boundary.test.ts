@@ -598,6 +598,9 @@ describe("framework public boundary", () => {
             "createGameFixture",
             "GameFixture",
             "GameFixtureOptions",
+            "GameClock",
+            "MotionTweenOptions",
+            "PauseDomain",
         ].sort();
 
         expect(extractRootExportNames(source)).toEqual(expectedRootExports);

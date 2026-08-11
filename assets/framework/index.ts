@@ -184,3 +184,7 @@ export {
     registerBundle,
     lookupBundle,
 } from "./core/module/BundleModuleRegistry";
+
+export { PauseDomain } from "./contracts/time/PauseDomain";
+export { GameClock } from "./core/time/GameClock";
+export type { MotionTweenOptions } from "./contracts/time/MotionTween";
