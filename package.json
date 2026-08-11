@@ -22,7 +22,8 @@
     "typecheck:ci": "tsc --noEmit -p tsconfig.ci.json && tsc --noEmit -p tools/creator/tsconfig.json && tsc --noEmit -p tools/fgui/tsconfig.json && tsc --noEmit -p tools/fgui-mcp/tsconfig.json",
     "ccc": "bun ./tools/creator/cli.ts",
     "fgui": "bun ./tools/fgui/cli.ts",
-    "fgui-mcp": "bun ./tools/fgui-mcp/cli.ts"
+    "fgui-mcp": "bun ./tools/fgui-mcp/cli.ts",
+    "build:fairygui": "bun ./scripts/build-fairygui.ts"
   },
   "devDependencies": {
     "eslint": "^10.8.1",

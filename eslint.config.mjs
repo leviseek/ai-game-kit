@@ -28,6 +28,7 @@ export default tseslint.config(
             ".cursor/**",
             "ui/**",
             "assets/framework/libs/fairygui/**",
+            "third-party/**",
             "**/*.d.ts",
         ],
     },

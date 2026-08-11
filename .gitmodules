@@ -1,0 +1,4 @@
+[submodule "third-party/fairygui"]
+	path = third-party/fairygui
+	url = https://github.com/leviseek/FairyGUI-cocoscreator
+	branch = ccc3.0
