@@ -122,5 +122,22 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)(
             presenter.dispose();
             await fixture.dispose();
         });
+
+        test("presenter runs VS phase before entrance and fighting (phases)", async () => {
+            const createAutoBattleFixture = await loadCreateAutoBattleFixture();
+            const fixture = createAutoBattleFixture({ configContent: battleContent() });
+            await fixture.start();
+            const view = recordingView();
+            const presenter = createAutoBattlePresenter(fixture, view.node);
+
+            // VS 阶段：VS 节点已写入队长名（每方 index 最小存活单位）
+            // 注意 presenter 用 Date.now() 驱动，此测试只验证初始渲染即进入 VS 阶段
+            expect(view.nodes.get("vs_left")?.text).toBe("e"); // 敌方唯一单位 e
+            expect(view.nodes.get("vs_right")?.text).toBe("a"); // 己方 index 0 → a
+            expect(view.nodes.get("vs_badge")?.text).toBe("VS");
+
+            presenter.dispose();
+            await fixture.dispose();
+        });
     },
 );

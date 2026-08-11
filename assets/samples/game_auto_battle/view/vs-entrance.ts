@@ -6,9 +6,9 @@ export interface VsEntranceConfig {
     readonly left: { readonly name: string; readonly sideLabel: string };
     /** 右侧（己方）武将信息。 */
     readonly right: { readonly name: string; readonly sideLabel: string };
-    /** VS 展示总时长（ms，入场+定格，不含淡出）。 */
+    /** 入场动画时长（ms，武将自屏外向中心移动+淡入）。 */
     readonly durationMs: number;
-    /** 定格时长（ms）。 */
+    /** 定格时长（ms，入场结束到淡出开始之间的停留）。 */
     readonly holdMs: number;
     /** 淡出时长（ms）。 */
     readonly fadeMs: number;
@@ -72,8 +72,8 @@ export function createVsEntranceTemplate(options: {
             started = true;
             playStart = now;
             playEnd = now + config.durationMs;
-            fadeStart = playEnd;
-            fadeEnd = playEnd + config.fadeMs;
+            fadeStart = playEnd + config.holdMs;
+            fadeEnd = playEnd + config.holdMs + config.fadeMs;
 
             writeText("vs_left", config.left.name);
             writeText("vs_right", config.right.name);

@@ -92,6 +92,30 @@ describe("Auto-battle VS entrance template", () => {
         expect(template.active()).toBe(false);
     });
 
+    test("hold window keeps leaders centered and fully visible after entrance", () => {
+        const { template, ensureNode, advance } = makeTemplate();
+        const left = ensureNode("vs_left");
+        const right = ensureNode("vs_right");
+        const badge = ensureNode("vs_badge");
+        template.play();
+
+        // 入场结束（t=playEnd=1800）：武将居中、alpha 1，尚未进入淡出
+        advance(1800);
+        template.step();
+        expect(left.xy!.x).toBeCloseTo(0, 5);
+        expect(right.xy!.x).toBeCloseTo(0, 5);
+        expect(left.alpha).toBe(1);
+        expect(badge.alpha).toBe(1);
+
+        // 定格中段（t=2100 < fadeStart=playEnd+holdMs=2400）：位置与 alpha 保持不变
+        advance(300);
+        template.step();
+        expect(left.xy!.x).toBeCloseTo(0, 5);
+        expect(right.xy!.x).toBeCloseTo(0, 5);
+        expect(left.alpha).toBe(1);
+        expect(badge.alpha).toBe(1);
+    });
+
     test("vs badge fades in during play and fades out at end", () => {
         const { template, ensureNode, advance } = makeTemplate();
         const badge = ensureNode("vs_badge");
