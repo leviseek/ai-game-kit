@@ -1,11 +1,23 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test, mock } from "bun:test";
 
-import {
-    mountDevOverlay,
-    type DevOverlayMountOptions,
+import { createCcMock } from "./helpers/cc-mock";
+import { createFairyGuiMock } from "./helpers/fairygui-mock";
+import type {
+    DevOverlayMountOptions,
+    DevOverlayRoot,
+    DevOverlayViewSeam,
 } from "../../../assets/boot/dev/dev-overlay";
 import type { DevInfoSampler } from "../../../assets/boot/dev/dev-info";
-import type { DevOverlayViewSeam } from "../../../assets/boot/dev/dev-overlay";
+
+// setupDevOverlay 经 CocosDeviceInfo/dev-profiler/DevOverlayViewHandle 间接依赖
+// cc 与 fairygui-cc；cc mock 必须与其它测试文件一致（全局共享首个生效）。
+// value import 走动态（静态 import 会被 hoisted 到 mock 之前）。
+mock.module("cc", () => createCcMock());
+mock.module("fairygui-cc", () => createFairyGuiMock());
+
+const { mountDevOverlay, setupDevOverlay } = await import(
+    "../../../assets/boot/dev/dev-overlay"
+);
 
 const SAMPLER: DevInfoSampler = {
     sample: () => ({
@@ -30,9 +42,48 @@ function createFakeView(): DevOverlayViewSeam {
     };
 }
 
+function createRoot(): DevOverlayRoot {
+    let width = 1280;
+    let height = 720;
+    const children: unknown[] = [];
+    return {
+        name: "GRoot",
+        get width() {
+            return width;
+        },
+        get height() {
+            return height;
+        },
+        setSize(w: number, h: number) {
+            width = w;
+            height = h;
+        },
+        addChild(child: unknown) {
+            children.push(child);
+            return child;
+        },
+        removeChild(child: unknown) {
+            const index = children.indexOf(child);
+            if (index >= 0) {
+                children.splice(index, 1);
+            }
+            return child;
+        },
+        removeChildren() {
+            children.length = 0;
+        },
+        getChildAt(index: number) {
+            return children[index];
+        },
+        get numChildren() {
+            return children.length;
+        },
+    };
+}
+
 interface SetupResult {
     readonly options: DevOverlayMountOptions;
-    readonly root: { readonly width: number; readonly height: number };
+    readonly root: DevOverlayRoot;
     readonly counters: {
         readonly created: number;
         readonly driverDisposed: number;
@@ -47,7 +98,7 @@ function setup(overrides: {
     let created = 0;
     let driverDisposed = 0;
     const ticks: Array<() => void> = [];
-    const root = { width: 1280, height: 720 };
+    const root = createRoot();
     const options: DevOverlayMountOptions = {
         root,
         isDevEnabled: () => overrides.devEnabled ?? true,
@@ -143,5 +194,131 @@ describe("mountDevOverlay", () => {
         handle.dispose();
         handle.dispose();
         expect(counters.driverDisposed).toBe(1);
+    });
+});
+
+interface SetupHostResult {
+    readonly host: {
+        readonly root: DevOverlayRoot | undefined;
+        loadPackage(bundle: string, path: string): Promise<{ readonly state: string }>;
+    };
+    readonly loads: number;
+}
+
+function makeSetupHost(
+    rootProvider: () => DevOverlayRoot | undefined,
+    loadState: string,
+): SetupHostResult {
+    let loads = 0;
+    return {
+        host: {
+            get root() {
+                return rootProvider();
+            },
+            loadPackage: async () => {
+                loads += 1;
+                return { state: loadState };
+            },
+        },
+        get loads() {
+            return loads;
+        },
+    };
+}
+
+function makeLogger(): {
+    logger: {
+        warn(message: string): void;
+        error(message: string, context?: unknown, error?: Error): void;
+    };
+    readonly warns: string[];
+} {
+    const warns: string[] = [];
+    return {
+        warns,
+        logger: {
+            warn: (message) => {
+                warns.push(message);
+            },
+            error: () => { },
+        },
+    };
+}
+
+const noopDrive = (): { dispose(): void } => ({ dispose() { } });
+
+describe("setupDevOverlay", () => {
+    test("dev 关闭：mounted false，不加载包", () => {
+        const setupHost = makeSetupHost(() => createRoot(), "ready");
+        const handle = setupDevOverlay({
+            host: setupHost.host,
+            logger: makeLogger().logger,
+            isDevEnabled: () => false,
+            drive: noopDrive,
+        });
+        expect(handle.mounted).toBe(false);
+        expect(setupHost.loads).toBe(0);
+        handle.dispose();
+    });
+
+    test("GRoot 未就绪时内部重试，就绪后挂载", async () => {
+        const holder: { root: DevOverlayRoot | undefined } = { root: undefined };
+        const setupHost = makeSetupHost(() => holder.root, "ready");
+        let driverDisposed = 0;
+        const handle = setupDevOverlay({
+            host: setupHost.host,
+            logger: makeLogger().logger,
+            isDevEnabled: () => true,
+            drive: (tick) => {
+                tick();
+                return {
+                    dispose: () => {
+                        driverDisposed += 1;
+                    },
+                };
+            },
+        });
+        expect(handle.mounted).toBe(false);
+
+        // GRoot 就绪后，下一次重试（100ms 间隔）读到 root 并挂载
+        holder.root = createRoot();
+        await new Promise((resolve) => setTimeout(resolve, 120));
+
+        expect(handle.mounted).toBe(true);
+        expect(setupHost.loads).toBe(1);
+        handle.dispose();
+        expect(driverDisposed).toBe(1);
+    });
+
+    test("包加载失败：记录 warn，不挂载", async () => {
+        const setupHost = makeSetupHost(() => createRoot(), "failed");
+        const { logger, warns } = makeLogger();
+        const handle = setupDevOverlay({
+            host: setupHost.host,
+            logger,
+            isDevEnabled: () => true,
+            drive: noopDrive,
+        });
+        await new Promise((resolve) => setTimeout(resolve, 20));
+
+        expect(handle.mounted).toBe(false);
+        expect(warns.some((message) => message.includes("package load failed"))).toBe(true);
+        handle.dispose();
+    });
+
+    test("dispose 取消 GRoot 未就绪重试：不挂载、不加载包", async () => {
+        const setupHost = makeSetupHost(() => undefined, "ready");
+        const handle = setupDevOverlay({
+            host: setupHost.host,
+            logger: makeLogger().logger,
+            isDevEnabled: () => true,
+            drive: noopDrive,
+        });
+        handle.dispose();
+
+        // 等待超过重试间隔：重试已被取消
+        await new Promise((resolve) => setTimeout(resolve, 150));
+        expect(handle.mounted).toBe(false);
+        expect(setupHost.loads).toBe(0);
     });
 });

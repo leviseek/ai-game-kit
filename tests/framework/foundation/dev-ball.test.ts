@@ -93,7 +93,7 @@ function makeController(
     const controller = createDevBallController({
         node: nodes.node,
         ballSize: BALL_SIZE,
-        bounds: BOUNDS,
+        readBounds: () => BOUNDS,
         timeSource: clock.timeSource,
         sampler: SAMPLER,
         ...(initial === undefined ? {} : { initialPosition: initial }),
@@ -244,6 +244,79 @@ describe("createDevBallController", () => {
         controller.step();
         expect(nodes.writes[PANEL_NODE].alpha).toBe(0);
         expect(nodes.writes[PANEL_NODE].visible).toBe(false);
+    });
+
+    test("面板淡出中被拖拽打断：立即完成隐藏，不残留半透明", () => {
+        const { controller, nodes, clock } = makeController();
+        controller.onHoverIn();
+        clock.advance(200);
+        controller.step();
+        expect(nodes.writes[PANEL_NODE].alpha).toBe(1);
+
+        // 开始淡出但未完成
+        controller.onHoverOut();
+        clock.advance(90);
+        controller.step();
+        expect(nodes.writes[PANEL_NODE].alpha).toBeGreaterThan(0);
+
+        // 淡出中按下拖动 → 面板立即完成隐藏，不残留半透明
+        controller.onTouchBegin(310, 210);
+        expect(nodes.writes[PANEL_NODE].visible).toBe(false);
+        expect(nodes.writes[PANEL_NODE].alpha).toBe(0);
+
+        controller.onTouchMove(200, 300);
+        controller.onTouchEnd();
+        expect(controller.state).toBe("snapping");
+        clock.advance(400);
+        controller.step();
+        expect(controller.state).toBe("collapsed");
+        expect(nodes.writes[PANEL_NODE].visible).toBe(false);
+    });
+
+    test("淡入中收起：从当前 alpha 淡出，不闪回 1", () => {
+        const { controller, nodes, clock } = makeController();
+        controller.onHoverIn();
+        clock.advance(90);
+        controller.step();
+        const mid = nodes.writes[PANEL_NODE].alpha;
+        expect(mid).toBeGreaterThan(0);
+        expect(mid).toBeLessThan(1);
+
+        controller.onHoverOut();
+        clock.advance(10);
+        controller.step();
+        expect(nodes.writes[PANEL_NODE].alpha).toBeLessThan(mid);
+    });
+
+    test("拖动中位置钳制在设计分辨率边界内", () => {
+        const { controller, nodes } = makeController({ x: 100, y: 100 });
+        controller.onTouchBegin(110, 110);
+        controller.onTouchMove(2000, 2000);
+        // BOUNDS 1280x720，球 48x48 → maxX=1232, maxY=672
+        expect(nodes.writes[BALL_NODE].xy).toEqual({ x: 1232, y: 672 });
+    });
+
+    test("边界实时读取：窗口 resize 后钳制使用新边界", () => {
+        let width = 1280;
+        let height = 720;
+        const nodes = createFakeNodes();
+        const clock = makeClock(1000);
+        const controller = createDevBallController({
+            node: nodes.node,
+            ballSize: BALL_SIZE,
+            readBounds: () => ({ width, height }),
+            timeSource: clock.timeSource,
+            sampler: SAMPLER,
+            initialPosition: { x: 100, y: 100 },
+        });
+
+        // 模拟窗口 resize 缩小
+        width = 640;
+        height = 360;
+        controller.onTouchBegin(110, 110);
+        controller.onTouchMove(2000, 2000);
+        // 新边界：maxX=592, maxY=312
+        expect(nodes.writes[BALL_NODE].xy).toEqual({ x: 592, y: 312 });
     });
 
     test("收缩态低频刷新 FPS 徽标", () => {

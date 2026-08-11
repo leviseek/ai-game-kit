@@ -377,6 +377,18 @@ describe("AppRoot Component", () => {
         expect(source).toMatch(/onGameSceneActive/);
         expect(source).toMatch(/createListFlow/);
     });
+
+    test("dev overlay 装配外移到 dev 模块（AppRoot 薄转发）", () => {
+        const source = readFileSync(appRootFile, "utf8");
+
+        // 对齐 SmokeProxy 外移先例：dev overlay 的组装（loadPackage/采样器/时钟/重试）
+        // 收敛到 boot/dev，AppRoot 只经 setupDevOverlay 薄转发，不再内联 mount 细节
+        expect(source).toMatch(/setupDevOverlayIfEnabled/);
+        expect(source).toMatch(/setupDevOverlay\(/);
+        expect(source).not.toMatch(/mountDevOverlay\(/);
+        expect(source).not.toMatch(/createDevInfoSampler/);
+        expect(source).not.toMatch(/createCocosDeviceInfo/);
+    });
 });
 
 describe("AppRoot lobby host", () => {
