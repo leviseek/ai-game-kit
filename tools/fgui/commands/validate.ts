@@ -10,6 +10,7 @@ import {
     validatePackageFileIntegrity,
     validatePackageManifest,
 } from "../lib/fgui";
+import { scanTsRawUrls } from "../lib/scan-ts";
 
 export const help = "validate —— 校验包/组件引用完整性与语义（默认跳过官方库 Basic/Builder，--strict 全量）；同时跨包查重导出组件名";
 
@@ -61,6 +62,13 @@ export async function run(argv: readonly string[]): Promise<number> {
     const integrityIssues = validatePackageFileIntegrity(project, pkg);
     for (const issue of integrityIssues) {
         console.error(`[${issue.severity}] ${issue.message}`);
+        if (issue.severity === "error") exitCode = 1;
+    }
+
+    // 1b. 全工程 TS 源码裸 ui:// URL 扫描（assets/ 与 tests/，生成产物目录除外）
+    const tsIssues = scanTsRawUrls(project);
+    for (const issue of tsIssues) {
+        console.error(`[${issue.severity}] ${issue.file}:${issue.line} ${issue.message}`);
         if (issue.severity === "error") exitCode = 1;
     }
 
