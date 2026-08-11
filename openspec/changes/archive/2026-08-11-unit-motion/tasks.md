@@ -37,7 +37,7 @@
 ## 7. 集成验证与回归
 
 - [x] 7.1 `bun test` 全绿（1187 pass / 0 fail）；`bun run typecheck` / `typecheck:ci` / `lint` 通过。
-- [ ] 7.2 Cocos 预览 `?smoke=auto-battle`：确认 VS 进场（左右队长武将 + VS 大字）、单位入场（3s 上浮淡入）、移动（超射程前移）、瞬移表现，且终局结果与事件序列确定性不回归。**需人工在 Cocos 编辑器验证**。
+- [x] 7.2 Cocos 预览 `?smoke=auto-battle`：确认 VS 进场（左右队长武将 + VS 大字）、单位入场（0.75s 上浮淡入）、移动（超射程前移）、瞬移表现，且终局结果与事件序列确定性不回归。**已人工在 Cocos 编辑器验证通过**。
 - [x] 7.3 注释一致性：涉及文件注释同步，无"坐标只服务表现层/原地攻击"陈旧表述残留（battle.ts resetUnits 注释已更新为"change 08 起逻辑层持有并更新"）。
 
 ## 9. VS 进场动画（通用模板）
@@ -46,7 +46,7 @@
 - [x] 9.2 `view/presenter.ts`：三阶段状态机 `vs → entrance → fighting`；VS 阶段约 1s（入场 0.55s + 定格 0.3s + 淡出 0.15s），期间不推进 tick；`restart` 重置回 vs 阶段。入场阶段时长 0.75s（`ENTRANCE_PHASE_MS`）。
 - [x] 9.3 FGUI（委派 fgui-designer）：`AutoBattleView.xml` 追加 `vs_left`（100,360）/`vs_right`（980,360）/`vs_badge`（640,360）文本节点，`pivot=0.5,0.5 anchor=true` 使 setXY 即节点中心；`validate --strict` 通过。
 - [x] 9.4 测试：`game-auto-battle-vs-entrance.test.ts`（写名/收敛动画/定格窗口/淡出/reset/时长参数化）；presenter 测试断言 VS 节点写入队长名；`bun test` 1187 pass / 0 fail。
-- [ ] 9.5 Cocos 预览确认 VS 动画效果（左右武将入场 + VS 大字定格淡出），与 7.2 一并人工验证。
+- [x] 9.5 Cocos 预览确认 VS 动画效果（左右武将入场 + VS 大字定格淡出），**已人工在 Cocos 编辑器验证通过**（含 easeOutBack 回弹节奏 1s 确认）。
 
 ## 8. ADR 检查
 
