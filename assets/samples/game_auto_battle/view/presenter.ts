@@ -89,8 +89,17 @@ export function createAutoBattlePresenter(
         node: (name: string) => node(name),
         timeSource: () => Date.now(),
         config: {
-            left: { name: leaderOf("enemy"), sideLabel: "敌方" },
-            right: { name: leaderOf("ally"), sideLabel: "己方" },
+            left: {
+                name: leaderOf("enemy"),
+                sideLabel: "敌方",
+                // 左侧武将目标坐标（1280x720 画布，y 垂直居中）；动画从屏外收敛到该坐标
+                baseXY: { x: 100, y: 360 },
+            },
+            right: {
+                name: leaderOf("ally"),
+                sideLabel: "己方",
+                baseXY: { x: 980, y: 360 },
+            },
             durationMs: VS_ENTRANCE_MS,
             holdMs: VS_HOLD_MS,
             fadeMs: VS_FADE_MS,

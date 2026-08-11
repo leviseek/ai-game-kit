@@ -1,14 +1,14 @@
 import type { EffectNode } from "./effect-animator";
 
-/** VS 进场配置：左右双方队长武将名 + 动画时长（参数化，供定制）。 */
+/** VS 进场配置：左右双方队长武将名 + 基础坐标 + 动画时长（参数化，供定制）。 */
 export interface VsEntranceConfig {
-    /** 左侧（敌方）武将信息。 */
-    readonly left: { readonly name: string; readonly sideLabel: string };
-    /** 右侧（己方）武将信息。 */
-    readonly right: { readonly name: string; readonly sideLabel: string };
-    /** 入场动画时长（ms，武将自屏外向中心移动+淡入）。 */
+    /** 左侧（敌方）武将信息：name 文本 + baseXY 目标坐标（动画从屏外收敛到该坐标）。 */
+    readonly left: { readonly name: string; readonly sideLabel: string; readonly baseXY: { readonly x: number; readonly y: number } };
+    /** 右侧（己方）武将信息：同上。 */
+    readonly right: { readonly name: string; readonly sideLabel: string; readonly baseXY: { readonly x: number; readonly y: number } };
+    /** VS 展示总时长（ms，入场+定格，不含淡出）。 */
     readonly durationMs: number;
-    /** 定格时长（ms，入场结束到淡出开始之间的停留）。 */
+    /** 定格时长（ms）。 */
     readonly holdMs: number;
     /** 淡出时长（ms）。 */
     readonly fadeMs: number;
@@ -33,9 +33,8 @@ export function createVsEntranceTemplate(options: {
     config: VsEntranceConfig;
 }): VsEntranceHandle {
     const { node, timeSource, config } = options;
-    // 左右武将屏外起始偏移：left 在屏幕左侧外、right 在右侧外（向中心 x=0 收敛）
+    // 左右武将屏外起始偏移：从各自 baseXY.x 向屏幕外偏移（入场时收敛回 baseXY）
     const SIDE_OFFSET = 640;
-    const CENTER_Y = 0;
 
     let started = false;
     let playStart = 0;
@@ -73,14 +72,14 @@ export function createVsEntranceTemplate(options: {
             playStart = now;
             playEnd = now + config.durationMs;
             fadeStart = playEnd + config.holdMs;
-            fadeEnd = playEnd + config.holdMs + config.fadeMs;
+            fadeEnd = fadeStart + config.fadeMs;
 
             writeText("vs_left", config.left.name);
             writeText("vs_right", config.right.name);
             writeText("vs_badge", "VS");
-            // 起点：两侧屏外偏移、alpha 0（VS 大字淡入、武将随移动入场）
-            writeXY("vs_left", -SIDE_OFFSET, CENTER_Y);
-            writeXY("vs_right", SIDE_OFFSET, CENTER_Y);
+            // 起点：从各自 baseXY.x 向屏外偏移、alpha 0（VS 大字淡入、武将随移动入场）
+            writeXY("vs_left", config.left.baseXY.x - SIDE_OFFSET, config.left.baseXY.y);
+            writeXY("vs_right", config.right.baseXY.x + SIDE_OFFSET, config.right.baseXY.y);
             writeAlpha("vs_left", 0);
             writeAlpha("vs_right", 0);
             writeAlpha("vs_badge", 0);
@@ -101,18 +100,18 @@ export function createVsEntranceTemplate(options: {
                 started = false;
                 return;
             }
-            // 入场阶段：武将从两侧向中心 + 淡入，VS 大字淡入
-            // easeOutCubic：前半程快速入场、临近中心减速（t=0.5 时位移 ±80，收敛到 x=0）
+            // 入场阶段：武将从两侧向 baseXY 收敛 + 淡入，VS 大字淡入
+            // easeOutCubic：前半程快速入场、临近中心减速（t=0.5 时位移 ±80，收敛到 baseXY）
             const entranceProgress = clamp01((now - playStart) / config.durationMs);
             const eased = 1 - (1 - entranceProgress) ** 3;
-            const leftX = -SIDE_OFFSET * (1 - eased);
-            const rightX = SIDE_OFFSET * (1 - eased);
-            writeXY("vs_left", leftX, CENTER_Y);
-            writeXY("vs_right", rightX, CENTER_Y);
+            const leftX = config.left.baseXY.x - SIDE_OFFSET * (1 - eased);
+            const rightX = config.right.baseXY.x + SIDE_OFFSET * (1 - eased);
+            writeXY("vs_left", leftX, config.left.baseXY.y);
+            writeXY("vs_right", rightX, config.right.baseXY.y);
             writeAlpha("vs_left", entranceProgress);
             writeAlpha("vs_right", entranceProgress);
             writeAlpha("vs_badge", entranceProgress);
-            // 定格：入场结束后保持到 fadeStart（无额外写入）
+            // 定格窗口 [playEnd, fadeStart)：入场完成后保持位置与 alpha（无额外写入）
             if (now >= fadeStart) {
                 // 淡出：alpha 线性降到 0
                 const fadeProgress = clamp01((now - fadeStart) / config.fadeMs);

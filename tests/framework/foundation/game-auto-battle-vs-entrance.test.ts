@@ -30,8 +30,8 @@ function makeTime() {
 }
 
 const DEFAULT_CONFIG: VsEntranceConfig = {
-    left: { name: "敌方队长", sideLabel: "敌方" },
-    right: { name: "己方队长", sideLabel: "己方" },
+    left: { name: "敌方队长", sideLabel: "敌方", baseXY: { x: 100, y: 360 } },
+    right: { name: "己方队长", sideLabel: "己方", baseXY: { x: 980, y: 360 } },
     durationMs: 1800,
     holdMs: 600,
     fadeMs: 300,
@@ -74,15 +74,15 @@ describe("Auto-battle VS entrance template", () => {
         const right = ensureNode("vs_right");
         template.play();
 
-        // 起点：两侧偏移（vs_left 在左侧、vs_right 在右侧）
-        expect(left.xy!.x).toBeLessThan(0);
-        expect(right.xy!.x).toBeGreaterThan(0);
+        // 起点：从 baseXY 向屏外偏移（left 在左侧外、right 在右侧外）
+        expect(left.xy!.x).toBeLessThan(100);
+        expect(right.xy!.x).toBeGreaterThan(980);
 
-        // 中段：向中心移动
+        // 中段：向 baseXY 收敛
         advance(900);
         template.step();
         expect(left.xy!.x).toBeGreaterThan(-100);
-        expect(right.xy!.x).toBeLessThan(100);
+        expect(right.xy!.x).toBeLessThan(1080);
 
         // 结束后：整体淡出（alpha=0）、active 结束
         advance(1800 + 600 + 300);
@@ -99,19 +99,19 @@ describe("Auto-battle VS entrance template", () => {
         const badge = ensureNode("vs_badge");
         template.play();
 
-        // 入场结束（t=playEnd=1800）：武将居中、alpha 1，尚未进入淡出
+        // 入场结束（t=playEnd=1800）：武将收敛到 baseXY、alpha 1，尚未进入淡出
         advance(1800);
         template.step();
-        expect(left.xy!.x).toBeCloseTo(0, 5);
-        expect(right.xy!.x).toBeCloseTo(0, 5);
+        expect(left.xy!.x).toBeCloseTo(100, 5);
+        expect(right.xy!.x).toBeCloseTo(980, 5);
         expect(left.alpha).toBe(1);
         expect(badge.alpha).toBe(1);
 
         // 定格中段（t=2100 < fadeStart=playEnd+holdMs=2400）：位置与 alpha 保持不变
         advance(300);
         template.step();
-        expect(left.xy!.x).toBeCloseTo(0, 5);
-        expect(right.xy!.x).toBeCloseTo(0, 5);
+        expect(left.xy!.x).toBeCloseTo(100, 5);
+        expect(right.xy!.x).toBeCloseTo(980, 5);
         expect(left.alpha).toBe(1);
         expect(badge.alpha).toBe(1);
     });
