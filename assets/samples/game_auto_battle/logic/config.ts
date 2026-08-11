@@ -55,7 +55,10 @@ function isSkillConfig(value: unknown): value is AutoBattleSkill {
         record.value >= 0 &&
         typeof record.energyCost === "number" &&
         Number.isFinite(record.energyCost) &&
-        record.energyCost > 0
+        record.energyCost > 0 &&
+        (record.teleportTo === undefined ||
+            (typeof record.teleportTo === "string" &&
+                /^\d+:\d+$/.test(record.teleportTo)))
     );
 }
 
@@ -84,11 +87,21 @@ function isHeroConfig(value: unknown): value is AutoBattleHero {
         typeof record.speed === "number" &&
         Number.isFinite(record.speed) &&
         record.speed >= 0 &&
+        (record.attackRange === undefined ||
+            (typeof record.attackRange === "number" &&
+                Number.isFinite(record.attackRange) &&
+                record.attackRange >= 0)) &&
         typeof record.energyMax === "number" &&
         Number.isFinite(record.energyMax) &&
         record.energyMax > 0 &&
         isSkillConfig(record.skill)
     );
+}
+
+/** 读取英雄条目并补充缺省 attackRange（默认 1，向后兼容旧配置无该字段）。 */
+function readHeroAttackRange(record: { readonly attackRange?: number }): number {
+    const range = record.attackRange;
+    return range === undefined ? 1 : range;
 }
 
 /** 读取一队单位清单：逐项校验，非法条目抛错并给出序号定位。 */
@@ -113,7 +126,12 @@ function readTeam(
                 `auto-battle config: team "${key}" entry at index ${index} has an invalid shape`,
             );
         }
-        return { ...entry, side, index };
+        return {
+            ...entry,
+            attackRange: readHeroAttackRange(entry),
+            side,
+            index,
+        };
     });
 }
 
@@ -137,7 +155,7 @@ function readHeroes(table: ConfigTable): readonly AutoBattleHero[] {
                 `auto-battle config: heroes entry at index ${index} has an invalid shape`,
             );
         }
-        return entry;
+        return { ...entry, attackRange: readHeroAttackRange(entry) };
     });
     assertUniqueHeroIds(heroes);
     return heroes;
@@ -245,6 +263,7 @@ export function createAutoBattleConfig(
         maxHp: unit.maxHp,
         attack: unit.attack,
         speed: unit.speed,
+        attackRange: unit.attackRange,
         energyMax: unit.energyMax,
         skill: unit.skill,
     }));

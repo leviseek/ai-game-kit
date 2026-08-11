@@ -31,6 +31,11 @@ export interface MapGrid {
     place(unitId: string, gridKey: string): boolean;
     /** 释放单位所在格：单位未放置返回 false。 */
     release(unitId: string): boolean;
+    /**
+     * 移动单位到目标格：释放 + 放置一步完成，避免双索引中间态不一致。
+     * 目标格被占用、非法/越界或单位未放置返回 false（位置不变）。
+     */
+    move(unitId: string, gridKey: string): boolean;
 }
 
 function keyOf(row: number, col: number): string {
@@ -119,6 +124,21 @@ export function createMapGrid(
             }
             occupied.delete(gridKey);
             unitGrid.delete(unitId);
+            return true;
+        },
+        move(unitId, gridKey) {
+            // 目标格非法/越界拒绝（与 place 同校验）；单位未放置或目标被占用返回 false
+            if (parseGridKey(gridKey, rows, cols) === undefined) {
+                return false;
+            }
+            const from = unitGrid.get(unitId);
+            if (from === undefined || occupied.has(gridKey)) {
+                return false;
+            }
+            // 原子更新：先移除原占用再占新格，双索引同步，无中间态
+            occupied.delete(from);
+            occupied.set(gridKey, unitId);
+            unitGrid.set(unitId, gridKey);
             return true;
         },
     };

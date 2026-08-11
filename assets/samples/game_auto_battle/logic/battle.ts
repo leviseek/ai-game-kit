@@ -1,6 +1,7 @@
 import type { Module } from "../../../framework";
 import type { AutoBattleClock } from "./clock";
 import { MAX_TEAM_SIZE } from "./config";
+import { FORMATION_GRID_COLS } from "./grid";
 import type { AutoBattleConfigHandle } from "./config";
 import {
     applyAutoBattleDamage,
@@ -19,6 +20,7 @@ import {
     type MutableUnit,
 } from "./units";
 import { createMapGrid } from "./grid";
+import { resolveMovePath } from "./move";
 import type {
     AutoBattleEvent,
     AutoBattlePhase,
@@ -104,6 +106,9 @@ export function createAutoBattleBattle(
     let actionIndex = 0;
     let seq = 0;
     let units: MutableUnit[] = [];
+    // 战场网格（占用表 + 单位当前位置）：逻辑层持有并更新（坐标真源），
+    // resetUnits 重建、move/teleport 更新。渲染经 gridToXY 单向消费。
+    let grid: ReturnType<typeof createMapGrid> = createMapGrid();
 
     function emit(event: Omit<AutoBattleEvent, "seq" | "time">): void {
         const full: AutoBattleEvent = { ...event, seq, time: clock.now() };
@@ -116,9 +121,9 @@ export function createAutoBattleBattle(
      *  序映射到布阵区前段格）从英雄池展开单位快照，并把每个单位分配到己方/敌方
      *  布阵区格（slot 决定布阵出发点，index 为压缩序只用于战斗内寻址）。战斗单位
      *  是英雄池数据的只读消费副本，改动不回流配置/编队（解耦）。change 05 阶段
-     *  坐标只读静态出发点，距离移动留 change 08。 */
+     *  坐标只读静态出发点，change 08 起逻辑层持有并更新（move/teleport）。 */
     function resetUnits(): void {
-        const grid = createMapGrid();
+        grid = createMapGrid();
         units = [];
         const lineups: AutoBattleLineupPair =
             options.lineups === undefined ? toLineupPair(config.lineups) : options.lineups();
@@ -189,7 +194,70 @@ export function createAutoBattleBattle(
             snapshotUnits(units).filter(isAutoBattleAlive),
         ).map((unit) => unit.id);
         actionIndex = 0;
-        emit({ type: "round-start", sourceId: "", round });
+        emit({
+            type: "round-start",
+            sourceId: "",
+            round,
+            // 存活单位 id 列表：供表现层入场动画消费（首轮）
+            unitIds: snapshotUnits(units)
+                .filter(isAutoBattleAlive)
+                .map((unit) => unit.id),
+        });
+    }
+
+    /**
+     * 行动前向目标移动：解析移动路径（超射程逐格前移），逐格执行 grid.move 并
+     * 广播 move 事件、更新单位 gridKey。射程内/无法移动时不产生 move 事件。
+     * 返回是否发生移动（供调用方判断"移动 + 普攻"两阶段的移动阶段）。
+     */
+    function moveTowardTarget(actor: MutableUnit, target: MutableUnit): boolean {
+        const { steps } = resolveMovePath(
+            grid,
+            actor.gridKey,
+            target.gridKey,
+            actor.def.attackRange,
+        );
+        if (steps.length === 0) {
+            return false;
+        }
+        for (const to of steps) {
+            const from = actor.gridKey;
+            if (grid.move(actor.id, to)) {
+                actor.gridKey = to;
+                emit({ type: "move", sourceId: actor.id, fromGridKey: from, toGridKey: to, round });
+            }
+        }
+        return true;
+    }
+
+    /** 技能换位：把单位换位到其所在侧布阵区的相对格（`row:col`，row/col 0..布阵区-1，
+     *  映射到 formationCells 对应格）。目标格被占用或非法则换位失败（位置不变，
+     *  不广播 teleport）。返回是否换位成功。 */
+    function teleportTarget(unit: MutableUnit, relative: string): boolean {
+        const match = /^(\d+):(\d+)$/.exec(relative);
+        if (match === null) {
+            return false;
+        }
+        const row = Number(match[1]);
+        const col = Number(match[2]);
+        const cells = grid.formationCells(unit.side);
+        const targetKey = cells[row * FORMATION_GRID_COLS + col];
+        if (targetKey === undefined || !grid.isFree(targetKey)) {
+            return false;
+        }
+        const from = unit.gridKey;
+        if (grid.move(unit.id, targetKey)) {
+            unit.gridKey = targetKey;
+            emit({
+                type: "teleport",
+                sourceId: unit.id,
+                fromGridKey: from,
+                toGridKey: targetKey,
+                round,
+            });
+            return true;
+        }
+        return false;
     }
 
     /** 普攻：对锁定目标（无锁定时前排优先）造成自身攻击力伤害，双方按配置增长能量。 */
@@ -205,6 +273,9 @@ export function createAutoBattleBattle(
             // 对侧全灭：终局已由前一次行动判定，此处防御性 no-op
             return;
         }
+
+        // 移动 + 普攻两阶段：超射程先前移再结算（移动不改变行动次序）
+        moveTowardTarget(actor, target);
 
         const outcome = applyAutoBattleDamage(target.hp, actor.def.attack);
         target.hp = outcome.hp;
@@ -250,6 +321,10 @@ export function createAutoBattleBattle(
             if (target === undefined) {
                 return;
             }
+
+            // 技能也受射程约束：超射程先移动再结算（与普攻两阶段一致）
+            moveTowardTarget(actor, target);
+
             const effect = resolveAutoBattleSkill(skill, target.hp, target.maxHp);
             if (effect.kind === "damage") {
                 target.hp = effect.hp;
@@ -261,6 +336,10 @@ export function createAutoBattleBattle(
                     value: effect.applied,
                     round,
                 });
+                // 技能可选换位：把目标换位到其侧布阵区相对格（占用则失败不执行）
+                if (skill.teleportTo !== undefined) {
+                    teleportTarget(target, skill.teleportTo);
+                }
                 if (effect.kills) {
                     emit({ type: "unit-dead", sourceId: actor.id, targetId: target.id, round });
                     checkGameOver();

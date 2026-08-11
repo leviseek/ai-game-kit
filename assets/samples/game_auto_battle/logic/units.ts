@@ -7,8 +7,11 @@ import type { AutoBattleUnitView } from "./formation";
 /** 战斗内部可变单位：静态定义 + 可变 HP/能量 + 所在网格格，实现阵列查询视图结构。 */
 export interface MutableUnit extends AutoBattleUnitView {
     readonly def: AutoBattleUnit;
-    /** 当前所在网格格（开战实例化时由布阵区分配）。 */
-    readonly gridKey: string;
+    /**
+     * 当前所在网格格（坐标真源在逻辑层）：开战由布阵区分配，移动/换位后由
+     * battle 经 grid.move 更新。渲染经 gridToXY 单向消费。
+     */
+    gridKey: string;
     /** 可变 HP：覆盖视图只读声明，供行动结算写入。 */
     hp: number;
     energy: number;

@@ -23,6 +23,11 @@ export interface AutoBattleSkill {
     /** 伤害或治疗量。 */
     readonly value: number;
     readonly energyCost: number;
+    /**
+     * 可选换位目标格（伤害技能）：结算后把目标换位到其所在侧布阵区的相对格
+     * （`row:col`，行列 0..布阵区-1）；目标格被占用则换位失败不执行。
+     */
+    readonly teleportTo?: string;
 }
 
 /** 单位静态配置：属性与技能来自配置表，side/index 由配置读取器推导。 */
@@ -36,6 +41,8 @@ export interface AutoBattleUnit {
     readonly maxHp: number;
     readonly attack: number;
     readonly speed: number;
+    /** 攻击射程：普攻/伤害技能与目标曼哈顿距离超过该值前移后攻击（默认 1）。 */
+    readonly attackRange: number;
     readonly energyMax: number;
     readonly skill: AutoBattleSkill;
 }
@@ -48,6 +55,8 @@ export interface AutoBattleHero {
     readonly maxHp: number;
     readonly attack: number;
     readonly speed: number;
+    /** 攻击射程：缺省 1（配置表可调）。 */
+    readonly attackRange: number;
     readonly energyMax: number;
     readonly skill: AutoBattleSkill;
 }
@@ -75,7 +84,9 @@ export type AutoBattleEventType =
     | "skill-heal"
     | "unit-dead"
     | "battle-over"
-    | "restart";
+    | "restart"
+    | "move"
+    | "teleport";
 
 /** 战斗事件：seq 保序，time 为事件发生时模拟时钟读数。 */
 export interface AutoBattleEvent {
@@ -87,6 +98,11 @@ export interface AutoBattleEvent {
     readonly value?: number;
     readonly round?: number;
     readonly result?: "win" | "lose";
+    /** move/teleport 事件：起始与目标网格格。 */
+    readonly fromGridKey?: string;
+    readonly toGridKey?: string;
+    /** round-start 事件：当前存活单位 id 列表（入场动画消费）。 */
+    readonly unitIds?: readonly string[];
 }
 
 /** 战斗状态：轮次/行动序列快照/胜负，供渲染与断言消费。 */
