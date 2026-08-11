@@ -2,6 +2,7 @@ import { Event, GComponent, GObject, UIPackage } from "fairygui-cc";
 import type { ViewModelNode } from "../../../contracts/ui/ViewModel";
 import { wrapFairyGuiObject } from "./FairyGuiViewHandle";
 import type { GRootLike } from "./CocosUiRoot";
+import { DEV_BALL_NODE, DEV_PANEL_NODE } from "./DevOverlayNodes";
 
 /** 交互事件桥：组合根把 fgui 触摸/悬停事件翻译为控制器的坐标回调。 */
 export interface DevOverlayInteractionHandlers {
@@ -83,14 +84,14 @@ export function createDevOverlayView(
         options.root.addChild(component);
     }
 
-    const panel = ballComponent?.getChild("panel") as GObject | undefined;
+    const panel = ballComponent?.getChild(DEV_PANEL_NODE) as GObject | undefined;
     const children = ballComponent === undefined ? new Map<string, GObject>() : collectByName(ballComponent);
 
     const node = (name: string): ViewModelNode | undefined => {
-        if (name === "ball") {
+        if (name === DEV_BALL_NODE) {
             return ballComponent === undefined ? undefined : wrapFairyGuiObject(ballComponent);
         }
-        if (name === "panel") {
+        if (name === DEV_PANEL_NODE) {
             return panel === undefined ? undefined : wrapFairyGuiObject(panel);
         }
         const child = children.get(name);

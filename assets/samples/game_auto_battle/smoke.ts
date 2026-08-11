@@ -8,6 +8,7 @@ import {
     formatAutoBattleEvent,
     type AutoBattleViewModel,
 } from "./view/view";
+import { SPEED_BUTTON_NODE } from "./view/ui-nodes";
 import { createViewModelRenderer, type ViewModelNode } from "../../framework";
 
 /**
@@ -227,7 +228,7 @@ export async function runAutoBattleSmoke(
     const firstResult = endState.result;
     fixture.cycleSpeed();
     fixture.viewModel.render();
-    const speedNode = fixture.viewModel.node("btn_speed").text;
+    const speedNode = fixture.viewModel.node(SPEED_BUTTON_NODE).text;
     report(
         "speed-cycle",
         fixture.getSpeed() === 2 && speedNode === "x2",

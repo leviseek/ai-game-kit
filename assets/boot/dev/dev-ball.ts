@@ -20,9 +20,14 @@ export interface XY {
     readonly y: number;
 }
 
-/** FGUI 组件节点名约定：fgui-designer 创建的 XML 必须与这些名字对齐。 */
-export const BALL_NODE = "ball";
-export const PANEL_NODE = "panel";
+/** FGUI 组件节点名约定：fgui-designer 创建的 XML 必须与这些名字对齐。
+ *  ball/panel 契约源在 framework（DevOverlayNodes），此处 import + re-export
+ *  保持 boot 消费方与测试导入路径不变。 */
+import {
+    DEV_BALL_NODE as BALL_NODE,
+    DEV_PANEL_NODE as PANEL_NODE,
+} from "../../framework/adapters/cocos/ui/DevOverlayNodes";
+export { DEV_BALL_NODE as BALL_NODE, DEV_PANEL_NODE as PANEL_NODE } from "../../framework/adapters/cocos/ui/DevOverlayNodes";
 export const BADGE_FPS_NODE = "badge_fps";
 export const INFO_UPTIME_NODE = "info_uptime";
 export const INFO_DEVICE_NODE = "info_device";

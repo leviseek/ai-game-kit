@@ -5,6 +5,13 @@ import type {
     AutoBattleState,
     AutoBattleUnitState,
 } from "../models";
+import {
+    LOG_TEXT_NODE,
+    RESTART_BUTTON_NODE,
+    RESULT_TEXT_NODE,
+    ROUND_TEXT_NODE,
+    SPEED_BUTTON_NODE,
+} from "./ui-nodes";
 
 /** 战场网格屏幕布局（1280×720）：敌左 3 列、己右 3 列、3 行（与 AutoBattleView 容器化对齐）。 */
 const GRID_COL_STRIDE = 140;
@@ -140,32 +147,32 @@ export function createAutoBattleBindings(
     return [
         {
             kind: "text",
-            node: "txt_round",
+            node: ROUND_TEXT_NODE,
             get: (vm) => `第 ${vm.round} 回合`,
         },
         {
             kind: "text",
-            node: "txt_log",
+            node: LOG_TEXT_NODE,
             get: (vm) => vm.log.join("\n"),
         },
         {
             kind: "visible",
-            node: "txt_result",
+            node: RESULT_TEXT_NODE,
             get: (vm) => vm.result !== undefined,
         },
         {
             kind: "text",
-            node: "txt_result",
+            node: RESULT_TEXT_NODE,
             get: (vm) =>
                 vm.result === "win" ? "胜利" : vm.result === "lose" ? "战败" : "",
         },
-        { kind: "command", node: "btn_restart", run: () => commands.restart() },
+        { kind: "command", node: RESTART_BUTTON_NODE, run: () => commands.restart() },
         {
             kind: "text",
-            node: "btn_speed",
+            node: SPEED_BUTTON_NODE,
             get: (vm) => `x${vm.speed}`,
         },
-        { kind: "command", node: "btn_speed", run: () => commands.cycleSpeed() },
+        { kind: "command", node: SPEED_BUTTON_NODE, run: () => commands.cycleSpeed() },
     ];
 }
 
