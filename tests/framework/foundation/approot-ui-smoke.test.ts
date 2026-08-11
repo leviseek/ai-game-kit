@@ -8,6 +8,10 @@ import { createFairyGuiMock } from "./helpers/fairygui-mock";
 // 测试不加载真实运行时，统一使用共享 fixture（bun mock.module 全局共享首个生效）。
 mock.module("fairygui-cc", () => createFairyGuiMock());
 
+// AppRoot 的 dev overlay 环境开关经 cc/env 的 DEBUG 宏注入；测试固定为 release
+// （isDevEnabled=false），保证既有装配路径不创建 dev overlay（design D2）。
+mock.module("cc/env", () => ({ DEBUG: false }));
+
 // cc 接缝：AppRoot 依赖 director.addPersistRootNode，其余成员不在此路径触发。
 mock.module("cc", () => ({
     game: {

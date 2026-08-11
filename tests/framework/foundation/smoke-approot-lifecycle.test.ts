@@ -37,6 +37,10 @@ mock.module("cc", () => ({
 // 统一使用共享 fixture（bun mock.module 全局共享首个生效，保证全量运行符号齐全）。
 mock.module("fairygui-cc", () => createFairyGuiMock());
 
+// AppRoot 的 dev overlay 环境开关经 cc/env 的 DEBUG 宏注入；测试固定为 release
+// （isDevEnabled=false），保证既有装配路径不创建 dev overlay（design D2）。
+mock.module("cc/env", () => ({ DEBUG: false }));
+
 interface ApplicationLike {
     readonly state: string;
     start(): Promise<void>;

@@ -206,12 +206,18 @@ describe("boot fixture perf module", () => {
         expect(existsSync(smokeProxyFile)).toBe(true);
 
         const source = readFileSync(smokeProxyFile, "utf8");
-        // Task 7 后 perf.ts 已删除：采样器迁入 smoke-proxy，boot 不再静态 import
-        // game/fixture/perf（仅类型），perf 运行器经注册桥读取
+        // Task 7 后 perf.ts 已删除：采样器迁入 boot/dev/dev-profiler（冒烟与 dev
+        // overlay 共用），boot 不再静态 import game/fixture/perf（仅类型），perf
+        // 运行器经注册桥读取
         expect(source).toMatch(/sampleProfilerStats/);
-        expect(source).toMatch(/profiler\.stats/);
         expect(source).toMatch(/lookupBundle\("game"\)/);
         expect(source).toMatch(/smokes\?\.perf/);
+
+        const profilerFile = resolve(projectRoot, "assets/boot/dev/dev-profiler.ts");
+        expect(existsSync(profilerFile)).toBe(true);
+        const profilerSource = readFileSync(profilerFile, "utf8");
+        expect(profilerSource).toMatch(/profiler\.stats/);
+        expect(profilerSource).toMatch(/import\s*\{[^}]*\bprofiler\b[^}]*\}\s*from\s+["']cc["']/);
     });
 
     test("keeps the perf runner in the game layer", () => {
