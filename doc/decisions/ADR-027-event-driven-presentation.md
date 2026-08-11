@@ -53,13 +53,23 @@ Accepted
 
 理由：飘字数值是动态文本（FGUI text 天然支持），闪白是静态纯色（符合 palette 锁定的 sprite 生成约束）；最小化像素图数量，符合 D4"像素风 + 不做复杂序列帧"。
 
+### 6. `move`/`teleport` 事件为一等公民（change 08 扩展）
+
+change 08 让 `move`/`teleport` 成为事件流一等公民：逻辑层在普攻/伤害技能前按 `attackRange` 判定并逐格前移（`resolveMovePath`），`move` 事件保序入流；技能可触发 `teleport` 换位（占用格失败不执行）。表现层按同一"事件投影 + 动画器"模式消费：
+- `move` → 从 `gridToXY(from)` 到 `gridToXY(to)` 插值位移；
+- `teleport` → 直接跳变；
+- `round-start`/开战 → 入场淡入到位；
+- 攻击 → 攻击者前冲/后撤短促位移。
+
+动画终态语义在逻辑坐标真源下简化：ADR-025 决策 3 已修订为逻辑层持有 `gridKey`，动画结束即对齐 `gridToXY` 派生的 state 坐标，无需回退旧坐标（无状态漂移由"终态 = state 快照坐标"天然保证）。
+
 ## 理由
 
 - 真源唯一：state 快照仍是渲染最终真相，特效是叠加演示层，动画终态回到快照姿态。
 - 确定性不回归：特效不进入 tick 序列与事件流；"同一对局有无特效渲染事件序列一致"可断言。
 - 边界清晰：投影纯函数（逻辑）、动画器（表现）、框架契约（可选方法）、FGUI（特效资源）各司其职。
 - 可测试：投影器/动画器引擎无关全量可测（时间源注入）；既有回放一致性测试继续锁定确定性。
-- 为 change 08 铺路：`move`/`teleport` 事件将按同一模式成为事件流一等公民，动画器在此基础上扩展入场/前冲/瞬移动画。
+- 扩展（change 08）：`move`/`teleport` 事件沿用同一投影-动画模式，逻辑坐标真源使动画终态语义简化（对齐 state 坐标即可）。
 
 ## 影响
 
@@ -68,4 +78,4 @@ Accepted
 - `assembly.ts`：装配动画器，fixture 暴露 `effects` 钩子（投影/动画器）。
 - FGUI：AutoBattle 包新增 `UnitHitFeedbackCom.xml`（飘字文本 + 闪白遮罩）、`container_effects` 容器、闪白像素图（palette 登记治疗绿）；发布产物由编辑器生成。
 - samples/boot 装配：`entry.ts` 导出动态映射数组，`GameLobbyHostImpl`/`smoke-proxy` 传数组给多映射解析器。
-- 后续 change 08：扩展 ADR-027 决策（move/teleport 事件一等公民；动画终态语义在逻辑坐标真源下简化），并修订 ADR-025 决策 3（坐标真源移至逻辑层）。
+- **change 08 追加影响**：动画器/投影器扩展消费 `move`/`teleport`/`round-start` 事件（位移动画、入场、前冲/后撤）；ADR-025 决策 3 已修订（坐标真源移至逻辑层）。

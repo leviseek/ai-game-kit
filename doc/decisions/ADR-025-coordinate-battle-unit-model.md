@@ -24,10 +24,10 @@ Accepted
 
 不改名 `index → slotIndex`；通过注释把语义锁定为"队内逻辑槽位序号 0..N-1（实例化顺序与同排稳定次序身份），与 position（目标选择语义）分工"。物理改名留待 05 布阵建模时统一评估。
 
-### 3. slot→xy 渲染映射：单向纯函数，坐标只服务表现层（本阶段）
+### 3. 坐标真源：逻辑层持有并更新（change 08 修订后）
 
-- `view/view.ts` 新增 `slotToXY(side, slotIndex, teamSize) → {x, y}` 纯函数：由槽位序推导屏幕坐标（敌左、己右），不反向回写逻辑。`slotIndex` 为队内参数（0..N-1），`teamSize` 为单侧规模，两侧各自独立推导；团队块在可用带内垂直居中，较小规模整块下移。
-- 坐标**只服务表现层**：逻辑层（battle/formation/units）不消费 xy，战斗推进与坐标无关。
+- **本阶段（change 04-07，已归档）**：`view/view.ts` 新增 `slotToXY(side, slotIndex, teamSize) → {x, y}` 纯函数，由槽位序推导屏幕坐标（敌左、己右），不反向回写逻辑；坐标**只服务表现层**，逻辑层（battle/formation/units）不消费 xy。
+- **change 08 修订（本文件更新）**：坐标真源**移至逻辑层**——`MutableUnit.gridKey` 改为可变字段（`units.ts`），由逻辑层持有并更新；`MapGrid` 增加原子 `move(unitId, gridKey)`；普攻/伤害技能按 `attackRange` 判定，超射程经 `resolveMovePath`（`logic/move.ts`）逐格前移（`move` 事件入事件流），技能可触发 `teleport` 换位；`state` 快照反映当前位置。渲染仍经 `gridToXY` 单向消费坐标，不反向回写逻辑。
 - 为此框架 `ViewModelNode` 契约向后兼容扩展可选 `setXY?(x, y)`，`Binding` 判别联合新增 `PositionBinding<VM>`（kind `"position"`）；渲染器 `applyBinding` 对 position 绑定做 x/y 分量结构比较 diff，节点未实现 `setXY` 时忽略不中断。FGUI 适配器（`FairyGuiViewHandle`）实现 `setXY` 写 `GObject` 坐标，fgui 类型仅限 adapter 边界。
 
 **未采用方案：** 把 setXY 设为必需方法——所有实现点（GameLobbyHostImpl/CardGame/测试 toNode）都要改，跨品类波及面大；新增独立 `ViewModelPositionNode` 接口——额外接口层级收益有限。
@@ -51,5 +51,5 @@ Accepted
 ## 影响
 
 - `models.ts` `index` 语义注释更新为逻辑槽位；`config.ts` 引入 `MAX_TEAM_SIZE`；`view/view.ts` 引入 `slotToXY` 与动态槽位绑定；框架 `ViewModel.ts`/`ViewModelRenderer.ts` 增加 position 能力；`FairyGuiViewHandle.ts` 实现 `setXY`。
-- 后续 07/08 表现坐标/位移将把 `slotToXY` 单向映射演进为网格 + 移动/换位规则，届时本 ADR 决策 3 的"坐标只服务表现层"边界将被修订（逻辑层开始消费位置）。
-- 布阵编辑（05）需在平铺网格上定义布阵区，`index` 语义（队内槽位）届时可能物理改名，需单独 ADR 评估。
+- **change 08 追加影响**：`models.ts`/`units.ts` 单位增加 `attackRange`、`gridKey` 变可写；`config.ts` 支持 `attackRange`；`grid.ts` 增加原子 `move`；`logic/move.ts` 新增 `MoveResolver`；`battle.ts` 普攻两阶段 + 技能 teleport + `move`/`teleport` 事件；`state` 快照反映当前位置。
+- 后续布阵编辑（05）在平铺网格上定义布阵区，`index` 语义（队内槽位）届时可能物理改名，需单独 ADR 评估。
