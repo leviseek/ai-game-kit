@@ -18,27 +18,29 @@ function setupProject(): { dir: string; project: FguiProject } {
     mkdirSync(genDir, { recursive: true });
     writeFileSync(join(genDir, "ui-common.ts"),
         `// 由 \`bun run fgui gen-constants\` 生成\n` +
-        `export const UiCommonUnitSlot = "ui://cmn00001com03";\n`);
+        `export const UiCommonUnitSlot = "ui://Common/UnitSlot";\n`);
     const srcDir = join(dir, "assets", "samples");
     mkdirSync(srcDir, { recursive: true });
     writeFileSync(join(srcDir, "usage.ts"),
-        `const a = "ui://cmn00001com03";\n` +
-        `const b = "ui://cmn00001zzz99";\n` +
-        `// 注释里的 ui://cmn00001com03 不扫\n`);
+        `const a = "ui://Common/UnitSlot";\n` +
+        `const b = "ui://Common/Nope";\n` +
+        `const c = "ui://cmn00001com03";\n` +
+        `// 注释里的 ui://Common/UnitSlot 不扫\n`);
     return { dir, project: { root: dir, projectDir: dir, name: "demo", assetsDir: join(dir, "assets") } };
 }
 
 describe("scanTsRawUrls", () => {
-    test("匹配生成常量报 warning，未登记报 error，注释忽略", () => {
+    test("匹配生成常量报 warning，未登记报 error，短 id 报 warning，注释忽略", () => {
         const { dir, project } = setupProject();
         try {
             const issues = scanTsRawUrls(project);
             const srcIssues = issues.filter((i) => i.file.endsWith("usage.ts"));
-            expect(srcIssues.length).toBe(2);
-            expect(srcIssues.filter((i) => i.severity === "warning").length).toBe(1);
+            expect(srcIssues.length).toBe(3);
+            expect(srcIssues.filter((i) => i.severity === "warning").length).toBe(2);
             expect(srcIssues.filter((i) => i.severity === "error").length).toBe(1);
-            expect(srcIssues.some((i) => i.severity === "error" && i.message.includes("zzz99"))).toBe(true);
-            expect(srcIssues.some((i) => i.line === 3)).toBe(false);
+            expect(srcIssues.some((i) => i.severity === "error" && i.message.includes("Nope"))).toBe(true);
+            expect(srcIssues.some((i) => i.severity === "warning" && i.message.includes("短 id"))).toBe(true);
+            expect(srcIssues.some((i) => i.line === 4)).toBe(false);
         } finally {
             rmSync(dir, { recursive: true, force: true });
         }

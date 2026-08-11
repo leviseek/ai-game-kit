@@ -45,15 +45,18 @@ AI 编码过程中代码里出现大量裸字符串字面量（事件名、FGUI 
 - 复用 `lib/fgui.ts` 的 `listPackages`/`readPackage`，解析工程全部包。
 - 只生成 `exported="true"` 的组件（含 Common 包，供业务包跨包引用）。
 - 常量命名：`Ui<包名PascalCase><资源名PascalCase>`（带包名便于分辨来源包；跨包引用一眼可识别误引）。
+- 常量值：名字格式 `ui://<包名>/<资源名>`（如 `ui://AutoBattle/UnitHitFeedbackCom`，去 `.xml`），便于人读识别；**禁用短 id 裸写** `ui://<pkgId><resId>`。运行时 `getItemByURL` 对含 `/` 的 URL 走包名+资源名解析（`fairygui.mjs` 5188 行），两种格式均受支持。
 - 产物：每包一文件 `assets/ui/generated/ui-<小写包名>.ts`，**不生成 index.ts**，各包文件独立 import。
 - 幂等：可重复跑，资源按 id 确定性排序，diff 干净。
 
 ### D4 自动化强制：规则 + review + validate 提示（不搞 eslint 硬拦截）
 
 - `fgui validate` 新增 TS 裸 URL 扫描（扫 `assets/` 与 `tests/` 下所有 `.ts`）：
-  - 能对应到已生成常量 → `warning`（建议改用常量）
-  - 对应不到任何常量 → `error`（未登记 URL，检查资源 id 或先重跑 gen-constants）
+  - 名字格式匹配到已生成常量 → `warning`（建议改用常量）
+  - 名字格式对应不到任何常量 → `error`（未登记 URL，检查资源名或先重跑 gen-constants）
+  - 短 id 格式裸写 → `warning`（原则禁用，改用名字格式常量）
 - 不引入 eslint 自定义规则（成本高、易误报）。
+- FGUI 源 XML（src/defaultItem/跨包引用）内仍是短 id——引擎/编辑器规范，不在禁用范围。
 
 ## 具体改动清单
 
@@ -83,7 +86,7 @@ AI 编码过程中代码里出现大量裸字符串字面量（事件名、FGUI 
 ```ts
 // assets/ui/generated/ui-common.ts
 // 由 `bun run fgui gen-constants` 生成，禁止手改；源 XML 变更后重跑刷新。
-export const UiCommonUnitSlot = "ui://cmn00001com03";
+export const UiCommonUnitSlot = "ui://Common/UnitSlot";
 // ...
 ```
 

@@ -4,13 +4,16 @@ import { describe, expect, mock, test } from "bun:test";
 
 import { createFairyGuiMock } from "./helpers/fairygui-mock";
 
+import { UiAutoBattleUnitHitFeedbackCom } from "../../../assets/ui/generated/ui-autobattle";
+import { UiCommonUnitSlot } from "../../../assets/ui/generated/ui-common";
+
 // 实现值 import fairygui-cc；统一使用共享 fixture 避免全量运行解析失败
 mock.module("fairygui-cc", () => createFairyGuiMock());
 
 /** 战场单位节点映射：`unit_{id}` 系列运行时实例化 UnitSlot（复用 samples 的契约形状）。 */
 const unitMapping = {
     containerName: "container_units",
-    componentUrl: "ui://cmn00001com03",
+    componentUrl: UiCommonUnitSlot,
     parse: (name: string) => {
         for (const [pattern, field] of [
             [/^unit_(.+)$/, null],
@@ -136,7 +139,7 @@ describe("DynamicComponentViewHandle multiple mappings", () => {
     /** 命中反馈映射：FX 节点实例化到独立容器；活跃 id 从 unit_* 绑定节点推导。 */
     const fxMapping = {
         containerName: "container_effects",
-        componentUrl: "ui://abpk0001ab004",
+        componentUrl: UiAutoBattleUnitHitFeedbackCom,
         parse: (name: string) => {
             for (const [pattern, field] of [
                 [/^fx_float_(.+)$/, "fx_float"],

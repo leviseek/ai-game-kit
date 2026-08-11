@@ -1,8 +1,12 @@
 /**
  * 自动战斗战场页动态单位节点映射：描述"按名找不到的节点 → 运行时实例化
- * UnitSlot"的规则。纯配置数据，不依赖 fgui；由 boot 装配层喂给框架适配层的
- * 通用动态组件解析器（createDynamicComponentViewHandle）。
+ * UnitSlot"的规则。纯配置数据（资源 URL 引用 ui/generated/ 生成常量），
+ * 不依赖 fgui；由 boot 装配层喂给框架适配层的通用动态组件解析器
+ * （createDynamicComponentViewHandle）。
  */
+
+import { UiAutoBattleUnitHitFeedbackCom } from "../../../ui/generated/ui-autobattle";
+import { UiCommonUnitSlot } from "../../../ui/generated/ui-common";
 
 export interface AutoBattleUnitNodeMapping {
     readonly containerName: string;
@@ -27,7 +31,7 @@ const UNIT_NODE_PATTERNS: ReadonlyArray<readonly [RegExp, string | null]> = [
 /** 战场页动态单位映射：`unit_{id}` 系列节点运行时实例化 Common/UnitSlot 组件。 */
 export const AUTO_BATTLE_UNIT_NODE_MAPPING: AutoBattleUnitNodeMapping = {
     containerName: "container_units",
-    componentUrl: "ui://cmn00001com03",
+    componentUrl: UiCommonUnitSlot,
     parse: (name) => {
         for (const [pattern, field] of UNIT_NODE_PATTERNS) {
             const match = pattern.exec(name);
@@ -53,7 +57,7 @@ const FX_NODE_PATTERNS: ReadonlyArray<readonly [RegExp, string]> = [
  */
 export const AUTO_BATTLE_FX_NODE_MAPPING: AutoBattleUnitNodeMapping = {
     containerName: "container_effects",
-    componentUrl: "ui://abpk0001ab004",
+    componentUrl: UiAutoBattleUnitHitFeedbackCom,
     parse: (name) => {
         for (const [pattern, field] of FX_NODE_PATTERNS) {
             const match = pattern.exec(name);

@@ -14,4 +14,4 @@
 12. FGUI 单个 `<relation>` 的 `sidePair` 最多声明 2 项（横向与纵向约束各一项）；禁止凭相似性叠加第 3 项，否则 FGUI 编辑器可能在刷新时数组越界
 13. FGUI 跨资源包引用只允许指向通用资源包 `Common` 或 `Common_xxx`（如 `cmn00001`）；禁止业务包（Demo/CardGame 等）跨包引用其它业务包，也禁止跨包引用 FairyGUI 编辑器官方库包 `Basic`/`Builder`（它们只能作为参考示例，不得使用）。通用按钮/进度条等共享组件统一承载于 `ui/demo/assets/Common/`，业务包跨包引用一律指向 Common；打开业务页面 package 前必须先注册 Common（fgui loadPackage 不自动加载依赖包），否则跨包组件退化为空组件、点击事件不触发
 14. FGUI 发布产物（`assets/ui/*/*.bin` 与 atlas）由 FGUI 编辑器发布生成，禁止手改或提交编辑器未发布的陈旧 bin；修改源 XML/PNG 后需在 FGUI 编辑器中重新发布对应包
-15. 字符串归口：命中三问（跨模块共享 / 耦合外部契约 / 拼错静默）的字符串必须进常量表，禁止在消费点裸写。FGUI 资源 URL 引用 `ui/generated/` 产物；其余用模块内 `constants.ts`（`as const` 对象 + 联合类型双导出）。新字符串先搜已有表，存在则复用
+15. 字符串归口：命中三问（跨模块共享 / 耦合外部契约 / 拼错静默）的字符串必须进常量表，禁止在消费点裸写。FGUI 资源 URL 引用 `ui/generated/` 产物（名字格式 `ui://<包名>/<资源名>`，禁用短 id 裸写）；其余用模块内 `constants.ts`（`as const` 对象 + 联合类型双导出）。新字符串先搜已有表，存在则复用

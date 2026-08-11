@@ -3,9 +3,9 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { generateConstants } from "../commands/gen-constants";
-import { locateProject } from "../lib/fgui";
+import type { FguiProject } from "../lib/fgui";
 
-function setupProject(): { dir: string } {
+function setupProject(): { dir: string; project: FguiProject } {
     const dir = mkdtempSync(join(tmpdir(), "fgui-gen-"));
     writeFileSync(join(dir, "demo.fairy"), `<?xml version="1.0" encoding="utf-8"?>\n<projectDescription id="t" type="CocosCreator" version="5.0"/>`);
     const setupPkg = (pkgName: string, pkgId: string, comps: Array<[string, string, boolean]>) => {
@@ -23,34 +23,33 @@ function setupProject(): { dir: string } {
     };
     setupPkg("Demo", "4q9x2uij", [["03gta", "LobbyView.xml", true], ["29kie", "SettingsPanel2.xml", true], ["hid00", "Hidden.xml", false]]);
     setupPkg("Common", "cmn00001", [["com03", "UnitSlot.xml", true]]);
-    return { dir };
+    return { dir, project: { root: dir, projectDir: dir, name: "demo", assetsDir: join(dir, "assets") } };
 }
 
 describe("generateConstants", () => {
     test("仅 exported 组件生成常量，命名 Ui<包名><资源名>，含跨包", () => {
-        const { dir } = setupProject();
+        const { dir, project } = setupProject();
         try {
-            const project = locateProject(dir);
             const out = generateConstants(project);
             const demo = out.find((o) => o.pkg === "Demo");
             const common = out.find((o) => o.pkg === "Common");
             expect(demo).toBeDefined();
             expect(common).toBeDefined();
-            expect(demo!.lines).toContain('export const UiDemoLobbyView = "ui://4q9x2uij03gta";');
-            expect(demo!.lines).toContain('export const UiDemoSettingsPanel2 = "ui://4q9x2uij29kie";');
-            expect(common!.lines).toContain('export const UiCommonUnitSlot = "ui://cmn00001com03";');
+            expect(demo!.lines).toContain('export const UiDemoLobbyView = "ui://Demo/LobbyView";');
+            expect(demo!.lines).toContain('export const UiDemoSettingsPanel2 = "ui://Demo/SettingsPanel2";');
+            expect(common!.lines).toContain('export const UiCommonUnitSlot = "ui://Common/UnitSlot";');
             expect(demo!.lines.some((l) => l.includes("Hidden"))).toBe(false);
             expect(demo!.lines.some((l) => l.includes("bg"))).toBe(false);
             expect(out.length).toBe(2);
+            expect(demo!.file.startsWith(join(dir, "assets", "ui", "generated"))).toBe(true);
         } finally {
             rmSync(dir, { recursive: true, force: true });
         }
     });
 
     test("确定性：同工程两次生成输出一致", () => {
-        const { dir } = setupProject();
+        const { dir, project } = setupProject();
         try {
-            const project = locateProject(dir);
             const a = generateConstants(project);
             const b = generateConstants(project);
             expect(JSON.stringify(a)).toBe(JSON.stringify(b));

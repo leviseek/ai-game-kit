@@ -33,4 +33,4 @@
   - 跨模块共享（存在第二个消费方）
   - 耦合外部契约（FGUI 资源 URL、组件名、节点名、bundle 名、存储 key）
   - 拼错会静默断裂（事件名、状态名、资源 id）
-  FGUI 资源 URL 一律引用 `ui/generated/` 生成产物；事件/状态等模块内常量用 `const X = {...} as const` + 联合类型双导出。
+  FGUI 资源 URL 一律引用 `ui/generated/` 生成产物（名字格式 `ui://<包名>/<资源名>`，禁用短 id 裸写 `ui://<pkgId><resId>`）；事件/状态等模块内常量用 `const X = {...} as const` + 联合类型双导出。
