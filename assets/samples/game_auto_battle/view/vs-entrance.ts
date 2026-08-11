@@ -26,7 +26,7 @@ export interface VsEntranceHandle {
     reset(): void;
 }
 
-/** VS 屏幕级覆盖层：左右武将从屏外两侧向中心入场，中间 VS 大字淡入定格，整体淡出。 */
+/** VS 屏幕级覆盖层：左右武将从屏外两侧向各自目标坐标入场，中间 VS 大字淡入定格，整体淡出。 */
 export function createVsEntranceTemplate(options: {
     node: (name: string) => EffectNode | undefined;
     timeSource: () => number;
@@ -101,7 +101,7 @@ export function createVsEntranceTemplate(options: {
                 return;
             }
             // 入场阶段：武将从两侧向 baseXY 收敛 + 淡入，VS 大字淡入
-            // easeOutCubic：前半程快速入场、临近中心减速（t=0.5 时位移 ±80，收敛到 baseXY）
+            // easeOutCubic：前半程快速入场、临近目标减速（t=0.5 时位移 ±80，收敛到 baseXY）
             const entranceProgress = clamp01((now - playStart) / config.durationMs);
             const eased = 1 - (1 - entranceProgress) ** 3;
             const leftX = config.left.baseXY.x - SIDE_OFFSET * (1 - eased);
