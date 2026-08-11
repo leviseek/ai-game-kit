@@ -29,12 +29,15 @@ export async function run(argv: readonly string[]): Promise<number> {
     const projectArg = flagString(parsed, "project");
     const strict = flagBool(parsed, "strict", false);
     const project = locateProject(projectArg);
-    const pkg = readPackage(project, packageName);
 
-    const official = !strict && OFFICIAL_PACKAGES.has(pkg.name);
-    if (official) {
-        console.log(`[fgui:validate] ${pkg.name} 为官方库包（默认豁免），使用 --strict 可全量检查`);
+    // 官方库包按名默认豁免（与 gen-constants/scan-ts 同源）：Basic/Builder 示例已由
+    // third-party/fairygui 子模块提供，不要求存在于主仓库工程；--strict 时要求真实包
+    if (!strict && OFFICIAL_PACKAGES.has(packageName)) {
+        console.log(`[fgui:validate] ${packageName} 为官方库包（默认豁免），使用 --strict 可全量检查`);
+        return 0;
     }
+
+    const pkg = readPackage(project, packageName);
 
     let exitCode = 0;
 
@@ -52,12 +55,10 @@ export async function run(argv: readonly string[]): Promise<number> {
         console.error(`[error] 资源 id 重复: "${id}"`);
         exitCode = 1;
     }
-    if (!official) {
-        const manifestIssues = validatePackageManifest(project, pkg);
-        for (const issue of manifestIssues) {
-            console.error(`[${issue.severity}] ${issue.message}`);
-            if (issue.severity === "error") exitCode = 1;
-        }
+    const manifestIssues = validatePackageManifest(project, pkg);
+    for (const issue of manifestIssues) {
+        console.error(`[${issue.severity}] ${issue.message}`);
+        if (issue.severity === "error") exitCode = 1;
     }
     const integrityIssues = validatePackageFileIntegrity(project, pkg);
     for (const issue of integrityIssues) {
@@ -78,7 +79,7 @@ export async function run(argv: readonly string[]): Promise<number> {
         const component = readComponent(project, packageName, name);
         const issues = [
             ...validateComponent(project, pkg, component),
-            ...(official ? [] : validateComponentSemantics(project, pkg, component)),
+            ...validateComponentSemantics(project, pkg, component),
         ];
         console.log(`校验 ${packageName}/${name}: ${issues.length === 0 ? "通过" : `${issues.length} 个问题`}`);
         for (const issue of issues) {

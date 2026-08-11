@@ -39,14 +39,16 @@ describe("fgui_validate_package 工具（透传 fgui CLI）", () => {
         expect(result.error).toContain("缺少参数 package");
     });
 
-    it("官方库包默认豁免、--strict 全量", async () => {
+    it("官方库包按名默认豁免；--strict 需真实包", async () => {
         const tool = READ_TOOLS["fgui_validate_package"]!;
+        // 官方库包 Basic/Builder 已移出主仓库（由 third-party/fairygui 子模块提供），
+        // 默认模式按名豁免：即使包不存在也返回 ok 与「默认豁免」提示
         const normal = await tool.run(emptyBridge, { package: "Basic" });
         expect(normal.ok).toBe(true);
         expect(String(normal.data)).toContain("默认豁免");
-        // --strict 全量检查官方库 → 必报 graph 等违规，ok:false 且 error 含明细
+        // --strict 全量检查要求真实包：主仓库无 Basic 包 → 结构化错误「包不存在」
         const strict = await tool.run(emptyBridge, { package: "Basic", strict: true });
         expect(strict.ok).toBe(false);
-        expect(strict.error).toContain("graph");
+        expect(strict.error).toContain("包不存在");
     });
 });
