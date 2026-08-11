@@ -67,7 +67,7 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)(
             const createAutoBattleFixture = await loadCreateAutoBattleFixture();
             const fixture = createAutoBattleFixture();
 
-            // 精确断言装配清单：时钟/配置/战斗/技能/阵列/特效/UI 七类能力模块；
+            // 精确断言装配清单：时钟/配置/战斗/技能/阵列/移动/特效/UI 八类能力模块；
             // 未声明能力（音频等）不参与装配
             expect(fixture.modules.map((m) => m.id)).toEqual([
                 "auto_battle.clock",
@@ -75,6 +75,7 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)(
                 "auto_battle.battle",
                 "auto_battle.skills",
                 "auto_battle.formation",
+                "auto_battle.move",
                 "auto_battle.effects",
                 "auto_battle.ui",
             ]);

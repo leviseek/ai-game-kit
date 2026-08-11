@@ -138,7 +138,7 @@ describe("Auto-battle effect animator", () => {
         };
     }
 
-    /** 构造动画器：单位 a 的绝对坐标 (840,100)。 */
+    /** 构造动画器：单位 a 的绝对坐标 (840,100)；网格 0:0=(100,100)、0:3=(600,100)。 */
     function makeAnimator() {
         const nodes = new Map<string, RecordingEffectNode>();
         const time = makeTime();
@@ -146,6 +146,8 @@ describe("Auto-battle effect animator", () => {
             node: (name: string) => nodes.get(name),
             timeSource: time.timeSource,
             homeXYOf: () => ({ x: 840, y: 100 }),
+            gridXYOf: (gridKey: string) =>
+                gridKey === "0:0" ? { x: 100, y: 100 } : { x: 600, y: 100 },
         });
         const ensureNode = (name: string): RecordingEffectNode => {
             let node = nodes.get(name);
@@ -240,6 +242,7 @@ describe("Auto-battle effect animator", () => {
             node: (name: string) => nodes.get(name),
             timeSource: time.timeSource,
             homeXYOf: () => ({ x: 0, y: 0 }),
+            gridXYOf: () => ({ x: 0, y: 0 }),
         });
         // 节点只实现 setText 不实现 setAlpha：动画器跳过 alpha 写入不中断
         nodes.set("fx_float_a", { setText: () => {} });
@@ -258,6 +261,62 @@ describe("Auto-battle effect animator", () => {
         animator.reset();
         expect(animator.active()).toBe(0);
         expect(floatNode.alpha).toBe(0);
+    });
+
+    test("move animation interpolates the unit node between grid positions", () => {
+        const { animator, ensureNode, advance } = makeAnimator();
+        const unitNode = ensureNode("unit_a");
+        animator.play([{ kind: "move", unitId: "a", fromGrid: "0:0", toGrid: "0:3", seq: 0 }]);
+
+        // 起点对齐 from 网格坐标
+        expect(unitNode.xy).toEqual({ x: 100, y: 100 });
+
+        // 中段：x 在 100→600 之间
+        advance(150);
+        animator.step();
+        expect(unitNode.xy!.x).toBeGreaterThan(100);
+        expect(unitNode.xy!.x).toBeLessThan(600);
+
+        // 结束：对齐 to 网格坐标、active 清空
+        advance(300);
+        animator.step();
+        expect(unitNode.xy).toEqual({ x: 600, y: 100 });
+        expect(animator.active()).toBe(0);
+    });
+
+    test("teleport animation jumps the unit node to the target grid", () => {
+        const { animator, ensureNode } = makeAnimator();
+        const unitNode = ensureNode("unit_a");
+        animator.play([{ kind: "teleport", unitId: "a", toGrid: "0:3", seq: 0 }]);
+
+        // 瞬移直接跳变到目标格坐标
+        expect(unitNode.xy).toEqual({ x: 600, y: 100 });
+        expect(animator.active()).toBe(0);
+    });
+
+    test("entrance animation rises and fades the unit node in to full alpha", () => {
+        const { animator, ensureNode, advance } = makeAnimator();
+        const unitNode = ensureNode("unit_a");
+        animator.play([{ kind: "entrance", unitId: "a", seq: 0 }]);
+
+        // 入场开始：位于布阵格下方（y=100+80）、alpha=0
+        expect(unitNode.alpha).toBe(0);
+        expect(unitNode.xy).toEqual({ x: 840, y: 180 });
+
+        advance(1500);
+        animator.step();
+        // 中段：上浮中、alpha 上升（3000ms 时长的一半）
+        expect(unitNode.alpha!).toBeGreaterThan(0);
+        expect(unitNode.alpha!).toBeLessThan(1);
+        expect(unitNode.xy!.y).toBeGreaterThan(100);
+        expect(unitNode.xy!.y).toBeLessThan(180);
+
+        advance(3000);
+        animator.step();
+        // 结束：到位（y=100）、alpha=1、active 清空
+        expect(unitNode.alpha).toBe(1);
+        expect(unitNode.xy).toEqual({ x: 840, y: 100 });
+        expect(animator.active()).toBe(0);
     });
 });
 

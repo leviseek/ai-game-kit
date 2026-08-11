@@ -84,9 +84,13 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)(
 
             fixture.battle.tick(); // a 一击击杀 x → 终局
 
+            // 1v1 布阵（敌左 0:0、己右 0:3）manhattan 距离 3 > attackRange 1：
+            // a 前移到距离 ≤1 的格（2 步 move）再普攻（移动 + 普攻两阶段，change 08）
             const types = fixture.battle.events.map((e) => e.type);
             expect(types).toEqual([
                 "round-start",
+                "move",
+                "move",
                 "attack",
                 "unit-dead",
                 "battle-over",
