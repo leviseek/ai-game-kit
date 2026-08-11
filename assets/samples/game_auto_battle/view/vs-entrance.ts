@@ -65,6 +65,17 @@ export function createVsEntranceTemplate(options: {
         return Math.min(1, Math.max(0, v));
     }
 
+    /**
+     * easeOutBack 缓动：先快后慢、接近 t=1 时 overshoot 越过目标再回弹收敛。
+     * 用于 VS 武将入场（回弹制造"到位后轻微弹一下"的节奏）。
+     */
+    function easeOutBack(t: number): number {
+        const c1 = 1.70158;
+        const c3 = c1 + 1;
+        const x = t - 1;
+        return 1 + c3 * x ** 3 + c1 * x ** 2;
+    }
+
     return {
         play() {
             const now = timeSource();
@@ -101,9 +112,9 @@ export function createVsEntranceTemplate(options: {
                 return;
             }
             // 入场阶段：武将从两侧向 baseXY 收敛 + 淡入，VS 大字淡入
-            // easeOutCubic：前半程快速入场、临近目标减速（t=0.5 时位移 ±80，收敛到 baseXY）
+            // easeOutBack：先快后慢、临近目标轻微回弹（overshoot 越过 baseXY 再收敛）
             const entranceProgress = clamp01((now - playStart) / config.durationMs);
-            const eased = 1 - (1 - entranceProgress) ** 3;
+            const eased = easeOutBack(entranceProgress);
             const leftX = config.left.baseXY.x - SIDE_OFFSET * (1 - eased);
             const rightX = config.right.baseXY.x + SIDE_OFFSET * (1 - eased);
             writeXY("vs_left", leftX, config.left.baseXY.y);

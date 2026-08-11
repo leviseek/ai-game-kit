@@ -17,10 +17,10 @@ import {
 } from "./view";
 
 /** VS 阶段子时长（ms）：入场（武将向中心+淡入）→ 定格 → 淡出。 */
-const VS_ENTRANCE_MS = 450;
-const VS_HOLD_MS = 150;
-const VS_FADE_MS = 75;
-/** VS 阶段总时长（ms）：覆盖入场+定格+淡出全程，让 VS 覆盖层完整演完。 */
+const VS_ENTRANCE_MS = 550;
+const VS_HOLD_MS = 300;
+const VS_FADE_MS = 150;
+/** VS 阶段总时长（ms）：覆盖入场+定格+淡出全程，让 VS 覆盖层完整演完（约 1s）。 */
 const VS_PHASE_MS = VS_ENTRANCE_MS + VS_HOLD_MS + VS_FADE_MS;
 /** 入场阶段时长（ms）：战斗开始后先展示单位入场，期间不推进战斗。 */
 const ENTRANCE_PHASE_MS = 750;

@@ -78,11 +78,11 @@ describe("Auto-battle VS entrance template", () => {
         expect(left.xy!.x).toBeLessThan(100);
         expect(right.xy!.x).toBeGreaterThan(980);
 
-        // 中段：向 baseXY 收敛
+        // 中段（t=0.5）：easeOutBack 已轻微回弹越过 baseXY（left 略过 100 朝右、right 略过 980 朝左）
         advance(900);
         template.step();
-        expect(left.xy!.x).toBeGreaterThan(-100);
-        expect(right.xy!.x).toBeLessThan(1080);
+        expect(left.xy!.x).toBeGreaterThan(100);
+        expect(right.xy!.x).toBeLessThan(980);
 
         // 结束后：整体淡出（alpha=0）、active 结束
         advance(1800 + 600 + 300);
