@@ -172,7 +172,7 @@ describe("Auto-battle lineup editor bindings", () => {
         });
         renderer.setViewModel(selected);
         second.nodes.get("slot_0")?.clickHandler?.();
-        expect(calls).toEqual(["slot:0", "remove:0", "slot:-1"]);
+        expect(calls).toEqual(["slot:0", "remove:0", "slot:null"]);
     });
 
     test("clicking an already selected empty slot just clears the selection", () => {
@@ -189,7 +189,7 @@ describe("Auto-battle lineup editor bindings", () => {
         );
 
         view.nodes.get("slot_0")?.clickHandler?.();
-        expect(calls).toEqual(["slot:-1"]);
+        expect(calls).toEqual(["slot:null"]);
     });
 
     test("selected slot visibility and start button command", () => {

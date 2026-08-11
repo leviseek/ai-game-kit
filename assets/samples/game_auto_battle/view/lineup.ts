@@ -26,8 +26,8 @@ export interface LineupEditorViewModel {
 
 /** 编队页命令：点击选择（D3），由调用方注入编辑/持久化/开战操作。 */
 export interface LineupEditorCommands {
-    /** 点击布阵格：未选中则选中；已选中则取消选中（供卸下经候选页再触发）。 */
-    selectSlot(slot: number): void;
+    /** 点击布阵格：未选中则选中；已选中则取消选中（null = 取消选中）。 */
+    selectSlot(slot: number | null): void;
     /** 点击候选英雄：填入选中的布阵格，否则填入第一个空槽（英雄唯一性由 reducer 保证）。 */
     selectHero(heroId: string): void;
     /** 卸下指定槽位英雄（点击已上阵英雄二次触发）。 */
@@ -100,7 +100,7 @@ export function createLineupEditorBindings(
                         if (slotView.heroId !== null) {
                             commands.removeFromSlot(slot);
                         }
-                        commands.selectSlot(-1);
+                        commands.selectSlot(null);
                         return;
                     }
                     commands.selectSlot(slot);
