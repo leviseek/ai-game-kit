@@ -23,6 +23,7 @@ export function createFairyGuiMock(): {
         addPackage(path: string): { readonly name: string; readonly path: string };
         removePackage(_name: string): void;
         createObject(_pkg: string, _res: string): null;
+        createObjectFromURL(_url: string): unknown;
     };
     GComponent: new () => FairyGuiGComponentMock;
     GObject: new () => FairyGuiGComponentMock;
@@ -37,6 +38,60 @@ export function createFairyGuiMock(): {
         TOUCH_END: string;
     };
 } {
+    // GComponent mock 类：供 UIPackage.createObjectFromURL 实例化动态组件
+    class MockGComponent implements FairyGuiGComponentMock {
+        name = "";
+        width = 0;
+        height = 0;
+        touchable = false;
+        opaque = false;
+        children: unknown[] = [];
+        node = {
+            activeInHierarchy: true,
+            on() { },
+            off() { },
+            emit() { },
+        };
+        setSize(width: number, height: number) {
+            this.width = width;
+            this.height = height;
+        }
+        on(_type: string, _callback: () => void, _target?: unknown) { }
+        off(_type: string, _callback: () => void, _target?: unknown) { }
+        addChild(child: unknown): unknown {
+            this.children.push(child);
+            return child;
+        }
+        removeChild(child: unknown): unknown {
+            const index = this.children.indexOf(child);
+            if (index >= 0) this.children.splice(index, 1);
+            return child;
+        }
+        removeChildren() {
+            this.children.length = 0;
+        }
+        getChild(name: string): unknown {
+            const byName = this.children.find(
+                (child) => (child as { name?: string } | undefined)?.name === name,
+            );
+            if (byName !== undefined) {
+                return byName;
+            }
+            // 动态组件内部子字段（如 UnitSlot 的 txt_name/bar_hp）：首次访问按名
+            // 生成，供 wrapFairyGuiObject 写入文本/进度（mock 语义，非真实结构）
+            const child = {
+                name,
+                text: "",
+                value: undefined as number | undefined,
+                visible: true,
+                setPosition(_x: number, _y: number) { },
+                on() { },
+            };
+            this.children.push(child);
+            return child;
+        }
+    }
+
     return {
         GRoot: {
             get inst(): never {
@@ -114,33 +169,11 @@ export function createFairyGuiMock(): {
             createObject(_pkg: string, _res: string) {
                 return null;
             },
+            createObjectFromURL(_url: string) {
+                return new MockGComponent();
+            },
         },
-        GComponent: class {
-            name = "";
-            width = 0;
-            height = 0;
-            touchable = false;
-            opaque = false;
-            node = {
-                activeInHierarchy: true,
-                on() { },
-                off() { },
-                emit() { },
-            };
-            setSize(width: number, height: number) {
-                this.width = width;
-                this.height = height;
-            }
-            on(_type: string, _callback: () => void, _target?: unknown) { }
-            off(_type: string, _callback: () => void, _target?: unknown) { }
-            addChild(_child: unknown): unknown {
-                return _child;
-            }
-            removeChild(_child: unknown): unknown {
-                return _child;
-            }
-            removeChildren() { }
-        },
+        GComponent: MockGComponent,
         // GObject 基类别名：FairyGuiViewHandle 等边界仅经类型使用其符号
         GObject: class {
             name = "";
@@ -206,6 +239,7 @@ export interface FairyGuiGComponentMock {
     height: number;
     touchable: boolean;
     opaque: boolean;
+    children: unknown[];
     node: {
         activeInHierarchy: boolean;
         on(type: string, callback: () => void, target?: unknown): void;
@@ -218,6 +252,7 @@ export interface FairyGuiGComponentMock {
     addChild(child: unknown): unknown;
     removeChild(child: unknown): unknown;
     removeChildren(): void;
+    getChild(name: string): unknown;
 }
 
 export interface FairyGuiGListMock {

@@ -39,7 +39,7 @@ export interface AutoBattleUnitView {
     readonly id: string;
     readonly name: string;
     readonly side: AutoBattleSide;
-    /** 队内逻辑槽位序号 0..N-1（镜像逻辑层 index，用于槽位寻址与映射推导）。 */
+    /** 队内压缩序 0..上阵数-1（镜像逻辑层 index；不参与节点寻址，节点按 id 绑定）。 */
     readonly index: number;
     /** 当前所在网格格（屏幕坐标由 gridToXY 单向推导）。 */
     readonly gridKey: string;
@@ -172,8 +172,8 @@ export function createAutoBattleBindings(
 /**
  * 单个单位的动态绑定：节点名按单位 id（`unit_{id}` / `txt_unit_{id}_name` /
  * `bar_unit_{id}_hp` / `bar_unit_{id}_energy`），位置经 gridToXY 由网格坐标
- * 单向派生；文本/进度从当前 VM 按 id 解析（存活单位始终可见）。单位阵亡或
- * 卸下后不再生成绑定，对应实例节点随之消失（动态实例化语义，对齐 spec）。
+ * 单向派生；文本/进度从当前 VM 按 id 解析。此绑定只为存活单位生成（见
+ * buildAutoBattleBindings 过滤），阵亡单位实例由渲染层回收。
  */
 export function createAutoBattleUnitBindings(
     unitId: string,
@@ -231,16 +231,19 @@ export function createAutoBattleUnitBindings(
 
 /**
  * 装配完整绑定集：静态标量绑定 + 按当前 VM 存活单位动态生成的单位绑定。
- * 每次渲染调用（绑定集随存活单位增删重建，渲染器经 setBindings 全量刷新）。
+ * 阵亡单位（hp=0）不生成绑定，对应 UnitSlot 实例随之从容器回收（动态实例化
+ * 语义，对齐 spec——绑定集随存活单位增删重建，渲染器经 setBindings 全量刷新）。
  */
 export function buildAutoBattleBindings(
     commands: AutoBattleCommands,
     vm: AutoBattleViewModel,
 ): readonly Binding<AutoBattleViewModel>[] {
-    const unitBindings = vm.units.reduce<Binding<AutoBattleViewModel>[]>(
-        (acc, unit) =>
-            acc.concat(createAutoBattleUnitBindings(unit.id, unit.gridKey)),
-        [],
-    );
+    const unitBindings = vm.units
+        .filter((unit) => unit.hp > 0)
+        .reduce<Binding<AutoBattleViewModel>[]>(
+            (acc, unit) =>
+                acc.concat(createAutoBattleUnitBindings(unit.id, unit.gridKey)),
+            [],
+        );
     return [...createAutoBattleBindings(commands), ...unitBindings];
 }

@@ -30,6 +30,16 @@ export interface ViewModelRenderer<VM> {
 }
 
 /**
+ * 节点解析器可选回收钩子：渲染器在 setBindings 全量刷新后，把当前绑定集的
+ * 全部节点名交给解析器。供动态实例句柄（如 DynamicComponentViewHandle）回收
+ * 不再被绑定的实例——按节点名推导活跃实例 id，销毁其余。纯函数解析器不实现
+ * 该可选属性时渲染器跳过，行为不变。
+ */
+export interface ViewModelNodeResolverPrune {
+    prune(nodeNames: readonly string[]): void;
+}
+
+/**
  * 可观察状态容器：写入相同值不触发订阅（幂等），订阅返回释放句柄。
  * 渲染器用它桥接 VM 变化自动刷新；本工厂为独立可复用状态原语。
  */
@@ -190,6 +200,14 @@ export function createViewModelRenderer<VM>(
             lastValues = new Array(next.length);
             views = new Array(next.length);
             renderAll();
+            // 动态实例句柄回收：绑定集已全量渲染，把当前节点名交给解析器，
+            // 供其销毁不再活跃的实例（无 prune 能力的解析器跳过）
+            const prune = (options.node as
+                | { prune?: (names: readonly string[]) => void }
+                | undefined)?.prune;
+            if (prune !== undefined) {
+                prune(next.map((binding) => binding.node));
+            }
         },
         refresh(): void {
             if (disposed) {

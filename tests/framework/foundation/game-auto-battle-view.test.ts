@@ -170,9 +170,21 @@ describe("Auto-battle dynamic unit bindings", () => {
         renderer.setViewModel(first);
         expect(view.nodes.get("txt_unit_a_hp")?.text).toBe("HP 100/100");
 
-        // 单位 e 阵亡（从 VM 移除）：重新渲染只保留存活单位绑定
-        const second = vm([unit("a", "ally", 0, "0:3")]);
-        renderer.setBindings(buildAutoBattleBindings(commands, second));
+        // 单位 e 阵亡（hp 归零）：绑定集不再包含它的节点（存活单位实例随之回收）
+        const second = vm([
+            { ...unit("a", "ally", 0, "0:3") },
+            { ...unit("e", "enemy", 0, "0:0"), hp: 0 },
+        ]);
+        const secondBindings = buildAutoBattleBindings(commands, second);
+        expect(
+            secondBindings.some((b) => b.node.startsWith("unit_e")),
+        ).toBe(false);
+        // 存活单位仍正常绑定
+        expect(
+            secondBindings.some((b) => b.node === "txt_unit_a_name"),
+        ).toBe(true);
+
+        renderer.setBindings(secondBindings);
         renderer.setViewModel(second);
         expect(view.nodes.get("txt_unit_a_hp")?.text).toBe("HP 100/100");
     });

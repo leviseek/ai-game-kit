@@ -374,3 +374,56 @@ describe("ViewModelRenderer unknown node tolerance", () => {
         expect(nameNode.text).toBe("Hero");
     });
 });
+
+describe("ViewModelRenderer dynamic instance reclaim", () => {
+    type PrunableResolver = {
+        (name: string): ViewModelNode | undefined;
+        prune?: (nodeNames: readonly string[]) => void;
+    };
+
+    interface ReclaimVM {
+        hp: number;
+    }
+
+    test("setBindings invokes the resolver prune hook with the bound node names", () => {
+        const pruned: string[][] = [];
+        const node: PrunableResolver = (name: string) => {
+            if (name === "unit_a") {
+                return toNode(recordNode());
+            }
+            return undefined;
+        };
+        node.prune = (nodeNames) => {
+            pruned.push([...nodeNames]);
+        };
+        const renderer = createViewModelRenderer<ReclaimVM>({
+            node,
+            bindings: [],
+        });
+
+        renderer.setBindings([
+            { kind: "text", node: "unit_a", get: (vm) => `HP ${vm.hp}` },
+        ]);
+        renderer.setViewModel({ hp: 100 });
+
+        // 每次 setBindings 全量刷新后，渲染器把当前绑定节点名交给 resolver 回收
+        expect(pruned).toHaveLength(1);
+        expect(pruned[0]).toContain("unit_a");
+    });
+
+    test("a plain resolver without the prune hook is left untouched", () => {
+        const view = makeView();
+        const nameNode = recordNode();
+        view.nodes.set("txt_name", nameNode);
+        const renderer = createViewModelRenderer<ReclaimVM>({
+            node: view.node,
+            bindings: [
+                { kind: "text", node: "txt_name", get: (vm) => String(vm.hp) },
+            ],
+        });
+        expect(() => {
+            renderer.setViewModel({ hp: 10 });
+        }).not.toThrow();
+        expect(nameNode.text).toBe("10");
+    });
+});

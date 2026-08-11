@@ -20,15 +20,27 @@ export interface DynamicComponentMapping {
     ) => { readonly id: string; readonly field: string | null } | undefined;
 }
 
+/** 动态实例句柄：resolver 本身 + 绑定集回收能力（供渲染器 setBindings 后调用）。 */
+export interface DynamicInstanceResolver {
+    (name: string): ViewModelNode | undefined;
+    /**
+     * 回收不再活跃的实例：把当前绑定集的节点名推导为活跃实例 id 集，销毁
+     * instances 中不在该集合的实例（对齐"单位随状态增删"语义）。
+     */
+    prune(nodeNames: readonly string[]): void;
+}
+
 /**
  * 通用动态组件节点解析器：静态节点按名查页面子元素；未命中时按 mapping 懒
  * 创建组件实例加入容器（按 id 复用）。供需要运行时实例化实体集合的页面
  * （如战场单位）使用；渲染层只消费 ViewModelNode 契约，不感知创建细节。
+ * 返回值附加 prune 能力：渲染器每次 setBindings 全量刷新后把当前节点名交给
+ * 本句柄，回收不再被绑定的实例（阵亡单位实例随绑定集移除）。
  */
 export function createDynamicComponentViewHandle(
     view: GComponent,
     mapping: DynamicComponentMapping,
-): (name: string) => ViewModelNode | undefined {
+): DynamicInstanceResolver {
     const container = view.getChild(mapping.containerName) as GComponent | null;
     const instances = new Map<string, GObject>();
 
@@ -50,7 +62,7 @@ export function createDynamicComponentViewHandle(
         return created;
     }
 
-    return (name: string): ViewModelNode | undefined => {
+    const resolver: DynamicInstanceResolver = (name: string): ViewModelNode | undefined => {
         const child = view.getChild(name);
         if (child !== null) {
             return wrapFairyGuiObject(child);
@@ -76,4 +88,22 @@ export function createDynamicComponentViewHandle(
         }
         return wrapFairyGuiObject(target);
     };
+
+    resolver.prune = (nodeNames: readonly string[]): void => {
+        const activeIds = new Set<string>();
+        for (const name of nodeNames) {
+            const parsed = mapping.parse(name);
+            if (parsed !== undefined) {
+                activeIds.add(parsed.id);
+            }
+        }
+        for (const [id, instance] of instances) {
+            if (!activeIds.has(id)) {
+                container?.removeChild(instance, true);
+                instances.delete(id);
+            }
+        }
+    };
+
+    return resolver;
 }
