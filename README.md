@@ -14,10 +14,16 @@
 ## 快速开始
 
 ```sh
+git submodule update --init --recursive   # 首次拉取第三方库子模块（third-party/）
 bun install
+bun run build:fairygui                    # 同步 FairyGUI 库产物到 assets/framework/libs
 bun run typecheck
 bun run test
 ```
+
+> 第三方库子模块统一存根目录 `third-party/`（当前含 `fairygui`）。产物由
+> `bun run build:fairygui` 从子模块 `source/dist/` 同步到 `assets/framework/libs/fairygui/`
+> （Cocos 解析目录，import-map 指向不变）。新克隆须先 init 子模块，否则构建脚本会报错。
 
 ## 门禁命令
 
@@ -59,6 +65,7 @@ tests/
 openspec/             OpenSpec 变更（changes / specs / decisions）
 doc/                  framework-guide 与 ADR 决策记录
 ui/                   FairyGUI 源工程（assets/ 引用其发布产物）
+third-party/          第三方库子模块统一目录（当前：fairygui → leviseek/FairyGUI-cocoscreator）
 ```
 
 框架分层与依赖规则见 `doc/framework-guide.md`；决策记录见 `doc/decisions/ADR-*.md`。
