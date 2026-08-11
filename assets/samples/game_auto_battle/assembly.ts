@@ -29,6 +29,7 @@ import {
 } from "./logic/config";
 import { createAutoBattleSkillsModule } from "./logic/skills";
 import { createAutoBattleFormationModule } from "./logic/formation";
+import { createAutoBattleMoveModule } from "./logic/move";
 import { FORMATION_GRID_SIZE } from "./logic/grid";
 import {
     createAutoBattleBattle,
@@ -320,6 +321,7 @@ export function createAutoBattleFixture(
         createAutoBattleBattleModule(battle),
         createAutoBattleSkillsModule(),
         createAutoBattleFormationModule(),
+        createAutoBattleMoveModule(),
         createAutoBattleEffectsModule(),
         createAutoBattleUiModule(navigator),
     ];
@@ -358,6 +360,7 @@ export function createAutoBattleFixture(
             const unit = battle.state.units.find((candidate) => candidate.id === unitId);
             return unit === undefined ? { x: 0, y: 0 } : gridToXY(unit.gridKey);
         },
+        gridXYOf: (gridKey: string) => gridToXY(gridKey),
     });
     const autoBattleCommands: AutoBattleCommands = {
         restart: () => {
