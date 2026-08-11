@@ -54,8 +54,13 @@ function lineupContent(
 function createBattle(configContent: Record<string, unknown>): {
     readonly config: AutoBattleConfigHandle;
     readonly state: () => AutoBattleState;
-    readonly events: () => readonly { type: string }[];
+    readonly events: () => readonly {
+        type: string;
+        sourceId: string;
+        targetId?: string;
+    }[];
     readonly tick: () => void;
+    readonly restart: () => void;
     readonly dispose: () => void;
 } {
     const config = createAutoBattleConfig(configContent);
@@ -66,9 +71,187 @@ function createBattle(configContent: Record<string, unknown>): {
         state: () => battle.state,
         events: () => battle.events,
         tick: () => battle.tick(),
+        restart: () => battle.restart(),
         dispose: () => battle.dispose(),
     };
 }
+
+describe("Auto-battle target lock", () => {
+    test("first attack locks the front-row target", () => {
+        // 敌方前排 ef 存活：ally 首次行动锁定 ef，后续行动持续攻击它
+        const battle = createBattle(
+            lineupContent(["a"], ["ef", "eb"]),
+        );
+        battle.tick();
+        const ally = battle.state().units.find((u) => u.side === "ally")!;
+        expect(ally.lockedTargetId).toBe("ef");
+        expect(battle.events().find((e) => e.type === "attack")?.targetId).toBe("ef");
+        battle.dispose();
+    });
+
+    test("locked target is kept while alive", () => {
+        // 锁定目标存活期间，ally 后续行动持续攻击同一目标（不因重新按前排选择而漂移）。
+        // 当前战斗无换位/生成，锁定目标必为前排存活者；"更靠前目标出现"的换向场景
+        // 由 resolveAutoBattleTarget 的锁定优先分支保证，此处验证存活期间锁定不松动。
+        const battle = createBattle(
+            lineupContent(["a"], ["aef"]),
+        );
+        battle.tick();
+        expect(
+            battle.state().units.find((u) => u.side === "ally")!.lockedTargetId,
+        ).toBe("aef");
+        for (let i = 0; i < 6; i += 1) {
+            battle.tick();
+        }
+        expect(
+            battle.state().units.find((u) => u.side === "ally")!.lockedTargetId,
+        ).toBe("aef");
+        // 攻击落点也持续为锁定目标：a 的每次普攻 targetId 都是 aef（不含敌方回击 a 的事件）
+        const attacks = battle
+            .events()
+            .filter((e) => e.type === "attack" && e.sourceId === "a")
+            .map((e) => e.targetId);
+        expect(attacks.length).toBeGreaterThan(0);
+        expect(attacks.every((targetId) => targetId === "aef")).toBe(true);
+        battle.dispose();
+    });
+
+    test("locked target death falls back to front-row reselection", () => {
+        // 敌方前排 ef 被秒杀后，ally 下一行动顺延锁定后排 eb
+        const battle = createBattle({
+            heroes: [
+                hero("a", "a", { attack: 200 }),
+                hero("ef", "ef"),
+                hero("eb", "eb", { position: "back" }),
+            ],
+            lineups: { ally: ["a"], enemy: ["ef", "eb"] },
+            energyGainAttacker: 10,
+            energyGainTarget: 5,
+        });
+        // tick1: a 行动秒杀 ef（锁定 ef）；tick2: ef 阵亡跳过；tick3: eb 行动；
+        // tick4: 轮次+1；tick5: a 行动时 ef 已死 → 顺延锁定 eb
+        for (let i = 0; i < 5; i += 1) {
+            battle.tick();
+        }
+        expect(battle.events().some((e) => e.type === "unit-dead")).toBe(true);
+        expect(
+            battle.state().units.find((u) => u.side === "ally")!.lockedTargetId,
+        ).toBe("eb");
+        battle.dispose();
+    });
+
+    test("skill kill of the locked target falls back on the next action", () => {
+        // 满能量伤害技能秒杀锁定目标后，下一行动顺延锁定后排（技能分支的重选路径）
+        const battle = createBattle({
+            heroes: [
+                hero("a", "a", {
+                    attack: 0,
+                    skill: {
+                        id: "smash",
+                        name: "Smash",
+                        kind: "damage",
+                        value: 200,
+                        energyCost: 1,
+                    },
+                }),
+                hero("ef", "ef"),
+                hero("eb", "eb", { position: "back" }),
+            ],
+            lineups: { ally: ["a"], enemy: ["ef", "eb"] },
+            energyGainAttacker: 10,
+            energyGainTarget: 5,
+        });
+        // tick1: a 普攻（能量不足技能）锁定 ef，能量+10；tick2/3: ef、eb 行动；
+        // tick4: 轮次+1；tick5: a 满能量释放技能秒杀 ef（skill-damage + unit-dead）
+        // tick6: ef 阵亡跳过；tick7: eb 行动；tick8: 轮次+1；tick9: a 行动顺延锁定 eb
+        for (let i = 0; i < 9; i += 1) {
+            battle.tick();
+        }
+        expect(battle.events().some((e) => e.type === "skill-damage")).toBe(true);
+        expect(battle.events().some((e) => e.type === "unit-dead")).toBe(true);
+        expect(
+            battle.state().units.find((u) => u.side === "ally")!.lockedTargetId,
+        ).toBe("eb");
+        battle.dispose();
+    });
+
+    test("locked target killed by another ally falls back in the same round", () => {
+        // 2v1：b（speed 9）先行动杀死共享前排 x，同轮内 a（speed 1）行动时 x 已死 → a 顺延锁定后排 y。
+        // 行动顺序 b(9) → x/y(5) → a(1)，a 是该轮最后行动的 ally 单位。
+        const battle = createBattle({
+            heroes: [
+                hero("a", "a", { attack: 10, speed: 1 }),
+                hero("b", "b", { attack: 200, speed: 9 }),
+                hero("x", "x", { position: "front" }),
+                hero("y", "y", { position: "back" }),
+            ],
+            lineups: { ally: ["a", "b"], enemy: ["x", "y"] },
+            energyGainAttacker: 10,
+            energyGainTarget: 5,
+        });
+        // tick1: b 行动秒杀 x（锁定 x）；推进到 a 行动（tick2 是 x 阵亡跳过、tick3 是 y 行动、
+        // tick4 轮次+1，tick5 b 行动、tick6 y、tick7 a 行动）——循环到 a 锁定非空
+        let guard = 0;
+        while (battle.state().units.find((u) => u.id === "a")!.lockedTargetId === null && guard < 20) {
+            battle.tick();
+            guard += 1;
+        }
+        const allyA = battle.state().units.find((u) => u.id === "a")!;
+        const allyB = battle.state().units.find((u) => u.id === "b")!;
+        expect(allyB.lockedTargetId).toBe("x");
+        expect(allyA.lockedTargetId).toBe("y");
+        expect(guard).toBeLessThan(20);
+        battle.dispose();
+    });
+
+    test("heal skill is not affected by target lock", () => {
+        // 治疗单位：首次行动普攻会锁定目标（能量不足），满能量释放治疗后锁定不被触碰
+        const healer = hero("a", "a", {
+            attack: 0,
+            skill: {
+                id: "heal-skill",
+                name: "Heal",
+                kind: "heal",
+                value: 30,
+                energyCost: 1,
+            },
+        });
+        const battle = createBattle({
+            heroes: [healer, hero("e", "e")],
+            lineups: { ally: ["a"], enemy: ["e"] },
+            energyGainAttacker: 10,
+            energyGainTarget: 5,
+        });
+        battle.tick(); // a 普攻：能量 +10 → 锁定 e
+        const before = battle.state().units.find((u) => u.side === "ally")!.lockedTargetId;
+        expect(before).toBe("e");
+        // 推进到 a 释放治疗：锁定不变
+        for (let i = 0; i < 5 && !battle.events().some((ev) => ev.type === "skill-heal"); i += 1) {
+            battle.tick();
+        }
+        expect(battle.events().some((ev) => ev.type === "skill-heal")).toBe(true);
+        expect(
+            battle.state().units.find((u) => u.side === "ally")!.lockedTargetId,
+        ).toBe(before);
+        battle.dispose();
+    });
+
+    test("state snapshot exposes lockedTargetId and restart clears it", () => {
+        const battle = createBattle(
+            lineupContent(["a"], ["ef", "eb"]),
+        );
+        battle.tick();
+        expect(
+            battle.state().units.find((u) => u.side === "ally")!.lockedTargetId,
+        ).toBe("ef");
+
+        // 重开对局：锁定清空，从无锁定状态重新开始
+        battle.restart();
+        const afterRestart = battle.state().units.find((u) => u.side === "ally")!;
+        expect(afterRestart.lockedTargetId).toBeNull();
+        battle.dispose();
+    });
+});
 
 describe("Auto-battle opening instantiation from lineup", () => {
     test("units are placed onto distinct formation cells within their own side", () => {
@@ -157,6 +340,8 @@ describe("Auto-battle determinism and lineup decoupling", () => {
         }
 
         expect(first.events()).toEqual(second.events());
+        // 完整状态快照（含 lockedTargetId）也一致：锁定不破坏确定性
+        expect(first.state().units).toEqual(second.state().units);
 
         first.dispose();
         second.dispose();

@@ -55,6 +55,8 @@ export interface AutoBattleUnit {
 export interface AutoBattleUnitState extends AutoBattleUnit {
     readonly hp: number;
     readonly energy: number;
+    /** 当前锁定攻击目标，null 表示未锁定（镜像逻辑层状态快照）。 */
+    readonly lockedTargetId: string | null;
 }
 
 export type AutoBattleEventType =
