@@ -74,6 +74,26 @@ export function selectAutoBattleTarget(
 }
 
 /**
+ * 锁定优先目标解析：锁定目标仍存活时直接返回（锁定是前排优先之上的覆盖），
+ * 否则回退前排优先重选（无锁定 / 锁定目标已死亡）。敌方全灭返回 undefined。
+ * 治疗目标选择不走此函数（治疗与攻击锁定解耦）。
+ */
+export function resolveAutoBattleTarget(
+    enemies: readonly AutoBattleUnitView[],
+    lockedTargetId: string | null,
+): AutoBattleUnitView | undefined {
+    if (lockedTargetId !== null) {
+        const locked = enemies.find(
+            (unit) => unit.id === lockedTargetId && isAutoBattleAlive(unit),
+        );
+        if (locked !== undefined) {
+            return locked;
+        }
+    }
+    return selectAutoBattleTarget(enemies);
+}
+
+/**
  * 治疗目标选择：己方存活单位中 HP 比例最低者；无存活单位返回 undefined。
  */
 export function selectAutoBattleHealTarget(

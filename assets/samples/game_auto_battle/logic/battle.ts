@@ -9,8 +9,8 @@ import {
 } from "./skills";
 import {
     isAutoBattleAlive,
+    resolveAutoBattleTarget,
     selectAutoBattleHealTarget,
-    selectAutoBattleTarget,
     sortAutoBattleOrder,
 } from "./formation";
 import {
@@ -192,12 +192,15 @@ export function createAutoBattleBattle(
         emit({ type: "round-start", sourceId: "", round });
     }
 
-    /** 普攻：对敌方前排优先目标造成自身攻击力伤害，双方按配置增长能量。 */
+    /** 普攻：对锁定目标（无锁定时前排优先）造成自身攻击力伤害，双方按配置增长能量。 */
     function basicAttack(actor: MutableUnit): void {
         const opposingSide: AutoBattleSide = actor.side === "ally" ? "enemy" : "ally";
-        const target = selectAutoBattleTarget(sideUnits(opposingSide)) as
-            | MutableUnit
-            | undefined;
+        const target = resolveAutoBattleTarget(
+            sideUnits(opposingSide),
+            actor.lockedTargetId,
+        ) as MutableUnit | undefined;
+        // 锁定目标死亡后该行动即重选新目标并锁定（"目标死亡后顺延"在一个行动内完成）
+        actor.lockedTargetId = target?.id ?? null;
         if (target === undefined) {
             // 对侧全灭：终局已由前一次行动判定，此处防御性 no-op
             return;
@@ -238,9 +241,12 @@ export function createAutoBattleBattle(
         const skill = actor.def.skill;
         if (skill.kind === "damage") {
             const opposingSide: AutoBattleSide = actor.side === "ally" ? "enemy" : "ally";
-            const target = selectAutoBattleTarget(sideUnits(opposingSide)) as
-                | MutableUnit
-                | undefined;
+            const target = resolveAutoBattleTarget(
+                sideUnits(opposingSide),
+                actor.lockedTargetId,
+            ) as MutableUnit | undefined;
+            // 伤害技能与普攻共用锁定语义：目标死亡后该行动即重选并锁定
+            actor.lockedTargetId = target?.id ?? null;
             if (target === undefined) {
                 return;
             }

@@ -12,6 +12,8 @@ export interface MutableUnit extends AutoBattleUnitView {
     /** 可变 HP：覆盖视图只读声明，供行动结算写入。 */
     hp: number;
     energy: number;
+    /** 可变锁定攻击目标：覆盖视图只读声明，普攻/伤害技能行动解析后写回。 */
+    lockedTargetId: string | null;
 }
 
 /** 从静态定义构造战斗初始单位：满血零能量，只读字段委托 def 读取。 */
@@ -42,6 +44,7 @@ export function createMutableUnit(
         def,
         hp: def.maxHp,
         energy: 0,
+        lockedTargetId: null,
     };
 }
 
@@ -54,5 +57,6 @@ export function snapshotUnits(
         hp: unit.hp,
         energy: unit.energy,
         gridKey: unit.gridKey,
+        lockedTargetId: unit.lockedTargetId,
     }));
 }

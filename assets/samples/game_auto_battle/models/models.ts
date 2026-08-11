@@ -63,6 +63,8 @@ export interface AutoBattleUnitState extends AutoBattleUnit {
     readonly energy: number;
     /** 当前所在网格格（change 05 阶段 = 布阵出发点，固定不变；距离移动留 change 08）。 */
     readonly gridKey: string;
+    /** 当前锁定攻击目标，null 表示未锁定；目标死亡后由下一行动重选。 */
+    readonly lockedTargetId: string | null;
 }
 
 /** 战斗事件类型：日志回放与冒烟断言依赖的判别维度。 */
