@@ -13,6 +13,7 @@
 
 - 遵循 `.ai/instructions.md` 与 `openspec/config.yaml` 的规则与 guidance。
 - 涉及 OpenSpec change 的实现、审查与归档时，按 `openspec/config.yaml` 的 operations 执行。
+- **动画优先使用 framework 动画能力**：表现层动画（位移/淡入/飘字等）优先经 framework 的 `GameClock`（统一 timeSource 注入物，支持全局 rate/分层 pause/jump）驱动，动画器只读 `now()` 不自行乘 rate 或判跳变；游戏层禁止直接 `import cc` 做 tween；FGUI 禁 transition 不变（动画全 TS 驱动）。新增动画能力复用既有 `effect-animator`/`vs-entrance` 的注入 timeSource 模式（见 ADR-029）。
 
 ## FGUI 工作流
 

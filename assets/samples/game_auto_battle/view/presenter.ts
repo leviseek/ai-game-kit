@@ -1,5 +1,5 @@
 import type { ViewModelNode } from "../../../framework";
-import { createViewModelRenderer } from "../../../framework";
+import { createViewModelRenderer, GameClock } from "../../../framework";
 import type { GameFixture } from "../../../game/fixture/GameFixture";
 import type { GamePresenter } from "../../../game/lobby/presenter";
 import type { AutoBattleFixture } from "../assembly";
@@ -30,8 +30,9 @@ const ENTRANCE_PHASE_MS = 750;
  * 三阶段状态机：VS 展示（VS_PHASE_MS，只推进入场覆盖层动画）→ 单位入场
  * （ENTRANCE_PHASE_MS，只渲染并推进单位淡入动画）→ 战斗（固定节拍驱动模拟
  * 时钟前进并逐行动 tick，每 tick 一个行动）。VS 与入场阶段不推进模拟时钟与
- * 战斗行动。挡位只改变驱动节拍：按当前倍率放大模拟时间推进量与每节拍的 tick
- * 次数，不改 tick 内容与战斗结果。命中反馈与位移动画作为事件增量叠加在 state
+ * 战斗行动。挡位只改变驱动节拍：GameClock.rate = 挡位倍率，按倍率放大模拟
+ * 时间推进量，不改 tick 内容与战斗结果；动画 timeSource 注入 GameClock（表现
+ * 时间统一控制，动画跟随倍速）。命中反馈与位移动画作为事件增量叠加在 state
  * 渲染之上（每帧投影 → play → step），动画终态回到 state 姿态。restart 重置
  * 回 VS 阶段并重放覆盖层。dispose 清理渲染器、动画器、VS 覆盖层与时钟驱动。
  */
@@ -41,12 +42,16 @@ export function createAutoBattlePresenter(
 ): GamePresenter {
     const autoBattle = fixture as AutoBattleFixture;
 
-    let lastTick = Date.now();
+    // 表现时间控制点：动画/阶段/驱动节拍的统一时间源（全局 rate/pause/jump 经它控制）。
+    // 动画器只读 now()，倍速语义由 GameClock.rate 承担（动画跟随倍速，ADR-029 C-13）。
+    const gameClock = new GameClock();
+    let lastWallTime = Date.now();
+    let lastGameNow = gameClock.now();
     let timer: ReturnType<typeof setInterval> | undefined;
     // 特效投影游标：记录已消费事件序号，只对新事件投影（增量、幂等）
     let effectCursor = -1;
-    // 三阶段状态机：vs → entrance → fighting；阶段切换时间戳用真实时钟
-    // （与节拍驱动同源），vs/entrance 阶段只推进对应表现动画不推进战斗
+    // 三阶段状态机：vs → entrance → fighting；阶段切换时间戳用 GameClock
+    // （与动画时间源同源），vs/entrance 阶段只推进对应表现动画不推进战斗
     type PresenterPhase = "vs" | "entrance" | "fighting";
     let phase: PresenterPhase = "vs";
     let vsEnd = 0;
@@ -54,16 +59,16 @@ export function createAutoBattlePresenter(
 
     /** 重置阶段时间戳到当前时刻：创建与 restart 共用，保证 restart 重演完整 VS 阶段。 */
     function beginVsPhase(): void {
-        const now = Date.now();
+        const now = gameClock.now();
         vsEnd = now + VS_PHASE_MS;
         entranceEnd = vsEnd + ENTRANCE_PHASE_MS;
     }
     beginVsPhase();
-    // 命中反馈动画器：节点解析复用渲染器节点，时间源用真实节拍；单位绝对
-    // 坐标由 state 查 gridKey 经 gridToXY 推导，供飘字/抖动归位
+    // 命中反馈动画器：节点解析复用渲染器节点，时间源注入 GameClock（表现时间，
+    // 动画跟随倍速）；单位绝对坐标由 state 查 gridKey 经 gridToXY 推导
     const effectAnimator = createEffectAnimator({
         node: (name: string) => node(name),
-        timeSource: () => Date.now(),
+        timeSource: () => gameClock.now(),
         homeXYOf: (unitId: string) => {
             const unit = autoBattle.battle.state.units.find(
                 (candidate) => candidate.id === unitId,
@@ -82,12 +87,12 @@ export function createAutoBattlePresenter(
         return leader === undefined ? "" : leader.name;
     }
 
-    // VS 覆盖层：左右队长名 + VS 大字；时间源用真实时钟与阶段状态机同源。
+    // VS 覆盖层：左右队长名 + VS 大字；时间源注入 GameClock（与阶段状态机同源）。
     // 阶段时长取 entrance+hold+fade 之和（durationMs 只含入场移动+淡入，
     // hold 为入场后定格、fade 为整体淡出）。
     const vsTemplate = createVsEntranceTemplate({
         node: (name: string) => node(name),
-        timeSource: () => Date.now(),
+        timeSource: () => gameClock.now(),
         config: {
             left: {
                 name: leaderOf("enemy"),
@@ -122,8 +127,10 @@ export function createAutoBattlePresenter(
         },
         cycleSpeed: () => {
             // 挡位由 fixture 持有（唯一真相源）；presenter 不复制 speed——渲染与
-            // 驱动节拍统一读 fixture.getSpeed()，避免双源不同步
+            // 驱动节拍统一读 fixture.getSpeed()。GameClock.rate 同步挡位倍率，
+            // 使动画时间源跟随倍速（表现时间统一控制）
             autoBattle.cycleSpeed();
+            gameClock.setTimeScale(autoBattle.getSpeed());
             render();
         },
     };
@@ -158,9 +165,14 @@ export function createAutoBattlePresenter(
 
     // 固定节拍按阶段分发：VS/入场阶段只推进对应表现动画，不推进模拟时钟与
     // 战斗；战斗阶段驱动模拟时钟前进并按当前状态刷新页面（终局后不再推进行动）。
-    // 挡位放大每节拍的模拟时间与行动数：x2/x3 下同节拍推进更多行动。
+    // GameClock 是被动时钟：每帧用真实经过时间 advance（按 rate 缩放推进），
+    // 使阶段切换/动画/战斗节拍都随真实时间流动；rate 放大模拟时间推进量（挡位
+    // 倍率），替代"每 interval 推多次"。
     timer = setInterval(() => {
-        const now = Date.now();
+        const wallNow = Date.now();
+        gameClock.advance(wallNow - lastWallTime);
+        lastWallTime = wallNow;
+        const now = gameClock.now();
         if (phase === "vs") {
             // VS 阶段：渲染初始状态 + 推进覆盖层动画，模拟时钟不前进、战斗不 tick
             render();
@@ -179,9 +191,10 @@ export function createAutoBattlePresenter(
             }
             return;
         }
-        // 战斗阶段：既有逻辑
-        autoBattle.clock.advance((now - lastTick) * autoBattle.getSpeed());
-        lastTick = now;
+        // 战斗阶段：GameClock 增量驱动模拟时钟（rate 已含倍率，tick 次数随挡位匹配节奏）
+        const delta = now - lastGameNow;
+        lastGameNow = now;
+        autoBattle.clock.advance(delta);
         if (autoBattle.battle.state.phase === "fighting") {
             for (let index = 0; index < autoBattle.getSpeed(); index += 1) {
                 autoBattle.battle.tick();
