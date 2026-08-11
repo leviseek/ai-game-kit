@@ -24,6 +24,9 @@ export function wrapFairyGuiObject(child: GObject): ViewModelNode {
         setXY: (x: number, y: number) => {
             child.setPosition(x, y);
         },
+        setAlpha: (value: number) => {
+            child.alpha = value;
+        },
         onClick: (handler: () => void) => {
             child.on(Event.CLICK, () => {
                 handler();

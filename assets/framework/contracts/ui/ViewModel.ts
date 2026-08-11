@@ -26,6 +26,12 @@ export interface ViewModelNode {
      * 时渲染器忽略该操作（spec 的"不支持坐标的节点不中断"）。
      */
     setXY?(x: number, y: number): void;
+    /**
+     * 可选透明度写入：供演示层动画（如飘字淡出/受击闪白）调节节点透明度。
+     * 不在绑定 kind 之列——动画器直接调节点，不经渲染器 diff。向后兼容扩展，
+     * 节点未实现时动画器跳过该操作。
+     */
+    setAlpha?(value: number): void;
 }
 
 /** 文本绑定：把 VM 字段格式化后写入节点文本。 */
