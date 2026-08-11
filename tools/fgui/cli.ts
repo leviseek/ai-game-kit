@@ -4,6 +4,7 @@ import { run as runValidate } from "./commands/validate";
 import { run as runNextId } from "./commands/next-id";
 import { run as runSprite } from "./commands/sprite";
 import { run as runRegisterComponent } from "./commands/register-component";
+import { run as runGenConstants } from "./commands/gen-constants";
 
 interface Command {
     readonly run: (argv: readonly string[]) => Promise<number>;
@@ -34,6 +35,10 @@ const COMMANDS: Record<string, Command> = {
     "register-component": {
         run: runRegisterComponent,
         usage: "register-component --package <包名> --name <组件文件.xml> [--path <目录>] [--project <工程目录>] 幂等登记组件（已存在返回原 id）",
+    },
+    "gen-constants": {
+        run: runGenConstants,
+        usage: "gen-constants [--project <工程目录>] 生成 exported 组件 URL 常量表到 assets/ui/generated/",
     },
 };
 
