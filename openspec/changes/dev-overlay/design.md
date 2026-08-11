@@ -46,8 +46,8 @@
 - FGUI 新包 `DevOverlay`（委派 fgui-designer）：`DevOverlayBall.xml`（收缩小球，纯色 sprite 生成 + 可选 FPS 徽标文本）、`DevOverlayPanel.xml`（信息面板：若干 text 节点 + 背景）。exported 组件名全局唯一（`fgui validate` 强制），包内自足，仅跨包引 Common。
 - `dev-ball.ts` 控制器：持有球/面板的 `ViewModelNode`（经 UiHost 的节点解析器），实现状态机 `collapsed → dragging → snapping → expanded`。
 - 拖拽：FGUI `TOUCH_BEGIN/MOVE/END`（统一触摸/鼠标），按触点位移 `setXY` 更新；拖动中停用吸附。
-- 贴边：释放时计算距四边最近者，目标位置 = 贴边坐标（仅保留 x 或 y 露头），动画插值过去。边界以 `GRoot.width/height`（设计分辨率）为准，勿用物理像素。
-- 展开/收起：鼠标 `ROLL_OVER` 悬停展开 + 点击锁定展开态；触摸端无悬停事件，降级为点击切换（写进 spec 的行为规则）。
+- 贴边：球默认贴着 UI 根左上角悬浮常驻（初始 `x` 露头、`y=0` 顶贴齐），面板位于球右侧；拖拽是临时位置调整，释放后**固定回到左侧贴边**（x 露头、y 保留并钳制在边界内），动画插值过去。边界以 `GRoot.width/height`（设计分辨率）为准，勿用物理像素。
+- 展开/收起：鼠标 `ROLL_OVER` 悬停展开、`ROLL_OUT` 移出收起；点击（轻点）不改变展开状态，仅触发预留的 `onTap` 回调（当前 no-op，日后以注册方式接入 GM 面板）。
 - 动画：TS 插值（位移/alpha/visible），动画器只读注入的 `timeSource.now()`（framework `GameClock` 驱动，ADR-029），禁 transition。
 
 理由：FGUI 组件承载视觉、TS 承载交互与动画，符合项目动画约束；悬浮球最小化遮挡且信息量可扩展。
@@ -61,7 +61,7 @@ overlay 挂载到全局 UI 作用域（对齐 Common 常驻方式），持有于
 ## Risks / Trade-offs
 
 - [`cc.DEBUG` 与构建配置漂移] → 环境开关走组合根注入 + URL 覆盖双保险，release 构建默认关闭不创建。
-- [悬停仅鼠标，触摸无 hover] → 触摸降级点击切换，状态机显式分支，spec 已锁定该行为。
+- [悬停仅鼠标，触摸无 hover] → 面板展示依赖鼠标悬停；触摸端保留拖拽与 FPS 徽标，点击预留 GM 回调，不依赖悬停。
 - [贴边用物理像素导致错位] → 以 GRoot 设计分辨率尺寸为边界，复用 `CocosUiRoot` 已同步设计分辨率的语义。
 - [AppRoot 装配改动破坏既有测试] → dev 关闭默认不创建 + 测试注入 `isDevEnabled=false`，保持既有路径不变。
 - [采样开销影响性能] → 收缩态仅低频刷新关键信息（FPS），展开才全量采样；release 关闭零开销。

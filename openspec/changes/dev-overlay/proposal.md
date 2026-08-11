@@ -10,7 +10,7 @@
 - **环境开关**：封装可注入的 `isDevEnabled()`——debug 构建包（`cc.DEBUG`/`BUILD` 宏）为主 + URL 参数 `?dev=1`/`?dev=0` 强制覆盖；release 构建默认关闭。
 - **信息源**：启动运行时间（墙钟 `TimeSource` 差值）、平台/设备型号/语言（新增 `CocosDeviceInfo` 适配器实现既有 `DeviceInfo` 契约）、网络环境（Web `navigator.onLine`/`connection`）、FPS 与内存（复用 `game/fixture/perf.ts` 的 `PerfSampler`）。
 - **UI 形态（方案 B：悬浮球）**：FGUI 组件 `DevOverlayBall`（收缩小球，纯色 sprite 生成）+ `DevOverlayPanel`（展开信息面板）；TS 驱动拖拽、贴边吸附、展开/收起动画（禁 transition，注入 timeSource，对齐 ADR-029）。
-- **交互**：拖拽移动（TOUCH 事件统一触摸/鼠标）、释放贴最近边、鼠标悬停展开 + 点击锁定；触摸端悬停不可用降级为点击切换。
+- **交互**：拖拽移动（TOUCH 事件统一触摸/鼠标）、释放回左侧贴边、鼠标悬停展开/移出收起；点击预留回调（no-op，日后经注册接入 GM 面板）。
 - **MVP 信息项**：运行时间、平台/型号、网络状态（在线/离线 + effectiveType）、FPS、内存（texture/buffer MB）。**不做**：存储目录（Web 无目录语义）、进程内存、完整性能统计面板。
 
 ## Capabilities
