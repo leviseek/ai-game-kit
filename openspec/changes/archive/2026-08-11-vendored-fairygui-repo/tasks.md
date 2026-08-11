@@ -30,7 +30,7 @@
 - [x] 6.1 `bun test` 全绿（1165 pass / 0 fail）；`typecheck:ci`、`lint`、`test:foundation:types` 通过。**注**：`bun run verify` 的 test:fgui-mcp 段会 spawn `fgui validate --package Basic --strict` 且 Basic（官方库）校验失败 exit 1——经 HEAD worktree 复现确认 **pre-existing**（AGENTS 约定 Basic/Builder 官方库默认豁免），非本 change 引入；fgui-mcp 测试自身 77 pass。
 - [x] 6.2 Cocos 编辑器打开工程：无资源错误、`fairygui-cc` 解析正常、`.meta` GUID 与 1.3 基准一致。**已人工在 Cocos 编辑器验证通过**。
 - [x] 6.3 `?smoke=auto-battle` 冒烟通过（库内容未变，行为应与仓库化前一致）。**已人工在 Cocos 编辑器验证通过**。
-- [ ] 6.4 干净 clone 验证：**待提交后复验**（当前 submodule 改动未提交，本地 clone 无 submodule 记录；产物目录随提交可保证 clone 即用）。克隆流程 `git clone --recursive` + `bun run build:fairygui` 已文档化。
+- [x] 6.4 干净 clone 验证：**已完成**——`git clone https://github.com/leviseek/ai-game-kit.git` 后产物目录 `assets/framework/libs/fairygui/fairygui.mjs` 立即可用（hash 与主仓库一致）；`git submodule update --init --recursive` 成功拉取 fork 仓库（checked out cd19b70）；`bun run build:fairygui` 在 clone 中正常运行。克隆流程文档正确。
 
 ## 7. ADR 检查
 
