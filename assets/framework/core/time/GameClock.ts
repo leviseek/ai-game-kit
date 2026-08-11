@@ -32,6 +32,8 @@ export class GameClock implements TimeSource {
         [PauseDomain.Menu]: false,
         [PauseDomain.Combat]: false,
     };
+    /** 应用级冻结标志：独立于分层暂停，thawAll 只清本标志（C-17 叠加语义）。 */
+    private appFrozen = false;
     private baseTime: number;
     private rate: number;
 
@@ -43,7 +45,7 @@ export class GameClock implements TimeSource {
         }
     }
 
-    /** 某域表现时间读数：baseTime + 该域已推进量（暂停域不推进 → 读数冻结）。 */
+    /** 某域表现时间读数：baseTime + 该域已推进量（该域或应用级冻结时读数冻结）。 */
     now(domain: PauseDomain = PauseDomain.Combat): number {
         return this.baseTime + this.domainElapsed[domain];
     }
@@ -68,10 +70,13 @@ export class GameClock implements TimeSource {
         this.domainPaused[domain] = false;
     }
 
-    /** 受控推进：只推进未冻结域（elapsed += ms * rate）；暂停域不受影响。 */
+    /** 受控推进：只推进未冻结域（elapsed += ms * rate）；应用级冻结或该域暂停时不受影响。 */
     advance(milliseconds: number): void {
         if (milliseconds < 0) {
             throw new Error("GameClock advance must not be negative");
+        }
+        if (this.appFrozen) {
+            return;
         }
         for (const domain of Object.keys(this.domainElapsed) as PauseDomain[]) {
             if (!this.domainPaused[domain]) {
@@ -91,17 +96,17 @@ export class GameClock implements TimeSource {
         }
     }
 
-    /** 应用级暂停（如切后台）：冻结全部域。 */
+    /**
+     * 应用级暂停（如切后台）：冻结全部域。与分层暂停（pause(domain)）独立叠加——
+     * 应用级冻结期间所有域不推进；thawAll 只清应用级冻结，保留各域自身的分层暂停
+     * （C-17：恢复只继续因自身 pause 冻结的部分，对齐 ADR-016 分组暂停语义）。
+     */
     freezeAll(): void {
-        for (const domain of Object.keys(this.domainPaused) as PauseDomain[]) {
-            this.domainPaused[domain] = true;
-        }
+        this.appFrozen = true;
     }
 
-    /** 解除应用级暂停：恢复全部域推进。 */
+    /** 解除应用级暂停：只清应用级冻结，各域分层暂停状态保留。 */
     thawAll(): void {
-        for (const domain of Object.keys(this.domainPaused) as PauseDomain[]) {
-            this.domainPaused[domain] = false;
-        }
+        this.appFrozen = false;
     }
 }

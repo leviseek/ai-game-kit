@@ -131,7 +131,7 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)(
             const presenter = createAutoBattlePresenter(fixture, view.node);
 
             // VS 阶段：VS 节点已写入队长名（每方 index 最小存活单位）
-            // 注意 presenter 用 Date.now() 驱动，此测试只验证初始渲染即进入 VS 阶段
+            // 注意 presenter 用内部 GameClock 驱动（interval 推进），此测试只验证初始渲染即进入 VS 阶段
             expect(view.nodes.get("vs_left")?.text).toBe("e"); // 敌方唯一单位 e
             expect(view.nodes.get("vs_right")?.text).toBe("a"); // 己方 index 0 → a
             expect(view.nodes.get("vs_badge")?.text).toBe("VS");

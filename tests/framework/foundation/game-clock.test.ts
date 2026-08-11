@@ -62,6 +62,25 @@ describe("GameClock", () => {
         expect(clock.now()).toBe(200);
     });
 
+    test("thawAll preserves per-domain pauses (C-17 additive semantics)", () => {
+        const clock = new GameClock();
+        clock.pause(PauseDomain.Combat);
+        clock.freezeAll();
+        clock.advance(100);
+        // 应用级冻结期间全部域不推进
+        expect(clock.now(PauseDomain.Menu)).toBe(0);
+        expect(clock.now(PauseDomain.Combat)).toBe(0);
+        // thawAll 只清应用级冻结：menu 恢复推进、combat 保持分层暂停冻结
+        clock.thawAll();
+        clock.advance(100);
+        expect(clock.now(PauseDomain.Menu)).toBe(100);
+        expect(clock.now(PauseDomain.Combat)).toBe(0);
+        // 分层 resume 解除 combat 暂停
+        clock.resume(PauseDomain.Combat);
+        clock.advance(100);
+        expect(clock.now(PauseDomain.Combat)).toBe(100);
+    });
+
     test("jumpTo jumps the base time for all domains", () => {
         const clock = new GameClock();
         clock.advance(100);
