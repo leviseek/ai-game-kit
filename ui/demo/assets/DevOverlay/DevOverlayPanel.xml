@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="240,150">
+  <displayList>
+    <image id="n0_dovp" name="bg_panel" src="bg000" fileName="img/panel_bg.png" xy="0,0" size="240,150">
+      <relation target="" sidePair="width-width,height-height"/>
+    </image>
+    <text id="n1_dovp" name="info_uptime" xy="12,10" size="216,22" fontSize="14" color="#cccccc" align="left" vAlign="middle" autoSize="none" singleLine="true" text="">
+      <relation target="" sidePair="width-width"/>
+    </text>
+    <text id="n2_dovp" name="info_device" xy="12,37" size="216,22" fontSize="14" color="#cccccc" align="left" vAlign="middle" autoSize="none" singleLine="true" text="">
+      <relation target="" sidePair="width-width"/>
+    </text>
+    <text id="n3_dovp" name="info_network" xy="12,64" size="216,22" fontSize="14" color="#cccccc" align="left" vAlign="middle" autoSize="none" singleLine="true" text="">
+      <relation target="" sidePair="width-width"/>
+    </text>
+    <text id="n4_dovp" name="info_fps" xy="12,91" size="216,22" fontSize="14" color="#cccccc" align="left" vAlign="middle" autoSize="none" singleLine="true" text="">
+      <relation target="" sidePair="width-width"/>
+    </text>
+    <text id="n5_dovp" name="info_memory" xy="12,118" size="216,22" fontSize="14" color="#cccccc" align="left" vAlign="middle" autoSize="none" singleLine="true" text="">
+      <relation target="" sidePair="width-width"/>
+    </text>
+  </displayList>
+</component>

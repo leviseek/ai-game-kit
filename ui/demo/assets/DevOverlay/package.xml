@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<packageDescription id="ipgg4xdn">
+  <resources>
+    <component id="dov01" name="DevOverlayBall.xml" path="/" exported="true"/>
+    <component id="dov00" name="DevOverlayPanel.xml" path="/" exported="true"/>
+    <image id="ball0" name="ball_button.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="bg000" name="panel_bg.png" path="/img/" scale="9grid" scale9grid="1,1,2,2" qualityOption="source" duplicatePadding="true"/>
+  </resources>
+  <publish name=""/>
+</packageDescription>
