@@ -6,7 +6,7 @@ export interface VsEntranceConfig {
     readonly left: { readonly name: string; readonly sideLabel: string; readonly baseXY: { readonly x: number; readonly y: number } };
     /** 右侧（己方）武将信息：同上。 */
     readonly right: { readonly name: string; readonly sideLabel: string; readonly baseXY: { readonly x: number; readonly y: number } };
-    /** VS 展示总时长（ms，入场+定格，不含淡出）。 */
+    /** 入场移动+淡入时长（ms）；定格由 holdMs、淡出由 fadeMs 独立控制。 */
     readonly durationMs: number;
     /** 定格时长（ms）。 */
     readonly holdMs: number;

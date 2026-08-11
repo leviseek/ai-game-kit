@@ -42,8 +42,8 @@
 
 ## 9. VS 进场动画（通用模板）
 
-- [x] 9.1 `view/vs-entrance.ts`（新）：`VsEntranceTemplate` 可参数化组件——`VsEntranceConfig`（左右武将名/sideLabel/baseXY + durationMs/holdMs/fadeMs），动画从 `baseXY.x ± 640` 收敛到 baseXY（easeOutCubic）+ VS 大字淡入 + 定格 + 整体淡出；复用 `EffectNode` 契约、TS 驱动禁 transition。
-- [x] 9.2 `view/presenter.ts`：三阶段状态机 `vs → entrance → fighting`；VS 阶段约 2.7s（入场 1.8s + 定格 0.6s + 淡出 0.3s），期间不推进 tick；`restart` 重置回 vs 阶段。入场阶段时长 3s（`ENTRANCE_PHASE_MS`）。
+- [x] 9.1 `view/vs-entrance.ts`（新）：`VsEntranceTemplate` 可参数化组件——`VsEntranceConfig`（左右武将名/sideLabel/baseXY + durationMs/holdMs/fadeMs），动画从 `baseXY.x ± 640` 收敛到 baseXY（**easeOutBack**，先快后慢带回弹）+ VS 大字淡入 + 定格 + 整体淡出；复用 `EffectNode` 契约、TS 驱动禁 transition。
+- [x] 9.2 `view/presenter.ts`：三阶段状态机 `vs → entrance → fighting`；VS 阶段约 1s（入场 0.55s + 定格 0.3s + 淡出 0.15s），期间不推进 tick；`restart` 重置回 vs 阶段。入场阶段时长 0.75s（`ENTRANCE_PHASE_MS`）。
 - [x] 9.3 FGUI（委派 fgui-designer）：`AutoBattleView.xml` 追加 `vs_left`（100,360）/`vs_right`（980,360）/`vs_badge`（640,360）文本节点，`pivot=0.5,0.5 anchor=true` 使 setXY 即节点中心；`validate --strict` 通过。
 - [x] 9.4 测试：`game-auto-battle-vs-entrance.test.ts`（写名/收敛动画/定格窗口/淡出/reset/时长参数化）；presenter 测试断言 VS 节点写入队长名；`bun test` 1187 pass / 0 fail。
 - [ ] 9.5 Cocos 预览确认 VS 动画效果（左右武将入场 + VS 大字定格淡出），与 7.2 一并人工验证。
