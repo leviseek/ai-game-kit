@@ -116,5 +116,21 @@ export interface AutoBattleState {
     readonly units: readonly AutoBattleUnitState[];
 }
 
+/** 挂机收益状态：离线收益结算/入账后的持久化快照。 */
+export interface IdleRewardState {
+    /** 上次结算/入账的墙钟时间戳（毫秒）；离线收益按它与当前墙钟的差值计算。 */
+    readonly lastSeenAtMs: number;
+    /** 累计收益：每次离线结算入账后累加。 */
+    readonly totalRewards: number;
+    /** 最近一次入账的墙钟时间戳（毫秒）。 */
+    readonly earnedAtMs: number;
+}
+
+/** 离线收益结算结果：离线分钟数与本次应得收益。 */
+export interface IdleOfflineSettlement {
+    readonly minutes: number;
+    readonly earned: number;
+}
+
 /** 代表性 FairyGUI route：路由标识由游戏层定义，呈现由适配层完成。 */
 export const AUTO_BATTLE_ROUTE = "auto_battle/battle";

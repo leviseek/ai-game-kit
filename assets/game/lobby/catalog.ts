@@ -72,6 +72,16 @@ export const LOBBY_LIST_ENTRY: GameEntryInfo = {
 };
 
 /**
+ * 自动战斗编队页入口：品类主入口（lobby 进入先落编队页编辑布阵），
+ * 挂机收益页"返回"经会话内导航切回。
+ */
+export const AUTO_BATTLE_LINEUP_ENTRY: GameEntryInfo = {
+    route: "auto_battle/lineup",
+    packageName: "AutoBattle",
+    resName: "LineupEditorView",
+};
+
+/**
  * 自动战斗战场页入口：编队页点"开始战斗"后经会话内页面切换打开（进入品类
  * 先落编队页编辑布阵，开战再切战场页）。
  */
@@ -79,4 +89,14 @@ export const AUTO_BATTLE_BATTLE_ENTRY: GameEntryInfo = {
     route: "auto_battle/battle",
     packageName: "AutoBattle",
     resName: "AutoBattleView",
+};
+
+/**
+ * 自动战斗挂机收益页入口：编队页点"挂机收益"后经会话内页面切换打开
+ * （展示离线预览并领取入账，回编队页继续布阵/开战）。
+ */
+export const AUTO_BATTLE_IDLE_REWARDS_ENTRY: GameEntryInfo = {
+    route: "auto_battle/idle-rewards",
+    packageName: "AutoBattle",
+    resName: "IdleRewardsView",
 };

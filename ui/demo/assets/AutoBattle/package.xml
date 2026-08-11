@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <packageDescription id="abpk0001">
   <resources>
+    <component id="j5qwc" name="IdleRewardsView.xml" path="/" exported="true"/>
     <component id="ab004" name="UnitHitFeedbackCom.xml" path="/" exported="true"/>
     <image id="fx000" name="hit_flash_white.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
     <component id="ab003" name="BattlefieldUnitsCom.xml" path="/" exported="true"/>

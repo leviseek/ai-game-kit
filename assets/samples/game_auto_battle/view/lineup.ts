@@ -34,6 +34,8 @@ export interface LineupEditorCommands {
     removeFromSlot(slot: number): void;
     /** 以当前编队开始战斗（开战由 lineup 实例化）。 */
     startBattle(): void;
+    /** 打开挂机收益页（会话内页面切换）。 */
+    openIdleRewards(): void;
 }
 
 /** 编队页 VM 派生：候选区 = 英雄池（含上阵态），布阵区 = 定长槽（含选中格）。 */
@@ -72,6 +74,11 @@ export function createLineupEditorBindings(
 ): readonly Binding<LineupEditorViewModel>[] {
     const bindings: Binding<LineupEditorViewModel>[] = [
         { kind: "command", node: "btn_start", run: () => commands.startBattle() },
+        {
+            kind: "command",
+            node: "btn_idle_rewards",
+            run: () => commands.openIdleRewards(),
+        },
     ];
 
     for (let slot = 0; slot < FORMATION_GRID_SIZE; slot += 1) {

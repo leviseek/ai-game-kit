@@ -13,6 +13,8 @@ import {
     type LineupEditorViewModel,
 } from "./lineup";
 import { createAutoBattlePresenter } from "./presenter";
+import { createIdleRewardsPresenter } from "./idle-rewards-presenter";
+import { AUTO_BATTLE_IDLE_REWARDS_ENTRY } from "../../../game/lobby/catalog";
 
 /**
  * 编队页呈现器：把玩家编队（fixture.lineup）+ 候选英雄区渲染到
@@ -68,6 +70,15 @@ export function createLineupEditorPresenter(
                     void session.openEntry(
                         AUTO_BATTLE_BATTLE_ENTRY,
                         createAutoBattlePresenter,
+                    );
+                }
+            },
+            openIdleRewards: () => {
+                // 打开挂机收益页：会话内切页并装配挂机呈现器
+                if (session !== undefined) {
+                    void session.openEntry(
+                        AUTO_BATTLE_IDLE_REWARDS_ENTRY,
+                        createIdleRewardsPresenter,
                     );
                 }
             },

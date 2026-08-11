@@ -20,7 +20,10 @@ import type {
 import {
     createAutoBattleClock,
     createAutoBattleClockModule,
+    createIdleRewardClock,
+    createIdleRewardClockModule,
     type AutoBattleClock,
+    type IdleRewardClock,
 } from "./logic/clock";
 import {
     createAutoBattleConfig,
@@ -42,6 +45,22 @@ import {
     createLineupStore,
     type LineupStore,
 } from "./logic/lineup-store";
+import {
+    computeRate,
+    createAutoBattleIdleRewardsModule,
+    createIdleRewardsHandle,
+    type IdleRateSource,
+    type IdleRewardsHandle,
+} from "./logic/idle-rewards";
+import {
+    createIdleRewardsStore,
+    createIdleRewardsStoreModule,
+    type IdleRewardStore,
+} from "./logic/idle-rewards-store";
+import type {
+    IdleOfflineSettlement,
+    IdleRewardState,
+} from "./models";
 import { createAutoBattleUiModule } from "./view/ui";
 import {
     buildAutoBattleBindings,
@@ -97,6 +116,10 @@ export interface AutoBattleFixtureOptions {
     readonly storage?: PlatformStorage;
     /** 事件回调：战斗事件广播接缝（测试据此断言回放顺序）。 */
     readonly onEvent?: (event: AutoBattleEvent) => void;
+    /** 挂机可控墙钟：缺省为内建时钟（从 0 开始，测试经 advance 推进模拟离线时长）。 */
+    readonly idleClock?: IdleRewardClock;
+    /** 挂机收益速率来源：缺省为固定速率（computeRate 接缝）。 */
+    readonly idleRateSource?: IdleRateSource;
 }
 
 /** 内存记录型视图节点：记录 setter 与点击回调，供测试断言 VM 渲染。 */
@@ -199,6 +222,21 @@ export interface AutoBattleFixture extends GameFixture {
         /** 从存储恢复上次编队（重启后调用）；无存档则保持当前编队。 */
         restoreLineup(): Promise<void>;
     };
+    /** 挂机收益：离线收益结算、持久化与恢复。 */
+    readonly idleRewards: {
+        /** 当前挂机状态快照。 */
+        readonly state: IdleRewardState;
+        /** 可控墙钟（测试经 advance 推进模拟离线时长）。 */
+        readonly clock: IdleRewardClock;
+        /** 预计算可领收益（不推进 lastSeenAt，纯展示；与 settleOffline 同一速率）。 */
+        preview(): IdleOfflineSettlement;
+        /** 按当前墙钟结算离线收益并推进 lastSeenAt（幂等）；返回结算结果。 */
+        settleOffline(): IdleOfflineSettlement;
+        /** 从存储恢复上次挂机状态（重启后调用）；无存档/损坏则保持初始。 */
+        restore(): Promise<void>;
+        /** 挂机收益存储（versioned-storage）。 */
+        readonly store: IdleRewardStore;
+    };
 }
 
 /** 缺省内存平台存储：实现 PlatformStorage，供测试与非 Cocos 环境使用。 */
@@ -250,6 +288,25 @@ export function createAutoBattleFixture(
     });
     let lineup: AutoBattleLineup = toFullLineup(config.lineups.ally);
     let selectedSlot: number | null = null;
+
+    // 挂机收益：可控墙钟（离线时长基准）+ 入账控制器 + 自持版本化存储。
+    // 收益速率缺省走 computeRate(lineup) 接缝（首版固定常量；lineup 非空槽加权
+    // 预留），调用方注入 idleRateSource 可覆盖——速率接缝独立于编队读取，编队
+    // 读取失败不中断结算（spec：回退默认速率）。
+    const idleRewardsClock = options.idleClock ?? createIdleRewardClock();
+    const idleRewardsStore = createIdleRewardsStore({
+        storage: options.storage ?? new MemoryStorage(),
+    });
+    const idleRewardsHandle: IdleRewardsHandle = createIdleRewardsHandle({
+        clock: idleRewardsClock,
+        rateSource: options.idleRateSource ?? (() => computeRate(lineup)),
+    });
+    const persistIdleRewards = (): void => {
+        // 存储写失败不中断交互，经 console.error 报告（对齐 SaveCoordinator 缺省语义）
+        void idleRewardsStore.save(idleRewardsHandle.state).catch((error: unknown) => {
+            console.error(error);
+        });
+    };
 
     const battle: AutoBattleBattleHandle = createAutoBattleBattle({
         clock,
@@ -303,6 +360,9 @@ export function createAutoBattleFixture(
         startBattle() {
             battle.restart();
         },
+        // 挂机收益页为会话内页面，导航由 presenter 层经 session 触发；
+        // 夹具层命令留空占位（fixture 引擎无关，不持有页面导航器）
+        openIdleRewards() {},
     };
 
     // 观战加速挡位：夹具持当前挡位并联动时钟倍率，测试经 cycleSpeed 驱动。
@@ -324,6 +384,9 @@ export function createAutoBattleFixture(
         createAutoBattleMoveModule(),
         createAutoBattleEffectsModule(),
         createAutoBattleUiModule(navigator),
+        createIdleRewardClockModule(idleRewardsClock),
+        createIdleRewardsStoreModule(idleRewardsStore),
+        createAutoBattleIdleRewardsModule(idleRewardsHandle),
     ];
 
     const base = createGameFixture({
@@ -458,6 +521,37 @@ export function createAutoBattleFixture(
                 });
             },
         },
+        idleRewards: {
+            get state() {
+                return idleRewardsHandle.state;
+            },
+            clock: idleRewardsClock,
+            preview: () => idleRewardsHandle.previewOffline(),
+            settleOffline: () => {
+                // 结算后立即持久化：下次结算/重启以本次入账为准，重复结算幂等
+                const settlement = idleRewardsHandle.settleOffline();
+                persistIdleRewards();
+                return settlement;
+            },
+            restore: async () => {
+                // 恢复上次挂机状态；缺档保持初始（无存档）、损坏/未来版本抛错。
+                // 编队读取失败回退固定默认速率（spec）：此处不读编队，速率接缝
+                // 由 settleOffline 内部 computeRate 兜底固定值
+                const loaded = await idleRewardsStore.load();
+                if (loaded === null) {
+                    return;
+                }
+                idleRewardsHandle.restore(loaded.data);
+                // 迁移回写：旧版本存档经 load 逐级迁移后立即落盘当前版本，
+                // 避免每次重启重复执行迁移链
+                void idleRewardsStore.save(idleRewardsHandle.state).catch(
+                    (error: unknown) => {
+                        console.error(error);
+                    },
+                );
+            },
+            store: idleRewardsStore,
+        },
         dispose: async () => {
             if (disposed) {
                 return;
@@ -468,6 +562,7 @@ export function createAutoBattleFixture(
             viewModelRenderer.dispose();
             navigator.dispose();
             battle.dispose();
+            idleRewardsHandle.dispose();
             await base.dispose();
         },
     };

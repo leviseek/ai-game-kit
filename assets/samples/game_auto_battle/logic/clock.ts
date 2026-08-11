@@ -62,5 +62,55 @@ export function createAutoBattleClockModule(clock: AutoBattleClock): Module {
             // 时钟在组合根构造时即就绪；start 只是让模块进入装配清单
             void clock.now();
         },
+        dispose: () => {
+            // 时钟由组合根统一释放，此处不处置
+        },
+    };
+}
+
+/**
+ * 挂机墙钟：now() 返回当前墙钟时间，用于离线收益结算读取同一时间基准。
+ * 缺省读取真实时间（Date.now），真实运行下 now() 随真实时间流逝自然增长，
+ * 收益才会累积；advance 叠加偏移仅供测试注入可控基准（nowSource 返回固定值）
+ * 后经 advance 模拟离线时长。框架根入口不导出 WallClock（public-boundary
+ * 白名单），故夹具层自实现最小墙钟，保证与战斗模拟时钟解耦。
+ */
+export interface IdleRewardClock extends TimeSource {
+    advance(milliseconds: number): void;
+}
+
+export function createIdleRewardClock(
+    nowSource: () => number = () => Date.now(),
+): IdleRewardClock {
+    let offset = 0;
+
+    return {
+        now: () => nowSource() + offset,
+        advance: (milliseconds: number) => {
+            // 与其它品类时钟先例一致：拒绝负值推进，保证时间单调，
+            // 避免倒退破坏离线收益结算（结算按 now - lastSeenAt 差值）
+            if (milliseconds < 0) {
+                throw new Error("IdleRewardClock advance must not be negative");
+            }
+            offset += milliseconds;
+        },
+    };
+}
+
+/**
+ * 挂机墙钟模块：组合根创建墙钟并注入挂机收益；模块只登记引用，
+ * 真实运行由 Date.now 自然驱动、测试经注入时钟 advance 驱动。
+ */
+export function createIdleRewardClockModule(clock: IdleRewardClock): Module {
+    return {
+        id: "auto_battle.idle_reward_clock",
+        dependencies: [],
+        start: () => {
+            // 时钟在组合根构造时即就绪；start 只是让模块进入装配清单
+            void clock.now();
+        },
+        dispose: () => {
+            // 时钟由组合根统一释放，此处不处置
+        },
     };
 }

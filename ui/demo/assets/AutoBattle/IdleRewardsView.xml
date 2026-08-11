@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="1280,720">
+  <displayList>
+    <image id="idle_rewards_bg" name="bg_idle_rewards" src="ab000" fileName="img/bg_battle.png" xy="0,0" size="1280,720">
+      <relation target="" sidePair="width-width,height-height"/>
+    </image>
+    <image id="idle_rewards_panel" name="bg_rewards_panel" src="pnl00" fileName="img/panel_lineup_bg.png" xy="230,100" size="820,500"/>
+    <text id="idle_rewards_title" name="txt_title" xy="390,28" size="500,48" fontSize="32" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="自动战斗 · 挂机收益">
+      <relation target="" sidePair="center-center"/>
+    </text>
+    <text id="idle_rewards_offline_label" name="txt_offline_label" xy="330,190" size="300,48" fontSize="24" color="#cccccc" vAlign="middle" autoSize="none" singleLine="true" text="离线时长（分钟）"/>
+    <text id="idle_rewards_offline_value" name="txt_offline_minutes" xy="650,190" size="300,48" fontSize="28" color="#ffffff" align="right" vAlign="middle" autoSize="none" singleLine="true" text="0"/>
+    <text id="idle_rewards_claimable_label" name="txt_claimable_label" xy="330,290" size="300,48" fontSize="24" color="#cccccc" vAlign="middle" autoSize="none" singleLine="true" text="可领收益"/>
+    <text id="idle_rewards_claimable_value" name="txt_claimable" xy="650,290" size="300,48" fontSize="28" color="#ffffff" align="right" vAlign="middle" autoSize="none" singleLine="true" text="0"/>
+    <text id="idle_rewards_total_label" name="txt_total_label" xy="330,390" size="300,48" fontSize="24" color="#cccccc" vAlign="middle" autoSize="none" singleLine="true" text="累计收益"/>
+    <text id="idle_rewards_total_value" name="txt_total_rewards" xy="650,390" size="300,48" fontSize="28" color="#ffffff" align="right" vAlign="middle" autoSize="none" singleLine="true" text="0"/>
+    <component id="idle_rewards_claim" name="btn_claim" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="410,520" size="200,52">
+      <Button title="领取" titleColor="#ffffff"/>
+    </component>
+    <component id="idle_rewards_back" name="btn_back" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="670,520" size="200,52">
+      <Button title="返回编队" titleColor="#ffffff"/>
+    </component>
+  </displayList>
+</component>
