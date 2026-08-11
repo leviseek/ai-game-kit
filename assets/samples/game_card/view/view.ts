@@ -1,5 +1,15 @@
 import type { Binding } from "../../../framework";
 import type { CardBattleState } from "../models";
+import {
+    END_TURN_BUTTON_NODE,
+    ENEMY_HP_BAR_NODE,
+    ENEMY_HP_TEXT_NODE,
+    HAND_CARD_BUTTONS,
+    MANA_TEXT_NODE,
+    PLAYER_HP_TEXT_NODE,
+    RESTART_BUTTON_NODE,
+    RESULT_TEXT_NODE,
+} from "../nodes";
 
 /**
  * 战场页 ViewModel：从战斗状态派生的纯呈现数据，只承载节点需要的字段，
@@ -43,29 +53,29 @@ export function createCardBattleBindings(
     commands: CardBattleCommands,
 ): readonly Binding<CardBattleViewModel>[] {
     return [
-        { kind: "text", node: "txt_player_hp", get: (vm) => `HP ${vm.playerHp}` },
-        { kind: "text", node: "txt_enemy_hp", get: (vm) => `HP ${vm.enemyHp}` },
-        { kind: "text", node: "txt_mana", get: (vm) => `${vm.mana}` },
+        { kind: "text", node: PLAYER_HP_TEXT_NODE, get: (vm) => `HP ${vm.playerHp}` },
+        { kind: "text", node: ENEMY_HP_TEXT_NODE, get: (vm) => `HP ${vm.enemyHp}` },
+        { kind: "text", node: MANA_TEXT_NODE, get: (vm) => `${vm.mana}` },
         {
             kind: "progress",
-            node: "bar_enemy_hp",
+            node: ENEMY_HP_BAR_NODE,
             get: (vm) => (vm.enemyHpMax > 0 ? vm.enemyHp / vm.enemyHpMax : 0),
         },
-        { kind: "command", node: "btn_card_0", run: () => commands.playCard(0) },
-        { kind: "command", node: "btn_card_1", run: () => commands.playCard(1) },
-        { kind: "command", node: "btn_card_2", run: () => commands.playCard(2) },
-        { kind: "command", node: "btn_end_turn", run: () => commands.endTurn() },
+        { kind: "command", node: HAND_CARD_BUTTONS[0], run: () => commands.playCard(0) },
+        { kind: "command", node: HAND_CARD_BUTTONS[1], run: () => commands.playCard(1) },
+        { kind: "command", node: HAND_CARD_BUTTONS[2], run: () => commands.playCard(2) },
+        { kind: "command", node: END_TURN_BUTTON_NODE, run: () => commands.endTurn() },
         {
             kind: "visible",
-            node: "txt_result",
+            node: RESULT_TEXT_NODE,
             get: (vm) => vm.result !== undefined,
         },
         {
             kind: "text",
-            node: "txt_result",
+            node: RESULT_TEXT_NODE,
             get: (vm) =>
                 vm.result === "win" ? "胜利" : vm.result === "lose" ? "战败" : "",
         },
-        { kind: "command", node: "btn_restart", run: () => commands.restart() },
+        { kind: "command", node: RESTART_BUTTON_NODE, run: () => commands.restart() },
     ];
 }
