@@ -104,9 +104,9 @@ export class GameLobbyHostImpl implements GameLobbyHost {
 
         // 节点解析器：渲染器与游戏层只消费 ViewModelNode 契约，fgui 类型不出
         // 组合根（design decision 7 边界）。战场页（AutoBattleView）用品类动态
-        // 单位映射装配通用动态组件解析器——`unit_{id}` 系列节点运行时实例化
-        // UnitSlot。映射配置经 samples bundle 运行时读取（boot 不静态 import
-        // game bundle，维护 boot 边界）
+        // 映射数组装配通用动态组件解析器——`unit_{id}` 系列运行时实例化 UnitSlot、
+        // `fx_*_{id}` 系列实例化命中反馈特效。映射配置经 samples bundle 运行时
+        // 读取（boot 不静态 import game bundle，维护 boot 边界）
         const unitMapping = (
             lookupBundle("samples") as {
                 readonly unitNodeMappings?: Readonly<Record<string, unknown>>;

@@ -182,6 +182,12 @@ export async function runAutoBattleSmoke(
         renderer.setViewModel(vm);
     };
 
+    // 命中反馈特效投影断言：完整对局产生攻击/技能事件时，投影器应产出飘字/
+    // 闪白特效意图（特效为演示层，不影响终局结果与事件序列）。动画器节点驱动
+    // 由运行时 presenter 的节拍循环负责，冒烟只验证投影语义。
+    const effects = (): readonly { kind: string }[] =>
+        fixture.effects.project(fixture.battle.events);
+
     render();
     report(
         "render-initial",
@@ -201,6 +207,18 @@ export async function runAutoBattleSmoke(
         "battle-end",
         endState.phase === "over",
         `round=${endState.round} result=${endState.result ?? "none"}`,
+    );
+
+    // 命中反馈投影断言：对局产生过攻击/技能事件 → 投影器产出了飘字/闪白意图
+    const projected = effects();
+    const hasDamageFloat = projected.some(
+        (effect) => effect.kind === "damage-float" || effect.kind === "heal-float",
+    );
+    const hasFlash = projected.some((effect) => effect.kind === "hit-flash");
+    report(
+        "hit-feedback",
+        hasDamageFloat && hasFlash,
+        `float=${projected.filter((e) => e.kind === "damage-float" || e.kind === "heal-float").length} flash=${projected.filter((e) => e.kind === "hit-flash").length}`,
     );
 
     // 挡位切换：cycleSpeed 循环到 2x 并同步时钟倍率，按钮标题随 VM 刷新。

@@ -46,10 +46,20 @@ import {
     buildAutoBattleBindings,
     createAutoBattleViewModel,
     formatAutoBattleEvent,
+    gridToXY,
     type AutoBattleCommands,
     type AutoBattleSpeed,
     type AutoBattleViewModel,
 } from "./view/view";
+import {
+    createAutoBattleEffectsModule,
+    projectHitFeedbackEvents,
+    type HitFeedbackEffect,
+} from "./view/effects";
+import {
+    createEffectAnimator,
+    type AutoBattleEffectAnimator,
+} from "./view/effect-animator";
 import type { LineupEditorCommands } from "./view/lineup";
 
 /** 挡位循环次序：1x → 2x → 3x → 1x（与 presenter 共用同一循环语义）。 */
@@ -95,6 +105,8 @@ export interface AutoBattleViewNode {
     visible: boolean | undefined;
     /** 最近一次坐标写入（position 绑定经 setXY 记录）。 */
     xy: { x: number; y: number } | undefined;
+    /** 最近一次透明度写入（特效动画经 setAlpha 记录）。 */
+    alpha: number | undefined;
     clickHandler: (() => void) | undefined;
 }
 
@@ -116,6 +128,9 @@ export function toViewModelNode(recording: AutoBattleViewNode): ViewModelNode {
         },
         setXY: (x: number, y: number) => {
             recording.xy = { x, y };
+        },
+        setAlpha: (value: number) => {
+            recording.alpha = value;
         },
         onClick: (handler: () => void) => {
             recording.clickHandler = handler;
@@ -156,6 +171,13 @@ export interface AutoBattleFixture extends GameFixture {
     readonly viewModel: {
         readonly node: (name: string) => AutoBattleViewNode;
         render(): void;
+    };
+    /** 命中反馈特效：投影器增量消费事件 + 动画器驱动节点，供测试断言。 */
+    readonly effects: {
+        /** 事件→特效投影器纯函数（同构于 view/effects 导出）。 */
+        project(events: readonly AutoBattleEvent[]): readonly HitFeedbackEffect[];
+        /** 动画器实例（飘字/闪白/抖动），测试断言进行中动画数。 */
+        readonly animator: AutoBattleEffectAnimator;
     };
     /** 编队编辑：玩家可变编队 + 点击选择操作 + 持久化（lineup-store）。 */
     readonly lineup: {
@@ -298,6 +320,7 @@ export function createAutoBattleFixture(
         createAutoBattleBattleModule(battle),
         createAutoBattleSkillsModule(),
         createAutoBattleFormationModule(),
+        createAutoBattleEffectsModule(),
         createAutoBattleUiModule(navigator),
     ];
 
@@ -318,12 +341,24 @@ export function createAutoBattleFixture(
                 progress: undefined,
                 visible: undefined,
                 xy: undefined,
+                alpha: undefined,
                 clickHandler: undefined,
             };
             viewNodes.set(name, recording);
         }
         return recording;
     };
+    // 命中反馈动画器：节点解析复用 VM 节点（记录型节点已实现 setAlpha/setXY），
+    // 时间源用模拟时钟（测试经 clock.advance 确定性推进动画）；单位绝对坐标由
+    // state 按 id 查 gridKey 经 gridToXY 推导，供飘字/抖动归位。
+    const effectAnimator = createEffectAnimator({
+        node: (name: string) => toViewModelNode(ensureViewNode(name)),
+        timeSource: () => clock.now(),
+        homeXYOf: (unitId: string) => {
+            const unit = battle.state.units.find((candidate) => candidate.id === unitId);
+            return unit === undefined ? { x: 0, y: 0 } : gridToXY(unit.gridKey);
+        },
+    });
     const autoBattleCommands: AutoBattleCommands = {
         restart: () => {
             battle.restart();
@@ -378,6 +413,11 @@ export function createAutoBattleFixture(
                 );
                 viewModelRenderer.setViewModel(vm);
             },
+        },
+        effects: {
+            project: (events: readonly AutoBattleEvent[]) =>
+                projectHitFeedbackEvents(events, -1).effects,
+            animator: effectAnimator,
         },
         lineup: {
             get value() {

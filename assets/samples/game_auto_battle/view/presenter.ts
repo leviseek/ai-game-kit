@@ -3,10 +3,13 @@ import { createViewModelRenderer } from "../../../framework";
 import type { GameFixture } from "../../../game/fixture/GameFixture";
 import type { GamePresenter } from "../../../game/lobby/presenter";
 import type { AutoBattleFixture } from "../assembly";
+import { projectHitFeedbackEvents } from "./effects";
+import { createEffectAnimator } from "./effect-animator";
 import {
     buildAutoBattleBindings,
     createAutoBattleViewModel,
     formatAutoBattleEvent,
+    gridToXY,
     type AutoBattleCommands,
     type AutoBattleViewModel,
 } from "./view";
@@ -17,7 +20,9 @@ import {
  * 状态与事件日志重渲染；战斗终局后停止 tick（页面保留终局画面）。挡位只
  * 改变驱动节拍：按当前倍率放大模拟时间推进量与每节拍的 tick 次数，不改
  * tick 内容与战斗结果；挡位状态以夹具为准（fixture.getSpeed/cycleSpeed）。
- * dispose 清理渲染器与时钟驱动。
+ * 命中反馈特效作为事件增量动画叠加在 state 渲染之上：每帧把新事件投影为
+ * 特效意图并推进动画，动画终态回到 state 姿态（alpha=0、坐标归位），不
+ * 进入 tick 序列与事件流。dispose 清理渲染器、动画器与时钟驱动。
  */
 export function createAutoBattlePresenter(
     fixture: GameFixture,
@@ -27,10 +32,27 @@ export function createAutoBattlePresenter(
 
     let lastTick = Date.now();
     let timer: ReturnType<typeof setInterval> | undefined;
+    // 特效投影游标：记录已消费事件序号，只对新事件投影（增量、幂等）
+    let effectCursor = -1;
+    // 命中反馈动画器：节点解析复用渲染器节点，时间源用真实节拍；单位绝对
+    // 坐标由 state 查 gridKey 经 gridToXY 推导，供飘字/抖动归位
+    const effectAnimator = createEffectAnimator({
+        node: (name: string) => node(name),
+        timeSource: () => Date.now(),
+        homeXYOf: (unitId: string) => {
+            const unit = autoBattle.battle.state.units.find(
+                (candidate) => candidate.id === unitId,
+            );
+            return unit === undefined ? { x: 0, y: 0 } : gridToXY(unit.gridKey);
+        },
+    });
 
     const autoBattleCommands: AutoBattleCommands = {
         restart: () => {
             autoBattle.battle.restart();
+            // 重开即新对局：特效游标重置、进行中动画清空，避免旧对局动画残留
+            effectCursor = -1;
+            effectAnimator.reset();
             render();
         },
         cycleSpeed: () => {
@@ -58,6 +80,17 @@ export function createAutoBattlePresenter(
         renderer.setViewModel(vm);
     }
 
+    /** 每帧推进命中反馈：投影新事件为特效意图并推进动画。 */
+    function stepEffects(): void {
+        const { effects, cursor } = projectHitFeedbackEvents(
+            autoBattle.battle.events,
+            effectCursor,
+        );
+        effectCursor = cursor;
+        effectAnimator.play(effects);
+        effectAnimator.step();
+    }
+
     // 固定节拍驱动模拟时钟前进并按当前状态刷新页面；终局后不再推进行动。
     // 挡位放大每节拍的模拟时间与行动数：x2/x3 下同节拍推进更多行动。
     timer = setInterval(() => {
@@ -70,6 +103,7 @@ export function createAutoBattlePresenter(
             }
         }
         render();
+        stepEffects();
     }, 100);
 
     render();
@@ -81,6 +115,7 @@ export function createAutoBattlePresenter(
                 clearInterval(timer);
                 timer = undefined;
             }
+            effectAnimator.reset();
             renderer.dispose();
         },
     };

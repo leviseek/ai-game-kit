@@ -11,6 +11,8 @@ export interface AutoBattleUnitNodeMapping {
     readonly parse: (
         name: string,
     ) => { readonly id: string; readonly field: string | null } | undefined;
+    /** 可选活跃 id 推导：缺省按 parse(nodeNames) 推导，提供则用该函数（见 FX 映射）。 */
+    readonly activeIds?: (nodeNames: readonly string[]) => ReadonlySet<string>;
 }
 
 /** 单位节点名模式 → UnitSlot 内子字段名；`null` 表示实例本身（setXY 定位）。 */
@@ -36,3 +38,45 @@ export const AUTO_BATTLE_UNIT_NODE_MAPPING: AutoBattleUnitNodeMapping = {
         return undefined;
     },
 };
+
+/** 命中反馈节点名模式 → UnitHitFeedbackCom 内子字段名（field null 表示实例本身）。 */
+const FX_NODE_PATTERNS: ReadonlyArray<readonly [RegExp, string]> = [
+    [/^fx_float_(.+)$/, "fx_float"],
+    [/^fx_flash_(.+)$/, "fx_flash"],
+];
+
+/**
+ * 战场页命中反馈动态映射：`fx_float_{unitId}` / `fx_flash_{unitId}` 节点运行时
+ * 实例化 AutoBattle/UnitHitFeedbackCom（每单位一个特效实例，字段为飘字文本 /
+ * 闪白遮罩）。特效节点名不在 ViewModel 绑定集内（动画器直接寻址），活跃 id 从
+ * `unit_{id}` 绑定节点推导——单位阵亡时其 UnitSlot 与特效实例一起回收。
+ */
+export const AUTO_BATTLE_FX_NODE_MAPPING: AutoBattleUnitNodeMapping = {
+    containerName: "container_effects",
+    componentUrl: "ui://abpk0001ab004",
+    parse: (name) => {
+        for (const [pattern, field] of FX_NODE_PATTERNS) {
+            const match = pattern.exec(name);
+            if (match !== null) {
+                return { id: match[1]!, field };
+            }
+        }
+        return undefined;
+    },
+    activeIds: (nodeNames) => {
+        const ids = new Set<string>();
+        for (const name of nodeNames) {
+            const match = /^unit_(.+)$/.exec(name);
+            if (match !== null) {
+                ids.add(match[1]!);
+            }
+        }
+        return ids;
+    },
+};
+
+/** 战场页全部动态节点映射：单位实例 + 命中反馈特效实例（装配层按序匹配）。 */
+export const AUTO_BATTLE_DYNAMIC_NODE_MAPPINGS: readonly AutoBattleUnitNodeMapping[] = [
+    AUTO_BATTLE_UNIT_NODE_MAPPING,
+    AUTO_BATTLE_FX_NODE_MAPPING,
+];

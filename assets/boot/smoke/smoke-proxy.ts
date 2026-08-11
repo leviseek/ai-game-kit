@@ -232,6 +232,7 @@ export class SmokeProxy {
         const rawScale = new URLSearchParams(search).get("scale");
         const scale = rawScale === null ? undefined : Number(rawScale);
         // 战场动态单位映射经 samples bundle 运行时读取（boot 不静态 import game bundle）
+        // 映射为数组（单位 UnitSlot + 命中反馈特效实例），传给多映射动态解析器
         const unitMapping = (
             lookupBundle("samples") as {
                 readonly unitNodeMappings?: Readonly<Record<string, unknown>>;
@@ -240,7 +241,8 @@ export class SmokeProxy {
         await smoke(
             this.uiHost,
             () => this.lobbyHost.ensureSharedUiDependencies(),
-            // 注入真实 fgui 渲染接缝：战场页动态单位按存活单位实例化 UnitSlot
+            // 注入真实 fgui 渲染接缝：战场页动态单位按存活单位实例化 UnitSlot，
+            // 命中反馈特效按单位实例化 UnitHitFeedbackCom
             {
                 nodeResolver: (view) =>
                     unitMapping === undefined
