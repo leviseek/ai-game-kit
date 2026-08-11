@@ -137,7 +137,7 @@ export async function runAutoBattleSmoke(
     report("battle-open", true);
 
     // 4. 驱动游戏层完整对局：渲染器写视图节点，命令绑定接入重开
-    //    规模配置按选项注入：缺省 3v3，注入 6v6 验证规模上限渲染与槽位显隐
+    //    规模配置按选项注入：缺省 3v3，注入 6v6 验证规模上限渲染与动态实例化
     const fixture = createAutoBattleFixture(
         options.scale !== undefined && options.scale !== 3
             ? { configContent: scaleConfigContent(options.scale) }

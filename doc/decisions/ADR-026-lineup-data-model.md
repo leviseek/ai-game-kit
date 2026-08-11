@@ -18,7 +18,7 @@ ADR-025 已把 `side+index` 定义为队内逻辑槽位身份、`slotToXY` 单�
 
 理由：避免"战斗引用 live lineup"造成存档被战斗污染。备选（战斗直接引用 lineup）被否：破坏存档独立性，测试难隔离。
 
-**slot ↔ index 映射契约**：玩家编队 `AutoBattleLineup.slots` 是定长（0..MAX_TEAM_SIZE-1，含空槽），决定"上哪些英雄、布阵出发点"；开战实例化时按 slots 的**非空序**（保持槽位升序）导出压缩 id 序列，战斗单位 `index` = 压缩序（0..上阵数-1），决定同排行动次序与渲染寻址（与既有 `AutoBattleUnit.index` 语义一致）。slot 与 index 解耦：布阵位置由 slot 决定，战斗内寻址由 index 决定。初始编队 `config.lineups` 为压缩 id 数组（无空槽，语义 = 已上阵序），与玩家编队定长结构互为转换。
+**slot ↔ index 映射契约**：玩家编队 `AutoBattleLineup.slots` 是定长（0..布阵区容量-1，即 0..8 共 9 格，含空槽），决定"上哪些英雄、布阵出发点"；开战实例化时按 slots 的非空项（保持槽位升序）导出 placement（slot + heroId），战斗单位 `index` = 压缩序（0..上阵数-1），决定同排行动次序与渲染寻址（与既有 `AutoBattleUnit.index` 语义一致）。slot 与 index 解耦：布阵位置由 slot 决定，战斗内寻址由 index 决定。初始编队 `config.lineups` 为压缩 id 数组（无空槽，语义 = 已上阵序），开战时按已上阵序映射到布阵区前段格（slot=0..n-1），与玩家编队定长结构互为转换。
 
 ### 2. 配置演进：heroes 池 + lineup 取代 teams
 
@@ -40,7 +40,7 @@ ADR-025 已把 `side+index` 定义为队内逻辑槽位身份、`slotToXY` 单�
 
 ### 5. 持久化：LineupStore 自持版本化（对齐 game_idle 先例）
 
-`createVersionedStorage` 不在 framework 公开 API 白名单（`assets/framework/index.ts` 明确"不直接深层导入"），故对齐同层挂机品类 `game_idle/logic/save.ts` 的 `createIdleSave` 自持模式：LineupStore 自编码 `{ version, data }` 记录（version=1），namespace `auto_battle` / key `lineup`，payload 为 `{ slots: (string|null)[] }`；迁移器映射按版本注册（v1 为空，预留）。损坏/未来版本拒绝抛错，旧版本逐级迁移。
+`createVersionedStorage` 不在 framework 公开 API 白名单（`assets/framework/index.ts` 明确"不直接深层导入"），故对齐同层挂机品类 `game_idle/logic/save.ts` 的 `createIdleSave` 自持模式：LineupStore 自编码 `{ version, data }` 记录（当前 version=2，v1→v2 迁移器把旧 6 长度 slots 补齐到布阵区容量 9，尾部补 null），namespace `auto_battle` / key `lineup`，payload 为 `{ slots: (string|null)[] }`；迁移器映射按版本注册（v1→v2 内置，预留未来）。损坏/未来版本拒绝抛错，旧版本逐级迁移；读取时校验非空数不超过上阵上限 `MAX_TEAM_SIZE`（防止损坏存档绕过 reducer 上限）。
 
 理由：遵循白名单边界与 sample 层既有模式；schema 版本化保证未来 09 挂机消费兼容。
 

@@ -23,7 +23,7 @@
 `HeroPool` 为不可变静态配置（英雄 id/名称/站位/属性/技能），形状沿用 `AutoBattleUnit`（无 side/index）。`Lineup` 为可变编队（槽位序列 slot 0..N-1 → heroId），唯一可变真源。开战时由 lineup 实例化战斗单位，`createAutoBattleBattle` 内部持有**快照**（战斗单位副本），与存档 lineup 解耦——战斗内改动不回流存档。
 理由：避免"战斗引用 live lineup"造成存档被战斗污染；对齐 roadmap 3.3。备选（战斗直接引用 lineup）被否：破坏存档独立性，测试难隔离。
 
-**slot ↔ index 映射契约**：玩家编队 `AutoBattleLineup.slots` 是定长（0..MAX_TEAM_SIZE-1，含空槽），决定"上哪些英雄、布阵出发点"；开战实例化时按 slots 的**非空序**（保持槽位升序）导出压缩 id 序列，战斗单位 `index` = 压缩序（0..上阵数-1），决定同排行动次序与渲染寻址（与既有 `AutoBattleUnit.index` 语义一致）。slot 与 index 解耦：布阵位置由 slot 决定，战斗内寻址由 index 决定。初始编队 `config.lineups` 为压缩 id 数组（无空槽，语义 = 已上阵序），与玩家编队定长结构互为转换。
+**slot ↔ index 映射契约**：玩家编队 `AutoBattleLineup.slots` 是定长（0..布阵区容量-1，即 0..8 共 9 格，含空槽），决定"上哪些英雄、布阵出发点"；开战实例化时按 slots 的非空项（保持槽位升序）导出 placement（slot + heroId），战斗单位 `index` = 压缩序（0..上阵数-1），决定同排行动次序与渲染寻址（与既有 `AutoBattleUnit.index` 语义一致）。slot 与 index 解耦：布阵位置由 slot 决定，战斗内寻址由 index 决定。初始编队 `config.lineups` 为压缩 id 数组（无空槽，语义 = 已上阵序），开战时按已上阵序映射到布阵区前段格（slot=0..n-1），与玩家编队定长结构互为转换。
 
 ### D2 配置演进：heroes 池 + lineup 取代 teams
 
