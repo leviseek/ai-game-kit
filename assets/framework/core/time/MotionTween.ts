@@ -1,4 +1,5 @@
 import type { MotionTweenOptions } from "../../contracts/time/MotionTween";
+import type { PauseDomain } from "../../contracts/time/PauseDomain";
 
 /**
  * 缓动曲线：输入线性进度（0..1），输出缓动后的插值进度。纯函数、幂等。
@@ -29,14 +30,27 @@ export interface MotionTween {
 }
 
 /**
- * 声明式动画运行时：按 MotionTween 契约推进插值。动画器只读注入的 now() 做
- * 进度换算并交给缓动曲线，不自行乘 rate、不判跳变阈值（ADR-029 C-11/C-20）。
- * 本实现不进 framework 白名单，由 boot/dev 等装配层深层导入使用。
+ * 按域读数：timeSource 契约只声明 now()，但 GameClock 等实现支持按 PauseDomain
+ * 读数（ADR-029 C-11"动画器只读 now(domain)"）。传 domain 时以带域方式读取，
+ * 否则缺省 now()（GameClock 默认 Combat 域）。非 GameClock 实现忽略多余参数。
+ */
+function readNow(timeSource: MotionTweenOptions["timeSource"], domain?: PauseDomain): number {
+    if (domain === undefined) {
+        return timeSource.now();
+    }
+    return (timeSource as { now(domain: PauseDomain): number }).now(domain);
+}
+
+/**
+ * 声明式动画运行时：按 MotionTween 契约推进插值。动画器只读注入的 now()
+ * （含 domain）做进度换算并交给缓动曲线，不自行乘 rate、不判跳变阈值
+ * （ADR-029 C-11/C-20）。本实现不进 framework 白名单，由 boot/dev 等装配层
+ * 深层导入使用。
  */
 export function createMotionTween(options: MotionTweenRuntimeOptions): MotionTween {
     const ease = options.ease ?? easeOutQuad;
     // 起点在创建时记录：动画从"创建时刻"计时，首次 step 前流逝的时间计入进度
-    const start = options.timeSource.now();
+    const start = readNow(options.timeSource, options.domain);
     let done = false;
 
     return {
@@ -47,7 +61,7 @@ export function createMotionTween(options: MotionTweenRuntimeOptions): MotionTwe
             if (done) {
                 return false;
             }
-            const now = options.timeSource.now();
+            const now = readNow(options.timeSource, options.domain);
             const raw = (now - start) / options.durationMs;
             const progress = raw >= 1 ? 1 : raw <= 0 ? 0 : raw;
             options.onStep(ease(progress), now);

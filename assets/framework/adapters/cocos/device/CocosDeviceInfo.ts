@@ -31,8 +31,10 @@ export function createCocosDeviceInfo(
         return text.length > 0 ? text : "unknown";
     };
     return {
-        platform: label(sys.os),
-        model: label(sys.platform),
+        // platform=平台标识（sys.platform 枚举，如 WINDOWS/MOBILE_BROWSER）；
+        // model=OS 描述（sys.os，如 "Windows"/"iOS"）。避免把同一来源两义展示。
+        platform: label(sys.platform),
+        model: label(sys.os),
         language: label(sys.language),
     };
 }
