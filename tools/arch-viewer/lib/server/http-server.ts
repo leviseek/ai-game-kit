@@ -4,12 +4,14 @@ import { resolve } from "node:path";
 
 import { attachSse } from "./sse";
 import type { GraphSnapshotStore } from "./snapshot-store";
+import { serveStaticAsset, type StaticAssetOptions } from "./static";
 import { routeApi, writeJson } from "./routes";
 
 export interface ArchServerOptions {
     readonly projectRoot: string;
     readonly store: GraphSnapshotStore;
     readonly port?: number;
+    readonly static?: StaticAssetOptions;
 }
 
 export interface ArchServerHandle {
@@ -35,6 +37,12 @@ export async function startArchServer(options: ArchServerOptions): Promise<ArchS
         }
         if (url.pathname.startsWith("/api/")) {
             void routeApi(request, response, { projectRoot, store: options.store });
+            return;
+        }
+        if (options.static !== undefined) {
+            void serveStaticAsset(request, response, options.static).then((handled) => {
+                if (!handled) writeJson(response, 404, { error: "not_found" });
+            });
             return;
         }
         writeJson(response, 404, { error: "not_found" });
