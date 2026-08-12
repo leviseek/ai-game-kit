@@ -142,6 +142,23 @@ describe("ArchitectureAnalyzer", () => {
         mutableNodes.length = 0;
         expect(service.view("hierarchy").nodes.length).toBeGreaterThan(0);
     });
+
+    test("query service copies nested evidence arrays from non-frozen snapshots", () => {
+        const snapshot = mutableSnapshot();
+        const service = createArchitectureQueryService(snapshot);
+        const first = service.view("calls");
+        const evidence = first.nodes[0]?.evidence;
+        expect(evidence).toBeDefined();
+
+        const mutableEvidence = evidence as unknown as unknown[];
+        mutableEvidence.length = 0;
+        const mutableLocation = first.edges[0]?.evidence?.[0]?.location as { filePath: string } | undefined;
+        expect(mutableLocation).toBeDefined();
+        mutableLocation!.filePath = "changed.ts";
+
+        expect(service.view("calls").nodes[0]?.evidence).toHaveLength(1);
+        expect(service.view("calls").edges[0]?.evidence?.[0]?.location?.filePath).toBe("src/a.ts");
+    });
 });
 
 function isDeepFrozen(value: unknown): boolean {
@@ -152,4 +169,41 @@ function isDeepFrozen(value: unknown): boolean {
 
 function stableSnapshot(snapshot: GraphSnapshot): string {
     return JSON.stringify(snapshot);
+}
+
+function mutableSnapshot(): GraphSnapshot {
+    const calls = {
+        type: "calls" as const,
+        nodes: [{
+            id: "a",
+            kind: "function",
+            label: "launch",
+            qualifiedName: "createBootFlow::launch",
+            evidence: [{ source: "fixture", location: { filePath: "src/a.ts", line: 1 } }],
+        }],
+        edges: [{
+            id: "a:b:calls",
+            from: "a",
+            to: "b",
+            relation: "calls",
+            evidence: [{ source: "fixture", location: { filePath: "src/a.ts", line: 1 } }],
+        }],
+        groups: [],
+        diagnostics: [],
+    };
+    const empty = (type: ViewType) => ({ type, nodes: [], edges: [], groups: [], diagnostics: [] });
+    return {
+        version: 1,
+        generatedAt: 1,
+        project: {},
+        views: {
+            hierarchy: empty("hierarchy"),
+            startup: empty("startup"),
+            dependencies: empty("dependencies"),
+            "data-flow": empty("data-flow"),
+            calls,
+            resources: empty("resources"),
+        },
+        diagnostics: [],
+    };
 }

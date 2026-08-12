@@ -46,6 +46,10 @@ describe("repository architecture contract", () => {
         expect(coveredToolFiles).toContain("tools/arch-viewer/lib/analysis/analyzer.ts");
         expect(coveredToolFiles).toContain("tools/arch-viewer/architecture.config.ts");
 
+        expect(fileOwner(hierarchy, "assets/boot/AppRoot.ts")).toBe("boot");
+        expect(fileOwner(hierarchy, "assets/boot/assembly.ts")).toBe("boot");
+        expect(fileOwner(hierarchy, "assets/framework/core/scene/SceneFlow.ts")).toBe("framework-core");
+
         const ownersByFile = hierarchy.groups
             .filter((group) => typeof group.metadata?.filePath === "string")
             .map((group) => [group.metadata?.filePath, group.metadata?.ownerGroupId] as const);
@@ -67,4 +71,11 @@ function allAnchors(config: typeof architectureConfig): readonly SymbolRef[] {
         ...config.dataFlows.flatMap((flow) => flow.lanes.flatMap((lane) => lane.anchors)),
         ...config.resources.flatMap((resource) => resource.anchors),
     ];
+}
+
+function fileOwner(
+    hierarchy: Awaited<ReturnType<ArchitectureAnalyzer["buildSnapshot"]>>["views"]["hierarchy"],
+    filePath: string,
+): unknown {
+    return hierarchy.groups.find((group) => group.metadata?.filePath === filePath)?.metadata?.ownerGroupId;
 }

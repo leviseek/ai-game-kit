@@ -1,4 +1,14 @@
-import type { GraphEdge, GraphGroup, GraphNode, GraphSnapshot, GraphView, ViewType } from "../graph/types";
+import type {
+    Diagnostic,
+    Evidence,
+    GraphEdge,
+    GraphGroup,
+    GraphNode,
+    GraphSnapshot,
+    GraphView,
+    SourceLocation,
+    ViewType,
+} from "../graph/types";
 
 export type ProjectSummary = Readonly<Record<string, unknown>>;
 
@@ -83,20 +93,45 @@ function copyView(view: GraphView): GraphView {
         nodes: view.nodes.map(copyNode),
         edges: view.edges.map(copyEdge),
         groups: view.groups.map(copyGroup),
-        diagnostics: view.diagnostics.map((item) => ({ ...item })),
+        diagnostics: view.diagnostics.map(copyDiagnostic),
     };
 }
 
 function copyNode(node: GraphNode): GraphNode {
-    return { ...node };
+    return {
+        ...node,
+        ...(node.location === undefined ? {} : { location: copyLocation(node.location) }),
+        ...(node.evidence === undefined ? {} : { evidence: node.evidence.map(copyEvidence) }),
+    };
 }
 
 function copyEdge(edge: GraphEdge): GraphEdge {
-    return { ...edge };
+    return {
+        ...edge,
+        ...(edge.evidence === undefined ? {} : { evidence: edge.evidence.map(copyEvidence) }),
+    };
 }
 
 function copyGroup(group: GraphGroup): GraphGroup {
     return { ...group, nodeIds: [...group.nodeIds] };
+}
+
+function copyDiagnostic(diagnostic: Diagnostic): Diagnostic {
+    return {
+        ...diagnostic,
+        ...(diagnostic.location === undefined ? {} : { location: copyLocation(diagnostic.location) }),
+    };
+}
+
+function copyEvidence(evidence: Evidence): Evidence {
+    return {
+        ...evidence,
+        ...(evidence.location === undefined ? {} : { location: copyLocation(evidence.location) }),
+    };
+}
+
+function copyLocation(location: SourceLocation): SourceLocation {
+    return { ...location };
 }
 
 function collectChildGroupIds(groups: readonly GraphGroup[], id: string): readonly string[] {
