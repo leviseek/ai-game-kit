@@ -5,6 +5,7 @@ import { run as runNextId } from "./commands/next-id";
 import { run as runSprite } from "./commands/sprite";
 import { run as runRegisterComponent } from "./commands/register-component";
 import { run as runGenConstants } from "./commands/gen-constants";
+import { run as runGenTypes } from "./commands/gen-types";
 
 interface Command {
     readonly run: (argv: readonly string[]) => Promise<number>;
@@ -39,6 +40,10 @@ const COMMANDS: Record<string, Command> = {
     "gen-constants": {
         run: runGenConstants,
         usage: "gen-constants [--project <工程目录>] 生成 exported 组件 URL 常量表到 assets/ui/generated/",
+    },
+    "gen-types": {
+        run: runGenTypes,
+        usage: "gen-types [--project <工程目录>] 生成 exported 组件类型描述（字段/节点名联合/interface）到 assets/ui/generated/",
     },
 };
 

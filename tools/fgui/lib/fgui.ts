@@ -236,9 +236,45 @@ function collectNode(node: XmlElement, out: ObjectIndex[]): void {
     }
 }
 
+/**
+ * displayList 元件的类型化描述：名称与能力 kind 判定输入。
+ * 仅收集直接子元件（getChild 按名可寻址的层级），不递归进嵌套组件。
+ */
+export interface DisplayElementInfo {
+    /** 元件 name（FGUI 约定语义化前缀，如 txt_/btn_/bar_）。 */
+    readonly name: string;
+    /** XML 节点名：text/image/component/list/movieclip/loader 等。 */
+    readonly nodeName: string;
+    /** 组件扩展子节点名（Button/ProgressBar/Slider/ComboBox），用于能力 kind 判定。 */
+    readonly extension?: string;
+    /** 文本是否输入框（<text input="true">）。 */
+    readonly isInput?: boolean;
+}
+
 const DISPLAY_TYPES = new Set([
     "image", "graph", "text", "loader", "component", "list", "movieclip",
 ]);
+
+const EXTENSION_NODES = new Set(["Button", "ProgressBar", "Slider", "ComboBox"]);
+
+/** 收集组件 displayList 直接子元件（按 XML 顺序，确定性；仅带 name 的元件）。 */
+export function collectDisplayElements(component: ComponentInfo): readonly DisplayElementInfo[] {
+    const displayList = findChild(component.root, "displayList");
+    if (!displayList) return [];
+    const out: DisplayElementInfo[] = [];
+    for (const node of displayList.children) {
+        const name = node.attrs.name;
+        if (!name) continue;
+        const extension = node.children.find((c) => EXTENSION_NODES.has(c.name));
+        out.push({
+            name,
+            nodeName: node.name,
+            ...(extension ? { extension: extension.name } : {}),
+            ...(node.name === "text" && node.attrs.input === "true" ? { isInput: true } : {}),
+        });
+    }
+    return out;
+}
 
 function isDisplayObject(node: XmlElement): boolean {
     return DISPLAY_TYPES.has(node.name);
