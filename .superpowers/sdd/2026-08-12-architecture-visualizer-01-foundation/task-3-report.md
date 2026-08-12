@@ -27,3 +27,10 @@
 - 未新增依赖，注释使用简体中文。
 - 纯校验不处理依赖实际文件清单的 ownership overlap，该职责保留给 Analyzer。
 - 未发现需要新增 ADR 的架构决策。
+
+## Fix Round 1
+
+- 审查发现 `defineArchitectureConfig` 仅浅复制容器，普通对象输入仍可通过原始引用修改结果。
+- RED：新增普通可变 root/rule/phase/branch/symbol/flow/lifecycle 输入测试，修改原始 `root.id` 后结果同步变化，测试按预期失败。
+- GREEN：按 `ArchitectureConfig` 已知结构递归复制并冻结 group、rule、startup、flow、lifecycle 及全部 symbol/数组；未引入通用 class 或循环结构深拷贝。
+- 验证：配置测试 6 pass / 0 fail；完整 arch-viewer 测试、TypeScript 类型检查与 `git diff --check` 均通过。
