@@ -5,6 +5,7 @@ import {
     type UiLayer,
 } from "../../../contracts/ui/Navigation";
 import type { UiNavigator } from "../../../core/ui/UiNavigator";
+import { FuiViewCleanupError } from "../../../core/fui/FuiErrors";
 import type { GRootLike } from "./CocosUiRoot";
 
 // 层容器与 GRoot 同为 GComponent 子类，容器接缝复用 CocosUiRoot 的权威
@@ -392,14 +393,29 @@ export function createFairyGuiPageAdapter(
             if (state === undefined || state.disposed) {
                 return;
             }
-            // 先卸载挂载再从容器移除，再销毁 View；契约不依赖 fgui dispose 自动
-            // 移除显示（自建包装视图可能不负责移除），保证销毁后容器无残留
-            if (state.mounted && page.view !== undefined) {
-                requireContainer(page.layer).removeChild(page.view);
-            }
-            page.view?.dispose();
+            // 先标记已销毁：即使清理抛错，重复 destroy 仍为 no-op（幂等不依赖清理成功）
+            const wasMounted = state.mounted;
             state.disposed = true;
             state.mounted = false;
+            const errors: unknown[] = [];
+            if (wasMounted && page.view !== undefined) {
+                // 先卸载挂载再从容器移除，再销毁 View；契约不依赖 fgui dispose 自动
+                // 移除显示（自建包装视图可能不负责移除），保证销毁后容器无残留。
+                // 移除失败被隔离，不阻断 View 销毁
+                try {
+                    requireContainer(page.layer).removeChild(page.view);
+                } catch (error) {
+                    errors.push(error);
+                }
+            }
+            try {
+                page.view?.dispose();
+            } catch (error) {
+                errors.push(error);
+            }
+            if (errors.length > 0) {
+                throw new FuiViewCleanupError("FairyGuiPageAdapter.destroy", errors);
+            }
         },
         setModal(modal: boolean): void {
             applyModal(modal);
@@ -426,11 +442,16 @@ export function createFairyGuiPageAdapter(
                 return;
             }
             disposed = true;
-            // 先移除遮罩，避免残留显示节点
+            const errors: unknown[] = [];
+            // 先移除遮罩，避免残留显示节点；移除失败被隔离，不阻断其余清理
             if (mask !== undefined) {
                 const system = containers.get("system");
-                if (system !== undefined) {
-                    system.removeChild(mask);
+                try {
+                    if (system !== undefined) {
+                        system.removeChild(mask);
+                    }
+                } catch (error) {
+                    errors.push(error);
                 }
                 mask = undefined;
             }
@@ -443,22 +464,36 @@ export function createFairyGuiPageAdapter(
                 navigator.dispose = navigatorOriginalDispose as UiNavigator["dispose"];
             }
             // 页面按登记逆序销毁（后创建的页面先释放），对齐导航逆序释放契约。
+            // 单个页面失败不阻断其余页面与容器清理，全部失败结束聚合报告。
             // Array.from 而非展开：Creator 构建转译 `[...set]` 为 `[].concat(set)` 会破坏迭代
             for (const page of Array.from(pages).reverse()) {
                 const state = handleStates.get(page);
                 if (state !== undefined && !state.disposed) {
-                    page.view?.dispose();
+                    // 先标记已销毁：即使清理抛错，重复 dispose 仍为 no-op（幂等不依赖清理成功）
                     state.disposed = true;
                     state.mounted = false;
+                    try {
+                        page.view?.dispose();
+                    } catch (error) {
+                        errors.push(error);
+                    }
                 }
             }
             pages.clear();
-            // 七层容器从 GRoot 移除并清空；dispose 后容器/页面不可再用
+            // 七层容器从 GRoot 移除并清空；单个容器移除失败不阻断其余容器。
+            // dispose 后容器/页面不可再用
             for (const container of containers.values()) {
-                options.root.removeChild(container);
+                try {
+                    options.root.removeChild(container);
+                } catch (error) {
+                    errors.push(error);
+                }
             }
             containers.clear();
             initialized = false;
+            if (errors.length > 0) {
+                throw new FuiViewCleanupError("FairyGuiPageAdapter.dispose", errors);
+            }
         },
     };
 }

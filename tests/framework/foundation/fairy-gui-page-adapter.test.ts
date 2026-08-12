@@ -3,6 +3,7 @@ import { pathToFileURL } from "node:url";
 import { describe, expect, mock, test } from "bun:test";
 
 import { createFairyGuiMock } from "./helpers/fairygui-mock";
+import { FuiViewCleanupError } from "../../../assets/framework/core/fui/FuiErrors";
 import {
     UI_LAYER_ORDER,
     type UiLayer,
@@ -454,5 +455,138 @@ describe("FairyGuiPageAdapter", () => {
         expect(system?.numChildren).toBe(0);
         // 页面在 dispose 时被销毁
         expect(page.disposed).toBe(true);
+    });
+
+    test("destroy marks the page disposed even when the view dispose throws", async () => {
+        const { createFairyGuiPageAdapter } = await loadFactory();
+        const recording = createRecordingRoot();
+        const disposeError = new Error("view dispose failed");
+        const view = { name: "view", dispose: () => { throw disposeError; } };
+        const adapter = createFairyGuiPageAdapter({
+            root: recording.root,
+            createView: () => view,
+        });
+
+        adapter.init();
+        const page = adapter.createPage("hero", "popup", {
+            packageName: "ui",
+            resName: "Hero",
+        });
+        adapter.mount(page);
+
+        let thrown: unknown;
+        try {
+            adapter.destroy(page);
+        } catch (error) {
+            thrown = error;
+        }
+
+        // 视图 dispose 抛错仍标记页面为已销毁、卸载挂载（幂等不依赖清理成功）
+        expect(page.disposed).toBe(true);
+        expect(page.mounted).toBe(false);
+        // 挂载在销毁时先被移除：popup 容器无残留
+        expect(recording.containers.get("popup")?.numChildren).toBe(0);
+        // 同步 API 聚合抛 FuiViewCleanupError，携带单步失败
+        expect(thrown).toBeInstanceOf(FuiViewCleanupError);
+        const cleanupError = thrown as FuiViewCleanupError;
+        expect(cleanupError.component).toBe("FairyGuiPageAdapter.destroy");
+        expect(cleanupError.errors).toEqual([disposeError]);
+    });
+
+    test("dispose isolates per-page failures and still cleans other pages and containers", async () => {
+        const { createFairyGuiPageAdapter } = await loadFactory();
+        const recording = createRecordingRoot();
+        const boomError = new Error("boom page dispose failed");
+        const boomView = { name: "boom", dispose: () => { throw boomError; } };
+        const okViewDispose = mock(() => { });
+        const adapter = createFairyGuiPageAdapter({
+            root: recording.root,
+            createView: (_pkg, res) =>
+                res === "Boom"
+                    ? boomView
+                    : { name: "ok", dispose: okViewDispose },
+        });
+
+        adapter.init();
+        const pageA = adapter.createPage("a", "popup", {
+            packageName: "ui",
+            resName: "A",
+        });
+        const pageB = adapter.createPage("b", "popup", {
+            packageName: "ui",
+            resName: "Boom",
+        });
+        adapter.mount(pageA);
+        adapter.mount(pageB);
+
+        let thrown: unknown;
+        try {
+            adapter.dispose();
+        } catch (error) {
+            thrown = error;
+        }
+
+        // 失败页面不阻断其余页面：两个页面都标记为已销毁，正常页视图仍被释放
+        expect(pageA.disposed).toBe(true);
+        expect(pageB.disposed).toBe(true);
+        expect(okViewDispose).toHaveBeenCalledTimes(1);
+        // 七层容器全部从 GRoot 移除（不因页面失败中断容器清理）
+        expect(
+            recording.calls.filter(
+                (call) => call.container === "GRoot" && call.action === "removeChild",
+            ),
+        ).toHaveLength(UI_LAYER_ORDER.length);
+        // 聚合错误携带唯一失败
+        expect(thrown).toBeInstanceOf(FuiViewCleanupError);
+        const cleanupError = thrown as FuiViewCleanupError;
+        expect(cleanupError.component).toBe("FairyGuiPageAdapter.dispose");
+        expect(cleanupError.errors).toEqual([boomError]);
+    });
+
+    test("dispose isolates container removal failures and still removes the rest", async () => {
+        const { createFairyGuiPageAdapter } = await loadFactory();
+        const recording = createRecordingRoot();
+        const originalRemoveChild = recording.root.removeChild;
+        const removalError = new Error("container removal failed");
+        let failedRemoval = false;
+        // 首个容器移除失败：记录调用后抛错，验证失败不阻断其余容器移除
+        (recording.root as unknown as {
+            removeChild(child: unknown, dispose?: boolean): unknown;
+        }).removeChild = (child, dispose) => {
+            originalRemoveChild(child, dispose);
+            if (!failedRemoval) {
+                failedRemoval = true;
+                throw removalError;
+            }
+        };
+        const adapter = makeSimpleAdapter(createFairyGuiPageAdapter, recording);
+
+        adapter.init();
+        const page = adapter.createPage("hero", "popup", {
+            packageName: "ui",
+            resName: "Hero",
+        });
+        adapter.mount(page);
+
+        let thrown: unknown;
+        try {
+            adapter.dispose();
+        } catch (error) {
+            thrown = error;
+        }
+
+        // 单个容器移除失败不阻断其余：七个容器移除全部被尝试
+        expect(
+            recording.calls.filter(
+                (call) => call.container === "GRoot" && call.action === "removeChild",
+            ),
+        ).toHaveLength(UI_LAYER_ORDER.length);
+        // 容器清理失败发生在页面清理之后：页面仍被销毁
+        expect(page.disposed).toBe(true);
+        // 聚合错误携带容器移除失败
+        expect(thrown).toBeInstanceOf(FuiViewCleanupError);
+        const cleanupError = thrown as FuiViewCleanupError;
+        expect(cleanupError.component).toBe("FairyGuiPageAdapter.dispose");
+        expect(cleanupError.errors).toEqual([removalError]);
     });
 });

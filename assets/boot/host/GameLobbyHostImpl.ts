@@ -1,4 +1,4 @@
-import type { Logger, ResourceScope } from "../../framework";
+import { FuiViewCleanupError, type Logger, type ResourceScope } from "../../framework";
 import { lookupBundle, type IResourceProvider } from "../../framework";
 import type { FairyGuiPageHandle } from "../../framework/adapters/cocos/ui/FairyGuiPageAdapter";
 import { createFairyGuiViewHandle } from "../../framework/adapters/cocos/ui/FairyGuiViewHandle";
@@ -152,26 +152,45 @@ export class GameLobbyHostImpl implements GameLobbyHost {
 
     /**
      * GameLobbyHost.closeEntryPage：关闭导航页（触发登记的退出回调，幂等）、
-     * 销毁入口页、释放会话资源作用域。重复关闭幂等。
+     * 销毁入口页、释放会话资源作用域。导航关闭/页面销毁失败不阻断会话作用域
+     * 释放；全部失败聚合为 FuiViewCleanupError。重复关闭幂等。
      */
     async closeEntryPage(_handle: EntryPageHandle): Promise<void> {
         const page = this.lobbyPage;
         const scope = this.lobbyScope;
         this.lobbyPage = undefined;
         this.lobbyScope = undefined;
-        if (page === undefined) {
-            return;
-        }
-        const navigator = this.host.navigator;
-        if (navigator !== undefined) {
-            // 关闭导航页触发登记在 UiPage 的"退出会话"回调；已关闭时幂等
-            const top = navigator.top;
-            if (top !== undefined) {
-                navigator.close(top.id);
+        const errors: unknown[] = [];
+        if (page !== undefined) {
+            const navigator = this.host.navigator;
+            // 关闭导航页触发登记在 UiPage 的"退出会话"回调；已关闭时幂等。
+            // 失败被隔离，不阻断页面销毁与会话 scope 释放
+            try {
+                if (navigator !== undefined) {
+                    const top = navigator.top;
+                    if (top !== undefined) {
+                        navigator.close(top.id);
+                    }
+                }
+            } catch (error) {
+                errors.push(error);
+            }
+            // 销毁入口页；失败被隔离，不阻断会话 scope 释放
+            try {
+                this.host.pageAdapter?.destroy(page);
+            } catch (error) {
+                errors.push(error);
             }
         }
-        this.host.pageAdapter?.destroy(page);
-        scope?.release();
+        // 会话作用域始终释放：导航关闭/页面销毁失败也不遗留会话资源
+        try {
+            scope?.release();
+        } catch (error) {
+            errors.push(error);
+        }
+        if (errors.length > 0) {
+            throw new FuiViewCleanupError("GameLobbyHostImpl.closeEntryPage", errors);
+        }
     }
 
     /**
@@ -245,11 +264,19 @@ export class GameLobbyHostImpl implements GameLobbyHost {
         return this.host.smokeUiInit();
     }
 
-    /** 释放会话级作用域与入口页引用（随组合根销毁）。幂等。 */
+    /** 释放会话级作用域与入口页引用（随组合根销毁）。单步失败不阻断引用收敛，幂等。 */
     dispose(): void {
-        this.lobbyScope?.release();
+        const errors: unknown[] = [];
+        try {
+            this.lobbyScope?.release();
+        } catch (error) {
+            errors.push(error);
+        }
         this.lobbyScope = undefined;
         this.lobbyPage = undefined;
+        if (errors.length > 0) {
+            throw new FuiViewCleanupError("GameLobbyHostImpl.dispose", errors);
+        }
     }
 }
 

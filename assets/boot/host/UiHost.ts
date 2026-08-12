@@ -1,5 +1,6 @@
 import {
     createUiNavigator,
+    FuiViewCleanupError,
     type Logger,
     type ResourceHandle,
     type ResourceScope,
@@ -164,8 +165,10 @@ export class UiHost {
         if (this.uiScope === undefined) {
             return;
         }
-        this.uiScope.release();
+        // 先收敛引用：即使 release 抛错，重复调用仍为 no-op（幂等不依赖清理成功）
+        const scope = this.uiScope;
         this.uiScope = undefined;
+        scope.release();
     }
 
     /** 页面适配器（GRoot 七层容器）；未就绪时为 undefined。 */
@@ -183,15 +186,38 @@ export class UiHost {
         return this.uiRoot.root;
     }
 
-    /** 释放：退订 resize、销毁页面适配器与导航器、释放全局 uiScope。幂等。 */
+    /**
+     * 释放：退订 resize、销毁页面适配器与导航器、释放全局 uiScope。
+     * 单步失败不阻断其余步骤；全部失败聚合为 FuiViewCleanupError。幂等。
+     */
     dispose(): void {
-        this.resizeUnsubscribe?.();
+        const errors: unknown[] = [];
+        try {
+            this.resizeUnsubscribe?.();
+        } catch (error) {
+            errors.push(error);
+        }
         this.resizeUnsubscribe = undefined;
-        this.adapter?.dispose();
+        try {
+            this.adapter?.dispose();
+        } catch (error) {
+            errors.push(error);
+        }
         this.adapter = undefined;
-        this.nav?.dispose();
+        try {
+            this.nav?.dispose();
+        } catch (error) {
+            errors.push(error);
+        }
         this.nav = undefined;
-        this.release();
+        try {
+            this.release();
+        } catch (error) {
+            errors.push(error);
+        }
+        if (errors.length > 0) {
+            throw new FuiViewCleanupError("UiHost.dispose", errors);
+        }
     }
 }
 
