@@ -71,5 +71,40 @@ DONE
 
 ### Concerns
 
-- 聚合键按当前公开模型限定为 `kind/file/qualifiedName`；同一作用域不同词法块中的同名 function declaration 也会合并，因为模型没有 block 级限定名。
+- 本轮发现的 block 级聚合冲突已在 Fix Round 2 通过内部 scope key 解决。
 - `export = Identifier` 不属于本轮要求的 ES module 导出形式，当前不标记为 `exported`。
+
+## Fix Round 2/5
+
+### Findings Addressed
+
+- 新增内部词法作用域（lexical scope）key 与稳定 block ordinal；公开 `qualifiedName` 保持 `outer::run`，内部 key 只用于声明 ID 和聚合边界。
+- 不同词法块中的同名 function declaration 生成独立声明、独立 ID 和各自源码范围，不再跨块聚合。
+- class method 按 static/instance 与 method/get/set 类别区分聚合；同容器、同类别的 overload 仍聚合，interface merging 仍按模块 scope 聚合。
+- constructor、getter、setter 与 class static block 的语句体纳入白名单遍历，内部命名 function declaration 保留语义 scope；任意 expression 子树仍不进入。
+- 声明扫描职责拆到 `declaration-scanner.ts`，`source-scanner.ts` 保留文件与 import/export 编排，所有文件继续小于 300 行。
+
+### TDD Evidence
+
+- RED: `bun test tools/arch-viewer/test/source-scanner-scope.test.ts`
+  - 结果：0 pass，3 fail；分别复现 class 特殊容器漏扫、跨 block 同名函数错误聚合、static/instance method 错误聚合。
+- GREEN: `bun test tools/arch-viewer/test/source-scanner-scope.test.ts tools/arch-viewer/test/source-scanner.test.ts`
+  - 结果：8 pass，0 fail，17 assertions。
+
+### Verification
+
+- `bun test ./tools/arch-viewer/test`
+  - 结果：37 pass，0 fail，95 assertions。
+- `bun x tsc --noEmit -p tools/arch-viewer/tsconfig.json`
+  - 结果：通过，无输出。
+- `bun x eslint tools/arch-viewer/lib/analysis/declaration-scanner.ts tools/arch-viewer/lib/analysis/module-resolver.ts tools/arch-viewer/lib/analysis/source-scanner.ts tools/arch-viewer/lib/graph/ids.ts tools/arch-viewer/test/source-scanner.test.ts tools/arch-viewer/test/source-scanner-scope.test.ts`
+  - 结果：通过，无输出。
+- `git diff --check`
+  - 结果：通过。
+- 文件行数：`declaration-scanner.ts` 184 行，`source-scanner.ts` 104 行，`source-scanner.test.ts` 232 行，`source-scanner-scope.test.ts` 92 行。
+
+### Concerns
+
+- block ordinal 对同一父 scope 内相同类别容器的源码顺序敏感；这是确定性的词法身份，但在前方插入同类 block 会改变后续 block 内声明 ID。
+- accessor 的 get/set 使用不同内部类别，因此同名 getter 与 setter 是两个 `SourceDeclaration`；公开 `qualifiedName` 相同，ID 不同。
+- `export = Identifier` 仍不在当前 ES module 导出范围内。
