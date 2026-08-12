@@ -21,6 +21,8 @@ DONE
   - 结果：1 pass，0 fail，4 assertions。
 - Review RED: 增加显式 `./direct.mts` 相对导入后测试失败，实际结果缺少 `toFile`。
 - Review GREEN: 修复显式扩展名候选后测试恢复为 1 pass，0 fail，4 assertions。
+- Review RED 2: 同时存在 `target.tsx` 与 `target/index.ts` 时，测试暴露解析器错误优先选择目录 index。
+- Review GREEN 2: 候选顺序改为先尝试全部同名文件扩展，再尝试目录 `index.*`。
 
 ## Verification
 

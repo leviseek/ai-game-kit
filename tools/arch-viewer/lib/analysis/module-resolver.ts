@@ -40,10 +40,10 @@ export function resolveModule(
     const hasSourceExtension = sourceExtensions.some((extension) => basePath.endsWith(extension));
     const candidates = hasSourceExtension
         ? [basePath]
-        : sourceExtensions.flatMap((extension) => [
-            `${basePath}${extension}`,
-            resolve(basePath, `index${extension}`),
-        ]);
+        : [
+            ...sourceExtensions.map((extension) => `${basePath}${extension}`),
+            ...sourceExtensions.map((extension) => resolve(basePath, `index${extension}`)),
+        ];
     const target = candidates.find((candidate) =>
         existsSync(candidate) && isScannableSource(projectRoot, candidate));
 

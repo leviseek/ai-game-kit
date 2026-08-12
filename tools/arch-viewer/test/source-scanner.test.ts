@@ -11,6 +11,7 @@ function createFixture(): string {
     const root = mkdtempSync(join(tmpdir(), "arch-source-scanner-"));
     roots.push(root);
     mkdirSync(join(root, "src", "models"), { recursive: true });
+    mkdirSync(join(root, "src", "target"), { recursive: true });
     mkdirSync(join(root, "node_modules", "pkg"), { recursive: true });
     mkdirSync(join(root, "third-party"), { recursive: true });
     mkdirSync(join(root, "assets", "framework", "libs", "fairygui"), { recursive: true });
@@ -20,6 +21,8 @@ function createFixture(): string {
     writeFileSync(join(root, "src", "models", "index.ts"), "export type Model = string;\n");
     writeFileSync(join(root, "src", "view.tsx"), "export function View() { return null; }\n");
     writeFileSync(join(root, "src", "types.ts"), "export interface Shared {}\n");
+    writeFileSync(join(root, "src", "target.tsx"), "export function targetFile() { return null; }\n");
+    writeFileSync(join(root, "src", "target", "index.ts"), "export function targetIndex() {}\n");
     writeFileSync(join(root, "src", "main.ts.meta"), "ignored\n");
     writeFileSync(join(root, "src", "ambient.d.ts"), "export declare function ambient(): void;\n");
     writeFileSync(join(root, "src", "ambient.d.mts"), "export declare function ambientMts(): void;\n");
@@ -30,6 +33,7 @@ function createFixture(): string {
         'import { value } from "./dep";',
         'import { direct } from "./direct.mts";',
         'import type { Shared } from "./types";',
+        'import { targetFile } from "./target";',
         'import React from "react";',
         'export { Model } from "./models";',
         'export { View } from "./view";',
@@ -69,6 +73,8 @@ describe("scanSources", () => {
             "src/models/index.ts",
             "src/view.tsx",
             "src/types.ts",
+            "src/target.tsx",
+            "src/target/index.ts",
             "src/main.ts.meta",
             "src/ambient.d.ts",
             "src/ambient.d.mts",
@@ -84,6 +90,8 @@ describe("scanSources", () => {
             "src/direct.mts",
             "src/main.ts",
             "src/models/index.ts",
+            "src/target.tsx",
+            "src/target/index.ts",
             "src/types.ts",
             "src/view.tsx",
         ]);
@@ -97,14 +105,16 @@ describe("scanSources", () => {
             exported,
         }))).toEqual([
             { name: "direct", qualifiedName: "direct", kind: "function", filePath: "src/direct.mts", startLine: 1, endLine: 1, exported: true },
-            { name: "Api", qualifiedName: "Api", kind: "interface", filePath: "src/main.ts", startLine: 8, endLine: 8, exported: true },
-            { name: "run", qualifiedName: "Api::run", kind: "method", filePath: "src/main.ts", startLine: 8, endLine: 8, exported: false },
-            { name: "Alias", qualifiedName: "Alias", kind: "type", filePath: "src/main.ts", startLine: 9, endLine: 9, exported: true },
-            { name: "Service", qualifiedName: "Service", kind: "class", filePath: "src/main.ts", startLine: 10, endLine: 12, exported: true },
-            { name: "run", qualifiedName: "Service::run", kind: "method", filePath: "src/main.ts", startLine: 11, endLine: 11, exported: false },
-            { name: "outer", qualifiedName: "outer", kind: "function", filePath: "src/main.ts", startLine: 14, endLine: 17, exported: true },
-            { name: "inner", qualifiedName: "outer::inner", kind: "function", filePath: "src/main.ts", startLine: 15, endLine: 15, exported: false },
+            { name: "Api", qualifiedName: "Api", kind: "interface", filePath: "src/main.ts", startLine: 9, endLine: 9, exported: true },
+            { name: "run", qualifiedName: "Api::run", kind: "method", filePath: "src/main.ts", startLine: 9, endLine: 9, exported: false },
+            { name: "Alias", qualifiedName: "Alias", kind: "type", filePath: "src/main.ts", startLine: 10, endLine: 10, exported: true },
+            { name: "Service", qualifiedName: "Service", kind: "class", filePath: "src/main.ts", startLine: 11, endLine: 13, exported: true },
+            { name: "run", qualifiedName: "Service::run", kind: "method", filePath: "src/main.ts", startLine: 12, endLine: 12, exported: false },
+            { name: "outer", qualifiedName: "outer", kind: "function", filePath: "src/main.ts", startLine: 15, endLine: 18, exported: true },
+            { name: "inner", qualifiedName: "outer::inner", kind: "function", filePath: "src/main.ts", startLine: 16, endLine: 16, exported: false },
             { name: "Model", qualifiedName: "Model", kind: "type", filePath: "src/models/index.ts", startLine: 1, endLine: 1, exported: true },
+            { name: "targetFile", qualifiedName: "targetFile", kind: "function", filePath: "src/target.tsx", startLine: 1, endLine: 1, exported: true },
+            { name: "targetIndex", qualifiedName: "targetIndex", kind: "function", filePath: "src/target/index.ts", startLine: 1, endLine: 1, exported: true },
             { name: "Shared", qualifiedName: "Shared", kind: "interface", filePath: "src/types.ts", startLine: 1, endLine: 1, exported: true },
             { name: "View", qualifiedName: "View", kind: "function", filePath: "src/view.tsx", startLine: 1, endLine: 1, exported: true },
         ]);
@@ -114,6 +124,7 @@ describe("scanSources", () => {
             { fromFile: "src/main.ts", toFile: "src/dep.ts", specifier: "./dep", kind: "import", typeOnly: false, external: false },
             { fromFile: "src/main.ts", toFile: "src/direct.mts", specifier: "./direct.mts", kind: "import", typeOnly: false, external: false },
             { fromFile: "src/main.ts", toFile: "src/models/index.ts", specifier: "./models", kind: "export", typeOnly: false, external: false },
+            { fromFile: "src/main.ts", toFile: "src/target.tsx", specifier: "./target", kind: "import", typeOnly: false, external: false },
             { fromFile: "src/main.ts", toFile: "src/types.ts", specifier: "./types", kind: "import", typeOnly: true, external: false },
             { fromFile: "src/main.ts", toFile: "src/view.tsx", specifier: "./view", kind: "export", typeOnly: false, external: false },
         ]);
