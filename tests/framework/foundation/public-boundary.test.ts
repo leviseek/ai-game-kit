@@ -521,6 +521,7 @@ describe("framework public boundary", () => {
             "createStore",
             "createUiNavigator",
             "createViewModelRenderer",
+            "defineFuiViewBinding",
             "DeviceInfo",
             "DisposeHandle",
             "DuplicateOpenPolicy",
@@ -537,6 +538,9 @@ describe("framework public boundary", () => {
             "FuiComponentRegistry",
             "FuiComponentUrl",
             "FuiView",
+            "FuiViewBinding",
+            "FuiViewBindingRegistrar",
+            "FuiViewBindingScope",
             "FuiViewCleanupError",
             "FuiViewSeam",
             "FUIBind",
@@ -649,6 +653,9 @@ describe("framework public boundary", () => {
             "createFairyGuiView",
             "createCocosStorageAdapter",
             "createSaveCoordinator",
+            "FuiViewBindingResolver",
+            "createFuiViewBinderRegistry",
+            "createFuiViewBindingScope",
         ];
 
         for (const name of forbiddenInternals) {

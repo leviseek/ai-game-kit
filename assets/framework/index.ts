@@ -148,6 +148,13 @@ export {
 } from "./core/fui/FuiErrors";
 
 export type {
+    FuiViewBinding,
+    FuiViewBindingRegistrar,
+    FuiViewBindingScope,
+} from "./core/fui/FuiViewBinderRegistry";
+export { defineFuiViewBinding } from "./core/fui/FuiViewBinderRegistry";
+
+export type {
     ViewModelRenderer,
     ViewModelRendererOptions,
 } from "./core/ui/ViewModelRenderer";

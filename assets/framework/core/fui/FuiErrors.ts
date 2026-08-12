@@ -38,10 +38,14 @@ export class FuiViewCreationError extends FrameworkError {
     }
 }
 
-/** 绑定 kind：字段注入或点击注册的缺失检测分类。 */
-export type FuiBindingKind = "field" | "click";
+/** 绑定 kind：字段注入、点击注册或运行时 binder 的缺失/不匹配分类。 */
+export type FuiBindingKind = "field" | "click" | "runtime";
 
-/** 绑定节点缺失：seam 在 child()/onClick() 检测到组件无对应元件时抛出（fail-fast）。 */
+/**
+ * 绑定节点缺失/不匹配：seam 在 child()/onClick() 检测到组件无对应元件时抛出
+ * （field/click，fail-fast）；runtime 由 binder resolver 在视图 ctor 与
+ * 注册 binder 不匹配时抛出。
+ */
 export class FuiBindingError extends FrameworkError {
     readonly nodeName: string;
     readonly bindingKind: FuiBindingKind;
