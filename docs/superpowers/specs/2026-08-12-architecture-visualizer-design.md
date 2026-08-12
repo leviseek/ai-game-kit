@@ -28,8 +28,10 @@ CodeGraph 索引，但缺少从当前代码实时探索启动编排、架构层�
 ## 3. Chosen Approach
 
 新增 `tools/arch-viewer` workspace，包含可复用分析内核、Bun 本地服务和原生
-TypeScript/HTML/CSS/SVG 前端。服务只调用 CodeGraph 公共 JSON CLI：`status`、`files`、
-`query`、`callers`、`callees`、`impact`，不依赖数据库内部结构。
+TypeScript/HTML/CSS/SVG 前端。符号调用只使用 CodeGraph 公共 CLI：`sync --quiet`，以及 JSON 输出的
+`status`、`files`、`query`、`callers`、`callees`、`impact`，不依赖数据库内部结构。由于公共 CLI 不提供
+全量依赖边和文件内符号导出，`SourceScanner` 另以 TypeScript Compiler API 解析静态 `import/export`
+与声明名称/kind/源码位置，用于模块依赖和层次 L5；它不推断函数调用。
 
 前端不引入图形库。六类图各用确定性布局：层次图用可展开树，启动图用阶段泳道，依赖图用分层
 DAG，数据流用固定架构泳道，调用图用中心式入边/出边布局，资源图用所有权泳道和生命周期状态。
@@ -37,11 +39,11 @@ DAG，数据流用固定架构泳道，调用图用中心式入边/出边布局�
 ## 4. System Architecture
 
 ```text
-CodeGraph CLI + architecture.config.ts
+CodeGraph CLI + TypeScript SourceScanner + architecture.config.ts
   -> CodeGraphGateway + config validation
   -> ArchitectureAnalyzer
   -> immutable GraphSnapshot
-  -> ArchServer HTTP / WebSocket
+  -> ArchServer HTTP / SSE
   -> WorkbenchFrontend SVG projection
 ```
 
@@ -49,6 +51,8 @@ CodeGraph CLI + architecture.config.ts
 
 - `CodeGraphGateway`：以 `execFile` 参数数组执行 CLI，校验 JSON，归一超时、缺失命令、无索引、
   多义符号和非法输出；提供可由 fixture 替换的窄接口。
+- `SourceScanner`：使用现有 TypeScript Compiler API 解析静态 `import/export` 和声明节点，生成全局
+  文件依赖与层次符号事实；不扫描调用表达式，不替代 CodeGraph。
 - `ArchitectureConfig`：声明 L0-L2 层次、依赖规则与例外、启动阶段、数据流泳道/锚点、资源层级/
   owner/scope/锚点；不复制调用图。
 - `ArchitectureAnalyzer`：合并代码事实与项目语义，聚合依赖、解析锚点、寻找证据路径、生成诊断、
@@ -56,7 +60,7 @@ CodeGraph CLI + architecture.config.ts
 - `GraphSnapshotStore`：持有最后一次成功的不可变快照，以分析代次拒绝旧结果覆盖新结果。
 - `ProjectWatcher`：监听相关代码、配置和架构文档，debounce 后等待 CodeGraph 同步；最多一个分析任务，
   后续变化合并为下一代。
-- `ArchServer`：使用 Bun HTTP/WebSocket，绑定 `127.0.0.1`，提供静态资源和只读 API。
+- `ArchServer`：使用 Node 内置 HTTP 与 Server-Sent Events（SSE），绑定 `127.0.0.1`，提供静态资源和只读 API。
 - `WorkbenchFrontend`：统一维护图型、筛选、搜索、下钻、缩放和选中状态；只消费图模型，不解析源码。
 
 分析层不依赖 HTTP/SVG，服务端不计算布局，前端不执行 CodeGraph。未来 MCP 直接适配分析查询接口。
@@ -114,11 +118,14 @@ L4 文件；L5 符号。L0-L2 来自配置，L3-L5 结合目录与 CodeGraph 自
 
 ### 6.2 Startup Flow
 
-回答“Cocos 入口如何到达首个可交互 UI”。首条配置路径为：
+回答“Cocos 入口如何装配应用，并沿哪些分支到达运行态和首个可交互 UI”。当前真实路径为：
 
 ```text
-AppRoot.start -> assembleApp -> Application.start -> BootFlow.launch
-  -> preload -> SceneFlow.switchTo("game") -> UiHost.init -> game feature activation
+AppRoot.onLoad -> assembleApp + createBootFlow
+AppRoot.start
+  |-> validate/bind -> Application.start
+  `-> BootFlow.launch -> preload -> SceneFlow.switchTo("game")
+        -> UiHost.init -> game feature activation
 ```
 
 CodeGraph 提供真实调用路径和源码位置；配置提供阶段名、分支含义、smoke/default 区分和关键状态。
@@ -159,12 +166,18 @@ export default defineArchitectureConfig({
   hierarchy: { root: group("ai-game-kit", [
     group("boot", ["assets/boot/**"]),
     group("framework", [
+      "assets/framework/*.ts",
       group("core", ["assets/framework/core/**"]),
       group("contracts", ["assets/framework/contracts/**"]),
       group("application", ["assets/framework/application/**"]),
+      group("diagnostics", ["assets/framework/diagnostics/**"]),
       group("adapters", ["assets/framework/adapters/**"]),
+      group("libraries", ["assets/framework/libs/**"]),
     ]),
-    group("game", ["assets/game*/**", "assets/samples/**"]),
+    group("game", [
+      "assets/game/**", "assets/samples/**", "assets/ui/**",
+      "assets/audio/**", "assets/common/**", "assets/game-content/**", "assets/resources/**",
+    ]),
     group("tooling", ["tools/**"]),
   ]) },
   dependencyRules: [
@@ -173,13 +186,13 @@ export default defineArchitectureConfig({
     deny("framework", ["boot", "game"]),
   ],
   startup: {
-    entry: symbol("AppRoot.start", "assets/boot/AppRoot.ts"),
-    phases: [
-      phase("assembly", ["assembleApp"]),
-      phase("application", ["Application.start"]),
-      phase("boot-flow", ["BootFlow.launch"]),
-      phase("scene", ["SceneFlow.switchTo"]),
-      phase("ui", ["UiHost.init"]),
+    entry: symbol("AppRoot::onLoad", "assets/boot/AppRoot.ts"),
+    phases: [phase("assembly", ["assembleApp", "createBootFlow"])],
+    branches: [
+      branch("application", ["AppRoot::start", "Application::start"]),
+      branch("presentation", [
+        "AppRoot::start", "createBootFlow::launch", "createSceneFlow::switchTo", "UiHost::init",
+      ]),
     ],
   },
   dataFlows: [],
@@ -206,7 +219,7 @@ Inspector 显示源码、关系、证据和诊断，并通过经过服务端验�
 - `GET /api/symbols/search?q=`：搜索符号、文件和 group。
 - `GET /api/nodes/:id/neighborhood`：局部调用或 impact 子图。
 - `GET /api/source?file=&line=`：仓库内的有界源码片段。
-- `WS /api/events`：`snapshot-ready`、`analysis-error`、`index-waiting`。
+- `GET /api/events`（SSE）：`snapshot-ready`、`analysis-error`、`index-waiting`。
 
 传输类型直接使用可序列化图模型，不另建一套重复 schema。
 
@@ -225,8 +238,8 @@ Inspector 显示源码、关系、证据和诊断，并通过经过服务端验�
 - 分析内核：层次所有权/L0-L5 展开、依赖聚合、边去重、规则/例外、锚点消歧与连通、局部影响图、
   确定性排序。
 - Gateway：各 CLI JSON、非零退出、stderr、缺命令/索引、超时、输出上限、重名、非法 JSON。
-- Snapshot/watcher：debounce、单任务、旧代次拒绝、失败保留、版本与 WebSocket 通知。
-- Server：全部只读路由、未知实体、路径穿越、有界源码、WebSocket 事件。
+- Snapshot/watcher：debounce、单任务、旧代次拒绝、失败保留、版本与 SSE 通知。
+- Server：全部只读路由、未知实体、路径穿越、有界源码、SSE 事件。
 - Frontend：六类布局、搜索/筛选/下钻、刷新保留、焦点回退、VS Code 链接、窄屏布局。
 - 仓库契约：层次配置覆盖目标 `assets/tools` 且无重叠；启动阶段可解析并连通；数据流/资源锚点可解析
   或产生被测试明确接受的诊断。
