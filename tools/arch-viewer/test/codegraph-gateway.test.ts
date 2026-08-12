@@ -94,6 +94,17 @@ describe("CodeGraphGateway", () => {
         expect("filePath" in result && result.filePath).toBe("tests/boot/BootFlow.test.ts");
     });
 
+    test("resolveSymbol 不返回 file 不匹配的唯一 qualifiedName 命中", async () => {
+        const gateway = gatewayWith({ query: success([duplicateLaunchResults[1]]) });
+
+        const result = await gateway.resolveSymbol({
+            name: "TestHarness::launch",
+            file: "src/boot.ts",
+        });
+
+        expect(result).toEqual(errorDiagnostic('Symbol "TestHarness::launch" was not found'));
+    });
+
     test("resolveSymbol 无 file 且名称多义时返回诊断", async () => {
         const gateway = gatewayWith({ query: success(duplicateLaunchResults) });
         const result = await gateway.resolveSymbol({ name: "launch" });

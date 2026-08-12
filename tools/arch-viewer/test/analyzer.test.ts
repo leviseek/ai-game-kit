@@ -159,6 +159,29 @@ describe("ArchitectureAnalyzer", () => {
         expect(service.view("calls").nodes[0]?.evidence).toHaveLength(1);
         expect(service.view("calls").edges[0]?.evidence?.[0]?.location?.filePath).toBe("src/a.ts");
     });
+
+    test("query service copies metadata arrays and objects from non-frozen snapshots", () => {
+        const snapshot = mutableSnapshot();
+        const service = createArchitectureQueryService(snapshot);
+        const first = service.view("calls");
+
+        const groupMetadata = first.groups[0]?.metadata;
+        const groupPatterns = groupMetadata?.patterns;
+        const nodeMetadata = first.nodes[0]?.metadata;
+        const edgeMetadata = first.edges[0]?.metadata;
+        expect(Array.isArray(groupPatterns)).toBe(true);
+        expect(nodeMetadata).toBeDefined();
+        expect(edgeMetadata).toBeDefined();
+
+        if (Array.isArray(groupPatterns)) groupPatterns.push("changed");
+        if (nodeMetadata !== undefined) nodeMetadata.role = "changed";
+        if (edgeMetadata !== undefined) edgeMetadata.weight = 99;
+
+        const second = service.view("calls");
+        expect(second.groups[0]?.metadata?.patterns).toEqual(["entry"]);
+        expect(second.nodes[0]?.metadata?.role).toBe("incoming");
+        expect(second.edges[0]?.metadata?.weight).toBe(1);
+    });
 });
 
 function isDeepFrozen(value: unknown): boolean {
@@ -179,6 +202,7 @@ function mutableSnapshot(): GraphSnapshot {
             kind: "function",
             label: "launch",
             qualifiedName: "createBootFlow::launch",
+            metadata: { role: "incoming" },
             evidence: [{ source: "fixture", location: { filePath: "src/a.ts", line: 1 } }],
         }],
         edges: [{
@@ -186,9 +210,15 @@ function mutableSnapshot(): GraphSnapshot {
             from: "a",
             to: "b",
             relation: "calls",
+            metadata: { weight: 1 },
             evidence: [{ source: "fixture", location: { filePath: "src/a.ts", line: 1 } }],
         }],
-        groups: [],
+        groups: [{
+            id: "entry",
+            label: "Entry",
+            nodeIds: ["a"],
+            metadata: { patterns: ["entry"] },
+        }],
         diagnostics: [],
     };
     const empty = (type: ViewType) => ({ type, nodes: [], edges: [], groups: [], diagnostics: [] });

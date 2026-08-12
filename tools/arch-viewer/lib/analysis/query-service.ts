@@ -100,6 +100,7 @@ function copyView(view: GraphView): GraphView {
 function copyNode(node: GraphNode): GraphNode {
     return {
         ...node,
+        ...(node.metadata === undefined ? {} : { metadata: copyMetadata(node.metadata) }),
         ...(node.location === undefined ? {} : { location: copyLocation(node.location) }),
         ...(node.evidence === undefined ? {} : { evidence: node.evidence.map(copyEvidence) }),
     };
@@ -108,12 +109,31 @@ function copyNode(node: GraphNode): GraphNode {
 function copyEdge(edge: GraphEdge): GraphEdge {
     return {
         ...edge,
+        ...(edge.metadata === undefined ? {} : { metadata: copyMetadata(edge.metadata) }),
         ...(edge.evidence === undefined ? {} : { evidence: edge.evidence.map(copyEvidence) }),
     };
 }
 
 function copyGroup(group: GraphGroup): GraphGroup {
-    return { ...group, nodeIds: [...group.nodeIds] };
+    return {
+        ...group,
+        nodeIds: [...group.nodeIds],
+        ...(group.metadata === undefined ? {} : { metadata: copyMetadata(group.metadata) }),
+    };
+}
+
+function copyMetadata(metadata: Readonly<Record<string, unknown>>): Readonly<Record<string, unknown>> {
+    return Object.fromEntries(Object.entries(metadata).map(([key, value]) => [key, copyMetadataValue(value)]));
+}
+
+function copyMetadataValue(value: unknown): unknown {
+    if (Array.isArray(value)) return [...value];
+    if (isPlainObject(value)) return { ...value };
+    return value;
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+    return Object.prototype.toString.call(value) === "[object Object]";
 }
 
 function copyDiagnostic(diagnostic: Diagnostic): Diagnostic {

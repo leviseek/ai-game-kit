@@ -257,10 +257,13 @@ export function createCodeGraphGateway(options?: {
         async resolveSymbol(ref) {
             const matches = await search(ref.name, resolveSymbolLimit);
             const qualified = matches.filter((node) => node.qualifiedName === ref.name);
-            if (qualified.length === 1) return qualified[0];
+            const qualifiedCandidates = ref.file
+                ? qualified.filter((node) => node.filePath === ref.file)
+                : qualified;
+            if (qualifiedCandidates.length === 1) return qualifiedCandidates[0];
 
-            const exact = qualified.length > 0
-                ? qualified
+            const exact = qualifiedCandidates.length > 0
+                ? qualifiedCandidates
                 : matches.filter((node) => node.name === ref.name);
             const candidates = ref.file
                 ? exact.filter((node) => node.filePath === ref.file)

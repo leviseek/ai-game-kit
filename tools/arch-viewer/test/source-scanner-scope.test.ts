@@ -43,6 +43,18 @@ describe("scanSources lexical scopes", () => {
             kind: "method",
             occurrences: [{ memberKind: "constructor", static: false }],
         });
+        const valueDeclaration = result.declarations.find(
+            (declaration) => declaration.qualifiedName === "Containers::value",
+        );
+        expect(result.declarations.filter((declaration) => declaration.qualifiedName === "Containers::value"))
+            .toHaveLength(1);
+        expect(valueDeclaration && {
+            kind: valueDeclaration.kind,
+            occurrences: valueDeclaration.occurrences.map(({ memberKind }) => ({ memberKind })),
+        }).toEqual({
+            kind: "method",
+            occurrences: [{ memberKind: "get" }, { memberKind: "set" }],
+        });
         expect(result.declarations
             .filter((declaration) => declaration.kind === "function")
             .map(({ qualifiedName, startLine, endLine, occurrences }) => ({
