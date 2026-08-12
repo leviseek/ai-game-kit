@@ -13,7 +13,12 @@ import {
 } from "./module-resolver";
 
 export type ImportDependencyKind = "import" | "export";
-export type { SourceDeclaration, SourceDeclarationKind } from "./declaration-scanner";
+export type {
+    SourceDeclaration,
+    SourceDeclarationKind,
+    SourceDeclarationOccurrence,
+    SourceMemberKind,
+} from "./declaration-scanner";
 
 export interface ImportDependency {
     readonly fromFile: string;

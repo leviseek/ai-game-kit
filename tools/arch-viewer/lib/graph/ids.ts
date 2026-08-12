@@ -7,11 +7,8 @@ export function createNodeId(
     kind: string,
     filePath: string,
     qualifiedName: string,
-    scopeKey?: string,
 ): string {
-    return joinId(scopeKey === undefined
-        ? [kind, filePath, qualifiedName]
-        : [kind, filePath, qualifiedName, scopeKey]);
+    return joinId([kind, filePath, qualifiedName]);
 }
 
 export function createEdgeId(

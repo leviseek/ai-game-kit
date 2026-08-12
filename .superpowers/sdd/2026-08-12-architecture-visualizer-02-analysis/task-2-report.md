@@ -105,6 +105,46 @@ DONE
 
 ### Concerns
 
-- block ordinal 对同一父 scope 内相同类别容器的源码顺序敏感；这是确定性的词法身份，但在前方插入同类 block 会改变后续 block 内声明 ID。
-- accessor 的 get/set 使用不同内部类别，因此同名 getter 与 setter 是两个 `SourceDeclaration`；公开 `qualifiedName` 相同，ID 不同。
+- 本轮的 scope-key ID 与 accessor 拆分方案已由 Fix Round 3 的用户裁决替代；scope 现在只保留在 occurrence，语义节点使用 canonical ID。
+- `export = Identifier` 仍不在当前 ES module 导出范围内。
+
+## Fix Round 3/5
+
+### User Decision
+
+- L5 使用稳定语义符号节点加 `occurrences`，词法差异不再拆分语义节点或进入 canonical ID。
+
+### Findings Addressed
+
+- `createNodeId` 恢复 Phase 1 三参数契约，声明 ID 精确由 `kind/filePath/qualifiedName` 生成，不再附加 opaque scope key。
+- `SourceDeclaration` 新增只读 `occurrences`；每项记录起止行、`scopeKey`、`scopeKind`、`memberKind` 与 `static`。
+- 相同 `kind/file/qualifiedName` 的不同 block 函数、static/instance method、getter/setter、constructor、overload 与 interface merging 聚合为单个语义节点；顶层范围取 min/max，`exported` 取 any。
+- occurrence 按源码范围、scope、成员类别与 static 确定性排序；scope ordinal 仅作为 occurrence 证据，不参与语义节点 ID。
+- constructor、getter、setter 与 class static block 内的命名 function declaration 继续扫描；expression 子树仍保持忽略。
+- 新增前置 block 双 fixture，验证 `outer::run` 的 canonical ID 在词法 block 插入后保持不变。
+
+### TDD Evidence
+
+- RED: `bun test tools/arch-viewer/test/source-scanner-scope.test.ts`
+  - 结果：0 pass，4 fail；复现缺少 occurrences、语义节点重复、opaque ID 与前置 block 后 ID 不稳定。
+- Review RED: constructor occurrence 断言失败，`Containers::constructor` 语义节点缺失。
+- GREEN: `bun test tools/arch-viewer/test/source-scanner-scope.test.ts tools/arch-viewer/test/source-scanner.test.ts`
+  - 结果：9 pass，0 fail，25 assertions。
+
+### Verification
+
+- `bun test ./tools/arch-viewer/test`
+  - 结果：38 pass，0 fail，103 assertions。
+- `bun x tsc --noEmit -p tools/arch-viewer/tsconfig.json`
+  - 结果：通过，无输出。
+- `bun x eslint tools/arch-viewer/lib/analysis/declaration-scanner.ts tools/arch-viewer/lib/analysis/module-resolver.ts tools/arch-viewer/lib/analysis/source-scanner.ts tools/arch-viewer/lib/graph/ids.ts tools/arch-viewer/test/source-scanner.test.ts tools/arch-viewer/test/source-scanner-scope.test.ts`
+  - 结果：通过，无输出。
+- `git diff --check`
+  - 结果：通过。
+- 文件行数：`declaration-scanner.ts`、`source-scanner.ts`、`source-scanner.test.ts`、`source-scanner-scope.test.ts` 均小于 300 行。
+
+### Concerns
+
+- occurrence 的 `scopeKey` 是快照内确定性证据，不承诺跨源码结构编辑保持不变；canonical declaration ID 才是稳定身份。
+- getter/setter 与 static/instance method 现在共享语义节点，消费方需通过 occurrences 的 `memberKind` 和 `static` 展示差异。
 - `export = Identifier` 仍不在当前 ES module 导出范围内。

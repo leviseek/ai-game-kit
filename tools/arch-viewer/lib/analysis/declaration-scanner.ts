@@ -3,6 +3,16 @@ import ts from "typescript";
 import { createNodeId } from "../graph/ids";
 
 export type SourceDeclarationKind = "class" | "function" | "interface" | "method" | "type";
+export type SourceMemberKind = SourceDeclarationKind | "get" | "set" | "constructor";
+
+export interface SourceDeclarationOccurrence {
+    readonly startLine: number;
+    readonly endLine: number;
+    readonly scopeKey: string;
+    readonly scopeKind: string;
+    readonly memberKind: SourceMemberKind;
+    readonly static: boolean;
+}
 
 export interface SourceDeclaration {
     readonly id: string;
@@ -13,11 +23,13 @@ export interface SourceDeclaration {
     readonly startLine: number;
     readonly endLine: number;
     readonly exported: boolean;
+    readonly occurrences: readonly SourceDeclarationOccurrence[];
 }
 
 interface ScanScope {
     readonly names: readonly string[];
     readonly key: string;
+    readonly kind: string;
 }
 
 function hasModifier(node: ts.Node, kind: ts.SyntaxKind): boolean {
@@ -54,12 +66,11 @@ function collectExportedNames(sourceFile: ts.SourceFile): ReadonlySet<string> {
     return names;
 }
 
-function memberCategory(node: ts.MethodDeclaration | ts.MethodSignature
-    | ts.GetAccessorDeclaration | ts.SetAccessorDeclaration): string {
-    const placement = hasModifier(node, ts.SyntaxKind.StaticKeyword) ? "static" : "instance";
-    if (ts.isGetAccessorDeclaration(node)) return `${placement}:get`;
-    if (ts.isSetAccessorDeclaration(node)) return `${placement}:set`;
-    return `${placement}:method`;
+function memberKind(node: ts.MethodDeclaration | ts.MethodSignature
+    | ts.GetAccessorDeclaration | ts.SetAccessorDeclaration): SourceMemberKind {
+    if (ts.isGetAccessorDeclaration(node)) return "get";
+    if (ts.isSetAccessorDeclaration(node)) return "set";
+    return "method";
 }
 
 export function collectSourceDeclarations(
@@ -70,28 +81,42 @@ export function collectSourceDeclarations(
     const exportedNames = collectExportedNames(sourceFile);
     const scopeOrdinals = new Map<string, number>();
 
-    const childScope = (scope: ScanScope, label: string, names = scope.names): ScanScope => {
+    const childScope = (
+        scope: ScanScope,
+        label: string,
+        kind: string,
+        names = scope.names,
+    ): ScanScope => {
         const base = `${scope.key}/${label}`;
         const ordinal = scopeOrdinals.get(base) ?? 0;
         scopeOrdinals.set(base, ordinal + 1);
-        return { names, key: `${base}#${ordinal}` };
+        return { names, key: `${base}#${ordinal}`, kind };
     };
 
     const addDeclaration = (
         node: ts.NamedDeclaration,
         kind: SourceDeclarationKind,
         scope: ScanScope,
-        category: string,
+        occurrenceKind: SourceMemberKind,
+        isStatic = false,
+        nameOverride?: string,
     ): string | undefined => {
-        const name = declarationName(node);
+        const name = nameOverride ?? declarationName(node);
         if (name === undefined) return undefined;
 
         const qualifiedName = [...scope.names, name].join("::");
-        const scopeKey = `${scope.key}|${category}`;
-        const id = createNodeId(kind, filePath, qualifiedName, scopeKey);
+        const id = createNodeId(kind, filePath, qualifiedName);
         const startLine = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1;
         const endLine = sourceFile.getLineAndCharacterOfPosition(node.end).line + 1;
         const existing = declarations.get(id);
+        const occurrence: SourceDeclarationOccurrence = {
+            startLine,
+            endLine,
+            scopeKey: scope.key,
+            scopeKind: scope.kind,
+            memberKind: occurrenceKind,
+            static: isStatic,
+        };
         declarations.set(id, {
             id,
             name,
@@ -103,6 +128,7 @@ export function collectSourceDeclarations(
             exported: existing?.exported === true
                 || hasModifier(node, ts.SyntaxKind.ExportKeyword)
                 || (scope.names.length === 0 && exportedNames.has(name)),
+            occurrences: [...(existing?.occurrences ?? []), occurrence],
         });
         return name;
     };
@@ -115,9 +141,10 @@ export function collectSourceDeclarations(
         body: ts.Block | undefined,
         scope: ScanScope,
         label: string,
+        kind: string,
         names: readonly string[],
     ): void => {
-        if (body !== undefined) visitStatements(body.statements, childScope(scope, label, names));
+        if (body !== undefined) visitStatements(body.statements, childScope(scope, label, kind, names));
     };
 
     const visit = (node: ts.Node, scope: ScanScope): void => {
@@ -125,33 +152,50 @@ export function collectSourceDeclarations(
             const kind = ts.isClassDeclaration(node) ? "class" : "interface";
             const name = addDeclaration(node, kind, scope, kind);
             if (name !== undefined) {
-                const ownerScope = { names: [...scope.names, name], key: `${scope.key}/${kind}:${name}` };
+                const ownerScope = {
+                    names: [...scope.names, name],
+                    key: `${scope.key}/${kind}:${name}`,
+                    kind,
+                };
                 for (const member of node.members) visit(member, ownerScope);
             }
             return;
         }
         if (ts.isMethodDeclaration(node) || ts.isMethodSignature(node)
             || ts.isGetAccessorDeclaration(node) || ts.isSetAccessorDeclaration(node)) {
-            const category = memberCategory(node);
-            const name = addDeclaration(node, "method", scope, category);
+            const kind = memberKind(node);
+            const isStatic = hasModifier(node, ts.SyntaxKind.StaticKeyword);
+            const placement = isStatic ? "static" : "instance";
+            const name = addDeclaration(node, "method", scope, kind, isStatic);
             const body = ts.isMethodSignature(node) ? undefined : node.body;
             if (name !== undefined) {
-                visitMemberBody(body, scope, `member:${category}:${name}`, [...scope.names, name]);
+                visitMemberBody(
+                    body,
+                    scope,
+                    `member:${placement}:${kind}:${name}`,
+                    kind,
+                    [...scope.names, name],
+                );
             }
             return;
         }
         if (ts.isConstructorDeclaration(node)) {
-            visitMemberBody(node.body, scope, "constructor", [...scope.names, "constructor"]);
+            addDeclaration(node, "method", scope, "constructor", false, "constructor");
+            visitMemberBody(
+                node.body, scope, "constructor", "constructor", [...scope.names, "constructor"],
+            );
             return;
         }
         if (ts.isClassStaticBlockDeclaration(node)) {
-            visitMemberBody(node.body, scope, "static-block", scope.names);
+            visitMemberBody(node.body, scope, "static-block", "static-block", scope.names);
             return;
         }
         if (ts.isFunctionDeclaration(node)) {
             const name = addDeclaration(node, "function", scope, "function");
             if (name !== undefined) {
-                visitMemberBody(node.body, scope, `function:${name}`, [...scope.names, name]);
+                visitMemberBody(
+                    node.body, scope, `function:${name}`, "function", [...scope.names, name],
+                );
             }
             return;
         }
@@ -160,25 +204,39 @@ export function collectSourceDeclarations(
             return;
         }
         if (ts.isBlock(node)) {
-            visitStatements(node.statements, childScope(scope, "block"));
+            visitStatements(node.statements, childScope(scope, "block", "block"));
         } else if (ts.isIfStatement(node)) {
-            visit(node.thenStatement, childScope(scope, "if-then"));
-            if (node.elseStatement !== undefined) visit(node.elseStatement, childScope(scope, "if-else"));
+            visit(node.thenStatement, childScope(scope, "if-then", "if"));
+            if (node.elseStatement !== undefined) {
+                visit(node.elseStatement, childScope(scope, "if-else", "if"));
+            }
         } else if (ts.isForStatement(node) || ts.isForInStatement(node)
             || ts.isForOfStatement(node) || ts.isWhileStatement(node)
             || ts.isDoStatement(node) || ts.isLabeledStatement(node)
             || ts.isWithStatement(node)) {
-            visit(node.statement, childScope(scope, "statement-body"));
+            visit(node.statement, childScope(scope, "statement-body", "loop"));
         } else if (ts.isTryStatement(node)) {
-            visit(node.tryBlock, childScope(scope, "try"));
-            if (node.catchClause !== undefined) visit(node.catchClause.block, childScope(scope, "catch"));
-            if (node.finallyBlock !== undefined) visit(node.finallyBlock, childScope(scope, "finally"));
+            visit(node.tryBlock, childScope(scope, "try", "try"));
+            if (node.catchClause !== undefined) {
+                visit(node.catchClause.block, childScope(scope, "catch", "catch"));
+            }
+            if (node.finallyBlock !== undefined) {
+                visit(node.finallyBlock, childScope(scope, "finally", "finally"));
+            }
         } else if (ts.isSwitchStatement(node)) {
-            const switchScope = childScope(scope, "switch");
+            const switchScope = childScope(scope, "switch", "switch");
             for (const clause of node.caseBlock.clauses) visitStatements(clause.statements, switchScope);
         }
     };
 
-    visitStatements(sourceFile.statements, { names: [], key: "module" });
-    return [...declarations.values()];
+    visitStatements(sourceFile.statements, { names: [], key: "module", kind: "module" });
+    return [...declarations.values()].map((declaration) => ({
+        ...declaration,
+        occurrences: [...declaration.occurrences].sort((left, right) =>
+            left.startLine - right.startLine
+            || left.endLine - right.endLine
+            || left.scopeKey.localeCompare(right.scopeKey)
+            || left.memberKind.localeCompare(right.memberKind)
+            || Number(left.static) - Number(right.static)),
+    }));
 }
