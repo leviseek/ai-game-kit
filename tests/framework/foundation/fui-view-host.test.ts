@@ -7,7 +7,11 @@ import {
     getFuiComponentRegistry,
     type FuiComponentUrl,
 } from "../../../assets/framework/core/fui/FuiComponentRegistry";
-import { FuiBindingError, FuiViewCreationError } from "../../../assets/framework/core/fui/FuiErrors";
+import {
+    FuiBindingError,
+    FuiViewCleanupError,
+    FuiViewCreationError,
+} from "../../../assets/framework/core/fui/FuiErrors";
 import { FuiView } from "../../../assets/framework/contracts/ui/FuiView";
 
 // 实现值 import fairygui-cc；统一使用共享 fixture，动态加载避免 mock 前解析。
@@ -114,6 +118,34 @@ class BoundLoginView extends FuiView<unknown, unknown> {
     protected onState(): void { }
 }
 
+/** 记录自身被 dispose 的视图：__own 的 owner 执行即证明 View 清理已触发。 */
+class RecordingDisposeView extends FuiView<unknown, unknown> {
+    constructor(readonly disposedSink: string[]) {
+        super();
+        this.__own({
+            dispose: () => {
+                this.disposedSink.push("view");
+            },
+        });
+    }
+    protected onConstruct(): void { }
+    protected onState(): void { }
+}
+
+/** __own 的 owner 抛错：dispose 时产生 FuiViewCleanupError（供级联聚合）。 */
+class ThrowingOwnerView extends FuiView<unknown, unknown> {
+    constructor() {
+        super();
+        this.__own({
+            dispose: () => {
+                throw new Error("view owner boom");
+            },
+        });
+    }
+    protected onConstruct(): void { }
+    protected onState(): void { }
+}
+
 describe("createBoundView", () => {
     test("命中注册表：创建 FuiView 实例、注入字段、注册点击、dispose 级联", async () => {
         const restore = isolateRegistry();
@@ -217,31 +249,34 @@ describe("createBoundView", () => {
                 clicks: [],
                 runtimeBinding: "none",
             });
+            const componentMock = makeComponentMock({});
             let thrown: unknown;
             try {
-                createBoundView(
-                    "Login",
-                    "LoginView",
-                    registry,
-                    () => makeComponentMock({}) as never,
-                );
+                createBoundView("Login", "LoginView", registry, () => componentMock as never);
             } catch (error) {
                 thrown = error;
             }
             expect(thrown).toBeInstanceOf(FuiViewCreationError);
             expect((thrown as Error & { cause?: unknown }).cause).toBe(boom);
+            // ctor 抛错时已创建的 GComponent 仍须 dispose（回滚）
+            expect(componentMock.disposed).toBe(1);
         } finally {
             restore();
         }
     });
 
-    test("绑定字段缺失抛 FuiBindingError（kind=field）", async () => {
+    test("attach 字段缺失：包装为 FuiViewCreationError（cause 为 FuiBindingError），View 与 GComponent 均清理", async () => {
         const restore = isolateRegistry();
         const { createBoundView } = await loadHost();
         try {
+            const disposedSink: string[] = [];
             const registry = getFuiComponentRegistry();
             registry.register(LOGIN_VIEW_URL, {
-                ctor: BoundLoginView,
+                ctor: class extends RecordingDisposeView {
+                    constructor() {
+                        super(disposedSink);
+                    }
+                },
                 fields: { txt_title: "text", txt_missing: "text" },
                 clicks: [],
                 runtimeBinding: "none",
@@ -253,21 +288,32 @@ describe("createBoundView", () => {
             } catch (error) {
                 thrown = error;
             }
-            expect(thrown).toBeInstanceOf(FuiBindingError);
-            expect((thrown as FuiBindingError).nodeName).toBe("txt_missing");
-            expect((thrown as FuiBindingError).bindingKind).toBe("field");
+            expect(thrown).toBeInstanceOf(FuiViewCreationError);
+            const creationError = thrown as FuiViewCreationError;
+            expect(creationError.cause).toBeInstanceOf(FuiBindingError);
+            const bindingError = creationError.cause as FuiBindingError;
+            expect(bindingError.nodeName).toBe("txt_missing");
+            expect(bindingError.bindingKind).toBe("field");
+            // 回滚：View 与 GComponent 均被清理
+            expect(disposedSink).toEqual(["view"]);
+            expect(componentMock.disposed).toBe(1);
         } finally {
             restore();
         }
     });
 
-    test("点击节点缺失抛 FuiBindingError（kind=click）", async () => {
+    test("attach 点击缺失：包装为 FuiViewCreationError（cause 为 FuiBindingError），View 与 GComponent 均清理", async () => {
         const restore = isolateRegistry();
         const { createBoundView } = await loadHost();
         try {
+            const disposedSink: string[] = [];
             const registry = getFuiComponentRegistry();
             registry.register(LOGIN_VIEW_URL, {
-                ctor: BoundLoginView,
+                ctor: class extends RecordingDisposeView {
+                    constructor() {
+                        super(disposedSink);
+                    }
+                },
                 fields: { txt_title: "text" },
                 clicks: [
                     {
@@ -284,9 +330,96 @@ describe("createBoundView", () => {
             } catch (error) {
                 thrown = error;
             }
-            expect(thrown).toBeInstanceOf(FuiBindingError);
-            expect((thrown as FuiBindingError).nodeName).toBe("btn_missing");
-            expect((thrown as FuiBindingError).bindingKind).toBe("click");
+            expect(thrown).toBeInstanceOf(FuiViewCreationError);
+            const creationError = thrown as FuiViewCreationError;
+            expect(creationError.cause).toBeInstanceOf(FuiBindingError);
+            const bindingError = creationError.cause as FuiBindingError;
+            expect(bindingError.nodeName).toBe("btn_missing");
+            expect(bindingError.bindingKind).toBe("click");
+            expect(disposedSink).toEqual(["view"]);
+            expect(componentMock.disposed).toBe(1);
+        } finally {
+            restore();
+        }
+    });
+
+    test("attach 失败回滚：清理错误保留在 cleanupErrors，primary 仍在 cause", async () => {
+        const restore = isolateRegistry();
+        const { createBoundView } = await loadHost();
+        try {
+            const registry = getFuiComponentRegistry();
+            registry.register(LOGIN_VIEW_URL, {
+                ctor: ThrowingOwnerView,
+                fields: { txt_missing: "text" },
+                clicks: [],
+                runtimeBinding: "none",
+            });
+            const componentMock = makeComponentMock({});
+            const originalDispose = componentMock.dispose.bind(componentMock);
+            componentMock.dispose = (): void => {
+                originalDispose();
+                throw new Error("component cleanup boom");
+            };
+            let thrown: unknown;
+            try {
+                createBoundView("Login", "LoginView", registry, () => componentMock as never);
+            } catch (error) {
+                thrown = error;
+            }
+            expect(thrown).toBeInstanceOf(FuiViewCreationError);
+            const creationError = thrown as FuiViewCreationError & {
+                cleanupErrors?: readonly unknown[];
+            };
+            expect(creationError.cause).toBeInstanceOf(FuiBindingError);
+            expect(creationError.cleanupErrors).toHaveLength(2);
+            // View 层先把自身 owner 失败聚合为 FuiViewCleanupError，Host 再作为一项收集
+            const viewCleanup = creationError.cleanupErrors![0] as FuiViewCleanupError;
+            expect(viewCleanup).toBeInstanceOf(FuiViewCleanupError);
+            expect((viewCleanup.errors[0] as Error).message).toBe("view owner boom");
+            expect((creationError.cleanupErrors![1] as Error).message).toBe("component cleanup boom");
+            expect(componentMock.disposed).toBe(1);
+        } finally {
+            restore();
+        }
+    });
+
+    test("dispose 级联：View 与 GComponent 同时抛错，两个错误均聚合保留", async () => {
+        const restore = isolateRegistry();
+        const { createBoundView } = await loadHost();
+        try {
+            const registry = getFuiComponentRegistry();
+            registry.register(LOGIN_VIEW_URL, {
+                ctor: ThrowingOwnerView,
+                fields: {},
+                clicks: [],
+                runtimeBinding: "none",
+            });
+            const componentMock = makeComponentMock({});
+            const originalDispose = componentMock.dispose.bind(componentMock);
+            componentMock.dispose = (): void => {
+                originalDispose();
+                throw new Error("component boom");
+            };
+            const view = createBoundView("Login", "LoginView", registry, () => componentMock as never);
+            expect(view).not.toBeNull();
+
+            let thrown: unknown;
+            try {
+                view!.dispose();
+            } catch (error) {
+                thrown = error;
+            }
+            expect(componentMock.disposed).toBe(1);
+            expect(thrown).toBeInstanceOf(FuiViewCleanupError);
+            const cleanup = thrown as FuiViewCleanupError;
+            expect(cleanup.errors).toHaveLength(2);
+            // View 层先把自身 owner 失败聚合为 FuiViewCleanupError，Host 再作为一项收集
+            const viewCleanup = cleanup.errors[0] as FuiViewCleanupError;
+            expect(viewCleanup).toBeInstanceOf(FuiViewCleanupError);
+            expect((viewCleanup.errors[0] as Error).message).toBe("view owner boom");
+            expect((cleanup.errors[1] as Error).message).toBe("component boom");
+            // 幂等：重复 dispose 不再抛错
+            expect(() => view!.dispose()).not.toThrow();
         } finally {
             restore();
         }

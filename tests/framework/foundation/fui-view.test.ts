@@ -1,6 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import { FClick, FUIBind, collectClickMeta } from "../../../assets/framework/core/fui/FuiBindings";
-import { FuiBindingError, FuiComponentRegistrationError } from "../../../assets/framework/core/fui/FuiErrors";
+import {
+    FuiBindingError,
+    FuiComponentRegistrationError,
+    FuiViewCleanupError,
+} from "../../../assets/framework/core/fui/FuiErrors";
 import {
     getFuiComponentRegistry,
     type FuiComponentUrl,
@@ -275,5 +279,77 @@ describe("FuiView 生命周期", () => {
         view.dispose();
         expect(view["closed"]).toBe(1);
         expect(clicks).toHaveLength(0);
+    });
+
+    test("dispose 逆序执行全部 owner，单步失败聚合为 FuiViewCleanupError", () => {
+        const { seam } = makeSeam({});
+        const calls: string[] = [];
+        class CleanupView extends FuiView<LoginState, LoginViewShape> {
+            protected onConstruct(): void { }
+            protected onState(): void { }
+            protected onClose(): void {
+                calls.push("onClose");
+            }
+        }
+        const view = new CleanupView();
+        view.__attach(seam, {}, []);
+        view.__own({ dispose: () => { calls.push("first"); } });
+        view.__own({
+            dispose: () => {
+                calls.push("second");
+                throw new Error("second boom");
+            },
+        });
+        view.__own({ dispose: () => { calls.push("third"); } });
+
+        let thrown: unknown;
+        try {
+            view.dispose();
+        } catch (error) {
+            thrown = error;
+        }
+
+        // 逆序：third → second（抛错不阻断）→ first → onClose
+        expect(calls).toEqual(["third", "second", "first", "onClose"]);
+        expect(thrown).toBeInstanceOf(FuiViewCleanupError);
+        const cleanup = thrown as FuiViewCleanupError;
+        expect(cleanup.component).toBe("CleanupView");
+        expect(cleanup.errors).toHaveLength(1);
+        expect((cleanup.errors[0] as Error).message).toBe("second boom");
+    });
+
+    test("dispose 先标记已销毁：抛聚合错误后重复调用仍为 no-op", () => {
+        const { seam } = makeSeam({});
+        const calls: string[] = [];
+        class ClosingView extends FuiView<LoginState, LoginViewShape> {
+            protected onConstruct(): void { }
+            protected onState(): void { }
+            protected onClose(): void {
+                calls.push("onClose");
+                throw new Error("onClose boom");
+            }
+        }
+        const view = new ClosingView();
+        view.__attach(seam, {}, []);
+        view.__own({ dispose: () => calls.push("owner") });
+
+        expect(() => view.dispose()).toThrow(FuiViewCleanupError);
+        expect(calls).toEqual(["owner", "onClose"]);
+        // disposed 已标记：重复调用不抛错也不重复执行
+        expect(() => view.dispose()).not.toThrow();
+        expect(calls).toEqual(["owner", "onClose"]);
+    });
+
+    test("__own 在 dispose 后注册的 handle 立即执行", () => {
+        const { seam } = makeSeam({});
+        const calls: string[] = [];
+        const view = new (class extends FuiView<LoginState, LoginViewShape> {
+            protected onConstruct(): void { }
+            protected onState(): void { }
+        })();
+        view.__attach(seam, {}, []);
+        view.dispose();
+        view.__own({ dispose: () => calls.push("late") });
+        expect(calls).toEqual(["late"]);
     });
 });

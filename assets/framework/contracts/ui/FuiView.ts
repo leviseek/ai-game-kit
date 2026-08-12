@@ -5,6 +5,7 @@
  * 实际组件由 FuiViewHost 创建后经视图接缝绑定到本实例。
  */
 
+import { FuiViewCleanupError } from "../../core/fui/FuiErrors";
 import type { Action, Store } from "../state/Store";
 import type { TypedNode } from "./TypedNode";
 
@@ -32,13 +33,26 @@ export interface FuiClickMeta {
  *   `_` 字段、注册 @FClick、随后调 `onConstruct()`。业务构造器内不得访问 `_` 字段。
  * - `bindStore(store, project)`：订阅 Store，状态变化经 project 投影后写 `onState(vm)`；
  *   首次投影在订阅建立时立即执行。
- * - `dispose()`：退订 Store + 移除全部监听 + `onClose()`，幂等。
+ * - `dispose()`：先标记已销毁，再逆序执行全部 owner + `onClose()`；单步失败聚合为
+ *   `FuiViewCleanupError`（不中断后续步骤），重复调用为 no-op。
  * 绑定缺失（gen-types 声明了字段但组件无该元件）由 seam 抛 `FuiBindingError`（fail-fast）。
  */
 export abstract class FuiView<S, VM> {
     private seam: FuiViewSeam | undefined;
     private disposed = false;
-    private readonly disposables: Array<() => void> = [];
+    private readonly owners: Array<() => void> = [];
+
+    /**
+     * 注册外部持有句柄：dispose 时按注册逆序执行 owner 清理。视图已 dispose 后注册的
+     * handle 立即执行（no-op 安全：不吞错，也不重复进入聚合流程，与 dispose 幂等一致）。
+     */
+    __own(handle: { dispose(): void }): void {
+        if (this.disposed) {
+            handle.dispose();
+            return;
+        }
+        this.owners.push(() => handle.dispose());
+    }
 
     /** 框架内部：绑定接缝、注入字段、注册点击。仅由 FuiViewHost 调用一次。 */
     __attach(
@@ -59,20 +73,19 @@ export abstract class FuiView<S, VM> {
             );
         }
         for (const click of clicks) {
-            const dispose = seam.onClick(click.nodeName, click.methodRef.bind(this));
-            this.disposables.push(dispose);
+            this.__own({ dispose: seam.onClick(click.nodeName, click.methodRef.bind(this)) });
         }
         this.onConstruct();
     }
 
     /** 订阅 Store：状态经 project 投影后写 onState；首次立即投影。 */
     protected bindStore(store: Store<S, Action>, project: (state: S) => VM): void {
-        this.disposables.push(
+        this.__own(
             store.subscribe((state) => {
                 if (!this.disposed) {
                     this.onState(project(state));
                 }
-            }).dispose,
+            }),
         );
         this.onState(project(store.getState()));
     }
@@ -86,15 +99,29 @@ export abstract class FuiView<S, VM> {
     /** 页面关闭（可选）。 */
     protected onClose(): void { }
 
-    /** 释放：退订 Store + 移除全部点击监听 + onClose。幂等。 */
+    /** 释放：先标记已销毁，逆序执行全部 owner，最后 onClose；任一失败聚合为 FuiViewCleanupError。 */
     dispose(): void {
         if (this.disposed) {
             return;
         }
+        // 先标记：即使清理抛错，重复 dispose 仍为 no-op（幂等不依赖清理成功）
         this.disposed = true;
-        for (const dispose of this.disposables.splice(0)) {
-            dispose();
+        const errors: unknown[] = [];
+        for (let i = this.owners.length - 1; i >= 0; i--) {
+            try {
+                this.owners[i]!();
+            } catch (error) {
+                errors.push(error);
+            }
         }
-        this.onClose();
+        this.owners.length = 0;
+        try {
+            this.onClose();
+        } catch (error) {
+            errors.push(error);
+        }
+        if (errors.length > 0) {
+            throw new FuiViewCleanupError(this.constructor.name, errors);
+        }
     }
 }

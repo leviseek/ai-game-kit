@@ -5,7 +5,11 @@ import {
     type FuiComponentRegistry,
     type FuiComponentUrl,
 } from "../../../core/fui/FuiComponentRegistry";
-import { FuiBindingError, FuiViewCreationError } from "../../../core/fui/FuiErrors";
+import {
+    FuiBindingError,
+    FuiViewCleanupError,
+    FuiViewCreationError,
+} from "../../../core/fui/FuiErrors";
 import type { FuiView, FuiViewSeam } from "../../../contracts/ui/FuiView";
 import { wrapFairyGuiObjectTyped, type FuiElementKind } from "./FairyGuiViewHandle";
 import { createFairyGuiView, type FairyGuiViewLike } from "./FairyGuiPageAdapter";
@@ -48,10 +52,45 @@ function createSeam(url: FuiComponentUrl, component: GComponent): FuiViewSeam {
 }
 
 /**
+ * 创建失败回滚：primary 错误始终保留在 FuiViewCreationError.cause（不覆盖）；
+ * View 与 GComponent 各自 try/catch 清理，失败聚合附在错误实例的 cleanupErrors 属性
+ * （冻结数组；无原生 AggregateError，ES2015 兼容，详见 core/fui/FuiErrors）。
+ */
+function throwWithRollback(
+    url: FuiComponentUrl,
+    primary: unknown,
+    view: FuiView<unknown, unknown> | undefined,
+    component: GObject | null,
+): never {
+    const cleanupErrors: unknown[] = [];
+    if (view !== undefined) {
+        try {
+            view.dispose();
+        } catch (error) {
+            cleanupErrors.push(error);
+        }
+    }
+    if (component !== null) {
+        try {
+            component.dispose();
+        } catch (error) {
+            cleanupErrors.push(error);
+        }
+    }
+    const error = new FuiViewCreationError(url, primary);
+    if (cleanupErrors.length > 0) {
+        (error as FuiViewCreationError & { cleanupErrors: readonly unknown[] }).cleanupErrors =
+            Object.freeze(cleanupErrors);
+    }
+    throw error;
+}
+
+/**
  * 创建绑定视图：查注册表，命中则创建 GComponent、实例化 FuiView 并 __attach 注入字段
  * 与点击，返回挂载视图；未命中返回 null（调用方回退既有 createFairyGuiView 路径）。
  * 返回的视图是 GComponent 本身（可被 GRoot.addChild 挂载），其 dispose 级联释放 FuiView
- * 绑定（退订 Store/移除监听），再走引擎 dispose。fgui 类型只存在于本 Adapter 边界。
+ * 绑定（退订 Store/移除监听），再走引擎 dispose——两者独立 try/catch，任一失败不阻断
+ * 另一方，全部失败聚合为 FuiViewCleanupError（幂等）。fgui 类型只存在于本 Adapter 边界。
  * createObject 为创建接缝（缺省 UIPackage.createObject），测试可注入记录型 mock。
  */
 export function createBoundView(
@@ -70,6 +109,7 @@ export function createBoundView(
 
     const component = createObject(packageName, resName);
     if (component === null) {
+        // createObject 失败：无组件可回滚，直接包装为创建失败
         throw new FuiViewCreationError(
             url,
             new Error(`FairyGUI view "${resName}" in package "${packageName}" was not found`),
@@ -82,10 +122,15 @@ export function createBoundView(
     try {
         view = new entry.ctor();
     } catch (cause) {
-        // ctor 抛错包装为创建失败；已创建 GComponent 的回滚由后续清理任务负责
-        throw new FuiViewCreationError(url, cause);
+        // ctor 抛错：已创建的 GComponent 仍须回滚（清理失败不影响 primary cause）
+        throwWithRollback(url, cause, undefined, component);
     }
-    view.__attach(createSeam(url, component as GComponent), entry.fields, entry.clicks);
+    try {
+        view.__attach(createSeam(url, component as GComponent), entry.fields, entry.clicks);
+    } catch (cause) {
+        // binder/attach 失败：View 与 GComponent 均回滚，primary 保持在 cause
+        throwWithRollback(url, cause, view, component);
+    }
 
     const bound = component as GComponent & {
         readonly name: string;
@@ -100,12 +145,24 @@ export function createBoundView(
             return;
         }
         disposed = true;
+        const errors: unknown[] = [];
         const boundView = (bound as unknown as Record<string, unknown>)[BOUND_VIEW_KEY];
         if (typeof boundView === "object" && boundView !== null) {
-            (boundView as { dispose(): void }).dispose();
+            try {
+                (boundView as { dispose(): void }).dispose();
+            } catch (error) {
+                errors.push(error);
+            }
             (bound as unknown as Record<string, unknown>)[BOUND_VIEW_KEY] = undefined;
         }
-        originalDispose();
+        try {
+            originalDispose();
+        } catch (error) {
+            errors.push(error);
+        }
+        if (errors.length > 0) {
+            throw new FuiViewCleanupError(url, errors);
+        }
     };
 
     return bound;
