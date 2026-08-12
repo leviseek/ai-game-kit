@@ -39,6 +39,17 @@ import type {
     ConfigReadType,
     ConfigTable,
 } from "../../../assets/framework/contracts/config/Config";
+import {
+    FUIBind,
+    FuiView,
+    getFuiComponentRegistry,
+} from "../../../assets/framework";
+import type {
+    FuiBindOptions,
+    FuiComponentEntry,
+    FuiComponentRegistry,
+    FuiComponentUrl,
+} from "../../../assets/framework";
 
 type Equal<Left, Right> =
     (<Value>() => Value extends Left ? 1 : 2) extends
@@ -338,3 +349,44 @@ type _ConfigTableSnapshotReturnsReadonly = Expect<
         () => Readonly<Record<ConfigKey, unknown>>
     >
 >;
+
+type _FuiComponentUrlIsTemplateLiteral = Expect<
+    Equal<FuiComponentUrl, `ui://${string}/${string}`>
+>;
+type _FuiBindOptionsHasSingleRequiredKey = Expect<
+    Equal<keyof FuiBindOptions, "runtimeBinding">
+> &
+    Expect<Equal<FuiBindOptions["runtimeBinding"], "required" | "none">>;
+type _EntryCarriesRuntimeBinding = Expect<
+    Equal<FuiComponentEntry["runtimeBinding"], "required" | "none">
+>;
+type _RegistryUrlIsBranded = Expect<
+    Equal<Parameters<FuiComponentRegistry["register"]>[0], FuiComponentUrl> &
+        Equal<Parameters<FuiComponentRegistry["lookup"]>[0], FuiComponentUrl>
+>;
+
+class _FuiTypecheckView extends FuiView<unknown, unknown> {
+    protected onConstruct(): void { }
+    protected onState(): void { }
+}
+
+const _registry = getFuiComponentRegistry();
+const _plainUrl: string = "ui://Demo/Test";
+const _entry: FuiComponentEntry = {
+    ctor: _FuiTypecheckView,
+    fields: {},
+    clicks: [],
+    runtimeBinding: "none",
+};
+
+// @ts-expect-error 普通 string 不满足 FuiComponentUrl（模板字面量品牌类型）
+_registry.register(_plainUrl, _entry);
+// @ts-expect-error 普通 string 不满足 FuiComponentUrl（模板字面量品牌类型）
+_registry.lookup(_plainUrl);
+
+const _brandedUrl = ("ui" + "://Demo/Test") as FuiComponentUrl;
+_registry.lookup(_brandedUrl);
+
+// @ts-expect-error FUIBind 缺少必填 options.runtimeBinding
+FUIBind(_brandedUrl, { txt_status: "text" });
+FUIBind(_brandedUrl, { txt_status: "text" }, { runtimeBinding: "none" });

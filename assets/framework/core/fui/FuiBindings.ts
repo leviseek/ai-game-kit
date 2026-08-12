@@ -6,7 +6,10 @@
  */
 
 import type { FuiClickMeta, FuiView } from "../../contracts/ui/FuiView";
-import { getFuiComponentRegistry } from "./FuiComponentRegistry";
+import {
+    getFuiComponentRegistry,
+    type FuiComponentUrl,
+} from "./FuiComponentRegistry";
 
 /** @FClick 元数据原型挂载键：同一组件原型链上收集的点击声明。 */
 const FUI_CLICK_META_KEY = "__fuiClickMeta__";
@@ -25,23 +28,29 @@ export function collectClickMeta(ctor: new () => unknown): readonly FuiClickMeta
     return out;
 }
 
+/** @FUIBind 声明选项：显式声明组件是否需要运行时绑定（必填）。 */
+export interface FuiBindOptions {
+    readonly runtimeBinding: "required" | "none";
+}
+
 /**
- * 组件绑定装饰器：登记 `ui://<包>/<组件>` 复合键 → 组件类与字段描述。
- * 重复登记同一复合键抛错。参数 nodeNames 为 gen-types 生成的节点名联合，
- * 用于类型约束与运行时字段注入来源。
+ * 组件绑定装饰器：以 FuiComponentUrl（生成 URL 常量，禁止裸字符串/手动拼接）登记
+ * 组件类与字段描述，并显式声明运行时绑定策略（required 组件缺 binder 时创建失败）。
+ * 重复登记同一复合键抛错。参数 fields 为 gen-types 生成的节点名联合，用于类型约束
+ * 与运行时字段注入来源。
  */
 export function FUIBind<N extends string>(
-    packageName: string,
-    componentName: string,
+    url: FuiComponentUrl,
     fields: Readonly<Record<string, N>>,
+    options: FuiBindOptions,
 ): (ctor: new () => unknown) => void {
-    const url = `ui://${packageName}/${componentName}`;
     return (ctor: new () => unknown): void => {
         const registry = getFuiComponentRegistry();
         registry.register(url, {
             ctor: ctor as new () => FuiView<unknown, unknown>,
             fields: fields as Readonly<Record<string, string>>,
             clicks: collectClickMeta(ctor),
+            runtimeBinding: options.runtimeBinding,
         });
     };
 }

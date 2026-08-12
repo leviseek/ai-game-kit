@@ -1,6 +1,9 @@
 import { Event, GComponent, GObject, UIPackage } from "fairygui-cc";
-import type { FuiComponentRegistry } from "../../../core/fui/FuiComponentRegistry";
-import { getFuiComponentRegistry } from "../../../core/fui/FuiComponentRegistry";
+import {
+    createFuiComponentUrl,
+    getFuiComponentRegistry,
+    type FuiComponentRegistry,
+} from "../../../core/fui/FuiComponentRegistry";
 import type { FuiView, FuiViewSeam } from "../../../contracts/ui/FuiView";
 import { wrapFairyGuiObjectTyped, type FuiElementKind } from "./FairyGuiViewHandle";
 import { createFairyGuiView, type FairyGuiViewLike } from "./FairyGuiPageAdapter";
@@ -55,7 +58,8 @@ export function createBoundView(
     createObject: (pkg: string, res: string) => GObject | null = (pkg, res) =>
         UIPackage.createObject(pkg, res),
 ): (GComponent & { readonly name: string; dispose(): void }) | null {
-    const url = `ui://${packageName}/${resName}`;
+    // 单一 URL 构造点：后续注册表查询、错误与 binder 均复用该值，不散落类型断言
+    const url = createFuiComponentUrl(packageName, resName);
     const entry = registry.lookup(url);
     if (entry === undefined) {
         return null;

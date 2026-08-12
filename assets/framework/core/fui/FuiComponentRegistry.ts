@@ -7,6 +7,17 @@
 
 import type { FuiClickMeta, FuiView } from "../../contracts/ui/FuiView";
 
+/**
+ * 组件 URL 品牌类型：`ui://<包>/<组件>` 模板字面量。绑定链唯一的 URL 契约，
+ * 字面量（含生成常量）天然满足，宽化 string 编译期拒绝，杜绝裸字符串与短 id 散落。
+ */
+export type FuiComponentUrl = `ui://${string}/${string}`;
+
+/** 内部 URL 工厂：从包名/组件名构造 FuiComponentUrl 的唯一构造点（不进根公共导出）。 */
+export function createFuiComponentUrl(packageName: string, componentName: string): FuiComponentUrl {
+    return `ui://${packageName}/${componentName}`;
+}
+
 export interface FuiComponentEntry {
     /** 组件类构造器（new 即创建 FuiView 实例）。 */
     readonly ctor: new () => FuiView<unknown, unknown>;
@@ -14,20 +25,22 @@ export interface FuiComponentEntry {
     readonly fields: Readonly<Record<string, string>>;
     /** @FClick 收集的点击元数据（原型方法引用，实例化时 bind）。 */
     readonly clicks: readonly FuiClickMeta[];
+    /** 运行时绑定策略：required 组件缺少对应 binder 时创建失败（见 fui-view-binding spec）。 */
+    readonly runtimeBinding: "required" | "none";
 }
 
 export interface FuiComponentRegistry {
     /** 登记组件；同一复合键重复登记抛错（fail-fast）。 */
-    register(url: string, entry: FuiComponentEntry): void;
+    register(url: FuiComponentUrl, entry: FuiComponentEntry): void;
     /** 按复合键查询；未登记返回 undefined。 */
-    lookup(url: string): FuiComponentEntry | undefined;
+    lookup(url: FuiComponentUrl): FuiComponentEntry | undefined;
 }
 
 const GLOBAL_KEY = "__ai_game_kit_fui_components__";
 
 /** 组件注册失败：复合键重复登记。 */
 export class FuiComponentRegistrationError extends Error {
-    constructor(url: string) {
+    constructor(url: FuiComponentUrl) {
         super(`Fui component already registered: ${url}`);
         this.name = "FuiComponentRegistrationError";
     }
@@ -39,7 +52,7 @@ export function getFuiComponentRegistry(): FuiComponentRegistry {
     if (existing !== undefined) {
         return existing;
     }
-    const entries = new Map<string, FuiComponentEntry>();
+    const entries = new Map<FuiComponentUrl, FuiComponentEntry>();
     const registry: FuiComponentRegistry = {
         register(url, entry) {
             if (entries.has(url)) {

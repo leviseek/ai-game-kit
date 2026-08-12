@@ -3,7 +3,10 @@ import { pathToFileURL } from "node:url";
 import { describe, expect, mock, test } from "bun:test";
 
 import { createFairyGuiMock } from "./helpers/fairygui-mock";
-import { getFuiComponentRegistry } from "../../../assets/framework/core/fui/FuiComponentRegistry";
+import {
+    getFuiComponentRegistry,
+    type FuiComponentUrl,
+} from "../../../assets/framework/core/fui/FuiComponentRegistry";
 import { FuiView } from "../../../assets/framework/contracts/ui/FuiView";
 
 // 实现值 import fairygui-cc；统一使用共享 fixture，动态加载避免 mock 前解析。
@@ -21,13 +24,22 @@ async function loadHost(): Promise<{
     return (await import(pathToFileURL(HOST_FILE).href)) as never;
 }
 
-function resetRegistry(): void {
+// 隔离的测试注册表：保存 globalThis 原单例，测试后恢复（禁止无条件 delete，
+// 否则会删掉已由其它缓存 ESM 模块登记的生产组件元数据，破坏其它用例）。
+function isolateRegistry(): () => void {
     const g = globalThis as Record<string, unknown>;
-    delete g["__ai_game_kit_fui_components__"];
+    const original = g["__ai_game_kit_fui_components__"];
+    return () => {
+        if (original === undefined) {
+            delete g["__ai_game_kit_fui_components__"];
+        } else {
+            g["__ai_game_kit_fui_components__"] = original;
+        }
+    };
 }
 
 /** 合成测试包名：非真实 FGUI 包，拼接避免 scan-ts 扫到裸 ui:// 字面量。 */
-const LOGIN_VIEW_URL = "ui" + "://Login/LoginView";
+const LOGIN_VIEW_URL = ("ui" + "://Login/LoginView") as FuiComponentUrl;
 
 /** 可注入的引擎组件 mock：具备 getChild/on/off/dispose（对齐真实 GComponent 使用面）。 */
 function makeComponentMock(children: Record<string, { text?: string; visible?: boolean }>): {
@@ -103,7 +115,7 @@ class BoundLoginView extends FuiView<unknown, unknown> {
 
 describe("createBoundView", () => {
     test("命中注册表：创建 FuiView 实例、注入字段、注册点击、dispose 级联", async () => {
-        resetRegistry();
+        const restore = isolateRegistry();
         const { createBoundView } = await loadHost();
         try {
             const fields = { txt_title: "text", btn_login: "button" } as const;
@@ -119,6 +131,7 @@ describe("createBoundView", () => {
                         },
                     },
                 ],
+                runtimeBinding: "none",
             });
 
             const componentMock = makeComponentMock({
@@ -142,23 +155,23 @@ describe("createBoundView", () => {
             view!.dispose();
             expect(componentMock.disposed).toBe(1);
         } finally {
-            resetRegistry();
+            restore();
         }
     });
 
     test("未命中注册表返回 null（回退既有路径）", async () => {
-        resetRegistry();
+        const restore = isolateRegistry();
         const { createBoundView } = await loadHost();
         try {
             const view = createBoundView("Login", "NoSuchView", getFuiComponentRegistry(), () => null);
             expect(view).toBeNull();
         } finally {
-            resetRegistry();
+            restore();
         }
     });
 
     test("命中但组件创建失败抛错", async () => {
-        resetRegistry();
+        const restore = isolateRegistry();
         const { createBoundView } = await loadHost();
         try {
             const registry = getFuiComponentRegistry();
@@ -166,17 +179,18 @@ describe("createBoundView", () => {
                 ctor: BoundLoginView,
                 fields: { txt_title: "text", btn_login: "button" },
                 clicks: [],
+                runtimeBinding: "none",
             });
             expect(() => createBoundView("Login", "LoginView", registry, () => null)).toThrow(
                 /was not found/,
             );
         } finally {
-            resetRegistry();
+            restore();
         }
     });
 
     test("绑定字段缺失 fail-fast", async () => {
-        resetRegistry();
+        const restore = isolateRegistry();
         const { createBoundView } = await loadHost();
         try {
             const registry = getFuiComponentRegistry();
@@ -184,27 +198,28 @@ describe("createBoundView", () => {
                 ctor: BoundLoginView,
                 fields: { txt_title: "text", txt_missing: "text" },
                 clicks: [],
+                runtimeBinding: "none",
             });
             const componentMock = makeComponentMock({ txt_title: { text: "" } });
             expect(() =>
                 createBoundView("Login", "LoginView", registry, () => componentMock as never),
             ).toThrow(/绑定缺失/);
         } finally {
-            resetRegistry();
+            restore();
         }
     });
 });
 
 describe("createFairyGuiBoundView", () => {
     test("未命中注册表时回退 createFairyGuiView（引擎创建）", async () => {
-        resetRegistry();
+        const restore = isolateRegistry();
         const { createFairyGuiBoundView } = await loadHost();
         try {
             const compose = createFairyGuiBoundView(getFuiComponentRegistry());
             // 未命中 → 回退 createFairyGuiView：mock UIPackage.createObject 返回 null → 抛 not found
             expect(() => compose("Login", "LoginView")).toThrow(/was not found/);
         } finally {
-            resetRegistry();
+            restore();
         }
     });
 });

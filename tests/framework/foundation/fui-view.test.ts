@@ -3,18 +3,27 @@ import { FClick, FUIBind, collectClickMeta } from "../../../assets/framework/cor
 import {
     FuiComponentRegistrationError,
     getFuiComponentRegistry,
+    type FuiComponentUrl,
 } from "../../../assets/framework/core/fui/FuiComponentRegistry";
 import { FuiView, type FuiViewSeam } from "../../../assets/framework/contracts/ui/FuiView";
 import { createStore } from "../../../assets/framework/core/state/Store";
 
-// 隔离的测试注册表：直接复用 globalThis 单例，测试后清理避免污染后续用例
-function resetRegistry(): void {
+// 隔离的测试注册表：保存 globalThis 原单例，测试后恢复（禁止无条件 delete，
+// 否则会删掉已由其它缓存 ESM 模块登记的生产组件元数据，破坏其它用例）。
+function isolateRegistry(): () => void {
     const g = globalThis as Record<string, unknown>;
-    delete g["__ai_game_kit_fui_components__"];
+    const original = g["__ai_game_kit_fui_components__"];
+    return () => {
+        if (original === undefined) {
+            delete g["__ai_game_kit_fui_components__"];
+        } else {
+            g["__ai_game_kit_fui_components__"] = original;
+        }
+    };
 }
 
 /** 合成测试包名：非真实 FGUI 包，拼接避免 scan-ts 扫到裸 ui:// 字面量。 */
-const LOGIN_VIEW_URL = "ui" + "://Login/LoginView";
+const LOGIN_VIEW_URL = ("ui" + "://Login/LoginView") as FuiComponentUrl;
 
 interface LoginState {
     readonly status: string;
@@ -67,11 +76,11 @@ interface LoginViewShape {
 
 describe("FUIBind / FClick", () => {
     test("FUIBind 登记复合键，FClick 收集原型方法引用", () => {
-        resetRegistry();
+        const restore = isolateRegistry();
         try {
             const fields = { txt_status: "text", btn_login: "button" } as const;
 
-            @FUIBind("Login", "LoginView", fields)
+            @FUIBind(LOGIN_VIEW_URL, fields, { runtimeBinding: "required" })
             class LoginView extends FuiView<LoginState, LoginViewShape> implements LoginViewShape {
                 readonly _txt_status!: { setText(v: string): void; text(): string };
                 readonly _btn_login!: { setText(v: string): void; onClick(h: () => void): void };
@@ -97,15 +106,15 @@ describe("FUIBind / FClick", () => {
             expect(entry!.clicks).toHaveLength(1);
             expect(entry!.clicks[0]!.nodeName).toBe("btn_login");
         } finally {
-            resetRegistry();
+            restore();
         }
     });
 
     test("FUIBind 重复登记同一复合键抛错", () => {
-        resetRegistry();
+        const restore = isolateRegistry();
         try {
             const fields = { txt_status: "text" } as const;
-            @FUIBind("Login", "LoginView", fields)
+            @FUIBind(LOGIN_VIEW_URL, fields, { runtimeBinding: "required" })
             class A extends FuiView<LoginState, LoginViewShape> {
                 readonly _txt_status!: { setText(v: string): void; text(): string };
                 protected onConstruct(): void { }
@@ -119,15 +128,16 @@ describe("FUIBind / FClick", () => {
                     ctor: A,
                     fields,
                     clicks: [],
+                    runtimeBinding: "required",
                 }),
             ).toThrow(FuiComponentRegistrationError);
         } finally {
-            resetRegistry();
+            restore();
         }
     });
 
     test("collectClickMeta 沿原型链收集", () => {
-        resetRegistry();
+        const restore = isolateRegistry();
         try {
             class Base extends FuiView<LoginState, LoginViewShape> {
                 readonly _txt_status!: { setText(v: string): void; text(): string };
@@ -143,7 +153,7 @@ describe("FUIBind / FClick", () => {
             expect(meta).toHaveLength(1);
             expect(meta[0]!.nodeName).toBe("txt_status");
         } finally {
-            resetRegistry();
+            restore();
         }
     });
 });

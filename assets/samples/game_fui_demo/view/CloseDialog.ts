@@ -9,6 +9,7 @@ import type {
     ICloseDialog,
 } from "../../../ui/generated/ui-demo-types";
 import { CloseDialogFields } from "../../../ui/generated/ui-demo-types";
+import { UiDemoCloseDialog } from "../../../ui/generated/ui-demo";
 import type {
     CloseDialogAction,
     CloseDialogState,
@@ -37,7 +38,7 @@ import {
 export interface CloseDialog extends ICloseDialog {
 }
 
-@FUIBind("Demo", "CloseDialog", CloseDialogFields)
+@FUIBind(UiDemoCloseDialog, CloseDialogFields, { runtimeBinding: "required" })
 export class CloseDialog extends FuiView<CloseDialogState, CloseDialogViewModel> {
     private store?: Store<CloseDialogState, CloseDialogAction>;
     private onConfirm: () => void = () => { };

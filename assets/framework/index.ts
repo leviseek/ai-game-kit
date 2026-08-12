@@ -135,7 +135,12 @@ export type { FuiClickMeta, FuiViewSeam } from "./contracts/ui/FuiView";
 export { FuiView } from "./contracts/ui/FuiView";
 
 export { FUIBind, FClick } from "./core/fui/FuiBindings";
-export type { FuiComponentEntry, FuiComponentRegistry } from "./core/fui/FuiComponentRegistry";
+export type { FuiBindOptions } from "./core/fui/FuiBindings";
+export type {
+    FuiComponentEntry,
+    FuiComponentRegistry,
+    FuiComponentUrl,
+} from "./core/fui/FuiComponentRegistry";
 export {
     FuiComponentRegistrationError,
     getFuiComponentRegistry,
