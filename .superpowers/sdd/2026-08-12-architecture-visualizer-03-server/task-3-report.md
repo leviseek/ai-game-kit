@@ -25,3 +25,28 @@
 **concerns**:
 - `git diff --check` 对未跟踪文件覆盖有限；提交前已计划暂存后再跑 `git diff --cached --check`。
 - 首次 GREEN 全文件运行曾超时一次；单测定位后未复现，并补强了 server close 主动释放 SSE connection 的路径，后续验证通过。
+
+### Review Fix: 真实路径边界校验
+
+**状态**: DONE
+
+**改动**:
+- `readSourceExcerpt` 改为对 `projectRoot` 与目标文件执行 `realpath` 后再用 `relative/isAbsolute` 校验根目录边界，防止仓库内 symlink 指向仓库外源码。
+- 保留词法路径预检，确保 `../package.json` 这类路径逃逸仍返回 403，而不是因目标不存在返回 404。
+- `routes.ts` 将 URL path segment decode 移入 `try`，畸形编码统一返回 JSON `{ "error": "bad_request" }`。
+- `radius` 对非有限值使用默认窗口归一化，避免 `NaN` 传播到 `startLine/endLine`。
+- 测试新增仓库内 symlink 指向仓库外文件的 403 断言；Windows symlink 权限不足时，通过注入 `realpath/readFile` 的 fake filesystem 继续执行同一安全断言，不跳过。
+
+**TDD / 验证命令和结果**:
+- RED: `bun test tools/arch-viewer/test/http-server.test.ts` -> FAIL，暴露 `URIError` 无响应、`radius=NaN` 产生 `NaN` 窗口；Windows 当前 symlink 创建返回 `EPERM`，随后改为 fake filesystem 安全断言。
+- GREEN: `bun test tools/arch-viewer/test/http-server.test.ts` -> PASS，8 pass / 0 fail / 42 expect。
+- `bun x tsc --noEmit -p tools/arch-viewer/tsconfig.json` -> PASS。
+- `git diff --check` -> PASS。
+
+**自审**:
+- 403/404/400 响应只包含固定 error code，不包含绝对路径。
+- `readFile` 使用的是真实路径校验后的 `realFile`。
+- 未引入依赖，未使用 `as any` 或 `@ts-ignore`。
+
+**concerns**:
+- 当前 Windows 环境无 symlink 权限，HTTP 层 symlink 403 走不到真实 symlink 分支；测试通过 fake `realpath` 直接覆盖相同安全边界。

@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 
 import { startArchServer } from "../lib/server/http-server";
-import { readSourceExcerpt } from "../lib/server/source";
+import { readSourceExcerpt, SourceReadError } from "../lib/server/source";
 import { createGraphSnapshotStore } from "../lib/server/snapshot-store";
 import type { GraphSnapshot, ViewType } from "../lib/graph/types";
 
@@ -76,6 +76,45 @@ describe("startArchServer", () => {
         }
     });
 
+    test("rejects repository-local symlinks that resolve outside the repository", async () => {
+        const root = createFixtureRoot();
+        const externalRoot = createFixtureRoot();
+        const externalFile = resolve(externalRoot, "outside.ts");
+        writeFileSync(externalFile, "export const outside = true;\n");
+        const linkFile = join(root, "src", "outside-link.ts");
+        if (!tryCreateSymlink(externalFile, linkFile)) {
+            await expect(readSourceExcerpt(root, "src/outside-link.ts", 1, 20, {
+                realpath: async (path) => path === linkFile ? externalFile : path,
+                readFile: async () => "export const outside = true;\n",
+            })).rejects.toEqual(new SourceReadError("forbidden", "forbidden"));
+            return;
+        }
+        const server = await startArchServer({ projectRoot: root, store: createGraphSnapshotStore(snapshot()) });
+        try {
+            const response = await fetch(`${server.url}/api/source?file=src/outside-link.ts&line=1`);
+
+            expect(response.status).toBe(403);
+            expect(response.headers.get("content-type")).toBe("application/json; charset=utf-8");
+            expect(JSON.stringify(await response.json())).not.toContain(externalRoot);
+        } finally {
+            await server.close();
+        }
+    });
+
+    test("returns fixed JSON for malformed URL encoding", async () => {
+        const root = createFixtureRoot();
+        const server = await startArchServer({ projectRoot: root, store: createGraphSnapshotStore(snapshot()) });
+        try {
+            const response = await fetch(`${server.url}/api/groups/%E0%A4%A`);
+
+            expect(response.status).toBe(400);
+            expect(response.headers.get("content-type")).toBe("application/json; charset=utf-8");
+            expect(await response.json()).toEqual({ error: "bad_request" });
+        } finally {
+            await server.close();
+        }
+    });
+
     test("streams snapshot-ready events over SSE and releases on close", async () => {
         const root = createFixtureRoot();
         const store = createGraphSnapshotStore(snapshot());
@@ -112,6 +151,16 @@ describe("readSourceExcerpt", () => {
         expect(excerpt.startLine).toBe(20);
         expect(excerpt.endLine).toBe(99);
     });
+
+    test("normalizes non-finite radius to the default source window", async () => {
+        const root = createFixtureRoot();
+
+        const excerpt = await readSourceExcerpt(root, "src/large.ts", 60, Number.NaN);
+
+        expect(excerpt.startLine).toBe(40);
+        expect(excerpt.endLine).toBe(80);
+        expect(excerpt.lines).toHaveLength(41);
+    });
 });
 
 async function jsonFetch(url: string): Promise<Response> {
@@ -145,6 +194,16 @@ function writeFixtureFile(root: string, file: string, source: string): void {
     const fullPath = join(root, file);
     mkdirSync(dirname(fullPath), { recursive: true });
     writeFileSync(fullPath, source);
+}
+
+function tryCreateSymlink(target: string, path: string): boolean {
+    try {
+        symlinkSync(target, path, "file");
+        return true;
+    } catch (error) {
+        if (error instanceof Error && "code" in error && error.code === "EPERM") return false;
+        throw error;
+    }
 }
 
 function snapshot(version = 1): GraphSnapshot {

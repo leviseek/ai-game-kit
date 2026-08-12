@@ -17,11 +17,10 @@ export async function routeApi(request: IncomingMessage, response: ServerRespons
         writeJson(response, 405, { error: "method_not_allowed" });
         return;
     }
-    const url = new URL(request.url ?? "/", "http://127.0.0.1");
-    const segments = url.pathname.split("/").filter(Boolean).map(decodeURIComponent);
-    const snapshot = options.store.current().snapshot;
-
     try {
+        const url = new URL(request.url ?? "/", "http://127.0.0.1");
+        const segments = url.pathname.split("/").filter(Boolean).map(decodeURIComponent);
+        const snapshot = options.store.current().snapshot;
         if (url.pathname === "/api/source") {
             await handleSource(response, options.projectRoot, url);
             return;
@@ -80,6 +79,10 @@ async function handleSource(response: ServerResponse, projectRoot: string, url: 
 }
 
 function handleRouteError(response: ServerResponse, error: unknown): void {
+    if (error instanceof URIError) {
+        writeJson(response, 400, { error: "bad_request" });
+        return;
+    }
     if (error instanceof SourceReadError) {
         writeJson(response, error.code === "forbidden" ? 403 : 404, { error: error.code });
         return;
