@@ -105,6 +105,6 @@ function toError(error: unknown): Error {
 
 function hasPendingChanges(status: CodeGraphStatus): boolean {
     const pendingChanges = status.pendingChanges;
-    if (pendingChanges === undefined) return false;
+    if (pendingChanges === undefined) return true;
     return pendingChanges.added !== 0 || pendingChanges.modified !== 0 || pendingChanges.removed !== 0;
 }

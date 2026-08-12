@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
-import { run, type ArchRunDeps } from "../cli";
+import { assertCodeGraphReady, run, type ArchRunDeps } from "../cli";
+import type { CodeGraphStatus } from "../lib/codegraph/types";
 import type { GraphSnapshot, ViewType } from "../lib/graph/types";
 import { resolveBrowserCommand } from "../lib/server/open-browser";
 
@@ -50,6 +51,60 @@ describe("arch CLI", () => {
             "startWatcher",
             "waitForShutdown:http://127.0.0.1:1234",
         ]);
+    });
+
+    test("default mode disposes server when watcher startup fails", async () => {
+        const calls: string[] = [];
+        const err: string[] = [];
+        const code = await run(["--no-open"], {
+            ...deps(calls, [], snapshot(), err),
+            startWatcher: () => {
+                calls.push("startWatcher");
+                throw new Error("watcher failed");
+            },
+        });
+
+        expect(code).toBe(1);
+        expect(calls).toEqual(["buildWeb", "startServer:0", "startWatcher", "server.dispose"]);
+        expect(err).toEqual(["watcher failed"]);
+    });
+
+    test("CodeGraph status without pendingChanges is not ready", () => {
+        const { pendingChanges: _pendingChanges, ...status } = readyStatus();
+
+        expect(() => assertCodeGraphReady(status)).toThrow("CodeGraph index readiness cannot be verified: missing pendingChanges");
+    });
+
+    test("--once returns 1 when initial analysis reports CodeGraph not ready", async () => {
+        const calls: string[] = [];
+        const err: string[] = [];
+        const code = await run(["--once", "--no-open"], {
+            ...deps(calls, [], snapshot(), err),
+            analyzeOnce: async () => {
+                calls.push("analyzeOnce");
+                throw new Error("CodeGraph index readiness cannot be verified: missing pendingChanges");
+            },
+        });
+
+        expect(code).toBe(1);
+        expect(calls).toEqual(["analyzeOnce"]);
+        expect(err).toEqual(["CodeGraph index readiness cannot be verified: missing pendingChanges"]);
+    });
+
+    test("default mode returns 1 when server startup reports CodeGraph not ready", async () => {
+        const calls: string[] = [];
+        const err: string[] = [];
+        const code = await run(["--no-open"], {
+            ...deps(calls, [], snapshot(), err),
+            startServer: async (port) => {
+                calls.push(`startServer:${port ?? 0}`);
+                throw new Error("CodeGraph index readiness cannot be verified: missing pendingChanges");
+            },
+        });
+
+        expect(code).toBe(1);
+        expect(calls).toEqual(["buildWeb", "startServer:0"]);
+        expect(err).toEqual(["CodeGraph index readiness cannot be verified: missing pendingChanges"]);
     });
 
     test("invalid port returns 2", async () => {
@@ -103,6 +158,17 @@ function deps(calls: string[], out: string[], nextSnapshot = snapshot(), err: st
         },
         writeOut: (line) => out.push(line),
         writeErr: (line) => err.push(line),
+    };
+}
+
+function readyStatus(): CodeGraphStatus {
+    return {
+        initialized: true,
+        version: "fake",
+        projectPath: "D:/repo",
+        indexPath: "D:/repo/.codegraph",
+        lastIndexed: null,
+        pendingChanges: { added: 0, modified: 0, removed: 0 },
     };
 }
 

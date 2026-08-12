@@ -55,12 +55,13 @@ export async function run(argv: readonly string[], deps: ArchRunDeps = productio
 
         await deps.buildWeb();
         const server = await deps.startServer(parsed.options.port);
-        const watcher = deps.startWatcher(server);
+        let watcher: WatchHandle | undefined;
         try {
+            watcher = deps.startWatcher(server);
             if (parsed.options.open) await deps.openBrowser(server.url);
             await deps.waitForShutdown(server, watcher);
         } catch (error) {
-            watcher.dispose();
+            watcher?.dispose();
             await server.dispose();
             throw error;
         }
@@ -124,9 +125,12 @@ function snapshotSummary(snapshot: GraphSnapshot): string {
     return `views=${Object.keys(snapshot.views).length} diagnostics=${snapshot.diagnostics.length}`;
 }
 
-function assertCodeGraphReady(status: CodeGraphStatus): void {
+export function assertCodeGraphReady(status: CodeGraphStatus): void {
     const pending = status.pendingChanges;
-    if (pending !== undefined && (pending.added !== 0 || pending.modified !== 0 || pending.removed !== 0)) {
+    if (pending === undefined) {
+        throw new Error("CodeGraph index readiness cannot be verified: missing pendingChanges");
+    }
+    if (pending.added !== 0 || pending.modified !== 0 || pending.removed !== 0) {
         throw new Error(`CodeGraph index has pending changes: added=${pending.added} modified=${pending.modified} removed=${pending.removed}`);
     }
     const mismatch = status.worktreeMismatch;

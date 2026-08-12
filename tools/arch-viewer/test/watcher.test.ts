@@ -163,6 +163,33 @@ describe("createAnalysisScheduler", () => {
         expect(store.current().state).toBe("index-waiting");
     });
 
+    test("missing pendingChanges keeps scheduler in index-waiting and does not analyze", async () => {
+        const clock = new FakeClock();
+        const store = createGraphSnapshotStore();
+        let analyzeCount = 0;
+        const scheduler = createAnalysisScheduler({
+            sync: async () => {},
+            status: async () => {
+                const { pendingChanges: _pendingChanges, ...status } = readyStatus();
+                return status;
+            },
+            analyze: async (input) => {
+                analyzeCount += 1;
+                return snapshot(input.version);
+            },
+            store,
+            debounceMs: 10,
+            setTimeout: clock.setTimeout,
+            clearTimeout: clock.clearTimeout,
+        });
+
+        scheduler.trigger();
+        await clock.runNext();
+
+        expect(analyzeCount).toBe(0);
+        expect(store.current().state).toBe("index-waiting");
+    });
+
     test("dispose prevents pending and future work", async () => {
         const clock = new FakeClock();
         const store = createGraphSnapshotStore();

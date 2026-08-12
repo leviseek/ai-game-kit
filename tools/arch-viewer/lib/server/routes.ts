@@ -21,12 +21,12 @@ export async function routeApi(request: IncomingMessage, response: ServerRespons
         const url = new URL(request.url ?? "/", "http://127.0.0.1");
         const segments = url.pathname.split("/").filter(Boolean).map(decodeURIComponent);
         const snapshot = options.store.current().snapshot;
-        if (url.pathname === "/api/source") {
-            await handleSource(response, options.projectRoot, url);
-            return;
-        }
         if (snapshot === undefined) {
             writeJson(response, 503, { error: "snapshot_unavailable" });
+            return;
+        }
+        if (url.pathname === "/api/source") {
+            await handleSource(response, options.projectRoot, url, snapshot);
             return;
         }
         routeSnapshotRequest(response, segments, url, snapshot);
@@ -67,15 +67,29 @@ function routeSnapshotRequest(response: ServerResponse, segments: readonly strin
     writeJson(response, 404, { error: "not_found" });
 }
 
-async function handleSource(response: ServerResponse, projectRoot: string, url: URL): Promise<void> {
+async function handleSource(response: ServerResponse, projectRoot: string, url: URL, snapshot: GraphSnapshot): Promise<void> {
     const file = url.searchParams.get("file");
     if (file === null || file.trim() === "") {
         writeJson(response, 400, { error: "bad_request" });
         return;
     }
+    if (!sourceFileAllowlist(snapshot).has(file.split("\\").join("/"))) {
+        throw new SourceReadError("forbidden", "forbidden");
+    }
     const line = Number(url.searchParams.get("line") ?? "1");
     const radius = Number(url.searchParams.get("radius") ?? "20");
     writeJson(response, 200, await readSourceExcerpt(projectRoot, file, line, radius));
+}
+
+function sourceFileAllowlist(snapshot: GraphSnapshot): ReadonlySet<string> {
+    const files = new Set<string>();
+    for (const view of Object.values(snapshot.views)) {
+        for (const node of view.nodes) {
+            const filePath = node.location?.filePath;
+            if (filePath !== undefined && filePath.trim() !== "") files.add(filePath.split("\\").join("/"));
+        }
+    }
+    return files;
 }
 
 function handleRouteError(response: ServerResponse, error: unknown): void {

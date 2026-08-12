@@ -57,6 +57,25 @@ describe("startArchServer", () => {
         }
     });
 
+    test("rejects repository-local files that are not snapshot node locations", async () => {
+        const root = createFixtureRoot();
+        writeFixtureFile(root, "package.json", "{\"private\":true}\n");
+        const server = await startArchServer({ projectRoot: root, store: createGraphSnapshotStore(snapshot()) });
+        try {
+            const denied = await fetch(`${server.url}/api/source?file=package.json&line=1`);
+            const allowed = await jsonFetch(`${server.url}/api/source?file=src/entry.ts&line=1`);
+
+            expect(denied.status).toBe(403);
+            expect(await denied.json()).toEqual({ error: "forbidden" });
+            expect(await allowed.json()).toEqual(expect.objectContaining({
+                location: { filePath: "src/entry.ts", line: 1 },
+                lines: expect.arrayContaining([expect.objectContaining({ number: 1, text: "export function launch() { return true; }" })]),
+            }));
+        } finally {
+            await server.close();
+        }
+    });
+
     test("rejects path traversal and repository-external absolute paths", async () => {
         const root = createFixtureRoot();
         const externalRoot = createFixtureRoot();
@@ -209,15 +228,23 @@ function tryCreateSymlink(target: string, path: string): boolean {
 function snapshot(version = 1): GraphSnapshot {
     const calls = {
         type: "calls" as const,
-        nodes: [{
-            id: "symbol:launch",
-            kind: "function",
-            label: "launch",
-            qualifiedName: "createBootFlow::launch",
-            location: { filePath: "src/entry.ts", line: 1 },
-        }],
+        nodes: [
+            {
+                id: "symbol:launch",
+                kind: "function",
+                label: "launch",
+                qualifiedName: "createBootFlow::launch",
+                location: { filePath: "src/entry.ts", line: 1 },
+            },
+            {
+                id: "symbol:large",
+                kind: "module",
+                label: "large",
+                location: { filePath: "src/large.ts", line: 1 },
+            },
+        ],
         edges: [{ id: "symbol:launch:self", from: "symbol:launch", to: "symbol:launch", relation: "calls" }],
-        groups: [{ id: "entry", label: "Entry", nodeIds: ["symbol:launch"] }],
+        groups: [{ id: "entry", label: "Entry", nodeIds: ["symbol:launch", "symbol:large"] }],
         diagnostics: [],
     };
     const empty = (type: ViewType) => ({ type, nodes: [], edges: [], groups: [], diagnostics: [] });
