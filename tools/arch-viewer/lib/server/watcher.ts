@@ -18,7 +18,6 @@ const watchedRelativeDirs = [
     "tools",
     join("doc", "architecture"),
     join("doc", "decisions"),
-    join("tools", "arch-viewer"),
 ] as const;
 
 const ignoredSegments = new Set(["temp", ".codegraph", "node_modules", "third-party", ".superpowers"]);

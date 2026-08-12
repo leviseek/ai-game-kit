@@ -9,7 +9,7 @@ import type { CodeGraphStatus } from "../lib/codegraph/types";
 import type { GraphSnapshot, ViewType } from "../lib/graph/types";
 
 describe("createAnalysisScheduler", () => {
-    test("连续触发 3 次只执行一次分析", async () => {
+    test("debounces three triggers into one analysis", async () => {
         const clock = new FakeClock();
         const calls: string[] = [];
         const store = createGraphSnapshotStore();
@@ -34,7 +34,7 @@ describe("createAnalysisScheduler", () => {
         expect(store.current().snapshot?.version).toBe(1);
     });
 
-    test("分析中再触发只追加一次 follow-up", async () => {
+    test("coalesces changes during analysis into one follow-up", async () => {
         const clock = new FakeClock();
         const store = createGraphSnapshotStore();
         const blockers = [deferred<GraphSnapshot>(), deferred<GraphSnapshot>()];
@@ -65,7 +65,7 @@ describe("createAnalysisScheduler", () => {
         expect(store.current().snapshot?.version).toBe(2);
     });
 
-    test("sync 失败产生 index-waiting 且不调用 analyzer", async () => {
+    test("sync failure enters index-waiting and does not analyze", async () => {
         const clock = new FakeClock();
         const store = createGraphSnapshotStore();
         let analyzeCount = 0;
@@ -89,7 +89,57 @@ describe("createAnalysisScheduler", () => {
         expect(store.current().state).toBe("index-waiting");
     });
 
-    test("pendingChanges 未清零时等待索引且不调用 analyzer", async () => {
+    test("sync failure without status still does not analyze", async () => {
+        const clock = new FakeClock();
+        const store = createGraphSnapshotStore();
+        let analyzeCount = 0;
+        const events: unknown[] = [];
+        store.subscribe((event) => events.push(event));
+        const scheduler = createAnalysisScheduler({
+            sync: async () => { throw new Error("sync failed"); },
+            analyze: async (input) => {
+                analyzeCount += 1;
+                return snapshot(input.version);
+            },
+            store,
+            debounceMs: 10,
+            setTimeout: clock.setTimeout,
+            clearTimeout: clock.clearTimeout,
+        });
+
+        scheduler.trigger();
+        await clock.runNext();
+
+        expect(analyzeCount).toBe(0);
+        expect(store.current().state).toBe("index-waiting");
+        expect(events).toEqual([{ type: "state-changed", state: "index-waiting", generation: 1 }]);
+    });
+
+    test("status failure enters index-waiting and does not analyze", async () => {
+        const clock = new FakeClock();
+        const store = createGraphSnapshotStore();
+        let analyzeCount = 0;
+        const scheduler = createAnalysisScheduler({
+            sync: async () => {},
+            status: async () => { throw new Error("status failed"); },
+            analyze: async (input) => {
+                analyzeCount += 1;
+                return snapshot(input.version);
+            },
+            store,
+            debounceMs: 10,
+            setTimeout: clock.setTimeout,
+            clearTimeout: clock.clearTimeout,
+        });
+
+        scheduler.trigger();
+        await clock.runNext();
+
+        expect(analyzeCount).toBe(0);
+        expect(store.current().state).toBe("index-waiting");
+    });
+
+    test("pendingChanges keeps scheduler in index-waiting and does not analyze", async () => {
         const clock = new FakeClock();
         const store = createGraphSnapshotStore();
         let analyzeCount = 0;
@@ -113,7 +163,7 @@ describe("createAnalysisScheduler", () => {
         expect(store.current().state).toBe("index-waiting");
     });
 
-    test("dispose 后不再运行", async () => {
+    test("dispose prevents pending and future work", async () => {
         const clock = new FakeClock();
         const store = createGraphSnapshotStore();
         let syncCount = 0;
@@ -138,7 +188,7 @@ describe("createAnalysisScheduler", () => {
 });
 
 describe("watchProject", () => {
-    test("监听目标目录并过滤不相关变更", () => {
+    test("watches target directories and filters ignored changes", () => {
         const watched: string[] = [];
         const listeners: Array<(event: string, filename: string | Buffer | null) => void> = [];
         const disposed: string[] = [];
@@ -158,7 +208,6 @@ describe("watchProject", () => {
             join(root, "tools"),
             join(root, "doc", "architecture"),
             join(root, "doc", "decisions"),
-            join(root, "tools", "arch-viewer"),
         ]);
 
         listeners[0]!("change", "main.ts");

@@ -48,12 +48,12 @@ export function createAnalysisScheduler(options: AnalysisSchedulerOptions): Anal
         if (disposed || running) return;
         running = true;
         try {
-            const status = await syncAndReadStatus(options.sync, readStatus);
-            if (status === undefined && readStatus !== undefined) {
+            const result = await syncAndReadStatus(options.sync, readStatus);
+            if (!result.ok) {
                 options.store.begin("index-waiting");
                 return;
             }
-            if (status !== undefined && hasPendingChanges(status)) {
+            if (result.status === undefined || hasPendingChanges(result.status)) {
                 options.store.begin("index-waiting");
                 return;
             }
@@ -90,12 +90,12 @@ export function createAnalysisScheduler(options: AnalysisSchedulerOptions): Anal
 async function syncAndReadStatus(
     sync: CodeGraphGateway["sync"],
     status: CodeGraphGateway["status"] | undefined,
-): Promise<CodeGraphStatus | undefined> {
+): Promise<{ readonly ok: true; readonly status: CodeGraphStatus | undefined } | { readonly ok: false }> {
     try {
         await sync();
-        return status === undefined ? undefined : await status();
+        return { ok: true, status: status === undefined ? undefined : await status() };
     } catch (_error) {
-        return undefined;
+        return { ok: false };
     }
 }
 
