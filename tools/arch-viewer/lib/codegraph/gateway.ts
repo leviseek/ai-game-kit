@@ -17,6 +17,7 @@ import type {
 } from "./types";
 
 const limits = { timeoutMs: 15_000, maxBuffer: 16 * 1024 * 1024 } as const;
+const resolveSymbolLimit = 100;
 
 interface QueryResult {
     readonly node: CodeGraphNode;
@@ -254,7 +255,7 @@ export function createCodeGraphGateway(options?: {
             return result.affected;
         },
         async resolveSymbol(ref) {
-            const matches = await search(ref.name, 100);
+            const matches = await search(ref.name, resolveSymbolLimit);
             const qualified = matches.filter((node) => node.qualifiedName === ref.name);
             if (qualified.length === 1) return qualified[0];
 
@@ -265,6 +266,14 @@ export function createCodeGraphGateway(options?: {
                 ? exact.filter((node) => node.filePath === ref.file)
                 : exact;
             if (candidates.length === 1) return candidates[0];
+
+            if (candidates.length === 0 && matches.length >= resolveSymbolLimit) {
+                return {
+                    severity: "error",
+                    source: "codegraph.query-truncated",
+                    message: `Symbol "${ref.name}" could not be resolved because query reached limit ${resolveSymbolLimit}`,
+                };
+            }
 
             const suffix = candidates.length === 0
                 ? "was not found"

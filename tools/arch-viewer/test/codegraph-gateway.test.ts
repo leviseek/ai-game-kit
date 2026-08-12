@@ -5,15 +5,8 @@ import {
     createCodeGraphGateway,
     type CodeGraphGateway,
 } from "../lib/codegraph/gateway";
-import {
-    CodeGraphCommandError,
-    CodeGraphJsonError,
-    CodeGraphTimeoutError,
-} from "../lib/codegraph/errors";
-import type {
-    CommandResult,
-    CommandRunner,
-} from "../lib/codegraph/process";
+import { CodeGraphCommandError, CodeGraphJsonError, CodeGraphTimeoutError } from "../lib/codegraph/errors";
+import type { CommandResult, CommandRunner } from "../lib/codegraph/process";
 
 const projectRoot = "D:/repo";
 
@@ -72,10 +65,7 @@ function fakeRunner(
 function gatewayWith(
     responses: Readonly<Record<string, CommandResult | Error>>,
 ): CodeGraphGateway {
-    return createCodeGraphGateway({
-        projectRoot,
-        runner: fakeRunner(responses),
-    });
+    return createCodeGraphGateway({ projectRoot, runner: fakeRunner(responses) });
 }
 
 const errorDiagnostic = (message: string) => ({
@@ -92,9 +82,7 @@ describe("CodeGraphGateway", () => {
             name: "launch",
             file: "assets/boot/flow/BootFlow.ts",
         });
-        expect("qualifiedName" in result && result.qualifiedName).toBe(
-            "createBootFlow::launch",
-        );
+        expect("qualifiedName" in result && result.qualifiedName).toBe("createBootFlow::launch");
     });
 
     test("resolveSymbol 优先精确匹配 qualifiedName", async () => {
@@ -103,9 +91,7 @@ describe("CodeGraphGateway", () => {
         const result = await gateway.resolveSymbol({
             name: "TestHarness::launch",
         });
-        expect("filePath" in result && result.filePath).toBe(
-            "tests/boot/BootFlow.test.ts",
-        );
+        expect("filePath" in result && result.filePath).toBe("tests/boot/BootFlow.test.ts");
     });
 
     test("resolveSymbol 无 file 且名称多义时返回诊断", async () => {
@@ -145,14 +131,30 @@ describe("CodeGraphGateway", () => {
         expect("filePath" in result && result.filePath).toBe("assets/target.ts");
     });
 
-    test("非零退出保留 stderr", async () => {
-        const gateway = gatewayWith({
-            status: {
-                exitCode: 2,
-                stdout: "",
-                stderr: "index is locked",
+    test("resolveSymbol 查询达到 limit 时不把缺失目标误报为不存在", async () => {
+        const results = Array.from({ length: 100 }, (_, index) => ({
+            node: {
+                ...launchNode,
+                id: `function:common:${index}`,
+                name: "common",
+                qualifiedName: `Scope${index}::common`,
+                filePath: `assets/other-${index}.ts`,
             },
+            score: 100 - index,
+        }));
+        const gateway = gatewayWith({ query: success(results) });
+
+        const result = await gateway.resolveSymbol({ name: "common", file: "assets/target.ts" });
+
+        expect(result).toEqual({
+            severity: "error",
+            source: "codegraph.query-truncated",
+            message: 'Symbol "common" could not be resolved because query reached limit 100',
         });
+    });
+
+    test("非零退出保留 stderr", async () => {
+        const gateway = gatewayWith({ status: { exitCode: 2, stdout: "", stderr: "index is locked" } });
         const error = await gateway.status().catch((value: unknown) => value);
         expect(error).toBeInstanceOf(CodeGraphCommandError);
         expect((error as CodeGraphCommandError).stderr).toBe("index is locked");
@@ -291,8 +293,6 @@ describe("CodeGraphGateway", () => {
         const gateway = gatewayWith({ query: success([]) });
         const ref: SymbolRef = { name: "missing" };
 
-        expect(await gateway.resolveSymbol(ref)).toEqual(
-            errorDiagnostic('Symbol "missing" was not found'),
-        );
+        expect(await gateway.resolveSymbol(ref)).toEqual(errorDiagnostic('Symbol "missing" was not found'));
     });
 });
