@@ -48,7 +48,9 @@ export function defineFuiViewBinding<V extends object>(
 
 /**
  * 创建作用域：own 为纯句柄登记（binder 获得句柄即登记，失败不在此回滚）。
- * disposeAll 仅供 Host（唯一回滚所有者）逆序释放并清空，重复调用为 no-op。
+ * disposeAll 逆序释放并清空（非隔离：句柄抛错即中断、跳过剩余句柄），重复调用为 no-op；
+ * 仅供简单登记/释放场景与 registry 单测使用。FuiViewHost 的创建/回滚路径不用本实现，
+ * 而是自行构建隔离逆序 flush（逐句柄 try/catch），保证成功与失败两条路径句柄至多执行一次。
  */
 export function createFuiViewBindingScope(): FuiViewBindingScope & {
     disposeAll(): void;

@@ -12,7 +12,6 @@ import {
     FuiViewCreationError,
 } from "../../../core/fui/FuiErrors";
 import {
-    createFuiViewBindingScope,
     type FuiViewBindingResolver,
     type FuiViewBindingScope,
 } from "../../../core/fui/FuiViewBinderRegistry";
@@ -62,26 +61,21 @@ function createSeam(url: FuiComponentUrl, component: GComponent): FuiViewSeam {
 
 /**
  * 创建失败回滚：primary 错误始终保留在 FuiViewCreationError.cause（不覆盖）；
- * View 与 GComponent 各自 try/catch 清理，失败聚合附在错误实例的 cleanupErrors 属性
- * （冻结数组；无原生 AggregateError，ES2015 兼容，详见 core/fui/FuiErrors）。
- * scopeHandles 为绑定失败时已登记的非幂等句柄（Host 是绑定回滚唯一所有者）：先逆序
- * 逐句柄隔离释放（句柄抛错不中断后续句柄），再清理 View 与 GComponent。
+ * View 与 GComponent 各自 try/catch 清理，失败聚合为 cleanupErrors 传参构造
+ * FuiViewCreationError（冻结数组；无原生 AggregateError，ES2015 兼容，见 core/fui/FuiErrors）。
+ * flushScopeHandles 为绑定失败时已登记句柄的隔离逆序 flush（Host 是绑定回滚唯一所有者）：
+ * 逐句柄 try/catch 释放并收集失败，句柄抛错不中断后续句柄；随后再清理 View 与 GComponent。
+ * 与成功路径共用同一 flush，保证各底层非幂等句柄在两条路径上至多执行一次。
  */
 function throwWithRollback(
     url: FuiComponentUrl,
     primary: unknown,
     view: FuiView<unknown, unknown> | undefined,
     component: GObject | null,
-    scopeHandles: ReadonlyArray<{ dispose(): void }> = [],
+    flushScopeHandles: (errors: unknown[]) => void = () => {},
 ): never {
     const cleanupErrors: unknown[] = [];
-    for (let i = scopeHandles.length - 1; i >= 0; i--) {
-        try {
-            scopeHandles[i]!.dispose();
-        } catch (error) {
-            cleanupErrors.push(error);
-        }
-    }
+    flushScopeHandles(cleanupErrors);
     if (view !== undefined) {
         try {
             view.dispose();
@@ -96,12 +90,7 @@ function throwWithRollback(
             cleanupErrors.push(error);
         }
     }
-    const error = new FuiViewCreationError(url, primary);
-    if (cleanupErrors.length > 0) {
-        (error as FuiViewCreationError & { cleanupErrors: readonly unknown[] }).cleanupErrors =
-            Object.freeze(cleanupErrors);
-    }
-    throw error;
+    throw new FuiViewCreationError(url, primary, cleanupErrors);
 }
 
 /**
@@ -155,29 +144,46 @@ export function createBoundView(
         throwWithRollback(url, cause, view, component);
     }
 
-    // runtimeBinding 装配：binder 前创建幂等 scope，binder 每获得句柄立即登记；
-    // 失败时仅由 Host 逆序隔离清理 scope、View、GComponent（各底层句柄至多执行一次）
+    // runtimeBinding 装配：binder 前创建句柄栈，binder 每获得句柄立即登记；
+    // 隔离逆序 flush 同时供成功转交（view.__own 单一句柄）与失败回滚使用：
+    // 逐句柄 try/catch，全部句柄被尝试，错误聚合到 errors；结束时清空句柄栈。
+    // 两条路径共用同一 flush，保证各底层非幂等句柄至多执行一次（无双重跟踪）。
     if (entry.runtimeBinding === "required") {
-        const scope = createFuiViewBindingScope();
-        // scope.disposeAll 非隔离（句柄抛错即停、跳过剩余）：Host 同时记录原始句柄，
-        // 失败回滚时逐句柄逆序 try/catch，保证全部句柄被尝试且失败聚合
         const scopeHandles: Array<{ dispose(): void }> = [];
-        const recordingScope: FuiViewBindingScope = {
+        const flushScopeHandles = (errors: unknown[]): void => {
+            for (let i = scopeHandles.length - 1; i >= 0; i--) {
+                try {
+                    scopeHandles[i]!.dispose();
+                } catch (error) {
+                    errors.push(error);
+                }
+            }
+            scopeHandles.length = 0;
+        };
+        const scope: FuiViewBindingScope = {
             own(handle) {
                 scopeHandles.push(handle);
-                scope.own(handle);
             },
         };
         try {
             if (bindingResolver === undefined) {
                 throw new FuiViewBindingRegistrationError(url);
             }
-            bindingResolver.bindRequired(url, view, recordingScope);
+            bindingResolver.bindRequired(url, view, scope);
         } catch (cause) {
-            throwWithRollback(url, cause, view, component, scopeHandles);
+            throwWithRollback(url, cause, view, component, flushScopeHandles);
         }
-        // 成功：scope 作为单一句柄转交视图（视图 dispose 逆序隔离执行，无需 Host 额外聚合）
-        view.__own({ dispose: () => scope.disposeAll() });
+        // 成功：把隔离逆序 flush 作为单一句柄转交视图；视图 dispose 时执行同一 flush，
+        // 全部句柄逆序隔离释放，任一失败聚合为 FuiViewCleanupError（无需 Host 额外聚合）
+        view.__own({
+            dispose: () => {
+                const errors: unknown[] = [];
+                flushScopeHandles(errors);
+                if (errors.length > 0) {
+                    throw new FuiViewCleanupError(url, errors);
+                }
+            },
+        });
     }
 
     const bound = component as GComponent & {

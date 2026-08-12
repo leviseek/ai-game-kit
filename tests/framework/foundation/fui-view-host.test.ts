@@ -676,7 +676,7 @@ describe("createBoundView", () => {
         }
     });
 
-    test("binder 成功且句柄 dispose 抛错：视图 dispose 隔离聚合为 FuiViewCleanupError", async () => {
+    test("binder 成功且非终位句柄 dispose 抛错：全部句柄仍逆序尝试（不漏低位），失败聚合为 FuiViewCleanupError", async () => {
         const restore = isolateRegistry();
         const { createBoundView } = await loadHost();
         try {
@@ -696,13 +696,14 @@ describe("createBoundView", () => {
             const binderRegistry = createFuiViewBinderRegistry();
             binderRegistry.register(
                 defineFuiViewBinding(LOGIN_VIEW_URL, RecordingDisposeView, (_view, scope) => {
+                    scope.own({ dispose: () => handleDisposed.push("first") });
                     scope.own({
                         dispose: () => {
-                            handleDisposed.push("first");
-                            throw new Error("handle1 boom");
+                            handleDisposed.push("second");
+                            throw new Error("handle2 boom");
                         },
                     });
-                    scope.own({ dispose: () => handleDisposed.push("second") });
+                    scope.own({ dispose: () => handleDisposed.push("third") });
                 }),
             );
             const componentMock = makeComponentMock({ txt_title: { text: "" } });
@@ -721,15 +722,18 @@ describe("createBoundView", () => {
             } catch (error) {
                 thrown = error;
             }
-            // 成功路径：scope 作为单一 handle 转交视图，视图逆序隔离执行（无需 Host 额外聚合）
-            expect(handleDisposed).toEqual(["second", "first"]);
+            // 成功路径：隔离逆序 flush 转交视图；中位句柄抛错不得中断前序句柄（不漏低位）
+            expect(handleDisposed).toEqual(["third", "second", "first"]);
             expect(thrown).toBeInstanceOf(FuiViewCleanupError);
             const cleanup = thrown as FuiViewCleanupError;
             // Host 包装层把 View 自身的 FuiViewCleanupError 作为一项聚合
             expect(cleanup.errors).toHaveLength(1);
             const viewCleanup = cleanup.errors[0] as FuiViewCleanupError;
             expect(viewCleanup).toBeInstanceOf(FuiViewCleanupError);
-            expect((viewCleanup.errors[0] as Error).message).toBe("handle1 boom");
+            // flush 聚合的 FuiViewCleanupError 再被 View 层聚合（无原生 AggregateError）
+            const flushCleanup = viewCleanup.errors[0] as FuiViewCleanupError;
+            expect(flushCleanup).toBeInstanceOf(FuiViewCleanupError);
+            expect((flushCleanup.errors[0] as Error).message).toBe("handle2 boom");
             expect(componentMock.disposed).toBe(1);
         } finally {
             restore();

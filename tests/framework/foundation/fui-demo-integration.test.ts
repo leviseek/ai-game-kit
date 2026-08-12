@@ -259,6 +259,9 @@ describe("CloseDialog 示范静态页生产链集成", () => {
             const afterDisposeCause = (afterDisposeError as FuiViewCreationError).cause;
             expect(afterDisposeCause).toBeInstanceOf(FuiViewBindingRegistrationError);
             expect((afterDisposeCause as Error).message).toMatch(/runtime binding missing/);
+            // 自检：恰好 4 次创建（首次失败、成功、重开、注销后失败），
+            // 使下方 last 索引假设显式（断言失败即索引假设失效）
+            expect(createdComponents).toHaveLength(4);
             // 回滚：本页新建 GComponent 与点击监听全部清理（组件已 dispose、点击已退订）
             const rolledBack = createdComponents[createdComponents.length - 1]!;
             expect(rolledBack.disposed).toBe(1);

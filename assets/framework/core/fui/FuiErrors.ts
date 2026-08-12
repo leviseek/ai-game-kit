@@ -28,13 +28,19 @@ export class FuiViewBindingRegistrationError extends FrameworkError {
 
 /** 组件创建失败：createObject 返回 null 或 View 构造器抛错（携带原始 cause）。 */
 export class FuiViewCreationError extends FrameworkError {
-    constructor(url: FuiComponentUrl, cause: unknown) {
+    /** 创建失败回滚期间的清理错误（冻结快照；无原生 AggregateError，见 FuiViewCleanupError）。 */
+    readonly cleanupErrors?: readonly unknown[];
+
+    constructor(url: FuiComponentUrl, cause: unknown, cleanupErrors?: readonly unknown[]) {
         super(`Failed to create FuiView for ${url}`, {
             component: url,
             cause,
             recoverable: false,
         });
         this.name = "FuiViewCreationError";
+        if (cleanupErrors !== undefined && cleanupErrors.length > 0) {
+            this.cleanupErrors = Object.freeze([...cleanupErrors]);
+        }
     }
 }
 
