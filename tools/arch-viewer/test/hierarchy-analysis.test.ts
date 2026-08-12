@@ -54,7 +54,7 @@ function config() {
 }
 
 describe("matchProjectGlob", () => {
-    test("只让星号匹配单层、双星匹配多层并展开 brace", () => {
+    test("matches single-star, double-star, and brace project globs", () => {
         expect(matchProjectGlob("src\\game\\play.ts", "src/{game,framework}/*.ts")).toBe(true);
         expect(matchProjectGlob("src/game/ui/play.ts", "src/{game,framework}/*.ts")).toBe(false);
         expect(matchProjectGlob("src/game/ui/play.ts", "src/**/play.ts")).toBe(true);
@@ -63,7 +63,7 @@ describe("matchProjectGlob", () => {
 });
 
 describe("buildHierarchyView", () => {
-    test("构造 L0-L5 层次、统计元数据并保留未分类文件", () => {
+    test("builds L0-L5 hierarchy, metadata stats, and unclassified files", () => {
         const files = [
             "src/framework/core/clock.ts",
             "src/game/play.ts",
@@ -124,7 +124,7 @@ describe("buildHierarchyView", () => {
         }));
     });
 
-    test("重叠 ownership 产生 error 并进入 unclassified 而不是任意归属", () => {
+    test("reports overlapping ownership and keeps the file unclassified", () => {
         const overlapConfig = defineArchitectureConfig({
             hierarchy: {
                 root: group("root", [

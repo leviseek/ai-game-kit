@@ -1,4 +1,3 @@
-/** 未来若配置需要更多 glob 语法，应在这里显式扩展并保持无依赖实现。 */
 function normalizePath(value: string): string {
     return value.replaceAll("\\", "/").replace(/^\.\//, "");
 }
@@ -40,7 +39,6 @@ function patternRegex(pattern: string): RegExp {
     return new RegExp(`${source}$`);
 }
 
-/** 仅实现架构配置约定的 glob 子集，避免引入运行时依赖和隐式语义。 */
 export function matchProjectGlob(path: string, pattern: string): boolean {
     const normalizedPath = normalizePath(path);
     return expandBraces(normalizePath(pattern)).some((item) =>

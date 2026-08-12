@@ -9,8 +9,6 @@ import type {
     GraphView,
 } from "../graph/types";
 
-/** 未来可增加调用或资源关系，聚合键仍保持 from/to/relation 三元组。 */
-
 interface MutableEdge {
     readonly from: string;
     readonly to: string;
@@ -61,7 +59,7 @@ function evaluateEdge(
             source: id,
         });
     }
-    if (rule?.exception === true) {
+    if (rule?.exception === true && rule.reason !== undefined) {
         status = "exception";
         severity = "info";
         color = "blue";

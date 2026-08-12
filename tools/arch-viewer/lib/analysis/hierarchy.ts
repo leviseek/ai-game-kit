@@ -5,8 +5,6 @@ import { matchProjectGlob } from "./glob";
 import type { ArchitectureConfig, HierarchyGroupConfig } from "../config/types";
 import type { Diagnostic, GraphGroup, GraphNode, GraphView } from "../graph/types";
 
-/** 未来层级展示可增加新的派生组，但文件 ownership 仍只由配置 glob 决定。 */
-
 interface MutableGroup {
     readonly id: string;
     readonly label: string;

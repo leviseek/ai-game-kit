@@ -52,7 +52,7 @@ function dependency(
 }
 
 describe("buildDependencyView", () => {
-    test("聚合跨组证据、标记 type-only 并按规则生成诊断", () => {
+    test("aggregates cross-group evidence, marks type-only imports, and reports rules", () => {
         const files = [
             "src/framework/service.ts",
             "src/framework/bridge.ts",
@@ -116,7 +116,7 @@ describe("buildDependencyView", () => {
         }));
     });
 
-    test("省略 self edge、外部依赖与没有确定 ownership 的依赖", () => {
+    test("omits self edges, external dependencies, and dependencies without ownership", () => {
         const architectureConfig = config();
         const hierarchy = buildHierarchyView(
             architectureConfig,
@@ -136,5 +136,31 @@ describe("buildDependencyView", () => {
         ];
 
         expect(buildDependencyView(architectureConfig, imports, hierarchy).edges).toEqual([]);
+    });
+
+    test("keeps exception rules without reason denied", () => {
+        const architectureConfig = defineArchitectureConfig({
+            ...config(),
+            dependencyRules: [
+                deny("framework", ["legacy"], { exception: true }),
+            ],
+        });
+        const files = ["src/framework/bridge.ts", "src/legacy/api.ts"];
+        const hierarchy = buildHierarchyView(architectureConfig, files, []);
+
+        const view = buildDependencyView(architectureConfig, [dependency(files[0]!, files[1]!)], hierarchy);
+        const edge = view.edges[0];
+
+        expect(edge?.metadata).toEqual(expect.objectContaining({
+            status: "denied",
+            severity: "error",
+            color: "red",
+        }));
+        expect(edge?.metadata?.reason).toBeUndefined();
+        expect(view.diagnostics).toContainEqual(expect.objectContaining({
+            severity: "error",
+            message: "Dependency rule denies framework -> legacy",
+            source: edge?.id,
+        }));
     });
 });
