@@ -537,6 +537,7 @@ describe("framework public boundary", () => {
             "FuiComponentRegistry",
             "FuiComponentUrl",
             "FuiView",
+            "FuiViewCleanupError",
             "FuiViewSeam",
             "FUIBind",
             "getBundleModuleRegistry",

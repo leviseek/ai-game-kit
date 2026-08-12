@@ -6,6 +6,14 @@ import {
 } from "../../../assets/framework/core/errors/FrameworkError";
 import { ModuleLifecycleError } from "../../../assets/framework/application/ModuleLifecycleError";
 import { ApplicationStateError } from "../../../assets/framework/application/ApplicationStateError";
+import type { FuiComponentUrl } from "../../../assets/framework/core/fui/FuiComponentRegistry";
+import {
+    FuiBindingError,
+    FuiComponentRegistrationError,
+    FuiViewBindingRegistrationError,
+    FuiViewCleanupError,
+    FuiViewCreationError,
+} from "../../../assets/framework/core/fui/FuiErrors";
 
 type ErrorWithCause = Error & { readonly cause?: unknown };
 
@@ -127,5 +135,60 @@ describe("FrameworkError subclass cause propagation", () => {
 
         expect((error as ErrorWithCause).cause).toBeUndefined();
         expect(error.currentState).toBe("running");
+    });
+});
+
+describe("FuiViewCleanupError", () => {
+    test("extends FrameworkError and carries the component context", () => {
+        const error = new FuiViewCleanupError("CloseDialog", [new Error("first")]);
+
+        expect(error).toBeInstanceOf(Error);
+        expect(error).toBeInstanceOf(FrameworkError);
+        expect(error.component).toBe("CloseDialog");
+        expect(error.name).toBe("FuiViewCleanupError");
+        expect(error.recoverable).toBe(false);
+    });
+
+    test("freezes a full copy of the errors array", () => {
+        const first = new Error("first");
+        const second = new Error("second");
+        const error = new FuiViewCleanupError("CloseDialog", [first, second]);
+
+        expect(error.errors).toEqual([first, second]);
+        expect(Object.isFrozen(error.errors)).toBe(true);
+
+        // 保存的是快照副本而非原数组引用：外部后续变更不影响内部 errors
+        const source = [first];
+        const fromSource = new FuiViewCleanupError("CloseDialog", source);
+        source.push(second);
+        expect(fromSource.errors).toEqual([first]);
+    });
+
+    test("preserves the first cause for the call chain", () => {
+        const first = new Error("first failure");
+        const error = new FuiViewCleanupError("CloseDialog", [
+            first,
+            new Error("second failure"),
+        ]);
+
+        expect((error as ErrorWithCause).cause).toBe(first);
+    });
+});
+
+describe("FuiErrors error family", () => {
+    test("all FUI error classes derive from FrameworkError", () => {
+        const url = ("ui" + "://Login/LoginView") as FuiComponentUrl;
+
+        expect(new FuiComponentRegistrationError(url)).toBeInstanceOf(FrameworkError);
+        expect(new FuiViewBindingRegistrationError(url)).toBeInstanceOf(FrameworkError);
+        expect(
+            new FuiViewCreationError(url, new Error("component creation failed")),
+        ).toBeInstanceOf(FrameworkError);
+        expect(new FuiBindingError(url, "txt_title", "field")).toBeInstanceOf(
+            FrameworkError,
+        );
+        expect(new FuiBindingError(url, "btn_login", "click")).toBeInstanceOf(
+            FrameworkError,
+        );
     });
 });

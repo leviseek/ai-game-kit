@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { FClick, FUIBind, collectClickMeta } from "../../../assets/framework/core/fui/FuiBindings";
+import { FuiBindingError, FuiComponentRegistrationError } from "../../../assets/framework/core/fui/FuiErrors";
 import {
-    FuiComponentRegistrationError,
     getFuiComponentRegistry,
     type FuiComponentUrl,
 } from "../../../assets/framework/core/fui/FuiComponentRegistry";
@@ -38,7 +38,7 @@ function loginReducer(state: LoginState, action: LoginAction): LoginState {
     }
 }
 
-/** 测试用视图接缝：按名返回可写文本节点。 */
+/** 测试用视图接缝：按名返回可写文本节点；缺失时抛 FuiBindingError（对齐 seam 契约）。 */
 function makeSeam(children: Record<string, { text: string; visible: boolean }>): {
     seam: FuiViewSeam;
     children: Record<string, { text: string; visible: boolean }>;
@@ -48,7 +48,9 @@ function makeSeam(children: Record<string, { text: string; visible: boolean }>):
     const seam: FuiViewSeam = {
         child(name: string) {
             const child = children[name];
-            if (child === undefined) return undefined;
+            if (child === undefined) {
+                throw new FuiBindingError(LOGIN_VIEW_URL, name, "field");
+            }
             return {
                 setVisible(visible: boolean) {
                     child.visible = visible;
@@ -198,7 +200,7 @@ describe("FuiView 生命周期", () => {
         expect(children.btn_login!.text).toBe("clicked");
     });
 
-    test("__attach 绑定缺失 fail-fast", () => {
+    test("__attach 绑定缺失由 seam 抛 FuiBindingError", () => {
         const { seam } = makeSeam({});
         const fields = { txt_status: "text", txt_missing: "text" } as const;
         const view = new (class extends FuiView<LoginState, LoginViewShape> implements LoginViewShape {
@@ -208,7 +210,7 @@ describe("FuiView 生命周期", () => {
             protected onState(): void { }
         })();
 
-        expect(() => view.__attach(seam, fields, [])).toThrow(/绑定缺失/);
+        expect(() => view.__attach(seam, fields, [])).toThrow(FuiBindingError);
     });
 
     test("bindStore 订阅 + 首次投影 + dispose 退订", () => {

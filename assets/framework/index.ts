@@ -141,10 +141,11 @@ export type {
     FuiComponentRegistry,
     FuiComponentUrl,
 } from "./core/fui/FuiComponentRegistry";
+export { getFuiComponentRegistry } from "./core/fui/FuiComponentRegistry";
 export {
     FuiComponentRegistrationError,
-    getFuiComponentRegistry,
-} from "./core/fui/FuiComponentRegistry";
+    FuiViewCleanupError,
+} from "./core/fui/FuiErrors";
 
 export type {
     ViewModelRenderer,

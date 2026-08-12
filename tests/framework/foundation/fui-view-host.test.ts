@@ -7,6 +7,7 @@ import {
     getFuiComponentRegistry,
     type FuiComponentUrl,
 } from "../../../assets/framework/core/fui/FuiComponentRegistry";
+import { FuiBindingError, FuiViewCreationError } from "../../../assets/framework/core/fui/FuiErrors";
 import { FuiView } from "../../../assets/framework/contracts/ui/FuiView";
 
 // 实现值 import fairygui-cc；统一使用共享 fixture，动态加载避免 mock 前解析。
@@ -170,7 +171,7 @@ describe("createBoundView", () => {
         }
     });
 
-    test("命中但组件创建失败抛错", async () => {
+    test("命中但组件创建失败抛 FuiViewCreationError", async () => {
         const restore = isolateRegistry();
         const { createBoundView } = await loadHost();
         try {
@@ -181,15 +182,60 @@ describe("createBoundView", () => {
                 clicks: [],
                 runtimeBinding: "none",
             });
-            expect(() => createBoundView("Login", "LoginView", registry, () => null)).toThrow(
-                /was not found/,
-            );
+            let thrown: unknown;
+            try {
+                createBoundView("Login", "LoginView", registry, () => null);
+            } catch (error) {
+                thrown = error;
+            }
+            expect(thrown).toBeInstanceOf(FuiViewCreationError);
+            // 原「was not found」信息保留在 cause 中
+            expect(
+                (thrown as Error & { cause?: unknown }).cause,
+            ).toBeInstanceOf(Error);
         } finally {
             restore();
         }
     });
 
-    test("绑定字段缺失 fail-fast", async () => {
+    test("ctor 抛错包装为 FuiViewCreationError（保留原始 cause）", async () => {
+        const restore = isolateRegistry();
+        const { createBoundView } = await loadHost();
+        try {
+            const registry = getFuiComponentRegistry();
+            const boom = new Error("ctor boom");
+            registry.register(LOGIN_VIEW_URL, {
+                ctor: class extends FuiView<unknown, unknown> {
+                    constructor() {
+                        super();
+                        throw boom;
+                    }
+                    protected onConstruct(): void { }
+                    protected onState(): void { }
+                },
+                fields: {},
+                clicks: [],
+                runtimeBinding: "none",
+            });
+            let thrown: unknown;
+            try {
+                createBoundView(
+                    "Login",
+                    "LoginView",
+                    registry,
+                    () => makeComponentMock({}) as never,
+                );
+            } catch (error) {
+                thrown = error;
+            }
+            expect(thrown).toBeInstanceOf(FuiViewCreationError);
+            expect((thrown as Error & { cause?: unknown }).cause).toBe(boom);
+        } finally {
+            restore();
+        }
+    });
+
+    test("绑定字段缺失抛 FuiBindingError（kind=field）", async () => {
         const restore = isolateRegistry();
         const { createBoundView } = await loadHost();
         try {
@@ -201,9 +247,46 @@ describe("createBoundView", () => {
                 runtimeBinding: "none",
             });
             const componentMock = makeComponentMock({ txt_title: { text: "" } });
-            expect(() =>
-                createBoundView("Login", "LoginView", registry, () => componentMock as never),
-            ).toThrow(/绑定缺失/);
+            let thrown: unknown;
+            try {
+                createBoundView("Login", "LoginView", registry, () => componentMock as never);
+            } catch (error) {
+                thrown = error;
+            }
+            expect(thrown).toBeInstanceOf(FuiBindingError);
+            expect((thrown as FuiBindingError).nodeName).toBe("txt_missing");
+            expect((thrown as FuiBindingError).bindingKind).toBe("field");
+        } finally {
+            restore();
+        }
+    });
+
+    test("点击节点缺失抛 FuiBindingError（kind=click）", async () => {
+        const restore = isolateRegistry();
+        const { createBoundView } = await loadHost();
+        try {
+            const registry = getFuiComponentRegistry();
+            registry.register(LOGIN_VIEW_URL, {
+                ctor: BoundLoginView,
+                fields: { txt_title: "text" },
+                clicks: [
+                    {
+                        nodeName: "btn_missing",
+                        methodRef: function () { },
+                    },
+                ],
+                runtimeBinding: "none",
+            });
+            const componentMock = makeComponentMock({ txt_title: { text: "" } });
+            let thrown: unknown;
+            try {
+                createBoundView("Login", "LoginView", registry, () => componentMock as never);
+            } catch (error) {
+                thrown = error;
+            }
+            expect(thrown).toBeInstanceOf(FuiBindingError);
+            expect((thrown as FuiBindingError).nodeName).toBe("btn_missing");
+            expect((thrown as FuiBindingError).bindingKind).toBe("click");
         } finally {
             restore();
         }

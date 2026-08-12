@@ -10,11 +10,12 @@ import type { TypedNode } from "./TypedNode";
 
 /**
  * 视图接缝：Adapter 边界包装 FGUI 组件的引擎无关访问面。
- * child() 返回按能力 kind 包装的能力节点；onClick() 注册点击并返回退订。
+ * child() 返回按能力 kind 包装的能力节点（非可选：缺失时由 seam 抛 FuiBindingError）；
+ * onClick() 注册点击并返回退订，节点缺失同样抛 FuiBindingError。
  */
 export interface FuiViewSeam {
     /** 按名取子元件能力节点；kind 为 gen-types 的能力 kind（text/button/...）。 */
-    child(name: string, kind: string): TypedNode | undefined;
+    child(name: string, kind: string): TypedNode;
     /** 注册点击监听；返回退订函数。 */
     onClick(name: string, handler: () => void): () => void;
 }
@@ -32,7 +33,7 @@ export interface FuiClickMeta {
  * - `bindStore(store, project)`：订阅 Store，状态变化经 project 投影后写 `onState(vm)`；
  *   首次投影在订阅建立时立即执行。
  * - `dispose()`：退订 Store + 移除全部监听 + `onClose()`，幂等。
- * 绑定缺失（gen-types 声明了字段但组件无该元件）在 `__attach` 阶段抛错（fail-fast）。
+ * 绑定缺失（gen-types 声明了字段但组件无该元件）由 seam 抛 `FuiBindingError`（fail-fast）。
  */
 export abstract class FuiView<S, VM> {
     private seam: FuiViewSeam | undefined;
@@ -51,13 +52,11 @@ export abstract class FuiView<S, VM> {
         this.seam = seam;
         for (const elementName of Object.keys(fields)) {
             const kind = fields[elementName];
-            const node = seam.child(elementName, kind);
-            if (node === undefined) {
-                throw new Error(
-                    `FuiView 绑定缺失: ${elementName}（生成类型声明了该字段但组件无此元件，检查 XML 与 gen-types 产物）`,
-                );
-            }
-            (this as unknown as Record<string, unknown>)["_" + elementName] = node;
+            // child 非可选返回：缺失检测在 seam（抛 FuiBindingError），此处直接注入
+            (this as unknown as Record<string, unknown>)["_" + elementName] = seam.child(
+                elementName,
+                kind,
+            );
         }
         for (const click of clicks) {
             const dispose = seam.onClick(click.nodeName, click.methodRef.bind(this));

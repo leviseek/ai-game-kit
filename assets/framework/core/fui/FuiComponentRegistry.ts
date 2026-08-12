@@ -6,6 +6,7 @@
  */
 
 import type { FuiClickMeta, FuiView } from "../../contracts/ui/FuiView";
+import { FuiComponentRegistrationError } from "./FuiErrors";
 
 /**
  * 组件 URL 品牌类型：`ui://<包>/<组件>` 模板字面量。绑定链唯一的 URL 契约，
@@ -37,14 +38,6 @@ export interface FuiComponentRegistry {
 }
 
 const GLOBAL_KEY = "__ai_game_kit_fui_components__";
-
-/** 组件注册失败：复合键重复登记。 */
-export class FuiComponentRegistrationError extends Error {
-    constructor(url: FuiComponentUrl) {
-        super(`Fui component already registered: ${url}`);
-        this.name = "FuiComponentRegistrationError";
-    }
-}
 
 export function getFuiComponentRegistry(): FuiComponentRegistry {
     const globalObject = globalThis as Record<string, unknown>;

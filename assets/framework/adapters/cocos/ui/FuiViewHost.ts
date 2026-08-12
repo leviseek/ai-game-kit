@@ -3,7 +3,9 @@ import {
     createFuiComponentUrl,
     getFuiComponentRegistry,
     type FuiComponentRegistry,
+    type FuiComponentUrl,
 } from "../../../core/fui/FuiComponentRegistry";
+import { FuiBindingError, FuiViewCreationError } from "../../../core/fui/FuiErrors";
 import type { FuiView, FuiViewSeam } from "../../../contracts/ui/FuiView";
 import { wrapFairyGuiObjectTyped, type FuiElementKind } from "./FairyGuiViewHandle";
 import { createFairyGuiView, type FairyGuiViewLike } from "./FairyGuiPageAdapter";
@@ -20,21 +22,22 @@ export function getBoundView(view: unknown): FuiView<unknown, unknown> | undefin
 
 /**
  * 把 GComponent 包装为 FuiViewSeam：按名取子元件（能力 kind 分派），注册点击。
- * fgui 类型只存在于本 Adapter 边界；业务 FuiView 只消费能力接口。
+ * 缺失检测下沉到本 seam：字段/点击节点不存在时抛 FuiBindingError（fail-fast），
+ * 使 FuiView.__attach 消费非可选返回值。fgui 类型只存在于本 Adapter 边界。
  */
-function createSeam(component: GComponent): FuiViewSeam {
+function createSeam(url: FuiComponentUrl, component: GComponent): FuiViewSeam {
     return {
-        child(name: string, kind: string): ReturnType<typeof wrapFairyGuiObjectTyped> | undefined {
+        child(name: string, kind: string): ReturnType<typeof wrapFairyGuiObjectTyped> {
             const child = component.getChild(name);
             if (child === null) {
-                return undefined;
+                throw new FuiBindingError(url, name, "field");
             }
             return wrapFairyGuiObjectTyped(child, kind as FuiElementKind);
         },
         onClick(name: string, handler: () => void): () => void {
             const child = component.getChild(name);
             if (child === null) {
-                throw new Error(`FuiView 点击绑定缺失: ${name}（组件无此元件）`);
+                throw new FuiBindingError(url, name, "click");
             }
             child.on(Event.CLICK, handler, child);
             return () => {
@@ -67,13 +70,22 @@ export function createBoundView(
 
     const component = createObject(packageName, resName);
     if (component === null) {
-        throw new Error(`FairyGUI view "${resName}" in package "${packageName}" was not found`);
+        throw new FuiViewCreationError(
+            url,
+            new Error(`FairyGUI view "${resName}" in package "${packageName}" was not found`),
+        );
     }
 
     // 包装器模式：业务类 extends 引擎无关 FuiView，不 extends GComponent；
     // 这里创建 FuiView 实例并绑定到引擎组件（字段注入/点击注册发生在 __attach）
-    const view: FuiView<unknown, unknown> = new entry.ctor();
-    view.__attach(createSeam(component as GComponent), entry.fields, entry.clicks);
+    let view: FuiView<unknown, unknown>;
+    try {
+        view = new entry.ctor();
+    } catch (cause) {
+        // ctor 抛错包装为创建失败；已创建 GComponent 的回滚由后续清理任务负责
+        throw new FuiViewCreationError(url, cause);
+    }
+    view.__attach(createSeam(url, component as GComponent), entry.fields, entry.clicks);
 
     const bound = component as GComponent & {
         readonly name: string;
