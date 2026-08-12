@@ -20,8 +20,8 @@ FGUI 页面此前每次都要手写节点名常量与按名 `getChild` 样板（
 
 ### 2. Store 为自研不可变 reducer 原语（core/state）
 
-- **C-04** `createStore(reducer, initialState)` 返回 `{ getState, dispatch, subscribe, dispose }`，reducer 纯函数、state 不可变、action 判别联合 + 常量表归口。不引入运行时依赖（仓库禁运行时依赖）。副作用（IO/调用用例）放 action 触发方（视图方法内），reducer 保持纯。
-- **C-05** Store 经组合根/品类 Module 创建与 dispose（非全局单例，随模块生命周期），示范页经 `bind(store, callbacks)` 注入获得 Store 与投影函数。
+- **C-04** `createStore(reducer, initialState)` 返回 `{ getState, dispatch, subscribe, dispose }`，reducer 纯函数、state 不可变、action 判别联合 + 常量表归口。不引入运行时依赖（仓库禁运行时依赖）。纯 UI 行为可由视图直接 dispatch；涉及领域规则、IO、资源或跨模块协作的业务意图由 Application / Use Case 执行，并以成功或失败 action 收敛回 Store。视图不直接访问基础设施，reducer 始终保持纯。Use Case 的类型安全页面注入接缝是后续独立 change，当前示范页的回调绑定不作为新页面标准范式。
+- **C-05** Store 非全局单例，所有权在组合根装配时固定为品类 Module 或页面作用域：Module Store 在 `start` 创建、`stop` 释放，页面 Store 随页面创建与关闭；页面不得释放共享的 Module Store。示范页经 `bind(store, callbacks)` 获得 Store 与交互回调，投影函数由 View 模块静态依赖。
 
 ### 3. 单向数据流纪律
 
@@ -56,3 +56,4 @@ FGUI 页面此前每次都要手写节点名常量与按名 `getChild` 样板（
 
 - 装饰动画/动画接入仍按 ADR-029 约束（经 GameClock，动画器只读 now()），FuiView 的 onState 写字段不经渲染器 diff，动画叠加不受影响。
 - Store/投影/视图全部手写业务，DDD/Store/MVVM 层无生成物。
+- Use Case 边界按 `doc/architecture/ui-store-mvvm-architecture.md` 执行；现有示范页不要求在本次文档修订中迁移，后续业务交互新增或修改时再按该边界收敛。
