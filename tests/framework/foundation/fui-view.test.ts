@@ -12,11 +12,12 @@ import {
 import { FuiView, type FuiViewSeam } from "../../../assets/framework/contracts/ui/FuiView";
 import { createStore } from "../../../assets/framework/core/state/Store";
 
-// 隔离的测试注册表：保存 globalThis 原单例，测试后恢复（禁止无条件 delete，
-// 否则会删掉已由其它缓存 ESM 模块登记的生产组件元数据，破坏其它用例）。
+// 隔离的测试注册表：登记前先清空全局键，使本用例在全新空注册表上登记（不污染
+// 生产 Registry 中已由缓存 ESM 模块登记的元数据），用例结束后恢复原单例。
 function isolateRegistry(): () => void {
     const g = globalThis as Record<string, unknown>;
     const original = g["__ai_game_kit_fui_components__"];
+    delete g["__ai_game_kit_fui_components__"];
     return () => {
         if (original === undefined) {
             delete g["__ai_game_kit_fui_components__"];

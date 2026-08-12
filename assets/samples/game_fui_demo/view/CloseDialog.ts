@@ -10,6 +10,7 @@ import type {
 } from "../../../ui/generated/ui-demo-types";
 import { CloseDialogFields } from "../../../ui/generated/ui-demo-types";
 import { UiDemoCloseDialog } from "../../../ui/generated/ui-demo";
+import type { CloseDialogApplication } from "../assembly";
 import type {
     CloseDialogAction,
     CloseDialogState,
@@ -26,8 +27,9 @@ import {
  * 类同名合并，使 `this._txt_content` 等获得类型。点击经 @FClick 上行 dispatch，
  * 状态经 Store → project → onState 下行写字段（单向数据流）。
  *
- * 组件经 FuiViewHost 以无参构造创建（包装器模式：注册表只存 ctor），故演示页
- * 自持默认 Store；调用方可用 bind(store, callbacks) 注入替换（对齐 D7 组合根注入）。
+ * 组件经 FuiViewHost 以无参构造创建（包装器模式：注册表只存 ctor），store 与
+ * Application facade 由 Feature assembly 的 binder 在创建时经 bind 注入
+ * （runtimeBinding: "required"；端口只含 Store 与 facade，见 fui-view-binding spec）。
  */
 
 // 与类同名合并：把生成接口的 `_` 字段并入本类的实例类型。
@@ -41,18 +43,15 @@ export interface CloseDialog extends ICloseDialog {
 @FUIBind(UiDemoCloseDialog, CloseDialogFields, { runtimeBinding: "required" })
 export class CloseDialog extends FuiView<CloseDialogState, CloseDialogViewModel> {
     private store?: Store<CloseDialogState, CloseDialogAction>;
-    private onConfirm: () => void = () => { };
-    private onCancel: () => void = () => { };
+    private application?: CloseDialogApplication;
 
-    /** 注入 Store 与回调（组合根装配时调用）：订阅 + 首次投影，幂等。 */
+    /** 注入 Store 与 Application facade（Feature assembly binder 创建时调用）：订阅 + 首次投影。 */
     bind(deps: {
         readonly store: Store<CloseDialogState, CloseDialogAction>;
-        readonly onConfirm: () => void;
-        readonly onCancel: () => void;
+        readonly application: CloseDialogApplication;
     }): void {
         this.store = deps.store;
-        this.onConfirm = deps.onConfirm;
-        this.onCancel = deps.onCancel;
+        this.application = deps.application;
         this.bindStore(this.store, projectCloseDialog);
     }
 
@@ -73,12 +72,12 @@ export class CloseDialog extends FuiView<CloseDialogState, CloseDialogViewModel>
     @FClick<CloseDialogNodes>("btn_confirm_bg")
     private _handleConfirm(): void {
         this.store?.dispatch({ type: CLOSE_DIALOG_ACTIONS.CONFIRM });
-        this.onConfirm();
+        this.application?.confirm();
     }
 
     @FClick<CloseDialogNodes>("btn_cancel_bg")
     private _handleCancel(): void {
         this.store?.dispatch({ type: CLOSE_DIALOG_ACTIONS.CANCEL });
-        this.onCancel();
+        this.application?.cancel();
     }
 }

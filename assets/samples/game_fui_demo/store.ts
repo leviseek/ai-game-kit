@@ -1,6 +1,5 @@
 import {
     createStore,
-    type Module,
     type Store,
 } from "../../framework";
 
@@ -53,39 +52,3 @@ export const CLOSE_DIALOG_ACTIONS = {
     CONFIRM: "confirm",
     CANCEL: "cancel",
 } as const;
-
-export interface CloseDialogStoreHandle {
-    readonly store: Store<CloseDialogState, CloseDialogAction>;
-    /** 打开对话框：写入内容并派发 open。 */
-    open(content: string): void;
-}
-
-/**
- * 演示 Store 装配（品类 Module 形态）：start 创建 Store，stop 释放（dispose 订阅）。
- * 对齐 D7「组合根注入、非全局单例、随品类模块生命周期」——示范页经 bind(handle)
- * 获得 Store 与投影函数。
- */
-export function createCloseDialogStoreModule(): Module & {
-    getHandle(): CloseDialogStoreHandle | undefined;
-} {
-    let handle: CloseDialogStoreHandle | undefined;
-
-    return {
-        id: "fui_demo.close_dialog",
-        dependencies: [],
-        start: () => {
-            const store = createCloseDialogStore();
-            handle = {
-                store,
-                open: (content: string) => {
-                    store.dispatch({ type: CLOSE_DIALOG_ACTIONS.OPEN, content });
-                },
-            };
-        },
-        stop: () => {
-            handle?.store.dispose();
-            handle = undefined;
-        },
-        getHandle: () => handle,
-    };
-}

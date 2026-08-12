@@ -5,6 +5,7 @@ import { createIdleFixture } from "./game_idle/assembly";
 import { createRpgFixture } from "./game_rpg/assembly";
 import { createTycoonFixture } from "./game_tycoon/assembly";
 import { createAutoBattleFixture } from "./game_auto_battle/assembly";
+import { createCloseDialogFeature } from "./game_fui_demo/assembly";
 import { createCardBattlePresenter } from "./game_card/view/presenter";
 import { createLineupEditorPresenter } from "./game_auto_battle/view/LineupPresenter";
 import { runCardBattleSmoke } from "./game_card/smoke";
@@ -13,7 +14,7 @@ import { AUTO_BATTLE_DYNAMIC_NODE_MAPPINGS } from "./game_auto_battle/view/UnitN
 
 // samples bundle 顶层副作用：单点合并登记品类模块描述符，避免多文件各自
 // register 互相覆盖。各 game_*/assembly.ts 不自行 registerBundle。
-registerBundle("samples", {
+export const SAMPLES_BUNDLE_DESCRIPTOR = Object.freeze({
     fixtures: {
         card: createCardFixture,
         rpg: createRpgFixture,
@@ -37,4 +38,8 @@ registerBundle("samples", {
     unitNodeMappings: {
         auto_battle: AUTO_BATTLE_DYNAMIC_NODE_MAPPINGS,
     },
+    // CloseDialog Feature 装配入口：向组合根 registrar 注册 Store + facade binder
+    createCloseDialogFeature,
 });
+
+registerBundle("samples", SAMPLES_BUNDLE_DESCRIPTOR);
