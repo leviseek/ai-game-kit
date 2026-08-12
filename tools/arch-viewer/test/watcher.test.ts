@@ -1,0 +1,249 @@
+import { describe, expect, test } from "bun:test";
+import { join } from "node:path";
+
+import { createAnalysisScheduler } from "../lib/server/scheduler";
+import { watchProject, type WatchBackend } from "../lib/server/watcher";
+import { createGraphSnapshotStore } from "../lib/server/snapshot-store";
+import type { ArchitectureBuildInput } from "../lib/analysis/analyzer";
+import type { CodeGraphStatus } from "../lib/codegraph/types";
+import type { GraphSnapshot, ViewType } from "../lib/graph/types";
+
+describe("createAnalysisScheduler", () => {
+    test("连续触发 3 次只执行一次分析", async () => {
+        const clock = new FakeClock();
+        const calls: string[] = [];
+        const store = createGraphSnapshotStore();
+        const scheduler = createAnalysisScheduler({
+            sync: async () => { calls.push("sync"); },
+            status: async () => readyStatus(),
+            analyze: async (input) => snapshot(input.version),
+            store,
+            debounceMs: 10,
+            setTimeout: clock.setTimeout,
+            clearTimeout: clock.clearTimeout,
+        });
+
+        scheduler.trigger();
+        scheduler.trigger();
+        scheduler.trigger();
+
+        expect(clock.pending()).toBe(1);
+        await clock.runNext();
+
+        expect(calls).toEqual(["sync"]);
+        expect(store.current().snapshot?.version).toBe(1);
+    });
+
+    test("分析中再触发只追加一次 follow-up", async () => {
+        const clock = new FakeClock();
+        const store = createGraphSnapshotStore();
+        const blockers = [deferred<GraphSnapshot>(), deferred<GraphSnapshot>()];
+        const versions: number[] = [];
+        const scheduler = createAnalysisScheduler({
+            sync: async () => {},
+            status: async () => readyStatus(),
+            analyze: async (input) => {
+                versions.push(input.version);
+                return blockers[versions.length - 1]!.promise;
+            },
+            store,
+            debounceMs: 10,
+            setTimeout: clock.setTimeout,
+            clearTimeout: clock.clearTimeout,
+        });
+
+        scheduler.trigger();
+        await clock.runNext();
+        scheduler.trigger();
+        scheduler.trigger();
+        blockers[0]!.resolve(snapshot(1));
+        await flushAsync();
+
+        expect(versions).toEqual([1, 2]);
+        blockers[1]!.resolve(snapshot(2));
+        await flushAsync();
+        expect(store.current().snapshot?.version).toBe(2);
+    });
+
+    test("sync 失败产生 index-waiting 且不调用 analyzer", async () => {
+        const clock = new FakeClock();
+        const store = createGraphSnapshotStore();
+        let analyzeCount = 0;
+        const scheduler = createAnalysisScheduler({
+            sync: async () => { throw new Error("sync failed"); },
+            status: async () => readyStatus(),
+            analyze: async (input) => {
+                analyzeCount += 1;
+                return snapshot(input.version);
+            },
+            store,
+            debounceMs: 10,
+            setTimeout: clock.setTimeout,
+            clearTimeout: clock.clearTimeout,
+        });
+
+        scheduler.trigger();
+        await clock.runNext();
+
+        expect(analyzeCount).toBe(0);
+        expect(store.current().state).toBe("index-waiting");
+    });
+
+    test("pendingChanges 未清零时等待索引且不调用 analyzer", async () => {
+        const clock = new FakeClock();
+        const store = createGraphSnapshotStore();
+        let analyzeCount = 0;
+        const scheduler = createAnalysisScheduler({
+            sync: async () => {},
+            status: async () => readyStatus({ added: 0, modified: 1, removed: 0 }),
+            analyze: async (input) => {
+                analyzeCount += 1;
+                return snapshot(input.version);
+            },
+            store,
+            debounceMs: 10,
+            setTimeout: clock.setTimeout,
+            clearTimeout: clock.clearTimeout,
+        });
+
+        scheduler.trigger();
+        await clock.runNext();
+
+        expect(analyzeCount).toBe(0);
+        expect(store.current().state).toBe("index-waiting");
+    });
+
+    test("dispose 后不再运行", async () => {
+        const clock = new FakeClock();
+        const store = createGraphSnapshotStore();
+        let syncCount = 0;
+        const scheduler = createAnalysisScheduler({
+            sync: async () => { syncCount += 1; },
+            status: async () => readyStatus(),
+            analyze: async (input) => snapshot(input.version),
+            store,
+            debounceMs: 10,
+            setTimeout: clock.setTimeout,
+            clearTimeout: clock.clearTimeout,
+        });
+
+        scheduler.trigger();
+        scheduler.dispose();
+        await clock.runAll();
+        scheduler.trigger();
+        await clock.runAll();
+
+        expect(syncCount).toBe(0);
+    });
+});
+
+describe("watchProject", () => {
+    test("监听目标目录并过滤不相关变更", () => {
+        const watched: string[] = [];
+        const listeners: Array<(event: string, filename: string | Buffer | null) => void> = [];
+        const disposed: string[] = [];
+        const backend: WatchBackend = {
+            watch(path, listener) {
+                watched.push(path);
+                listeners.push(listener);
+                return { dispose: () => disposed.push(path) };
+            },
+        };
+        const root = "D:/repo";
+        const changes: string[] = [];
+        const watcher = watchProject(root, (path) => changes.push(path), { backend });
+
+        expect(watched).toEqual([
+            join(root, "assets"),
+            join(root, "tools"),
+            join(root, "doc", "architecture"),
+            join(root, "doc", "decisions"),
+            join(root, "tools", "arch-viewer"),
+        ]);
+
+        listeners[0]!("change", "main.ts");
+        listeners[1]!("change", "temp/cache.ts");
+        listeners[1]!("change", ".codegraph/index.sqlite");
+        listeners[1]!("change", "node_modules/pkg/index.ts");
+        listeners[1]!("change", "third-party/pkg/index.ts");
+        listeners[1]!("change", ".superpowers/notes.md");
+        listeners[2]!("change", "overview.md.meta");
+        listeners[3]!("change", "adr.md");
+        watcher.dispose();
+        listeners[0]!("change", "later.ts");
+
+        expect(changes).toEqual([join(root, "assets", "main.ts"), join(root, "doc", "decisions", "adr.md")]);
+        expect(disposed).toEqual(watched);
+    });
+});
+
+class FakeClock {
+    private nextId = 1;
+    private readonly timers = new Map<number, () => void>();
+
+    public readonly setTimeout = (callback: () => void, _ms: number): number => {
+        const id = this.nextId;
+        this.nextId += 1;
+        this.timers.set(id, callback);
+        return id;
+    };
+
+    public readonly clearTimeout = (id: number): void => {
+        this.timers.delete(id);
+    };
+
+    public pending(): number {
+        return this.timers.size;
+    }
+
+    public async runNext(): Promise<void> {
+        const [id, callback] = this.timers.entries().next().value ?? [];
+        if (id === undefined || callback === undefined) return;
+        this.timers.delete(id);
+        callback();
+        await flushAsync();
+    }
+
+    public async runAll(): Promise<void> {
+        while (this.timers.size > 0) await this.runNext();
+    }
+}
+
+async function flushAsync(): Promise<void> {
+    for (let index = 0; index < 5; index += 1) await Promise.resolve();
+}
+
+function deferred<T>(): { readonly promise: Promise<T>; resolve(value: T): void } {
+    let resolve: (value: T) => void = () => {};
+    const promise = new Promise<T>((next) => { resolve = next; });
+    return { promise, resolve };
+}
+
+function readyStatus(pendingChanges = { added: 0, modified: 0, removed: 0 }): CodeGraphStatus {
+    return {
+        initialized: true,
+        version: "fake",
+        projectPath: "D:/repo",
+        indexPath: "D:/repo/.codegraph",
+        lastIndexed: null,
+        pendingChanges,
+    };
+}
+
+function snapshot(version: number): GraphSnapshot {
+    const empty = (type: ViewType) => ({ type, nodes: [], edges: [], groups: [], diagnostics: [] });
+    return {
+        version,
+        generatedAt: version,
+        project: {},
+        views: {
+            hierarchy: empty("hierarchy"),
+            startup: empty("startup"),
+            dependencies: empty("dependencies"),
+            "data-flow": empty("data-flow"),
+            calls: empty("calls"),
+            resources: empty("resources"),
+        },
+        diagnostics: [],
+    };
+}
