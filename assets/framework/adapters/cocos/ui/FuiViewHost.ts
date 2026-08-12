@@ -7,9 +7,15 @@ import {
 } from "../../../core/fui/FuiComponentRegistry";
 import {
     FuiBindingError,
+    FuiViewBindingRegistrationError,
     FuiViewCleanupError,
     FuiViewCreationError,
 } from "../../../core/fui/FuiErrors";
+import {
+    createFuiViewBindingScope,
+    type FuiViewBindingResolver,
+    type FuiViewBindingScope,
+} from "../../../core/fui/FuiViewBinderRegistry";
 import type { FuiView, FuiViewSeam } from "../../../contracts/ui/FuiView";
 import { wrapFairyGuiObjectTyped, type FuiElementKind } from "./FairyGuiViewHandle";
 import { createFairyGuiView, type FairyGuiViewLike } from "./FairyGuiPageAdapter";
@@ -55,14 +61,24 @@ function createSeam(url: FuiComponentUrl, component: GComponent): FuiViewSeam {
  * 创建失败回滚：primary 错误始终保留在 FuiViewCreationError.cause（不覆盖）；
  * View 与 GComponent 各自 try/catch 清理，失败聚合附在错误实例的 cleanupErrors 属性
  * （冻结数组；无原生 AggregateError，ES2015 兼容，详见 core/fui/FuiErrors）。
+ * scopeHandles 为绑定失败时已登记的非幂等句柄（Host 是绑定回滚唯一所有者）：先逆序
+ * 逐句柄隔离释放（句柄抛错不中断后续句柄），再清理 View 与 GComponent。
  */
 function throwWithRollback(
     url: FuiComponentUrl,
     primary: unknown,
     view: FuiView<unknown, unknown> | undefined,
     component: GObject | null,
+    scopeHandles: ReadonlyArray<{ dispose(): void }> = [],
 ): never {
     const cleanupErrors: unknown[] = [];
+    for (let i = scopeHandles.length - 1; i >= 0; i--) {
+        try {
+            scopeHandles[i]!.dispose();
+        } catch (error) {
+            cleanupErrors.push(error);
+        }
+    }
     if (view !== undefined) {
         try {
             view.dispose();
@@ -92,11 +108,14 @@ function throwWithRollback(
  * 绑定（退订 Store/移除监听），再走引擎 dispose——两者独立 try/catch，任一失败不阻断
  * 另一方，全部失败聚合为 FuiViewCleanupError（幂等）。fgui 类型只存在于本 Adapter 边界。
  * createObject 为创建接缝（缺省 UIPackage.createObject），测试可注入记录型 mock。
+ * bindingResolver 为内部运行时 binder 解析器（缺省 undefined）：`runtimeBinding: "required"`
+ * 组件在 __attach 后必须经其执行 binder，缺失时 fail-fast（typed missing-binder）并回滚。
  */
 export function createBoundView(
     packageName: string,
     resName: string,
     registry: FuiComponentRegistry,
+    bindingResolver: FuiViewBindingResolver | undefined,
     createObject: (pkg: string, res: string) => GObject | null = (pkg, res) =>
         UIPackage.createObject(pkg, res),
 ): (GComponent & { readonly name: string; dispose(): void }) | null {
@@ -130,6 +149,31 @@ export function createBoundView(
     } catch (cause) {
         // binder/attach 失败：View 与 GComponent 均回滚，primary 保持在 cause
         throwWithRollback(url, cause, view, component);
+    }
+
+    // runtimeBinding 装配：binder 前创建幂等 scope，binder 每获得句柄立即登记；
+    // 失败时仅由 Host 逆序隔离清理 scope、View、GComponent（各底层句柄至多执行一次）
+    if (entry.runtimeBinding === "required") {
+        const scope = createFuiViewBindingScope();
+        // scope.disposeAll 非隔离（句柄抛错即停、跳过剩余）：Host 同时记录原始句柄，
+        // 失败回滚时逐句柄逆序 try/catch，保证全部句柄被尝试且失败聚合
+        const scopeHandles: Array<{ dispose(): void }> = [];
+        const recordingScope: FuiViewBindingScope = {
+            own(handle) {
+                scopeHandles.push(handle);
+                scope.own(handle);
+            },
+        };
+        try {
+            if (bindingResolver === undefined) {
+                throw new FuiViewBindingRegistrationError(url);
+            }
+            bindingResolver.bindRequired(url, view, recordingScope);
+        } catch (cause) {
+            throwWithRollback(url, cause, view, component, scopeHandles);
+        }
+        // 成功：scope 作为单一句柄转交视图（视图 dispose 逆序隔离执行，无需 Host 额外聚合）
+        view.__own({ dispose: () => scope.disposeAll() });
     }
 
     const bound = component as GComponent & {
@@ -170,14 +214,23 @@ export function createBoundView(
 
 /**
  * 创建路径组合闭包：先查注册表，命中创建绑定视图；未命中回退既有
- * createFairyGuiView 路径（存量页/动态页行为不变）。注册表经注入传入，
- * 缺省用全局单例（装饰器在模块加载期登记，早于组合根 DI，见 core/fui）。
+ * createFairyGuiView 路径（存量页/动态页行为不变）。注册表经 options 注入，
+ * 缺省用全局单例（装饰器在模块加载期登记，早于组合根 DI，见 core/fui）；
+ * bindingResolver 缺省 undefined，required 组件缺少 resolver 时创建 fail-fast。
+ * createObject 经 options 注入（缺省 UIPackage.createObject），供测试覆盖对象创建。
  */
 export function createFairyGuiBoundView(
-    registry?: FuiComponentRegistry,
+    bindingResolver: FuiViewBindingResolver | undefined,
+    options?: {
+        componentRegistry?: FuiComponentRegistry;
+        createObject?: (pkg: string, res: string) => GObject | null;
+    },
 ): (packageName: string, resName: string) => FairyGuiViewLike {
+    const registry = options?.componentRegistry ?? getFuiComponentRegistry();
+    const createObject =
+        options?.createObject ?? ((pkg: string, res: string) => UIPackage.createObject(pkg, res));
     return (packageName: string, resName: string): FairyGuiViewLike => {
-        const hit = createBoundView(packageName, resName, registry ?? getFuiComponentRegistry());
+        const hit = createBoundView(packageName, resName, registry, bindingResolver, createObject);
         if (hit !== null) {
             return hit as unknown as FairyGuiViewLike;
         }

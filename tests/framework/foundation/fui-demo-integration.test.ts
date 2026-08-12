@@ -3,6 +3,11 @@ import { pathToFileURL } from "node:url";
 import { describe, expect, mock, test } from "bun:test";
 
 import { createFairyGuiMock } from "./helpers/fairygui-mock";
+import type { FuiComponentUrl } from "../../../assets/framework/core/fui/FuiComponentRegistry";
+import {
+    createFuiViewBinderRegistry,
+    defineFuiViewBinding,
+} from "../../../assets/framework/core/fui/FuiViewBinderRegistry";
 
 // 实现值 import fairygui-cc；统一使用共享 fixture，动态加载避免 mock 前解析。
 mock.module("fairygui-cc", () => createFairyGuiMock());
@@ -90,7 +95,18 @@ describe("CloseDialog 示范静态页全链路集成", () => {
             )) as {
                 CloseDialog: new () => unknown;
             };
-            void demo;
+
+            // CloseDialog 声明 runtimeBinding: "required"，创建必须携带已登记 binder 的
+            // resolver；本用例聚焦字段注入/点击/投影全链路，store 装配由下方手动 bind 注入，
+            // 故 binder 只登记空实现（binder 行为由 fui-view-host / fui-view-binder-registry 覆盖）
+            const binderRegistry = createFuiViewBinderRegistry();
+            binderRegistry.register(
+                defineFuiViewBinding(
+                    ("ui" + "://Demo/CloseDialog") as FuiComponentUrl,
+                    demo.CloseDialog as new () => object,
+                    () => { },
+                ),
+            );
 
             const registry = (await import(
                 pathToFileURL(resolve(import.meta.dir, "../../../assets/framework/core/fui/FuiComponentRegistry.ts")).href
@@ -118,11 +134,12 @@ describe("CloseDialog 示范静态页全链路集成", () => {
                 txt_confirm: { text: "", visible: true },
             });
 
-            // 经 createBoundView 命中注册表创建绑定视图（字段注入 + FClick 注册）
+            // 经 createBoundView 命中注册表创建绑定视图（字段注入 + FClick 注册 + required binder）
             const view = createBoundView(
                 "Demo",
                 "CloseDialog",
                 registry.getFuiComponentRegistry(),
+                binderRegistry,
                 () => component as never,
             );
             expect(view).not.toBeNull();

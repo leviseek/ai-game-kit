@@ -85,8 +85,9 @@ export class UiHost {
             provider: this.resourceProvider,
             navigator: this.nav,
             // 组合创建闭包：先查 FuiComponentRegistry（@FUIBind 登记的绑定视图），
-            // 未命中回退既有 createFairyGuiView（存量/动态页路径不变）
-            createView: createFairyGuiBoundView(),
+            // 未命中回退既有 createFairyGuiView（存量/动态页路径不变）。resolver 由
+            // 组合根在后续接线时注入（assembleApp），此处生产路径暂不执行 required binder
+            createView: createFairyGuiBoundView(undefined),
         });
         this.adapter.init();
         // 窗口尺寸变化 → UI 根同步 root 布局后通知适配器同步层级容器，无需手动刷新
