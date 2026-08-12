@@ -15,9 +15,9 @@ FUI 绑定链路目前存在三类边界缺口：组件 URL 由 `@FUIBind(packag
 
 ## Goals / Non-Goals
 
-**Goals:** generated URL binding；required instance-scoped runtime binder；transactional binding scope；typed FUI errors；end-to-end cleanup isolation。
+**Goals:** generated URL binding; required instance-scoped runtime binder; transactional binding scope; typed FUI errors; end-to-end cleanup isolation.
 
-**Non-Goals:** no EventBus；no Store redesign；no gen-constants freshness；no migration beyond CloseDialog demonstration。
+**Non-Goals:** no EventBus; no Store redesign; no gen-constants freshness; no migration beyond CloseDialog demonstration.
 
 ## Capabilities
 
