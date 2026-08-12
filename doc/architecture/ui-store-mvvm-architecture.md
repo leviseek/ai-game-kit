@@ -252,7 +252,7 @@ Adapter 负责实现网络、存储、资源和引擎端口。FGUI 只负责 UI 
 - Use Case 将底层错误映射为 UI 可理解的状态或错误码。
 - View 只显示投影后的错误信息，不解析底层异常类型。
 - 绑定节点缺失、重复组件注册和生成产物过期属于开发期错误，应 fail-fast。
-- FUI 绑定错误已收敛到 `FrameworkError` 家族（`FuiComponentRegistrationError`/`FuiViewBindingRegistrationError`/`FuiViewCreationError`/`FuiBindingError` 内部化，公共 `FuiViewCleanupError`，见 `core/fui/FuiErrors.ts` 与 ADR-032 决策 7）；新增绑定错误必须继续继承 `FrameworkError`，不得引入普通 `Error` 新先例。
+- FUI 绑定错误已收敛到 `FrameworkError` 家族（`FuiViewBindingRegistrationError`/`FuiViewCreationError`/`FuiBindingError` 内部化，公共 `FuiViewCleanupError` 与 `FuiComponentRegistrationError`，见 `core/fui/FuiErrors.ts` 与 ADR-032 决策 7）；新增绑定错误必须继续继承 `FrameworkError`，不得引入普通 `Error` 新先例。
 
 ## 8. 生命周期
 

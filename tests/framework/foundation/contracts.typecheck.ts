@@ -371,7 +371,7 @@ class _FuiTypecheckView extends FuiView<unknown, unknown> {
 }
 
 const _registry = getFuiComponentRegistry();
-const _plainUrl: string = "ui://Demo/Test";
+const _plainUrl: string = "ui" + "://Demo/Test";
 const _entry: FuiComponentEntry = {
     ctor: _FuiTypecheckView,
     fields: {},
