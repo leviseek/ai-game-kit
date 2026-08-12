@@ -5,7 +5,7 @@
 ## What Changes
 
 - 新增架构可视化工作台 workspace、CLI、Web 编译入口与测试门禁。
-- 工作台最终提供六类架构图，并通过 CodeGraph 公共 CLI 获取结构化代码关系。
+- 工作台最终提供六类架构图：architecture hierarchy、startup flow、module dependencies、data flow、symbol calls and impact、resource lifecycle，并通过 CodeGraph 公共 CLI 获取结构化代码关系。
 - 新增 TypeScript SourceScanner，扫描静态声明以及 import/export 关系，补充 CodeGraph 数据。
 - 浏览器更新通道使用 Server-Sent Events（SSE），不使用 WebSocket。
 - 首版不提供 MCP 接口。

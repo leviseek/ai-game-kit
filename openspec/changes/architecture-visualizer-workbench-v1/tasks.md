@@ -9,6 +9,12 @@
 - [ ] 2.2 以测试驱动实现 CodeGraph 公共 CLI 适配器及错误处理
 - [ ] 2.3 以测试驱动实现 TypeScript SourceScanner，覆盖静态声明与 import/export 关系
 - [ ] 2.4 汇总两类扫描来源并验证确定性输出
+- [ ] 2.5 验证 architecture hierarchy 的目录、模块与符号父子包含关系
+- [ ] 2.6 验证 startup flow 从启动入口按执行方向生成有序步骤
+- [ ] 2.7 验证 module dependencies 按方向生成模块 import/export 关系
+- [ ] 2.8 验证 data flow 按传播方向连接生产者、传递节点与消费者
+- [ ] 2.9 验证 symbol calls and impact 同时生成调用方向与反向影响范围
+- [ ] 2.10 验证 resource lifecycle 按顺序生成资源获取、所有权与释放关系
 
 ## 3. Local Service
 
@@ -18,7 +24,7 @@
 
 ## 4. Web Workbench
 
-- [ ] 4.1 实现六类架构图的视图选择与共享数据渲染
+- [ ] 4.1 实现 architecture hierarchy、startup flow、module dependencies、data flow、symbol calls and impact、resource lifecycle 的视图选择与共享数据渲染
 - [ ] 4.2 接入 SSE 刷新、加载状态和明确错误提示
 - [ ] 4.3 验证 Web 编译产物、桌面与窄屏布局以及无 WebSocket/MCP 接口
 
