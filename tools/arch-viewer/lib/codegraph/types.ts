@@ -11,11 +11,11 @@ export interface CodeGraphNode {
     readonly endColumn: number;
     readonly docstring?: string;
     readonly signature?: string;
-    readonly visibility: string | null;
-    readonly isExported: boolean;
-    readonly isAsync: boolean;
-    readonly isStatic: boolean;
-    readonly isAbstract: boolean;
+    readonly visibility?: string | null;
+    readonly isExported?: boolean;
+    readonly isAsync?: boolean;
+    readonly isStatic?: boolean;
+    readonly isAbstract?: boolean;
     readonly updatedAt: number;
 }
 

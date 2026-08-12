@@ -35,7 +35,7 @@ export interface CodeGraphGateway {
     status(): Promise<CodeGraphStatus>;
     sync(): Promise<void>;
     files(): Promise<readonly CodeGraphFile[]>;
-    search(search: string): Promise<readonly CodeGraphNode[]>;
+    search(search: string, limit?: number): Promise<readonly CodeGraphNode[]>;
     callers(symbol: string): Promise<readonly CodeGraphRelationNode[]>;
     callees(symbol: string): Promise<readonly CodeGraphRelationNode[]>;
     impact(symbol: string): Promise<readonly CodeGraphRelationNode[]>;
@@ -62,6 +62,10 @@ function isOptionalString(value: Record<string, unknown>, key: string): boolean 
     return value[key] === undefined || typeof value[key] === "string";
 }
 
+function isOptionalBoolean(value: Record<string, unknown>, key: string): boolean {
+    return value[key] === undefined || typeof value[key] === "boolean";
+}
+
 function isCodeGraphNode(value: unknown): value is CodeGraphNode {
     if (!isRecord(value)) return false;
     const strings = ["id", "kind", "name", "qualifiedName", "filePath", "language"];
@@ -69,8 +73,8 @@ function isCodeGraphNode(value: unknown): value is CodeGraphNode {
     const booleans = ["isExported", "isAsync", "isStatic", "isAbstract"];
     return strings.every((key) => hasString(value, key))
         && numbers.every((key) => hasNumber(value, key))
-        && booleans.every((key) => hasBoolean(value, key))
-        && (value.visibility === null || typeof value.visibility === "string")
+        && booleans.every((key) => isOptionalBoolean(value, key))
+        && (value.visibility === undefined || value.visibility === null || typeof value.visibility === "string")
         && isOptionalString(value, "docstring")
         && isOptionalString(value, "signature");
 }
@@ -203,9 +207,10 @@ export function createCodeGraphGateway(options?: {
         }
     }
 
-    async function search(search: string): Promise<readonly CodeGraphNode[]> {
+    async function search(search: string, limit?: number): Promise<readonly CodeGraphNode[]> {
+        const limitArgs = limit === undefined ? [] : ["--limit", String(limit)];
         const results = await runJson(
-            ["query", search, "--path", projectRoot],
+            ["query", search, "--path", projectRoot, ...limitArgs],
             isQueryResults,
         );
         return results.map((result) => result.node);
@@ -249,15 +254,16 @@ export function createCodeGraphGateway(options?: {
             return result.affected;
         },
         async resolveSymbol(ref) {
-            const matches = await search(ref.name);
+            const matches = await search(ref.name, 100);
             const qualified = matches.filter((node) => node.qualifiedName === ref.name);
             if (qualified.length === 1) return qualified[0];
 
-            const byFile = ref.file
-                ? matches.filter((node) => node.filePath === ref.file)
-                : matches;
-            const named = byFile.filter((node) => node.name === ref.name);
-            const candidates = named.length > 0 ? named : byFile;
+            const exact = qualified.length > 0
+                ? qualified
+                : matches.filter((node) => node.name === ref.name);
+            const candidates = ref.file
+                ? exact.filter((node) => node.filePath === ref.file)
+                : exact;
             if (candidates.length === 1) return candidates[0];
 
             const suffix = candidates.length === 0
