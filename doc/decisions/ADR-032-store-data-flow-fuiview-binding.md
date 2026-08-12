@@ -20,8 +20,8 @@ FGUI 页面此前每次都要手写节点名常量与按名 `getChild` 样板（
 
 ### 2. Store 为自研不可变 reducer 原语（core/state）
 
-- **C-04** `createStore(reducer, initialState)` 返回 `{ getState, dispatch, subscribe, dispose }`，reducer 纯函数、state 不可变、action 判别联合 + 常量表归口。不引入运行时依赖（仓库禁运行时依赖）。纯 UI 行为可由视图直接 dispatch；涉及领域规则、IO、资源或跨模块协作的业务意图由 Application / Use Case 执行，并以成功或失败 action 收敛回 Store。视图不直接访问基础设施，reducer 始终保持纯。Use Case 的类型安全页面注入接缝是后续独立 change，当前示范页的回调绑定不作为新页面标准范式。
-- **C-05** Store 非全局单例，所有权在组合根装配时固定为品类 Module 或页面作用域：Module Store 在 `start` 创建、`stop` 释放，页面 Store 随页面创建与关闭；页面不得释放共享的 Module Store。示范页经 `bind(store, callbacks)` 获得 Store 与交互回调，投影函数由 View 模块静态依赖。
+- **C-04** `createStore(reducer, initialState)` 返回 `{ getState, dispatch, subscribe, dispose }`，reducer 纯函数、state 不可变、action 判别联合 + 常量表归口。不引入运行时依赖（仓库禁运行时依赖）。纯 UI 行为可由视图直接 dispatch；涉及领域规则、IO、资源或跨模块协作的业务意图由 Application / Use Case 执行，并以成功或失败 action 收敛回 Store。视图不直接访问基础设施，reducer 始终保持纯。Use Case 的类型安全页面注入接缝由方案 B 的实例级 required binder 提供（见决策 7），示范页经 `createCloseDialogFeature` 装配 Store 与 Application facade，不再使用匿名回调。
+- **C-05** Store 非全局单例，所有权在组合根装配时固定为品类 Module 或页面作用域：Module Store 在 `start` 创建、`stop` 释放，页面 Store 随页面创建与关闭；页面不得释放共享的 Module Store。示范页经 `bind({ store, application })` 获得 Store 与 Application facade（见决策 7），投影函数由 View 模块静态依赖。
 
 ### 3. 单向数据流纪律
 
@@ -44,12 +44,23 @@ FGUI 页面此前每次都要手写节点名常量与按名 `getChild` 样板（
 
 - **C-14** `FuiComponentRegistry` 采用 globalThis 私有符号键单例（对齐 `BundleModuleRegistry` 跨 bundle 注册桥），因为 `@FUIBind` 在类定义/模块加载期登记，早于组合根 DI。FuiViewHost 缺省读全局单例，可注入测试用注册表。
 
+### 7. 运行时绑定、装配所有权与端到端清理（方案 B）
+
+方案 B 落地了「URL 契约 → required binder → 事务式装配 → 端口只进 facade」的运行时绑定链，并统一了端到端清理失败隔离语义。
+
+- **C-15** 绑定链 URL 契约固定为 `FuiComponentUrl` 模板字面量（`ui://<包>/<组件>` 品牌类型）：`@FUIBind(url, fields, { runtimeBinding })` 首参数直接消费 `ui/generated` 生成常量（如 `UiDemoCloseDialog`），并显式声明运行时绑定策略 `runtimeBinding: "required" | "none"`（编译期必填，无旧三参数重载）。`FuiComponentRegistry.register/lookup` 以 `FuiComponentUrl` 为键；Host 内部经 internal `createFuiComponentUrl(packageName, resName)` 单点构造 URL，注册表查询、错误与 binder 复用同一值，无散落类型断言。禁止裸字符串拼接与短 id 散落。
+- **C-16** 运行时依赖装配为实例级 required binder（非 globalThis、不进 ApplicationContext）：Feature assembly 经 `defineFuiViewBinding(url, ctor, bind)` 创建冻结绑定描述，经 `FuiViewBindingRegistrar.register` 登记；内部 resolver `bindRequired(url, view, scope)` 在视图 `__attach` 后执行对应 binder，required 组件缺 binder 抛 `FuiViewBindingRegistrationError`（fail-fast），视图 ctor 与 binder ctor 不匹配抛 `FuiBindingError`。`createFuiViewBinderRegistry()` 返回 registrar + resolver 一体对象，由组合根创建，resolver 保持内部局部值（不进根公共导出）。
+- **C-17** 绑定为事务式作用域：binder 每获得句柄立即 `FuiViewBindingScope.own` 登记；成功后 scope 作为单一句柄转交 `view.__own`（视图 dispose 逆序清理）；失败时 Host 是唯一回滚所有者——逆序逐句柄 try/catch 释放 scope 句柄、View 与 GComponent，各底层句柄至多执行一次；primary 错误保持为 `FuiViewCreationError.cause`，清理失败并入 `cleanupErrors` 聚合，不覆盖 primary。
+- **C-18** 端口只注入 Application facade：View 依赖类型只含 Store 与 Application facade（Use Case 端口），网络/存储/资源端口与匿名业务回调不进入 View。Feature/Module Store 归 Feature 所有：`createCloseDialogFeature(registrar, effects)` 为唯一装配入口，创建 Feature Store 与 facade 并向 registrar 注册 binder，`dispose()` 先注销 registration 再释放 Store（幂等）；页面 scope 只拥有 View 订阅等页面局部句柄，不拥有 Feature Store。`assembleApp(options)` 产出已接线的 `uiHost` 与公共 `fuiViewBindingRegistrar`（与 UiHost 内部 resolver 同源），`AppRoot` 消费 `assembly.uiHost`，不再重复装配。
+- **C-19** 端到端清理失败隔离：`FuiView.__own`/`dispose`、Host 的 View + GComponent 级联销毁、`FairyGuiPageAdapter.destroy/dispose`、`UiHost.dispose`、`GameLobbyHostImpl.closeEntryPage/dispose` 均先收敛引用（disposed/undefined）再逐项 try/catch 清理，单步失败不阻断后续，全部失败聚合为公共 `FuiViewCleanupError extends FrameworkError`（冻结 `errors` 快照、`cause` 取首个失败；替代 ES2015 不可用的原生 `AggregateError`）。会话作用域始终释放。`FuiComponentRegistrationError`/`FuiViewBindingRegistrationError`/`FuiViewCreationError`/`FuiBindingError` 内部化，仅 `FuiViewCleanupError` 进根公共导出。
+
 ## 影响
 
 - `tools/fgui`：新增 `gen-types` 命令与 `validate` freshness 校验（含测试）。
-- `assets/framework`：新增 `contracts/state/Store`、`core/state/Store`、`contracts/ui/FuiView`（基类+seam）、`contracts/ui/TypedNode`（能力接口族）、`core/fui/FuiBindings`（@FUIBind/@FClick）、`core/fui/FuiComponentRegistry`、`adapters/cocos/ui/FuiViewHost`；扩展 `FairyGuiViewHandle.wrapFairyGuiObjectTyped`；`index.ts` 白名单同步。
-- `assets/boot/host/UiHost`：`createView` 接缝改为 `createFairyGuiBoundView()` 组合闭包。
-- `assets/samples/game_fui_demo`：示范静态页（CloseDialog）+ Store 装配 Module + 集成测试。
+- `assets/framework`：新增 `contracts/state/Store`、`core/state/Store`、`contracts/ui/FuiView`（基类+seam）、`contracts/ui/TypedNode`（能力接口族）、`core/fui/FuiBindings`（@FUIBind/@FClick）、`core/fui/FuiComponentRegistry`、`core/fui/FuiErrors`（FUI 错误族）、`core/fui/FuiViewBinderRegistry`（实例级事务式 binder registry）、`adapters/cocos/ui/FuiViewHost`；扩展 `FairyGuiViewHandle.wrapFairyGuiObjectTyped`；`index.ts` 白名单同步。
+- `assets/boot/host/UiHost`：`createView` 接缝改为 `createFairyGuiBoundView(resolver, options)` 组合闭包；组合根 `assembleApp` 创建 binder registry，以 resolver 接线 UiHost、以 registrar 暴露 Feature 安装接缝。
+- `assets/samples/game_fui_demo`：示范静态页（CloseDialog，`@FUIBind` 消费生成 URL 常量）+ `assembly.ts` Feature 装配（Store + facade）+ `store.ts` 收敛为单一装配入口 + 集成测试。
+- `assets/samples/entry.ts`：导出冻结 `SAMPLES_BUNDLE_DESCRIPTOR`，经 `registerBundle` 暴露 `createCloseDialogFeature`。
 - `expectedRootExports` 白名单同步新增符号。
 
 ## 后续
@@ -57,3 +68,4 @@ FGUI 页面此前每次都要手写节点名常量与按名 `getChild` 样板（
 - 装饰动画/动画接入仍按 ADR-029 约束（经 GameClock，动画器只读 now()），FuiView 的 onState 写字段不经渲染器 diff，动画叠加不受影响。
 - Store/投影/视图全部手写业务，DDD/Store/MVVM 层无生成物。
 - Use Case 边界按 `doc/architecture/ui-store-mvvm-architecture.md` 执行；现有示范页不要求在本次文档修订中迁移，后续业务交互新增或修改时再按该边界收敛。
+- 残余约束（未实现，继续生效）：Store `subscribe` 监听器为同步遍历，未实现队列化重入或处理器失败隔离，订阅者与 `onState` 必须保持无异常、不得在通知期间再次 dispatch（需要重入或隔离语义时须走独立 OpenSpec change）；`validate` freshness 只保护 `gen-types` 产物，`gen-constants` 产物仍需在源资源变更后显式重跑。

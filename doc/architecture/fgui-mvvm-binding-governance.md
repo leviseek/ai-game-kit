@@ -11,6 +11,7 @@ FGUI XML
   -> @FUIBind / @FClick: 类定义期收集元数据
   -> FuiComponentRegistry: 以 ui://包/组件 复合键登记
   -> FuiViewHost: 创建 GComponent 并执行 __attach
+  -> FuiViewBindingResolver: required 组件执行运行时 binder
   -> FuiView: 使用自动注入的能力字段
 ```
 
@@ -33,7 +34,7 @@ FGUI XML
 - 装饰器不得创建引擎对象、访问业务服务或执行 IO。
 - 自动注入字段只能在 `onConstruct` 之后访问，构造器和字段初始化器禁止读取。
 - 缺失节点、重复注册和类型产物过期必须 fail-fast，不静默回退。
-- 目标 API 必须直接消费生成的 URL 契约，避免在业务类重复裸写包名与组件名。当前 `@FUIBind(packageName, componentName, fields)` 与字符串归口规则存在已知缺口；在 API 收敛前不得把新的裸字符串绑定扩散为标准范式。
+- 目标 API 必须直接消费生成的 URL 契约：`@FUIBind(url, fields, { runtimeBinding })` 首参数为 `FuiComponentUrl`（生成常量形态），并显式声明运行时绑定策略；禁止裸字符串拼接与短 id 散落。required 组件缺少对应 binder 时创建期 fail-fast（见 ADR-032 决策 7）。
 
 ## 4. FGUI 资源纪律
 
@@ -102,18 +103,27 @@ assets/samples/game_xxx/
 - 未新增全局 EventBus、双向绑定或 Service Locator。
 - 单元测试、集成测试、类型检查和 FGUI validate 已通过。
 
-## 9. 方案 B 落地门禁
+## 9. 已实现能力与新增页面检查项
 
-当前仓库已具备 Store、纯投影、FuiView 自动字段注入和点击绑定，但业务 Use Case 页面尚缺少完整装配接缝。新业务页面采用方案 B 前，必须通过独立 OpenSpec change 完成以下能力：
+方案 B 能力已全部实现并纳入治理（详见 ADR-032 决策 7）：
 
-- 页面创建链提供类型安全的 post-attach binder 或等价页面工厂，在首次 `bindStore` 前注入 Store 与 Use Case/Application facade；端口实现只注入 Use Case，不暴露给页面。
-- binder 由组合根或 Feature assembly 提供，不要求业务层导入 Cocos Adapter、调用 `getBoundView`、执行类型断言或访问全局 Service。
-- 页面句柄明确绑定实例、异步作用域和释放所有权；创建失败时已建立的绑定必须回滚。
-- FUI 绑定装饰器直接消费生成 URL 契约，消除包名和组件名裸字符串。
-- FUI 注册、字段和点击缺失错误收敛到 `FrameworkError`。
-- FuiView 清理链和 Host 的 GComponent 级联销毁均逐项失败隔离，并聚合或报告错误，确保引擎组件与页面资源仍会继续释放。
+- 绑定链 URL 契约：`@FUIBind(url, fields, { runtimeBinding })` 直接消费 `ui/generated` 生成的 `FuiComponentUrl` 常量，注册表、错误与 binder 复用同一 URL。
+- 实例级 required 运行时 binder：Feature assembly 经 `defineFuiViewBinding`/`FuiViewBindingRegistrar.register` 登记「URL → ctor → 装配函数」，Host 在 required 组件创建后执行 binder 注入 Store 与 Application facade；required 缺 binder 创建期 fail-fast。
+- 事务式绑定作用域：binder 句柄经 `FuiViewBindingScope.own` 立即登记，失败时 Host 逆序完整回滚（唯一回滚所有者），创建失败标记页面 disposed。
+- 端口只注入 Application facade：View 依赖仅含 Store 与 facade，网络/存储/资源端口与匿名业务回调不进入 View。
+- 端到端清理失败隔离：FuiView、Host 级联销毁、页面 Adapter、UiHost、会话资源逐项失败隔离并聚合为 `FuiViewCleanupError`。
 
-现有 `CloseDialog.bind(store, callbacks)` 与测试中的 `getBoundView` 手工绑定仅用于验证当前基础链，不是新业务页面的标准装配方式。本次文档修订不要求迁移该示范页。
+新增静态页面检查项（叠加第 8 节既有清单）：
+
+- 采用业务 Use Case 的新页面经实例级 binder 装配：依赖仅含 Store 与 Application facade，禁止匿名业务回调、禁止经 Context 或全局对象解析业务服务。
+- `runtimeBinding: "required"` 的组件必须登记对应 binder，否则创建期 fail-fast；无依赖组件显式声明 `runtimeBinding: "none"`。
+- 页面 scope 只拥有 View 订阅等页面局部句柄；Feature/Module Store 归 Feature 所有，页面关闭不释放。
+- 创建与清理失败按聚合语义上报（`FuiViewCleanupError`），不静默吞错；会话作用域始终释放。
+
+残余约束（未实现，继续生效）：
+
+- Store `subscribe` 监听器为同步遍历，未实现队列化重入或处理器失败隔离；订阅者与 `onState` 必须保持无异常、不得在通知期间再次 dispatch（需要重入或隔离语义须走独立 OpenSpec change）。
+- gen-constants freshness 未实现：`validate` freshness 只保护 `gen-types` 产物，`gen-constants` 产物仍需在源资源变更后显式重跑。
 
 ## 10. 架构扩展检查清单
 

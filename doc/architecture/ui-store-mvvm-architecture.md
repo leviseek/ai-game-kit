@@ -88,7 +88,7 @@ flowchart TD
 - Store 不调用 View、Adapter 或 Use Case；reducer 不执行副作用。
 - View 只经框架根入口消费稳定契约，不导入 `fairygui-cc` 或 `cc`。
 - Adapter 实现端口并隔离外部技术类型，业务层不反向依赖 Adapter 实现。
-- 组合根显式创建 Store、Use Case 和端口实现：端口实现只注入 Use Case，页面只接收 Store 与 Use Case/Application facade。页面依赖经类型安全的装配接缝注入，不通过 Context 或全局对象解析业务服务。当前绑定 Host 尚未提供该接缝，采用业务 Use Case 的新页面须先满足配套治理文档中的落地门禁。
+- 组合根显式创建 Store、Use Case 和端口实现：端口实现只注入 Use Case，页面只接收 Store 与 Use Case/Application facade。页面依赖经类型安全的装配接缝注入，不通过 Context 或全局对象解析业务服务。装配接缝由方案 B 的实例级 required binder 提供：Feature assembly 经 `defineFuiViewBinding` 登记「URL → 视图 ctor → 装配函数」，Host 在 required 组件创建时执行 binder，把 Store 与 Application facade 注入 View（见 ADR-032 决策 7）。
 
 ## 4. 各层职责
 
@@ -252,7 +252,7 @@ Adapter 负责实现网络、存储、资源和引擎端口。FGUI 只负责 UI 
 - Use Case 将底层错误映射为 UI 可理解的状态或错误码。
 - View 只显示投影后的错误信息，不解析底层异常类型。
 - 绑定节点缺失、重复组件注册和生成产物过期属于开发期错误，应 fail-fast。
-- 当前 FUI 绑定错误仍有普通 `Error` 实现，这是 ADR-007 的已知缺口；新增或修改绑定错误时必须收敛到 `FrameworkError`，不得把现状当作新先例。
+- FUI 绑定错误已收敛到 `FrameworkError` 家族（`FuiComponentRegistrationError`/`FuiViewBindingRegistrationError`/`FuiViewCreationError`/`FuiBindingError` 内部化，公共 `FuiViewCleanupError`，见 `core/fui/FuiErrors.ts` 与 ADR-032 决策 7）；新增绑定错误必须继续继承 `FrameworkError`，不得引入普通 `Error` 新先例。
 
 ## 8. 生命周期
 
@@ -284,7 +284,7 @@ Module.start 创建 Store 与 Use Case
 - GComponent 销毁必须级联释放绑定的 FuiView。
 - 页面、FGUI package 和 Bundle 按所有权逆序释放。
 - Use Case 的取消句柄和 Adapter 资源必须归属明确作用域。
-- 清理必须逐项尝试并聚合或上报错误，单个退订、动画器或资源释放失败不得阻断后续项。当前 `FuiView.dispose` 和 Host 的 GComponent 级联销毁尚未完整隔离异常，业务页面不得注册会抛错的清理函数；框架级修复须走独立 OpenSpec change。
+- 清理必须逐项尝试并聚合或上报错误，单个退订、动画器或资源释放失败不得阻断后续项。`FuiView.dispose`、Host 的 View + GComponent 级联销毁、页面 Adapter、UiHost 与会话资源清理均逐项失败隔离，全部失败聚合为 `FuiViewCleanupError`（见 ADR-032 决策 7）；会话作用域始终释放。
 
 ## 9. FGUI 绑定与工程治理
 
