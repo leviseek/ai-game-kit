@@ -59,6 +59,15 @@ function createFixture(): string {
     return root;
 }
 
+function createSourceFixture(source: string): { readonly root: string; readonly file: string } {
+    const root = mkdtempSync(join(tmpdir(), "arch-source-scanner-"));
+    roots.push(root);
+    mkdirSync(join(root, "src"), { recursive: true });
+    const file = join(root, "src", "main.ts");
+    writeFileSync(file, source);
+    return { root, file };
+}
+
 afterEach(() => {
     for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
@@ -128,5 +137,96 @@ describe("scanSources", () => {
             { fromFile: "src/main.ts", toFile: "src/types.ts", specifier: "./types", kind: "import", typeOnly: true, external: false },
             { fromFile: "src/main.ts", toFile: "src/view.tsx", specifier: "./view", kind: "export", typeOnly: false, external: false },
         ]);
+    });
+
+    test("不穿透表达式子树但保留声明作用域", () => {
+        const { root } = createSourceFixture([
+            'const objectValue = { method() { function leakedObject() {} } };',
+            'const functionValue = function namedExpression() { function leakedFunction() {} };',
+            'const arrowValue = () => { function leakedArrow() {} };',
+            'const classValue = class Hidden { method() { function leakedClass() {} } };',
+            'function visible() {',
+            '    function nested() {}',
+            '    const nestedExpression = () => { function leakedNestedExpression() {} };',
+            '}',
+            'class Declared {',
+            '    method() { function methodNested() {} }',
+            '}',
+            '',
+        ].join("\n"));
+
+        const result = scanSources(root, ["src/main.ts"]);
+
+        expect(result.declarations.map((declaration) => declaration.qualifiedName)).toEqual([
+            "visible",
+            "visible::nested",
+            "Declared",
+            "Declared::method",
+            "Declared::method::methodNested",
+        ]);
+    });
+
+    test("识别模块本地导出列表、alias 与 default export", () => {
+        const { root } = createSourceFixture([
+            'class Direct {}',
+            'class Aliased {}',
+            'class Defaulted {}',
+            'class Private {}',
+            'export { Direct };',
+            'export { Aliased as PublicAlias };',
+            'export default Defaulted;',
+            '',
+        ].join("\n"));
+
+        const result = scanSources(root, ["src/main.ts"]);
+
+        expect(result.declarations.map(({ name, exported }) => ({ name, exported }))).toEqual([
+            { name: "Direct", exported: true },
+            { name: "Aliased", exported: true },
+            { name: "Defaulted", exported: true },
+            { name: "Private", exported: false },
+        ]);
+    });
+
+    test("聚合 overload 与 declaration merging 为唯一声明", () => {
+        const { root } = createSourceFixture([
+            'export function parse(value: string): string;',
+            'function parse(value: number): number;',
+            'function parse(value: string | number): string | number { return value; }',
+            'class Parser {',
+            '    parse(value: string): string;',
+            '    parse(value: number): number;',
+            '    parse(value: string | number): string | number { return value; }',
+            '}',
+            'interface Config { first: string; }',
+            'export interface Config { second: number; }',
+            '',
+        ].join("\n"));
+
+        const result = scanSources(root, ["src/main.ts"]);
+
+        expect(result.declarations.map(({ qualifiedName, kind, startLine, endLine, exported }) => ({
+            qualifiedName,
+            kind,
+            startLine,
+            endLine,
+            exported,
+        }))).toEqual([
+            { qualifiedName: "parse", kind: "function", startLine: 1, endLine: 3, exported: true },
+            { qualifiedName: "Parser", kind: "class", startLine: 4, endLine: 8, exported: false },
+            { qualifiedName: "Parser::parse", kind: "method", startLine: 5, endLine: 7, exported: false },
+            { qualifiedName: "Config", kind: "interface", startLine: 9, endLine: 10, exported: true },
+        ]);
+        expect(new Set(result.declarations.map((declaration) => declaration.id)).size).toBe(4);
+    });
+
+    test("规范化并去重重复输入文件", () => {
+        const { root, file } = createSourceFixture('import React from "react";\nexport class Service {}\n');
+
+        const result = scanSources(root, ["src/main.ts", "./src/main.ts", file]);
+
+        expect(result.files).toEqual(["src/main.ts"]);
+        expect(result.declarations).toHaveLength(1);
+        expect(result.imports).toHaveLength(1);
     });
 });

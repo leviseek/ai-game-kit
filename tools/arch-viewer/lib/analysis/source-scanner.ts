@@ -59,7 +59,8 @@ function addDeclaration(
     node: ts.NamedDeclaration,
     kind: SourceDeclarationKind,
     scope: readonly string[],
-    declarations: SourceDeclaration[],
+    exportedNames: ReadonlySet<string>,
+    declarations: Map<string, SourceDeclaration>,
 ): string | undefined {
     const name = declarationName(node);
     if (name === undefined) return undefined;
@@ -67,55 +68,106 @@ function addDeclaration(
     const qualifiedName = [...scope, name].join("::");
     const startLine = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1;
     const endLine = sourceFile.getLineAndCharacterOfPosition(node.end).line + 1;
-    declarations.push({
-        id: createNodeId(kind, filePath, qualifiedName),
+    const id = createNodeId(kind, filePath, qualifiedName);
+    const existing = declarations.get(id);
+    declarations.set(id, {
+        id,
         name,
         qualifiedName,
         kind,
         filePath,
-        startLine,
-        endLine,
-        exported: hasExportModifier(node),
+        startLine: Math.min(existing?.startLine ?? startLine, startLine),
+        endLine: Math.max(existing?.endLine ?? endLine, endLine),
+        exported: existing?.exported === true
+            || hasExportModifier(node)
+            || (scope.length === 0 && exportedNames.has(name)),
     });
     return name;
+}
+
+function collectExportedNames(sourceFile: ts.SourceFile): ReadonlySet<string> {
+    const names = new Set<string>();
+    for (const statement of sourceFile.statements) {
+        if (ts.isExportDeclaration(statement)
+            && statement.moduleSpecifier === undefined
+            && statement.exportClause !== undefined
+            && ts.isNamedExports(statement.exportClause)) {
+            for (const element of statement.exportClause.elements) {
+                names.add((element.propertyName ?? element.name).text);
+            }
+        } else if (ts.isExportAssignment(statement)
+            && !statement.isExportEquals
+            && ts.isIdentifier(statement.expression)) {
+            names.add(statement.expression.text);
+        }
+    }
+    return names;
 }
 
 function collectDeclarations(
     sourceFile: ts.SourceFile,
     filePath: string,
-    declarations: SourceDeclaration[],
+    declarations: Map<string, SourceDeclaration>,
 ): void {
+    const exportedNames = collectExportedNames(sourceFile);
     const visit = (node: ts.Node, scope: readonly string[]): void => {
         if (ts.isClassDeclaration(node) || ts.isInterfaceDeclaration(node)) {
             const kind = ts.isClassDeclaration(node) ? "class" : "interface";
-            const name = addDeclaration(sourceFile, filePath, node, kind, scope, declarations);
+            const name = addDeclaration(
+                sourceFile, filePath, node, kind, scope, exportedNames, declarations,
+            );
             if (name !== undefined) {
                 for (const member of node.members) visit(member, [...scope, name]);
             }
             return;
         }
         if (ts.isMethodDeclaration(node) || ts.isMethodSignature(node)) {
-            const name = addDeclaration(sourceFile, filePath, node, "method", scope, declarations);
+            const name = addDeclaration(
+                sourceFile, filePath, node, "method", scope, exportedNames, declarations,
+            );
             if (name !== undefined && ts.isMethodDeclaration(node) && node.body !== undefined) {
-                ts.forEachChild(node.body, (child) => visit(child, [...scope, name]));
+                for (const statement of node.body.statements) visit(statement, [...scope, name]);
             }
             return;
         }
         if (ts.isFunctionDeclaration(node)) {
-            const name = addDeclaration(sourceFile, filePath, node, "function", scope, declarations);
+            const name = addDeclaration(
+                sourceFile, filePath, node, "function", scope, exportedNames, declarations,
+            );
             if (name !== undefined && node.body !== undefined) {
-                ts.forEachChild(node.body, (child) => visit(child, [...scope, name]));
+                for (const statement of node.body.statements) visit(statement, [...scope, name]);
             }
             return;
         }
         if (ts.isTypeAliasDeclaration(node)) {
-            addDeclaration(sourceFile, filePath, node, "type", scope, declarations);
+            addDeclaration(sourceFile, filePath, node, "type", scope, exportedNames, declarations);
             return;
         }
-        ts.forEachChild(node, (child) => visit(child, scope));
+        if (ts.isBlock(node)) {
+            for (const statement of node.statements) visit(statement, scope);
+        } else if (ts.isIfStatement(node)) {
+            visit(node.thenStatement, scope);
+            if (node.elseStatement !== undefined) visit(node.elseStatement, scope);
+        } else if (ts.isForStatement(node)
+            || ts.isForInStatement(node)
+            || ts.isForOfStatement(node)
+            || ts.isWhileStatement(node)
+            || ts.isDoStatement(node)
+            || ts.isLabeledStatement(node)
+            || ts.isWithStatement(node)) {
+            visit(node.statement, scope);
+        } else if (ts.isTryStatement(node)) {
+            visit(node.tryBlock, scope);
+            if (node.catchClause !== undefined) visit(node.catchClause.block, scope);
+            if (node.finallyBlock !== undefined) visit(node.finallyBlock, scope);
+        } else if (ts.isSwitchStatement(node)) {
+            for (const clause of node.caseBlock.clauses) {
+                for (const statement of clause.statements) visit(statement, scope);
+            }
+        }
     };
 
-    visit(sourceFile, []);
+    for (const statement of sourceFile.statements) visit(statement, []);
 }
 
 function isTypeOnlyImport(node: ts.ImportDeclaration): boolean {
@@ -164,21 +216,22 @@ function collectImports(
 
 export function scanSources(projectRoot: string, files: readonly string[]): SourceScanResult {
     const normalizedRoot = resolve(projectRoot);
-    const scannedFiles = files
+    const scannedFiles = [...new Set(files
         .filter((file) => isScannableSource(normalizedRoot, file))
         .map((file) => normalizeProjectPath(relative(normalizedRoot,
-            isAbsolute(file) ? resolve(file) : resolve(normalizedRoot, file))))
+            isAbsolute(file) ? resolve(file) : resolve(normalizedRoot, file)))))]
         .sort();
-    const declarations: SourceDeclaration[] = [];
+    const declarationsById = new Map<string, SourceDeclaration>();
     const imports: ImportDependency[] = [];
 
     for (const filePath of scannedFiles) {
         const source = readFileSync(resolve(normalizedRoot, filePath), "utf8");
         const sourceFile = ts.createSourceFile(filePath, source, ts.ScriptTarget.Latest, true);
         collectImports(normalizedRoot, sourceFile, filePath, imports);
-        collectDeclarations(sourceFile, filePath, declarations);
+        collectDeclarations(sourceFile, filePath, declarationsById);
     }
 
+    const declarations = [...declarationsById.values()];
     declarations.sort((left, right) => left.filePath.localeCompare(right.filePath)
         || left.startLine - right.startLine
         || left.endLine - right.endLine
