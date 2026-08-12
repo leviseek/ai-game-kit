@@ -33,13 +33,6 @@ export type FuiObjectFactory = (
     resName: string,
 ) => unknown | null;
 
-/** 取 GComponent 上挂载的 FuiView 实例；未绑定返回 undefined。 */
-export function getBoundView(view: unknown): FuiView<unknown, unknown> | undefined {
-    const bound = view as Record<string, unknown> | null | undefined;
-    const attached = bound?.[BOUND_VIEW_KEY];
-    return attached as FuiView<unknown, unknown> | undefined;
-}
-
 /**
  * 把 GComponent 包装为 FuiViewSeam：按名取子元件（能力 kind 分派），注册点击。
  * 缺失检测下沉到本 seam：字段/点击节点不存在时抛 FuiBindingError（fail-fast），

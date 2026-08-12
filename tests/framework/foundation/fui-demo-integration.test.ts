@@ -110,7 +110,7 @@ interface CloseDialogFeatureLike {
 }
 
 describe("CloseDialog 示范静态页生产链集成", () => {
-    test("required binder missing → Feature 装配 → dispatch/投影/facade → 重开可再 dispatch → Feature dispose", async () => {
+    test("required binder missing → Feature 装配 → dispatch/投影/facade → 重开可再 dispatch → Feature dispose 注销后 fail-fast 回滚", async () => {
         // 复用生产 Registry：保存当前引用，用例结束恢复原引用（禁止无条件 delete，
         // 否则会删掉已由缓存 ESM 模块登记的组件元数据，破坏其它用例）
         const g = globalThis as Record<string, unknown>;
@@ -147,10 +147,12 @@ describe("CloseDialog 示范静态页生产链集成", () => {
 
             const confirm = mock(() => {});
             const cancel = mock(() => {});
+            // 记录每次 createPage 创建的 GComponent：失败路径需断言「点击监听 + GComponent 回滚」
+            const createdComponents: DialogComponent[] = [];
             const assembly = appRoot.assembleApp({
                 // 对象创建接缝：每次 createPage 返回记录型 GComponent（生产无参走 UIPackage.createObject）
-                fuiObjectFactory: () =>
-                    makeDialogComponent({
+                fuiObjectFactory: () => {
+                    const component = makeDialogComponent({
                         img_mask: { visible: true },
                         img_panel: { visible: true },
                         txt_title: { text: "", visible: true },
@@ -159,7 +161,10 @@ describe("CloseDialog 示范静态页生产链集成", () => {
                         txt_cancel: { text: "", visible: true },
                         btn_confirm_bg: { visible: true },
                         txt_confirm: { text: "", visible: true },
-                    }),
+                    });
+                    createdComponents.push(component);
+                    return component;
+                },
             });
             expect(assembly.uiHost.smokeUiInit()).toBe(true);
             const adapter = assembly.uiHost.pageAdapter;
@@ -176,6 +181,10 @@ describe("CloseDialog 示范静态页生产链集成", () => {
             const cause = (error as FuiViewCreationError).cause;
             expect(cause).toBeInstanceOf(FuiViewBindingRegistrationError);
             expect((cause as Error).message).toMatch(/runtime binding missing/);
+            // 回滚：首次失败创建的 GComponent 与点击监听全部清理（attach 已注册点击，
+            // binder 缺失后逆序退订；组件 dispose 一次）
+            expect(createdComponents[0]!.disposed).toBe(1);
+            expect(createdComponents[0]!.clickHandlers.size).toBe(0);
 
             // 安装 Feature：向 registrar 注册 Store + facade 的真实 binder
             const feature = createFeature(assembly.fuiViewBindingRegistrar, {
@@ -235,6 +244,25 @@ describe("CloseDialog 示范静态页生产链集成", () => {
             adapter!.destroy(reopened);
             expect(reopened.disposed).toBe(true);
             feature.dispose();
+
+            // 注销后 fail-fast：Feature dispose 先注销 binder registration 再释放 Store，
+            // required 页面再次创建缺 binder 即 fail-fast（typed missing-binder）。Store
+            // 释放归 Feature dispose，不声称由页面创建回滚——页面关闭/重开流程已证明 Store
+            // 不随页面生命周期释放，此处失败归因于 registration 注销而非 Store 已释放。
+            const afterDisposePage = adapter!.createPage("dialog", "normal", {
+                packageName: "Demo",
+                resName: "CloseDialog",
+            });
+            expect(afterDisposePage.disposed).toBe(true);
+            const afterDisposeError = afterDisposePage.error;
+            expect(afterDisposeError).toBeInstanceOf(FuiViewCreationError);
+            const afterDisposeCause = (afterDisposeError as FuiViewCreationError).cause;
+            expect(afterDisposeCause).toBeInstanceOf(FuiViewBindingRegistrationError);
+            expect((afterDisposeCause as Error).message).toMatch(/runtime binding missing/);
+            // 回滚：本页新建 GComponent 与点击监听全部清理（组件已 dispose、点击已退订）
+            const rolledBack = createdComponents[createdComponents.length - 1]!;
+            expect(rolledBack.disposed).toBe(1);
+            expect(rolledBack.clickHandlers.size).toBe(0);
         } finally {
             if (original === undefined) {
                 delete g["__ai_game_kit_fui_components__"];
