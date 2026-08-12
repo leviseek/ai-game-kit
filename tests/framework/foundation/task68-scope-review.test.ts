@@ -5,6 +5,7 @@ import { describe, expect, test } from "bun:test";
 const projectRoot = resolve(import.meta.dir, "../../..");
 const sceneFile = resolve(projectRoot, "assets/boot/startup.scene");
 const appRootFile = resolve(projectRoot, "assets/boot/AppRoot.ts");
+const assemblyFile = resolve(projectRoot, "assets/boot/assembly.ts");
 
 /** 递归收集目录下的 .ts 文件。 */
 function collectTypeScriptFiles(dir: string): string[] {
@@ -142,7 +143,7 @@ describe("6.8 scope review: startup.scene", () => {
     });
 });
 
-describe("6.8 scope review: AppRoot.ts", () => {
+describe("6.8 scope review: boot composition root", () => {
     test("does not import the game bundle at runtime (type-only imports allowed)", () => {
         const source = readFileSync(appRootFile, "utf8");
 
@@ -151,16 +152,17 @@ describe("6.8 scope review: AppRoot.ts", () => {
         // 不产生 bundle 依赖，允许。业务规则留在 game bundle 内，组合根经注册桥访问。
         assertTypeOnlyGameImports(source, appRootFile);
         expect(source).not.toMatch(/from\s+["']@game/);
-        // AppRoot 只经框架适配器工厂组装资源提供者，不直接引用引擎资源/场景对象；
+        // 组合根只经框架适配器工厂组装资源提供者，不直接引用引擎资源/场景对象；
         // director 用于 Cocos 官方推荐的持久化根节点 API（game.addPersistRootNode 已废弃），
         // 但 director.loadScene / assetManager 等场景切换与资源加载仍经适配器，见下方断言
         expect(source).not.toMatch(/import\s*\{[^}]*\b(assetManager|Asset|resources)\b[^}]*\}\s*from\s+["']cc["']/);
     });
 
     test("composes resource and scene flow only through framework adapter factories", () => {
-        const source = readFileSync(appRootFile, "utf8");
+        // 场景/资源冒烟组合随组合根外移到 boot/assembly.ts（AppRoot 只消费 assembleApp 产物）
+        const source = readFileSync(assemblyFile, "utf8");
 
-        // 本 Change 为冒烟组合引入框架适配器工厂，但 AppRoot 不得直接调用引擎
+        // 本 Change 为冒烟组合引入框架适配器工厂，但组合根不得直接调用引擎
         // 场景/资源 API，也不得手动实例化引擎管理器
         expect(source).toMatch(/createCocosResourceProvider/);
         expect(source).toMatch(/createCocosSceneAdapter/);
@@ -199,7 +201,8 @@ describe("6.8 scope review: AppRoot.ts", () => {
     });
 
     test("does not create Module instances manually", () => {
-        const source = readFileSync(appRootFile, "utf8");
+        // createModules 随组合根外移到 boot/assembly.ts
+        const source = readFileSync(assemblyFile, "utf8");
 
         expect(source).toContain("export function createModules");
         // new Error/URLSearchParams 是通用构造，不属于 Module 实例化；WallClock 是

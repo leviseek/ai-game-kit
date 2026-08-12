@@ -138,7 +138,7 @@ describe("CloseDialog 示范静态页生产链集成", () => {
             const createFeature = descriptor.createCloseDialogFeature!;
 
             const appRoot = (await import(
-                pathToFileURL(resolve(import.meta.dir, "../../../assets/boot/AppRoot.ts")).href
+                pathToFileURL(resolve(import.meta.dir, "../../../assets/boot/assembly.ts")).href
             )) as {
                 assembleApp(options?: {
                     fuiObjectFactory?: (packageName: string, resName: string) => unknown | null;

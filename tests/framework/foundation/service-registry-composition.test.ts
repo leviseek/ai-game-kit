@@ -62,22 +62,33 @@ interface CocosComponent {
 }
 
 const projectRoot = resolve(import.meta.dir, "../../..");
+const assemblyFile = resolve(projectRoot, "assets/boot/assembly.ts");
 const appRootFile = resolve(projectRoot, "assets/boot/AppRoot.ts");
 
-async function loadAppRoot(): Promise<{
+async function loadAssembly(): Promise<{
     assembleApp: AssembleAppFn;
-    AppRoot: new () => CocosComponent;
 }> {
-    const exports = (await import(pathToFileURL(appRootFile).href)) as {
+    const exports = (await import(pathToFileURL(assemblyFile).href)) as {
         assembleApp?: AssembleAppFn;
-        AppRoot?: new () => CocosComponent;
     };
 
     expect(typeof exports.assembleApp).toBe("function");
-    expect(typeof exports.AppRoot).toBe("function");
 
     return {
         assembleApp: exports.assembleApp as AssembleAppFn,
+    };
+}
+
+async function loadAppRoot(): Promise<{
+    AppRoot: new () => CocosComponent;
+}> {
+    const exports = (await import(pathToFileURL(appRootFile).href)) as {
+        AppRoot?: new () => CocosComponent;
+    };
+
+    expect(typeof exports.AppRoot).toBe("function");
+
+    return {
         AppRoot: exports.AppRoot as new () => CocosComponent,
     };
 }
@@ -101,7 +112,7 @@ class GreetingController {
 
 describe("service registry composition root", () => {
     test("assembleApp exposes a registry created by the composition root", async () => {
-        const { assembleApp } = await loadAppRoot();
+        const { assembleApp } = await loadAssembly();
 
         const { registry } = assembleApp();
 
@@ -113,7 +124,7 @@ describe("service registry composition root", () => {
     });
 
     test("each assembleApp creates an independent registry, not a global singleton", async () => {
-        const { assembleApp } = await loadAppRoot();
+        const { assembleApp } = await loadAssembly();
 
         const first = assembleApp();
         const second = assembleApp();
@@ -124,7 +135,7 @@ describe("service registry composition root", () => {
     });
 
     test("business object receives a service via constructor, not registry or context", async () => {
-        const { assembleApp } = await loadAppRoot();
+        const { assembleApp } = await loadAssembly();
 
         const { registry } = assembleApp();
         expect(registry).toBeDefined();

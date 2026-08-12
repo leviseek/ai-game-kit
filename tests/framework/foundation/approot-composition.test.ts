@@ -107,37 +107,52 @@ interface AssemblyOptions {
 
 type AssembleAppFn = (options?: AssemblyOptions) => AppAssembly;
 
-interface AppRootExports {
+interface AssemblyExports {
     readonly assembleApp?: AssembleAppFn;
     readonly createModules?: () => readonly unknown[];
+}
+
+interface AppRootExports {
     readonly AppRoot?: new (...args: unknown[]) => CocosComponent;
 }
 
 const projectRoot = resolve(import.meta.dir, "../../..");
+const assemblyFile = resolve(projectRoot, "assets/boot/assembly.ts");
 const appRootFile = resolve(projectRoot, "assets/boot/AppRoot.ts");
 
-async function loadAppRoot(): Promise<{
+async function loadAssembly(): Promise<{
     assembleApp: AssembleAppFn;
     createModules: () => readonly unknown[];
+}> {
+    const exports = (await import(
+        pathToFileURL(assemblyFile).href
+    )) as AssemblyExports;
+
+    expect(typeof exports.assembleApp).toBe("function");
+
+    return {
+        assembleApp: exports.assembleApp as AssembleAppFn,
+        createModules: (exports.createModules as () => readonly unknown[]) ?? (() => []),
+    };
+}
+
+async function loadAppRoot(): Promise<{
     AppRoot: new (...args: unknown[]) => CocosComponent;
 }> {
     const exports = (await import(
         pathToFileURL(appRootFile).href
     )) as AppRootExports;
 
-    expect(typeof exports.assembleApp).toBe("function");
     expect(typeof exports.AppRoot).toBe("function");
 
     return {
-        assembleApp: exports.assembleApp as AssembleAppFn,
-        createModules: (exports.createModules as () => readonly unknown[]) ?? (() => []),
         AppRoot: exports.AppRoot as new (...args: unknown[]) => CocosComponent,
     };
 }
 
 describe("AppRoot Composition Root", () => {
     test("assembles an Application and Adapter", async () => {
-        const { assembleApp } = await loadAppRoot();
+        const { assembleApp } = await loadAssembly();
 
         const { app, adapter } = assembleApp();
 
@@ -149,7 +164,7 @@ describe("AppRoot Composition Root", () => {
     });
 
     test("assembled Application starts in created state", async () => {
-        const { assembleApp } = await loadAppRoot();
+        const { assembleApp } = await loadAssembly();
 
         const { app } = assembleApp();
 
@@ -157,7 +172,7 @@ describe("AppRoot Composition Root", () => {
     });
 
     test("assembled Application runs full lifecycle start → pause → resume → dispose", async () => {
-        const { assembleApp } = await loadAppRoot();
+        const { assembleApp } = await loadAssembly();
 
         const { app } = assembleApp();
 
@@ -175,7 +190,7 @@ describe("AppRoot Composition Root", () => {
     });
 
     test("assembled Application can dispose directly from created state", async () => {
-        const { assembleApp } = await loadAppRoot();
+        const { assembleApp } = await loadAssembly();
 
         const { app } = assembleApp();
 
@@ -184,7 +199,7 @@ describe("AppRoot Composition Root", () => {
     });
 
     test("default module list is empty", async () => {
-        const { createModules } = await loadAppRoot();
+        const { createModules } = await loadAssembly();
         const modules = createModules();
 
         expect(Array.isArray(modules)).toBe(true);
@@ -192,7 +207,7 @@ describe("AppRoot Composition Root", () => {
     });
 
     test("does not create forbidden system modules", async () => {
-        const { createModules } = await loadAppRoot();
+        const { createModules } = await loadAssembly();
         const modules = createModules();
 
         const moduleIds = new Set(
@@ -212,7 +227,7 @@ describe("AppRoot Composition Root", () => {
     });
 
     test("assembled scene flow exposes the smoke contract", async () => {
-        const { assembleApp } = await loadAppRoot();
+        const { assembleApp } = await loadAssembly();
 
         const { sceneFlow, resourceProvider } = assembleApp();
 
@@ -478,7 +493,7 @@ describe("AppRoot FuiView binder 接线", () => {
     const LOGIN_VIEW_URL = ("ui" + "://Login/LoginView") as FuiComponentUrl;
 
     test("assembleApp 产出已接线 UiHost：required 页面无 binder 时 disposed 且 typed missing-binder", async () => {
-        const { assembleApp } = await loadAppRoot();
+        const { assembleApp } = await loadAssembly();
 
         // 隔离全局组件注册表：保存原单例，用例结束后恢复（禁止无条件 delete，
         // 否则会删掉已由其它缓存 ESM 模块登记的组件元数据，破坏其它用例）
@@ -534,7 +549,7 @@ describe("AppRoot FuiView binder 接线", () => {
     });
 
     test("两次 assembleApp 的 fuiViewBindingRegistrar 实例隔离", async () => {
-        const { assembleApp } = await loadAppRoot();
+        const { assembleApp } = await loadAssembly();
 
         const first = assembleApp();
         const second = assembleApp();
