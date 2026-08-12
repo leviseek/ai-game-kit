@@ -3,6 +3,13 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, test, mock } from "bun:test";
 
+import { FuiView } from "../../../assets/framework/contracts/ui/FuiView";
+import type { FuiComponentUrl } from "../../../assets/framework/core/fui/FuiComponentRegistry";
+import { getFuiComponentRegistry } from "../../../assets/framework/core/fui/FuiComponentRegistry";
+import {
+    FuiViewBindingRegistrationError,
+    FuiViewCreationError,
+} from "../../../assets/framework/core/fui/FuiErrors";
 import { createFairyGuiMock } from "./helpers/fairygui-mock";
 
 mock.module("cc", () => ({
@@ -77,9 +84,28 @@ interface AppAssembly {
     readonly resourceProvider?: {
         canUnload(_bundle: string): boolean;
     };
+    readonly uiHost?: {
+        smokeUiInit(): boolean;
+        readonly pageAdapter?: {
+            createPage(
+                route: string,
+                layer: string,
+                options?: { packageName?: string; resName?: string },
+            ): { readonly disposed: boolean; readonly error: unknown };
+        };
+    };
+    readonly fuiViewBindingRegistrar?: object;
 }
 
-type AssembleAppFn = () => AppAssembly;
+/** 测试覆盖对象创建的可选装配选项（对齐 assembleApp 的 FuiObjectFactory 接缝）。 */
+interface AssemblyOptions {
+    readonly fuiObjectFactory?: (
+        packageName: string,
+        resName: string,
+    ) => unknown | null;
+}
+
+type AssembleAppFn = (options?: AssemblyOptions) => AppAssembly;
 
 interface AppRootExports {
     readonly assembleApp?: AssembleAppFn;
@@ -223,6 +249,16 @@ describe("AppRoot Component", () => {
 
         // After onLoad, the internal app and adapter should be set
         // (we can't access private fields, but we can verify no error was thrown)
+    });
+
+    test("consumes the assembleApp-produced uiHost without re-assembling a host", () => {
+        const source = readFileSync(appRootFile, "utf8");
+
+        // 组合根单一装配：onLoad 直接消费 assembleApp 返回的已接线 uiHost
+        // （this.uiHost = uiHost），不再在 onLoad 重复调用 createUiHost——
+        // createUiHost 只属于 assembleApp（composition root 内部）
+        expect(source).toMatch(/this\.uiHost = uiHost;/);
+        expect(source).not.toMatch(/this\.uiHost = createUiHost\(/);
     });
 
     test("start calls adapter.bind and app.start without throwing", async () => {
@@ -429,6 +465,83 @@ describe("AppRoot lobby host", () => {
         await expect(
             instance.closeEntryPage({} as unknown as { node(): unknown; onClose(): void }),
         ).resolves.toBeUndefined();
+    });
+});
+
+describe("AppRoot FuiView binder 接线", () => {
+    /** required 组件视图：fields/clicks 为空，仅触发 runtime binding 装配路径。 */
+    class RequiredView extends FuiView<unknown, unknown> {
+        protected onConstruct(): void { }
+        protected onState(_vm: unknown): void { }
+    }
+
+    const LOGIN_VIEW_URL = ("ui" + "://Login/LoginView") as FuiComponentUrl;
+
+    test("assembleApp 产出已接线 UiHost：required 页面无 binder 时 disposed 且 typed missing-binder", async () => {
+        const { assembleApp } = await loadAppRoot();
+
+        // 隔离全局组件注册表：保存原单例，用例结束后恢复（禁止无条件 delete，
+        // 否则会删掉已由其它缓存 ESM 模块登记的组件元数据，破坏其它用例）
+        const g = globalThis as Record<string, unknown>;
+        const original = g["__ai_game_kit_fui_components__"];
+        if (original === undefined) {
+            delete g["__ai_game_kit_fui_components__"];
+        }
+        try {
+            const registry = getFuiComponentRegistry();
+            registry.register(LOGIN_VIEW_URL, {
+                ctor: RequiredView,
+                fields: {},
+                clicks: [],
+                runtimeBinding: "required",
+            });
+
+            // 测试接缝：覆盖对象创建（生产无参调用使用 UIPackage.createObject）
+            const componentMock = {
+                name: "LoginView",
+                disposed: 0,
+                dispose() {
+                    this.disposed++;
+                },
+            };
+            const assembly = assembleApp({
+                fuiObjectFactory: () => componentMock,
+            });
+
+            // 初始化 UI 根宿主并建立页面适配器（默认 GRoot mock 可创建）
+            expect(assembly.uiHost?.smokeUiInit()).toBe(true);
+
+            // 未注册 binder 的 required 页面：创建失败 → page.disposed，error 为 typed missing-binder
+            const page = assembly.uiHost?.pageAdapter?.createPage("login", "normal", {
+                packageName: "Login",
+                resName: "LoginView",
+            });
+            expect(page?.disposed).toBe(true);
+            const error = page?.error;
+            expect(error).toBeInstanceOf(FuiViewCreationError);
+            const cause = (error as FuiViewCreationError).cause;
+            expect(cause).toBeInstanceOf(FuiViewBindingRegistrationError);
+            expect((cause as Error).message).toMatch(/runtime binding missing/);
+            // 回滚：测试接缝创建的组件对象被释放
+            expect(componentMock.disposed).toBe(1);
+        } finally {
+            if (original === undefined) {
+                delete g["__ai_game_kit_fui_components__"];
+            } else {
+                g["__ai_game_kit_fui_components__"] = original;
+            }
+        }
+    });
+
+    test("两次 assembleApp 的 fuiViewBindingRegistrar 实例隔离", async () => {
+        const { assembleApp } = await loadAppRoot();
+
+        const first = assembleApp();
+        const second = assembleApp();
+
+        expect(first.fuiViewBindingRegistrar).toBeDefined();
+        expect(second.fuiViewBindingRegistrar).toBeDefined();
+        expect(first.fuiViewBindingRegistrar).not.toBe(second.fuiViewBindingRegistrar);
     });
 });
 

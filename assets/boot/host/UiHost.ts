@@ -8,11 +8,15 @@ import {
     type UiNavigator,
 } from "../../framework";
 import type { IResourceProvider } from "../../framework";
+import type { FuiViewBindingResolver } from "../../framework/core/fui/FuiViewBinderRegistry";
 import {
     createFairyGuiPageAdapter,
     type FairyGuiPageAdapter,
 } from "../../framework/adapters/cocos/ui/FairyGuiPageAdapter";
-import { createFairyGuiBoundView } from "../../framework/adapters/cocos/ui/FuiViewHost";
+import {
+    createFairyGuiBoundView,
+    type FuiObjectFactory,
+} from "../../framework/adapters/cocos/ui/FuiViewHost";
 import type {
     CocosUiRoot,
     GRootLike,
@@ -20,12 +24,18 @@ import type {
 
 /**
  * UI 根宿主依赖：由组合根把装配好的引擎接缝注入，AppRoot/BootFlow/GameLobbyHostImpl
- * 共用同一实例，保证 GRoot 全生命周期只初始化一次（design D3/D4）。
+ * 共用同一实例，保证 GRoot 全生命周期只初始化一次（design D3/D4）。resolver 为内部
+ * 运行时 binder 解析器（assembleApp 注入），required 组件创建时执行对应 binder；
+ * fuiObjectFactory 为可选测试接缝（缺省 UIPackage.createObject，生产无参路径）。
  */
 export interface UiHostDeps {
     readonly uiRoot: CocosUiRoot;
     readonly resourceProvider: IResourceProvider;
     readonly logger: Logger;
+    /** 运行时视图 binder 解析器：组合根（assembleApp）注入，required 组件绑定装配。 */
+    readonly resolver?: FuiViewBindingResolver;
+    /** 对象创建测试接缝：仅测试覆盖对象创建；缺省用 UIPackage.createObject。 */
+    readonly fuiObjectFactory?: FuiObjectFactory;
 }
 
 /**
@@ -37,6 +47,8 @@ export class UiHost {
     private readonly uiRoot: CocosUiRoot;
     private readonly resourceProvider: IResourceProvider;
     private readonly logger: Logger;
+    private readonly resolver?: FuiViewBindingResolver;
+    private readonly fuiObjectFactory?: FuiObjectFactory;
     private adapter?: FairyGuiPageAdapter;
     private nav?: UiNavigator;
     private uiScope?: ResourceScope;
@@ -46,6 +58,8 @@ export class UiHost {
         this.uiRoot = deps.uiRoot;
         this.resourceProvider = deps.resourceProvider;
         this.logger = deps.logger;
+        this.resolver = deps.resolver;
+        this.fuiObjectFactory = deps.fuiObjectFactory;
     }
 
     /**
@@ -85,9 +99,12 @@ export class UiHost {
             provider: this.resourceProvider,
             navigator: this.nav,
             // 组合创建闭包：先查 FuiComponentRegistry（@FUIBind 登记的绑定视图），
-            // 未命中回退既有 createFairyGuiView（存量/动态页路径不变）。resolver 由
-            // 组合根在后续接线时注入（assembleApp），此处生产路径暂不执行 required binder
-            createView: createFairyGuiBoundView(undefined),
+            // 未命中回退既有 createFairyGuiView（存量/动态页路径不变）。resolver 经
+            // UiHostDeps 由组合根注入（assembleApp），required 组件创建时执行对应
+            // binder；fuiObjectFactory 为测试接缝，缺省用 UIPackage.createObject。
+            createView: createFairyGuiBoundView(this.resolver, {
+                createObject: this.fuiObjectFactory,
+            }),
         });
         this.adapter.init();
         // 窗口尺寸变化 → UI 根同步 root 布局后通知适配器同步层级容器，无需手动刷新

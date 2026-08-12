@@ -20,9 +20,11 @@ import {
     type ServiceRegistry,
     type ServiceToken,
     type TimeSource,
+    type FuiViewBindingRegistrar,
 } from "../framework";
 import { createApplicationContext } from "../framework/application/ApplicationContext";
 import { WallClock } from "../framework/core/time/WallClock";
+import { createFuiViewBinderRegistry } from "../framework/core/fui/FuiViewBinderRegistry";
 import { ConsoleLogger } from "../framework/diagnostics/logging/ConsoleLogger";
 import { CocosApplicationAdapter } from "../framework/adapters/cocos/application/CocosApplicationAdapter";
 import { createCocosResourceProvider } from "../framework/adapters/cocos/resource/CocosResourceProvider";
@@ -31,6 +33,7 @@ import {
     createCocosUiRoot,
     type CocosUiRoot,
 } from "../framework/adapters/cocos/ui/CocosUiRoot";
+import type { FuiObjectFactory } from "../framework/adapters/cocos/ui/FuiViewHost";
 import type { GameEntryInfo } from "../game/lobby/catalog";
 import type {
     EntryPageHandle,
@@ -101,9 +104,15 @@ export interface AppAssembly {
     readonly registry: ServiceRegistry;
     /** 装配前 token 校验：缺失/循环在此同步抛错，失败走既有 app.start().catch 路径。 */
     readonly validateAssembly: () => void;
+    /** 已接线的 UI 根宿主：组合根单一实例，AppRoot/BootFlow 共用，生命周期随 assembly。 */
+    readonly uiHost: UiHost;
+    /** Feature 安装接缝：运行时视图 binder 注册器（实例级，随 assembly 存续；resolver 为内部局部）。 */
+    readonly fuiViewBindingRegistrar: FuiViewBindingRegistrar;
 }
 
-export function assembleApp(): AppAssembly {
+export function assembleApp(
+    options: { fuiObjectFactory?: FuiObjectFactory } = {},
+): AppAssembly {
     const logger = new ConsoleLogger();
     const context = createApplicationContext(logger);
     const modules = createModules();
@@ -145,6 +154,20 @@ export function assembleApp(): AppAssembly {
     // 在引擎 ready 后（默认流程切 game 首次呈现 / 冒烟路径 startup）触发。
     const uiRoot = createCocosUiRoot();
 
+    // 运行时视图 binder 注册表：实例级、事务式（见 fui-view-binding spec）。
+    // 组合根创建单一 registry（同一实例同时实现 registrar 与 resolver），以 resolver
+    // 接线 UiHost、以 registrar 暴露 Feature 安装接缝（Task 9）；resolver 保持本函数
+    // 内部局部值，不进公共面。
+    const binderRegistry = createFuiViewBinderRegistry();
+    const uiHost = createUiHost({
+        uiRoot,
+        resourceProvider,
+        logger,
+        resolver: binderRegistry,
+        // 仅测试覆盖对象创建；生产无参调用缺省用 UIPackage.createObject
+        fuiObjectFactory: options.fuiObjectFactory,
+    });
+
     return {
         app,
         adapter,
@@ -154,6 +177,8 @@ export function assembleApp(): AppAssembly {
         logger,
         registry,
         validateAssembly,
+        uiHost,
+        fuiViewBindingRegistrar: binderRegistry,
     };
 }
 
@@ -185,9 +210,9 @@ export class AppRoot extends Component {
             adapter,
             sceneFlow,
             resourceProvider,
-            uiRoot,
             logger,
             validateAssembly,
+            uiHost,
         } = assembleApp();
         this.app = app;
         this.adapter = adapter;
@@ -195,7 +220,9 @@ export class AppRoot extends Component {
         this.resourceProvider = resourceProvider;
         this.logger = logger;
         this.validateAssembly = validateAssembly;
-        this.uiHost = createUiHost({ uiRoot, resourceProvider, logger });
+        // 组合根单一装配：消费 assembleApp 产出的已接线 uiHost（含 resolver/registrar），
+        // 不在此重复装配；AppRoot 只持引用供 onDestroy 释放。
+        this.uiHost = uiHost;
         this.lobbyHost = createGameLobbyHost({
             host: this.uiHost,
             resourceProvider,

@@ -23,6 +23,16 @@ import { createFairyGuiView, type FairyGuiViewLike } from "./FairyGuiPageAdapter
 /** 挂载在 GComponent 上的 FuiView 实例：dispose 时级联释放绑定视图。 */
 const BOUND_VIEW_KEY = "__fuiBoundView__";
 
+/**
+ * 对象创建接缝：按包 + 资源名创建引擎对象。返回 `unknown | null` 而非 fgui 类型，
+ * 使 boot 组合根（assembleApp 的测试覆盖）可经深层导入本内部符号而不依赖 fgui 类型；
+ * fgui 类型只在本 Adapter 边界，createBoundView 在消费处做一次受控收窄。
+ */
+export type FuiObjectFactory = (
+    packageName: string,
+    resName: string,
+) => unknown | null;
+
 /** 取 GComponent 上挂载的 FuiView 实例；未绑定返回 undefined。 */
 export function getBoundView(view: unknown): FuiView<unknown, unknown> | undefined {
     const bound = view as Record<string, unknown> | null | undefined;
@@ -116,7 +126,7 @@ export function createBoundView(
     resName: string,
     registry: FuiComponentRegistry,
     bindingResolver: FuiViewBindingResolver | undefined,
-    createObject: (pkg: string, res: string) => GObject | null = (pkg, res) =>
+    createObject: FuiObjectFactory = (pkg, res) =>
         UIPackage.createObject(pkg, res),
 ): (GComponent & { readonly name: string; dispose(): void }) | null {
     // 单一 URL 构造点：后续注册表查询、错误与 binder 均复用该值，不散落类型断言
@@ -126,7 +136,8 @@ export function createBoundView(
         return null;
     }
 
-    const component = createObject(packageName, resName);
+    // createObject 返回 unknown：在 Adapter 边界做一次受控收窄（fgui 类型只存在于此）
+    const component = createObject(packageName, resName) as GObject | null;
     if (component === null) {
         // createObject 失败：无组件可回滚，直接包装为创建失败
         throw new FuiViewCreationError(
@@ -223,7 +234,7 @@ export function createFairyGuiBoundView(
     bindingResolver: FuiViewBindingResolver | undefined,
     options?: {
         componentRegistry?: FuiComponentRegistry;
-        createObject?: (pkg: string, res: string) => GObject | null;
+        createObject?: FuiObjectFactory;
     },
 ): (packageName: string, resName: string) => FairyGuiViewLike {
     const registry = options?.componentRegistry ?? getFuiComponentRegistry();
