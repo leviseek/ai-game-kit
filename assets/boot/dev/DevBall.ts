@@ -4,7 +4,7 @@ import {
     easeOutCubic,
     type MotionTween,
 } from "../../framework/core/time/MotionTween";
-import type { DevInfoSampler } from "./dev-info";
+import type { DevInfoSampler } from "./DevInfo";
 
 /**
  * 悬浮球状态机：collapsed（收缩贴边）→ dragging（按住拖动，吸附暂停）→

@@ -1,4 +1,4 @@
-import type { EffectNode } from "./effect-animator";
+import type { EffectNode } from "./EffectAnimator";
 
 /** VS 进场配置：左右双方队长武将名 + 基础坐标 + 动画时长（参数化，供定制）。 */
 export interface VsEntranceConfig {

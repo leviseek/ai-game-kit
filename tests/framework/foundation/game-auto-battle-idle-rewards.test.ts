@@ -7,13 +7,13 @@ import {
     computeIdleRewards,
     createIdleRewardsHandle,
     DEFAULT_IDLE_RATE,
-} from "../../../assets/samples/game_auto_battle/logic/idle-rewards";
+} from "../../../assets/samples/game_auto_battle/logic/IdleRewards";
 import {
     IDLE_REWARDS_STORAGE_KEY,
     IDLE_REWARDS_SAVE_VERSION,
     createIdleRewardsStore,
     isIdleRewardRecord,
-} from "../../../assets/samples/game_auto_battle/logic/idle-rewards-store";
+} from "../../../assets/samples/game_auto_battle/logic/IdleRewardsStore";
 import type { IdleRewardState } from "../../../assets/samples/game_auto_battle/models";
 
 const state = (

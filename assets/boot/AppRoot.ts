@@ -53,13 +53,13 @@ import {
 import {
     createSmokeProxy,
     type SmokeProxy,
-} from "./smoke/smoke-proxy";
-import { createIsDevEnabled } from "./dev/dev-env";
+} from "./smoke/SmokeProxy";
+import { createIsDevEnabled } from "./dev/DevEnv";
 import {
     setupDevOverlay,
     type DevOverlayRoot,
     type DevOverlaySetupHandle,
-} from "./dev/dev-overlay";
+} from "./dev/DevOverlay";
 
 const { ccclass } = _decorator;
 

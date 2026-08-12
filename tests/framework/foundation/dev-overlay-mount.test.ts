@@ -6,8 +6,8 @@ import type {
     DevOverlayMountOptions,
     DevOverlayRoot,
     DevOverlayViewSeam,
-} from "../../../assets/boot/dev/dev-overlay";
-import type { DevInfoSampler } from "../../../assets/boot/dev/dev-info";
+} from "../../../assets/boot/dev/DevOverlay";
+import type { DevInfoSampler } from "../../../assets/boot/dev/DevInfo";
 
 // setupDevOverlay 经 CocosDeviceInfo/dev-profiler/DevOverlayViewHandle 间接依赖
 // cc 与 fairygui-cc；cc mock 必须与其它测试文件一致（全局共享首个生效）。
@@ -16,7 +16,7 @@ mock.module("cc", () => createCcMock());
 mock.module("fairygui-cc", () => createFairyGuiMock());
 
 const { mountDevOverlay, setupDevOverlay } = await import(
-    "../../../assets/boot/dev/dev-overlay"
+    "../../../assets/boot/dev/DevOverlay"
 );
 
 const SAMPLER: DevInfoSampler = {

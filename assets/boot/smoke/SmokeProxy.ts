@@ -15,12 +15,12 @@ import {
     createSmokeRouter,
     type SmokeRouter,
 } from "../flow/SmokeRouter";
-import { runUiSmoke } from "./ui-smoke";
-import { runSceneFlowSmoke } from "./scene-smoke";
+import { runUiSmoke } from "./UiSmoke";
+import { runSceneFlowSmoke } from "./SceneSmoke";
 import {
     clearModalClickHook,
     runModalClickSmoke,
-} from "./modal-click";
+} from "./ModalClick";
 import type { PerfSample } from "../../game/fixture/perf";
 import { sampleProfilerStats } from "../profiler";
 

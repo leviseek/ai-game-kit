@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { createIsDevEnabled } from "../../../assets/boot/dev/dev-env";
+import { createIsDevEnabled } from "../../../assets/boot/dev/DevEnv";
 
 describe("createIsDevEnabled", () => {
     test("debug 构建无 URL 参数默认开启", () => {

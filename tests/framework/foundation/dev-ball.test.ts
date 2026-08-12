@@ -8,8 +8,8 @@ import {
     computeSnapTarget,
     createDevBallController,
     type DevBallController,
-} from "../../../assets/boot/dev/dev-ball";
-import type { DevInfoSampler } from "../../../assets/boot/dev/dev-info";
+} from "../../../assets/boot/dev/DevBall";
+import type { DevInfoSampler } from "../../../assets/boot/dev/DevInfo";
 import type { ViewModelNode } from "../../../assets/framework";
 
 interface NodeWrites {

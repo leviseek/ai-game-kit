@@ -202,7 +202,7 @@ describe("game fixture perf runner", () => {
 
 describe("boot fixture perf module", () => {
     test("dispatches the game-layer perf runner via the bridge with a Cocos profiler sampler", () => {
-        const smokeProxyFile = resolve(projectRoot, "assets/boot/smoke/smoke-proxy.ts");
+        const smokeProxyFile = resolve(projectRoot, "assets/boot/smoke/SmokeProxy.ts");
         expect(existsSync(smokeProxyFile)).toBe(true);
 
         const source = readFileSync(smokeProxyFile, "utf8");

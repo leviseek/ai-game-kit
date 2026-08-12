@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { createDevPresentationClock } from "../../../assets/boot/dev/dev-clock";
+import { createDevPresentationClock } from "../../../assets/boot/dev/DevClock";
 
 describe("createDevPresentationClock", () => {
     test("tick 按墙钟增量推进表现时间", () => {

@@ -148,14 +148,14 @@ describe("game fixture smoke runner", () => {
 
 describe("SmokeProxy fixture smoke forwarding", () => {
     test("dispatches the fixture smoke runner through the bridge, without static game imports", () => {
-        const smokeProxyFile = resolve(projectRoot, "assets/boot/smoke/smoke-proxy.ts");
+        const smokeProxyFile = resolve(projectRoot, "assets/boot/smoke/SmokeProxy.ts");
         expect(existsSync(smokeProxyFile)).toBe(true);
 
         // 文本断言仅防"删除转发"，不防"转发逻辑错误"；转发行为由 boot-flow /
         // boot-smoke-router 运行测试兜底
         const source = readFileSync(smokeProxyFile, "utf8");
 
-        // Task 7 后 smoke-proxy 不再静态 import game/fixture/smoke，改经注册桥执行
+        // Task 7 后 SmokeProxy 不再静态 import game/fixture/smoke，改经注册桥执行
         expect(source).not.toMatch(/from\s*["'][^"']*game\/fixture\/smoke["']/);
         expect(source).toMatch(/lookupBundle\("game"\)/);
         expect(source).toMatch(/smokes\?\.fixture/);

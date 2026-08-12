@@ -5,12 +5,12 @@ import type { GameSessionNavigator } from "../../../game/lobby/presenter";
 import type { GameFixture } from "../../../game/fixture/GameFixture";
 import { AUTO_BATTLE_LINEUP_ENTRY } from "../../../game/lobby/catalog";
 import type { AutoBattleFixture } from "../assembly";
-import { createLineupEditorPresenter } from "./lineup-presenter";
+import { createLineupEditorPresenter } from "./LineupPresenter";
 import {
     createIdleRewardsBindings,
     createIdleRewardsViewModel,
     type IdleRewardsViewModel,
-} from "./idle-rewards";
+} from "./IdleRewards";
 
 /**
  * 挂机收益页呈现器：把 fixture.idleRewards 状态渲染到 IdleRewardsView 节点。

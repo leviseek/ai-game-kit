@@ -4,7 +4,7 @@ import {
     createDevInfoSampler,
     effectiveType,
     formatUptime,
-} from "../../../assets/boot/dev/dev-info";
+} from "../../../assets/boot/dev/DevInfo";
 import type { DeviceInfo, TimeSource } from "../../../assets/framework";
 import type { PerfSampler } from "../../../assets/game/fixture/perf";
 

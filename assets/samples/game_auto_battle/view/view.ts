@@ -11,7 +11,7 @@ import {
     RESULT_TEXT_NODE,
     ROUND_TEXT_NODE,
     SPEED_BUTTON_NODE,
-} from "./ui-nodes";
+} from "./UiNodes";
 
 /** 战场网格屏幕布局（1280×720）：敌左 3 列、己右 3 列、3 行（与 AutoBattleView 容器化对齐）。 */
 const GRID_COL_STRIDE = 140;

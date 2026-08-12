@@ -8,7 +8,7 @@ import {
     formatAutoBattleEvent,
     type AutoBattleViewModel,
 } from "./view/view";
-import { SPEED_BUTTON_NODE } from "./view/ui-nodes";
+import { SPEED_BUTTON_NODE } from "./view/UiNodes";
 import { createViewModelRenderer, type ViewModelNode } from "../../framework";
 
 /**

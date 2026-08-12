@@ -8,7 +8,7 @@ import {
     LINEUP_STORAGE_KEY,
     LINEUP_SAVE_VERSION,
     createLineupStore,
-} from "../../../assets/samples/game_auto_battle/logic/lineup-store";
+} from "../../../assets/samples/game_auto_battle/logic/LineupStore";
 import type { AutoBattleLineup } from "../../../assets/samples/game_auto_battle/models";
 
 /** 构造合法编队：指定占用槽，其余为 null；定长为布阵区容量 FORMATION_GRID_SIZE。 */

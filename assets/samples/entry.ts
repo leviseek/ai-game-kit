@@ -6,10 +6,10 @@ import { createRpgFixture } from "./game_rpg/assembly";
 import { createTycoonFixture } from "./game_tycoon/assembly";
 import { createAutoBattleFixture } from "./game_auto_battle/assembly";
 import { createCardBattlePresenter } from "./game_card/view/presenter";
-import { createLineupEditorPresenter } from "./game_auto_battle/view/lineup-presenter";
+import { createLineupEditorPresenter } from "./game_auto_battle/view/LineupPresenter";
 import { runCardBattleSmoke } from "./game_card/smoke";
 import { runAutoBattleSmoke } from "./game_auto_battle/smoke";
-import { AUTO_BATTLE_DYNAMIC_NODE_MAPPINGS } from "./game_auto_battle/view/unit-node-mapping";
+import { AUTO_BATTLE_DYNAMIC_NODE_MAPPINGS } from "./game_auto_battle/view/UnitNodeMapping";
 
 // samples bundle 顶层副作用：单点合并登记品类模块描述符，避免多文件各自
 // register 互相覆盖。各 game_*/assembly.ts 不自行 registerBundle。

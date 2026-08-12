@@ -349,7 +349,7 @@ describe("AppRoot Component", () => {
     test("smoke methods live in SmokeProxy, not directly on AppRoot", () => {
         const source = readFileSync(appRootFile, "utf8");
 
-        // 冒烟职责收敛到 smoke-proxy；AppRoot 只经 createSmokeProxy 初始化，
+        // 冒烟职责收敛到 SmokeProxy；AppRoot 只经 createSmokeProxy 初始化，
         // 若未来有人把冒烟方法放回 AppRoot（回退重构），此断言拦截
         expect(source).toMatch(/createSmokeProxy/);
         expect(source).not.toMatch(/^\s*smokePreload\(/m);

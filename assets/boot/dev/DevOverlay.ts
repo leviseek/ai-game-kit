@@ -6,12 +6,12 @@ import type { GRootLike } from "../../framework/adapters/cocos/ui/CocosUiRoot";
 import {
     createDevBallController,
     type DevBallController,
-} from "./dev-ball";
-import { createDevPresentationClock } from "./dev-clock";
+} from "./DevBall";
+import { createDevPresentationClock } from "./DevClock";
 import {
     createDevInfoSampler,
     type DevInfoSampler,
-} from "./dev-info";
+} from "./DevInfo";
 import { sampleProfilerStats } from "../profiler";
 
 /** 交互事件桥：与 fgui 适配器的 DevOverlayView 形状同构（结构匹配）。 */

@@ -44,19 +44,19 @@ import { editLineup } from "./logic/lineup";
 import {
     createLineupStore,
     type LineupStore,
-} from "./logic/lineup-store";
+} from "./logic/LineupStore";
 import {
     computeRate,
     createAutoBattleIdleRewardsModule,
     createIdleRewardsHandle,
     type IdleRateSource,
     type IdleRewardsHandle,
-} from "./logic/idle-rewards";
+} from "./logic/IdleRewards";
 import {
     createIdleRewardsStore,
     createIdleRewardsStoreModule,
     type IdleRewardStore,
-} from "./logic/idle-rewards-store";
+} from "./logic/IdleRewardsStore";
 import type {
     IdleOfflineSettlement,
     IdleRewardState,
@@ -79,7 +79,7 @@ import {
 import {
     createEffectAnimator,
     type AutoBattleEffectAnimator,
-} from "./view/effect-animator";
+} from "./view/EffectAnimator";
 import type { LineupEditorCommands } from "./view/lineup";
 
 /** 挡位循环次序：1x → 2x → 3x → 1x（与 presenter 共用同一循环语义）。 */

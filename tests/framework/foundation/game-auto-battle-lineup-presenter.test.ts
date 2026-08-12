@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import type { ViewModelNode } from "../../../assets/framework";
 import type { FairyGuiListHandle } from "../../../assets/framework";
-import { createLineupEditorPresenter } from "../../../assets/samples/game_auto_battle/view/lineup-presenter";
+import { createLineupEditorPresenter } from "../../../assets/samples/game_auto_battle/view/LineupPresenter";
 import {
     AUTO_BATTLE_ASSEMBLY_EXISTS,
     loadCreateAutoBattleFixture,

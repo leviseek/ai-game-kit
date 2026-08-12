@@ -16,7 +16,7 @@ import {
     UNIT_HP_TEXT_NODE,
     UNIT_NAME_NODE,
     UNIT_SLOT_CONTAINER,
-} from "./ui-nodes";
+} from "./UiNodes";
 
 export interface AutoBattleUnitNodeMapping {
     readonly containerName: string;

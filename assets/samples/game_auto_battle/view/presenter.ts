@@ -5,8 +5,8 @@ import type { GamePresenter } from "../../../game/lobby/presenter";
 import type { AutoBattleFixture } from "../assembly";
 import type { AutoBattleSide } from "../models";
 import { projectHitFeedbackEvents } from "./effects";
-import { createEffectAnimator } from "./effect-animator";
-import { createVsEntranceTemplate } from "./vs-entrance";
+import { createEffectAnimator } from "./EffectAnimator";
+import { createVsEntranceTemplate } from "./VsEntrance";
 import {
     buildAutoBattleBindings,
     createAutoBattleViewModel,

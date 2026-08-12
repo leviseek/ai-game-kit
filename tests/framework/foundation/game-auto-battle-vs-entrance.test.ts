@@ -2,8 +2,8 @@ import { describe, expect, test } from "bun:test";
 import {
     createVsEntranceTemplate,
     type VsEntranceConfig,
-} from "../../../assets/samples/game_auto_battle/view/vs-entrance";
-import type { EffectNode } from "../../../assets/samples/game_auto_battle/view/effect-animator";
+} from "../../../assets/samples/game_auto_battle/view/VsEntrance";
+import type { EffectNode } from "../../../assets/samples/game_auto_battle/view/EffectAnimator";
 
 /** 记录型节点：记录 setter 写入。 */
 interface RecordingNode extends EffectNode {

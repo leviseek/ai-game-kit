@@ -13,7 +13,7 @@ import {
     type LineupEditorViewModel,
 } from "./lineup";
 import { createAutoBattlePresenter } from "./presenter";
-import { createIdleRewardsPresenter } from "./idle-rewards-presenter";
+import { createIdleRewardsPresenter } from "./IdleRewardsPresenter";
 import { AUTO_BATTLE_IDLE_REWARDS_ENTRY } from "../../../game/lobby/catalog";
 
 /**

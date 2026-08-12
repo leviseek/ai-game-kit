@@ -9,7 +9,7 @@ import { projectHitFeedbackEvents } from "../../../assets/samples/game_auto_batt
 import {
     createEffectAnimator,
     type EffectNode,
-} from "../../../assets/samples/game_auto_battle/view/effect-animator";
+} from "../../../assets/samples/game_auto_battle/view/EffectAnimator";
 
 /** 构造战斗事件：seq 递增，targetId/value 按需。 */
 function event(

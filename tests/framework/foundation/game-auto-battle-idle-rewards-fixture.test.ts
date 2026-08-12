@@ -2,11 +2,11 @@ import { describe, expect, test } from "bun:test";
 
 import { MemoryPlatform } from "../../../assets/framework/adapters/memory/MemoryPlatform";
 import { createIdleRewardClock } from "../../../assets/samples/game_auto_battle/logic/clock";
-import { createIdleRewardsHandle } from "../../../assets/samples/game_auto_battle/logic/idle-rewards";
+import { createIdleRewardsHandle } from "../../../assets/samples/game_auto_battle/logic/IdleRewards";
 import {
     IDLE_REWARDS_STORAGE_KEY,
     createIdleRewardsStore,
-} from "../../../assets/samples/game_auto_battle/logic/idle-rewards-store";
+} from "../../../assets/samples/game_auto_battle/logic/IdleRewardsStore";
 import { createAutoBattleFixture } from "../../../assets/samples/game_auto_battle/assembly";
 
 /** 直接把一条原始记录写入底层存储键（模拟旧版本/损坏存档）。 */
