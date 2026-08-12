@@ -30,6 +30,9 @@ export type {
 
 export type { TimeSource } from "./contracts/time/TimeSource";
 
+export type { Action, Store, StoreListener } from "./contracts/state/Store";
+export { createStore } from "./core/state/Store";
+
 export type { DisposeHandle } from "./core/scheduling/DisposeHandle";
 
 export type { FrameworkErrorOptions } from "./core/errors/FrameworkError";
@@ -116,6 +119,27 @@ export type {
     FairyGuiListItemView,
     FairyGuiListHandle,
 } from "./contracts/ui/List";
+
+export type {
+    TypedButtonNode,
+    TypedComponentNode,
+    TypedImageNode,
+    TypedInputNode,
+    TypedListNode,
+    TypedNode,
+    TypedProgressNode,
+    TypedTextNode,
+} from "./contracts/ui/TypedNode";
+
+export type { FuiClickMeta, FuiViewSeam } from "./contracts/ui/FuiView";
+export { FuiView } from "./contracts/ui/FuiView";
+
+export { FUIBind, FClick } from "./core/fui/FuiBindings";
+export type { FuiComponentEntry, FuiComponentRegistry } from "./core/fui/FuiComponentRegistry";
+export {
+    FuiComponentRegistrationError,
+    getFuiComponentRegistry,
+} from "./core/fui/FuiComponentRegistry";
 
 export type {
     ViewModelRenderer,
