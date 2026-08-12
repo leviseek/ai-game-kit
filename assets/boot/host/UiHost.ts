@@ -9,9 +9,9 @@ import {
 import type { IResourceProvider } from "../../framework";
 import {
     createFairyGuiPageAdapter,
-    createFairyGuiView,
     type FairyGuiPageAdapter,
 } from "../../framework/adapters/cocos/ui/FairyGuiPageAdapter";
+import { createFairyGuiBoundView } from "../../framework/adapters/cocos/ui/FuiViewHost";
 import type {
     CocosUiRoot,
     GRootLike,
@@ -83,7 +83,9 @@ export class UiHost {
             root,
             provider: this.resourceProvider,
             navigator: this.nav,
-            createView: createFairyGuiView,
+            // 组合创建闭包：先查 FuiComponentRegistry（@FUIBind 登记的绑定视图），
+            // 未命中回退既有 createFairyGuiView（存量/动态页路径不变）
+            createView: createFairyGuiBoundView(),
         });
         this.adapter.init();
         // 窗口尺寸变化 → UI 根同步 root 布局后通知适配器同步层级容器，无需手动刷新
