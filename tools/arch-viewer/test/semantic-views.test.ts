@@ -200,6 +200,24 @@ describe("semantic views", () => {
         }));
     });
 
+    test("does not compress configured paths across unresolved anchors", async () => {
+        const result = await resolveConfiguredPath(gateway, [
+            symbol("AppRoot::start", "assets/boot/AppRoot.ts"),
+            symbol("Missing::anchor", "assets/missing.ts"),
+            symbol("Application::start", "assets/framework/application/Application.ts"),
+        ]);
+
+        expect(result.nodes.map((item) => item.qualifiedName)).toEqual([
+            "Application::start",
+            "AppRoot::start",
+        ]);
+        expect(result.edges).toEqual([]);
+        expect(result.diagnostics).toContainEqual(expect.objectContaining({
+            severity: "error",
+            message: "Symbol \"Missing::anchor\" was not found",
+        }));
+    });
+
     test("builds startup phases and branches without inventing cross-branch edges", async () => {
         const view = await buildStartupView(gateway, config.startup);
         const fakeEdge = view.edges.find((edge) =>

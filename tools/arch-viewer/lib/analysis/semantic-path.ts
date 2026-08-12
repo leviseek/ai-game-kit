@@ -12,7 +12,7 @@ export interface ResolvedSemanticPath {
 
 interface ResolvedAnchor {
     readonly ref: SymbolRef;
-    readonly node: CodeGraphNode;
+    readonly node?: CodeGraphNode;
 }
 
 function locationOf(node: CodeGraphNode): SourceLocation {
@@ -131,6 +131,7 @@ async function resolveAnchors(
         if ("qualifiedName" in result) {
             resolved.push({ ref, node: result });
         } else {
+            resolved.push({ ref });
             diagnostics.push({ ...result, severity: "error" });
         }
     }
@@ -143,12 +144,16 @@ export async function resolveConfiguredPath(
 ): Promise<ResolvedSemanticPath> {
     const resolved = await resolveAnchors(gateway, anchors);
     const diagnostics = [...resolved.diagnostics];
-    const nodes = resolved.anchors.map((item) => semanticNode(item.node));
+    const nodes = resolved.anchors
+        .map((item) => item.node)
+        .filter((node): node is CodeGraphNode => node !== undefined)
+        .map((node) => semanticNode(node));
     const edges: GraphEdge[] = [];
 
-    for (let index = 0; index < resolved.anchors.length - 1; index += 1) {
+    for (let index = 0; index < anchors.length - 1; index += 1) {
         const from = resolved.anchors[index]!.node;
         const to = resolved.anchors[index + 1]!.node;
+        if (from === undefined || to === undefined) continue;
         const evidence = await findDirectOrTwoHopPath(gateway, from, to);
         const edge = semanticEdge(from, to, evidence);
         edges.push(edge);
