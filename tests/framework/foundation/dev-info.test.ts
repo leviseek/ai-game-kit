@@ -137,4 +137,29 @@ describe("createDevInfoSampler", () => {
         expect(info.fps).toBeNull();
         expect(info.textureMemoryMB).toBeNull();
     });
+
+    test("viewport/uiSize 读取器注入生效（实时调用）", () => {
+        const sampler = createDevInfoSampler({
+            clock: { now: () => 0 },
+            device: DEVICE,
+            readViewport: () => ({
+                physical: { width: 1170, height: 2532 },
+                logical: { width: 390, height: 844 },
+            }),
+            readUiSize: () => ({ width: 1280, height: 720 }),
+        });
+        const info = sampler.sample();
+        expect(info.viewport).toEqual({
+            physical: { width: 1170, height: 2532 },
+            logical: { width: 390, height: 844 },
+        });
+        expect(info.uiSize).toEqual({ width: 1280, height: 720 });
+    });
+
+    test("viewport/uiSize 读取器未注入时字段为 null", () => {
+        const sampler = createDevInfoSampler({ clock: { now: () => 0 }, device: DEVICE });
+        const info = sampler.sample();
+        expect(info.viewport).toBeNull();
+        expect(info.uiSize).toBeNull();
+    });
 });

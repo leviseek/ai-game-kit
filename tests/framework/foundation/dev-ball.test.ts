@@ -74,6 +74,8 @@ const SAMPLER: DevInfoSampler = {
         fps: 60,
         textureMemoryMB: 12,
         bufferMemoryMB: 4,
+        viewport: null,
+        uiSize: null,
     }),
 };
 

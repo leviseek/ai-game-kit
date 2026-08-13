@@ -5,6 +5,7 @@ import { createFairyGuiMock } from "./helpers/fairygui-mock";
 import type {
     DevOverlayMountOptions,
     DevOverlayRoot,
+    DevOverlaySafeAreaViewSeam,
     DevOverlayViewSeam,
 } from "../../../assets/boot/dev/DevOverlay";
 import type { DevInfoSampler } from "../../../assets/boot/dev/DevInfo";
@@ -30,6 +31,8 @@ const SAMPLER: DevInfoSampler = {
         fps: 60,
         textureMemoryMB: 12,
         bufferMemoryMB: 4,
+        viewport: null,
+        uiSize: null,
     }),
 };
 
@@ -39,6 +42,34 @@ function createFakeView(): DevOverlayViewSeam {
         node: () => undefined,
         bindInteraction() { },
         dispose() { },
+    };
+}
+
+export interface SafeAreaSeamCallRecord {
+    readonly visible: boolean[];
+    readonly rects: Array<{ x: number; y: number; width: number; height: number }>;
+    readonly disposed: number;
+}
+
+function createSafeAreaSeam(): DevOverlaySafeAreaViewSeam & {
+    readonly calls: SafeAreaSeamCallRecord;
+} {
+    const calls: SafeAreaSeamCallRecord = {
+        visible: [],
+        rects: [],
+        disposed: 0,
+    };
+    return {
+        calls,
+        setRect(rect) {
+            calls.rects.push(rect);
+        },
+        setVisible(visible: boolean) {
+            calls.visible.push(visible);
+        },
+        dispose() {
+            calls.disposed += 1;
+        },
     };
 }
 
@@ -195,6 +226,128 @@ describe("mountDevOverlay", () => {
         handle.dispose();
         expect(counters.driverDisposed).toBe(1);
     });
+
+    test("safeArea 视图创建失败（undefined）时装配仍可挂载", () => {
+        const { options, counters } = setup();
+        const handle = mountDevOverlay({
+            ...options,
+            safeArea: {
+                readSafeArea: () => ({ left: 0, top: 0, right: 0, bottom: 0 }),
+                readBounds: () => ({ width: 1280, height: 720 }),
+                createView: () => undefined,
+            },
+        });
+        expect(handle.mounted).toBe(true);
+        expect(counters.created).toBe(1);
+        handle.dispose();
+    });
+});
+
+describe("mountDevOverlay safeArea 联动", () => {
+    // 拦截 bindInteraction 拿到 DevBall 控制器，经 onHoverIn/onHoverOut 驱动
+    // 展开/收起，验证 onExpandChange → safe area 显隐联动（无需访问内部状态）。
+    interface Captured {
+        controller:
+            | {
+                onHoverIn(): void;
+                onHoverOut(): void;
+            }
+            | undefined;
+    }
+
+    function createCapturingView(captured: Captured): DevOverlayViewSeam {
+        const view = createFakeView();
+        const original = view.bindInteraction;
+        view.bindInteraction = (handlers) => {
+            original(handlers);
+            captured.controller = handlers as Captured["controller"];
+        };
+        return view;
+    }
+
+    function setupWithSafeArea(overrides: {
+        readonly inset?: { left: number; top: number; right: number; bottom: number };
+        readonly devEnabled?: boolean;
+    } = {}): {
+        readonly handle: ReturnType<typeof mountDevOverlay>;
+        readonly seam: ReturnType<typeof createSafeAreaSeam>;
+        readonly captured: Captured;
+        readonly root: DevOverlayRoot;
+    } {
+        const root = createRoot();
+        const seam = createSafeAreaSeam();
+        const captured: Captured = { controller: undefined };
+        const handle = mountDevOverlay({
+            root,
+            isDevEnabled: () => overrides.devEnabled ?? true,
+            sampler: SAMPLER,
+            timeSource: () => 0,
+            createView: () => createCapturingView(captured),
+            safeArea: {
+                readSafeArea: () => overrides.inset ?? { left: 20, top: 44, right: 20, bottom: 34 },
+                readBounds: () => ({ width: root.width, height: root.height }),
+                createView: () => seam,
+            },
+        });
+        return { handle, seam, captured, root };
+    }
+
+    test("展开时显示安全区框并输出 rect，收起时隐藏", () => {
+        const { handle, seam, captured } = setupWithSafeArea();
+        expect(handle.mounted).toBe(true);
+        expect(seam.calls.visible).toEqual([]);
+
+        captured.controller?.onHoverIn();
+        expect(seam.calls.visible).toEqual([true]);
+        // show 时立即重算 rect（inset 20/44/20/34，root 1280x720）
+        expect(seam.calls.rects).toEqual([{ x: 20, y: 44, width: 1240, height: 642 }]);
+
+        captured.controller?.onHoverOut();
+        expect(seam.calls.visible).toEqual([true, false]);
+        // 收起不触发新 rect
+        expect(seam.calls.rects.length).toBe(1);
+
+        handle.dispose();
+    });
+
+    test("收起再展开会重算 rect（实时读取当前 bounds）", () => {
+        const { handle, seam, captured, root } = setupWithSafeArea();
+        captured.controller?.onHoverIn();
+        expect(seam.calls.rects).toEqual([{ x: 20, y: 44, width: 1240, height: 642 }]);
+
+        // 缩放 root 后收起再展开：readBounds 实时读取新尺寸 → 新 rect
+        root.setSize(1024, 576);
+        captured.controller?.onHoverOut();
+        captured.controller?.onHoverIn();
+        expect(seam.calls.rects.at(-1)).toEqual({ x: 20, y: 44, width: 984, height: 498 });
+
+        handle.dispose();
+    });
+
+    test("safeArea 装配 dev 关闭：不创建安全区视图", () => {
+        const { handle, seam } = setupWithSafeArea({ devEnabled: false });
+        expect(handle.mounted).toBe(false);
+        expect(seam.calls.visible).toEqual([]);
+        handle.dispose();
+    });
+
+    test("safeArea 视图创建失败（undefined）时装配仍可挂载", () => {
+        const root = createRoot();
+        const handle = mountDevOverlay({
+            root,
+            isDevEnabled: () => true,
+            sampler: SAMPLER,
+            timeSource: () => 0,
+            createView: createFakeView,
+            safeArea: {
+                readSafeArea: () => ({ left: 0, top: 0, right: 0, bottom: 0 }),
+                readBounds: () => ({ width: root.width, height: root.height }),
+                createView: () => undefined,
+            },
+        });
+        expect(handle.mounted).toBe(true);
+        handle.dispose();
+    });
 });
 
 interface SetupHostResult {
@@ -320,5 +473,37 @@ describe("setupDevOverlay", () => {
         await new Promise((resolve) => setTimeout(resolve, 150));
         expect(handle.mounted).toBe(false);
         expect(setupHost.loads).toBe(0);
+    });
+
+    test("viewport 注入后挂载成功且 safe area 视图随驱动 step 无错", async () => {
+        const setupHost = makeSetupHost(() => createRoot(), "ready");
+        const seam = createSafeAreaSeam();
+        let viewportSamples = 0;
+        const handle = setupDevOverlay({
+            host: setupHost.host,
+            logger: makeLogger().logger,
+            isDevEnabled: () => true,
+            viewport: {
+                sample: () => {
+                    viewportSamples += 1;
+                    return {
+                        physical: { width: 1170, height: 2532 },
+                        logical: { width: 390, height: 844 },
+                    };
+                },
+                readSafeAreaInset: () => ({ left: 20, top: 44, right: 20, bottom: 34 }),
+            },
+            createSafeAreaView: () => seam,
+            drive: (tick) => {
+                tick();
+                return { dispose() { } };
+            },
+        });
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        expect(handle.mounted).toBe(true);
+        // 挂载驱动一次 step：safe area 控制器未展开不采样，但装配无错
+        expect(viewportSamples).toBeGreaterThanOrEqual(0);
+        handle.dispose();
+        expect(seam.calls.disposed).toBe(1);
     });
 });

@@ -34,6 +34,25 @@ export function createCcMock(): Record<string, unknown> {
         Touch: class { },
         Vec3: class { },
         profiler: { stats: null },
-        sys: { isNative: false, os: "Windows", platform: "WINDOWS", language: "en" },
+        sys: {
+            isNative: false,
+            os: "Windows",
+            platform: "WINDOWS",
+            language: "en",
+            // getSafeAreaRect 桩：CocosViewportInfo 经此读取安全区（全屏，无 inset）
+            getSafeAreaRect() {
+                return { x: 0, y: 0, width: 0, height: 0 };
+            },
+        },
+        // cc.view 视口桩：CocosViewportInfo 经此读取物理像素（读取不抛错）
+        view: {
+            getVisibleSizeInPixel() {
+                return { width: 0, height: 0 };
+            },
+        },
+        // cc.screen 屏幕桩：DPR 换算逻辑像素
+        screen: {
+            devicePixelRatio: 1,
+        },
     };
 }
