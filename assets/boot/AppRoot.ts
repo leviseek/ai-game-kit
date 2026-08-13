@@ -22,6 +22,7 @@ import {
     type AppAssembly,
     type GameModule,
 } from "./assembly";
+import { BUNDLES, getWindowSearch, isRuntimeEnvironment } from "./constants";
 import type { UiHost } from "./host/UiHost";
 import {
     createGameLobbyHost,
@@ -109,7 +110,9 @@ export class AppRoot extends Component {
             lobbyHost: this.lobbyHost,
             smokeRouter: this.smoke.router,
             getSceneMap: () => {
-                const gameModule = lookupBundle("game") as GameModule | undefined;
+                const gameModule = lookupBundle(BUNDLES.game) as
+                    | GameModule
+                    | undefined;
                 return {
                     ...BOOTSTRAP_SCENE,
                     ...(gameModule?.sceneResources ?? {}),
@@ -117,7 +120,7 @@ export class AppRoot extends Component {
             },
             logger,
             isNative: () => sys.isNative === true,
-            getSearch: () => (typeof window === "undefined" ? "" : window.location.search),
+            getSearch: getWindowSearch,
             onGameSceneActive: () => this.openGameListPage(),
         });
         // dev overlay 环境开关：仅 debug 构建初始化（release 下 `if (DEBUG)` 编译期
@@ -126,7 +129,7 @@ export class AppRoot extends Component {
         if (DEBUG) {
             this.isDevEnabled = createIsDevEnabled({
                 ccDebug: DEBUG,
-                search: typeof window === "undefined" ? "" : window.location.search,
+                search: getWindowSearch(),
             });
         }
         director.addPersistRootNode(this.node);
@@ -157,9 +160,9 @@ export class AppRoot extends Component {
         });
 
         // 启动编排委托 BootFlow：默认无参流程 GRoot 推迟到 game 首次呈现（阶段 2），
-        // 冒烟分叉（URL 带 smoke/fixture）在 startup 立即初始化后执行。仅浏览器环境
-        // 触发；纯 TS 测试不触发。
-        if (typeof window !== "undefined") {
+        // 冒烟分叉（URL 带 smoke/fixture）在 startup 立即初始化后执行。仅运行时
+        // 环境触发（浏览器有 window，Cocos 原生经 sys.isNative）；纯 TS 测试不触发。
+        if (isRuntimeEnvironment(sys.isNative === true)) {
             this.bootFlow?.launch().catch((error) => {
                 this.logger?.error(
                     "[boot] flow launch failed",
@@ -174,7 +177,7 @@ export class AppRoot extends Component {
     private openGameListPage(): void {
         // 发起 dev overlay 挂载（与列表页并行，GRoot 未就绪由 setupDevOverlay 内部重试）
         this.setupDevOverlayIfEnabled();
-        const gameModule = lookupBundle("game") as GameModule | undefined;
+        const gameModule = lookupBundle(BUNDLES.game) as GameModule | undefined;
         if (gameModule?.createListFlow === undefined) {
             this.logger?.warn(
                 "[boot] game bundle list flow not registered; skipping list page open",
