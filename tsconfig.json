@@ -7,7 +7,5 @@
         "skipLibCheck": true,
         "moduleResolution": "bundler"
     },
-    "include": [
-        "assets/**/*.ts"
-    ]
+    "include": ["assets/**/*.ts"]
 }
