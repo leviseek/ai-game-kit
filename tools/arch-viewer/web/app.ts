@@ -1,6 +1,6 @@
 import { ArchApiClient } from "./api";
 import { connectSnapshotEvents } from "./events";
-import { fitTransform, renderSvgCanvas, type CanvasTransform } from "./render/svg";
+import { fitTransform, renderSvgCanvas, updateCanvasTransform, type CanvasTransform } from "./render/svg";
 import { bindSearch } from "./render/search";
 import { renderInspector } from "./render/inspector";
 import { bindSidebar, renderSidebar } from "./render/sidebar";
@@ -13,7 +13,32 @@ export interface WorkbenchApp {
     readonly dispose: () => void;
 }
 
+export interface WorkbenchRenderCoordinatorHooks {
+    readonly renderChrome: () => void;
+    readonly renderCanvas: () => void;
+    readonly renderInspector: () => void;
+    readonly updateCanvasTransform: () => void;
+}
+
+export interface WorkbenchRenderCoordinator {
+    readonly renderAll: () => void;
+    readonly updateTransform: () => void;
+}
+
 type InspectorTab = "Source" | "Relations" | "Evidence" | "Diagnostics";
+
+export function createWorkbenchRenderCoordinator(hooks: WorkbenchRenderCoordinatorHooks): WorkbenchRenderCoordinator {
+    return {
+        renderAll() {
+            hooks.renderChrome();
+            hooks.renderCanvas();
+            hooks.renderInspector();
+        },
+        updateTransform() {
+            hooks.updateCanvasTransform();
+        },
+    };
+}
 
 export async function startWorkbench(root: Document = document): Promise<WorkbenchApp> {
     const elements = requiredElements(root);
@@ -23,35 +48,44 @@ export async function startWorkbench(root: Document = document): Promise<Workben
     let lastLayout: LayoutGraph | undefined;
     let inspectorTab: InspectorTab = "Source";
 
+    const coordinator = createWorkbenchRenderCoordinator({
+        renderChrome() {
+            renderSidebar(root, state.viewType);
+            renderStatus(elements.status, state);
+            renderBreadcrumbs(elements.breadcrumbs, state);
+        },
+        renderCanvas() {
+            lastLayout = renderSvgCanvas(elements.canvas, {
+                state,
+                transform,
+                onSelect: (nodeId) => dispatch({ type: "select-node", nodeId }),
+                onExpandGroup: (id) => void loadGroup(id),
+                onTransform: (next) => {
+                    transform = next;
+                    coordinator.updateTransform();
+                },
+            });
+        },
+        renderInspector() {
+            renderInspector(elements.inspector, {
+                client,
+                state,
+                activeTab: inspectorTab,
+                onTab(tab) {
+                    inspectorTab = tab;
+                    coordinator.renderAll();
+                },
+            });
+        },
+        updateCanvasTransform() {
+            updateCanvasTransform(elements.canvas, transform);
+        },
+    });
     const setState = (next: WorkbenchState) => {
         state = next;
-        render();
+        coordinator.renderAll();
     };
     const dispatch = (action: WorkbenchAction) => setState(reduceWorkbench(state, action));
-    const render = () => {
-        renderSidebar(root, state.viewType);
-        renderStatus(elements.status, state);
-        renderBreadcrumbs(elements.breadcrumbs, state);
-        lastLayout = renderSvgCanvas(elements.canvas, {
-            state,
-            transform,
-            onSelect: (nodeId) => dispatch({ type: "select-node", nodeId }),
-            onExpandGroup: (id) => void loadGroup(id),
-            onTransform: (next) => {
-                transform = next;
-                render();
-            },
-        });
-        renderInspector(elements.inspector, {
-            client,
-            state,
-            activeTab: inspectorTab,
-            onTab(tab) {
-                inspectorTab = tab;
-                render();
-            },
-        });
-    };
 
     bindSidebar(root, (viewType) => void loadView(viewType));
     bindSearch({
@@ -63,14 +97,14 @@ export async function startWorkbench(root: Document = document): Promise<Workben
     elements.fit.addEventListener("click", () => {
         if (lastLayout === undefined) return;
         transform = fitTransform(elements.canvas, lastLayout);
-        render();
+        coordinator.updateTransform();
     });
     elements.reset.addEventListener("click", () => {
         transform = { x: 0, y: 0, scale: 1 };
-        render();
+        coordinator.updateTransform();
     });
     const disconnect = connectSnapshotEvents({ client, state: () => state, onState: setState });
-    render();
+    coordinator.renderAll();
 
     async function loadView(viewType: ViewType): Promise<void> {
         dispatch({ type: "view-loading", viewType });

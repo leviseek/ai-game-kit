@@ -19,6 +19,11 @@ export interface SvgRendererOptions {
     readonly onTransform: (transform: CanvasTransform) => void;
 }
 
+export function updateCanvasTransform(container: HTMLElement, transform: CanvasTransform): void {
+    const content = container.querySelector<SVGGElement>("[data-graph-content]");
+    if (content !== null) content.setAttribute("transform", toTransform(transform));
+}
+
 export function renderSvgCanvas(container: HTMLElement, options: SvgRendererOptions): LayoutGraph {
     const viewport = { width: container.clientWidth || 960, height: container.clientHeight || 640 };
     const layout = layoutView(options.state.currentView, viewport);
@@ -26,7 +31,7 @@ export function renderSvgCanvas(container: HTMLElement, options: SvgRendererOpti
     if (!(svg instanceof SVGSVGElement)) throw new Error("SVG root unavailable");
     svg.setAttribute("viewBox", `0 0 ${viewport.width} ${viewport.height}`);
     svg.setAttribute("role", "img");
-    const content = svgElement("g", { transform: toTransform(options.transform) });
+    const content = svgElement("g", { transform: toTransform(options.transform), "data-graph-content": "true" });
 
     svg.append(content);
     renderLanes(content, layout);
