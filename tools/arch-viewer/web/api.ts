@@ -28,26 +28,26 @@ export class ArchApiClient {
     }
 
     public project(): Promise<Readonly<Record<string, unknown>>> {
-        return this.getJson("/api/project");
+        return this.get("/api/project");
     }
 
     public view(type: ViewType): Promise<GraphView> {
-        return this.getJson(`/api/views/${encodeURIComponent(type)}`);
+        return this.get(`/api/views/${encodeURIComponent(type)}`);
     }
 
     public group(id: string): Promise<GraphView> {
-        return this.getJson(`/api/groups/${encodeURIComponent(id)}`);
+        return this.get(`/api/groups/${encodeURIComponent(id)}`);
     }
 
     public search(query: string): Promise<readonly GraphNode[]> {
-        return this.getJson(`/api/symbols/search?q=${encodeURIComponent(query)}`);
+        return this.get(`/api/symbols/search?q=${encodeURIComponent(query)}`);
     }
 
     public neighborhood(id: string): Promise<GraphView> {
-        return this.getJson(`/api/nodes/${encodeURIComponent(id)}/neighborhood`);
+        return this.get(`/api/nodes/${encodeURIComponent(id)}/neighborhood`);
     }
 
-    private async getJson<T>(path: string): Promise<T> {
+    public async get<T>(path: string): Promise<T> {
         const response = await this.fetchImpl(`${this.baseUrl}${path}`);
         if (!response.ok) throw new ArchApiError(response.status, path);
         return response.json() as Promise<T>;
