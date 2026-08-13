@@ -2,28 +2,15 @@ import { describe, expect, test } from "bun:test";
 
 import { MemoryPlatform } from "../../../assets/framework/adapters/memory/MemoryPlatform";
 import type { PlatformStorage } from "../../../assets/framework/contracts/platform/Platform";
-import type {
-    SaveMigrator,
-    SaveVersion,
-    VersionedStorageOptions,
-} from "../../../assets/framework/contracts/storage/VersionedStorage";
-import {
-    SaveCorruptionError,
-    SaveMigrationError,
-    SaveSerializationError,
-    SaveVersionError,
-    createVersionedStorage,
-} from "../../../assets/framework/core/storage/VersionedStorage";
+import type { SaveMigrator, SaveVersion, VersionedStorageOptions } from "../../../assets/framework/contracts/storage/VersionedStorage";
+import { SaveCorruptionError, SaveMigrationError, SaveSerializationError, SaveVersionError, createVersionedStorage } from "../../../assets/framework/core/storage/VersionedStorage";
 
 interface _PlayerSave {
     readonly name: string;
     readonly level: number;
 }
 
-function createOptions(
-    currentVersion: SaveVersion,
-    migrators?: Readonly<Record<SaveVersion, SaveMigrator>>,
-): VersionedStorageOptions {
+function createOptions(currentVersion: SaveVersion, migrators?: Readonly<Record<SaveVersion, SaveMigrator>>): VersionedStorageOptions {
     return {
         storage: new MemoryPlatform(),
         currentVersion,
@@ -37,9 +24,7 @@ function emptyBackend(): PlatformStorage {
 
 describe("VersionedStorage namespace isolation", () => {
     test("saves with the same key in different namespaces stay independent", async () => {
-        const storage = createVersionedStorage(
-            createOptions(1),
-        );
+        const storage = createVersionedStorage(createOptions(1));
 
         await storage.save("player-a", "save", { name: "alice", level: 1 });
         await storage.save("player-b", "save", { name: "bob", level: 2 });
@@ -52,9 +37,7 @@ describe("VersionedStorage namespace isolation", () => {
     });
 
     test("deleting one namespace leaves the other namespace intact", async () => {
-        const storage = createVersionedStorage(
-            createOptions(1),
-        );
+        const storage = createVersionedStorage(createOptions(1));
 
         await storage.save("player-a", "save", { name: "alice", level: 1 });
         await storage.save("player-b", "save", { name: "bob", level: 2 });
@@ -69,9 +52,7 @@ describe("VersionedStorage namespace isolation", () => {
     });
 
     test("loading an absent save returns null", async () => {
-        const storage = createVersionedStorage(
-            createOptions(1),
-        );
+        const storage = createVersionedStorage(createOptions(1));
 
         expect(await storage.load("player-a", "missing")).toBeNull();
     });
@@ -79,9 +60,7 @@ describe("VersionedStorage namespace isolation", () => {
 
 describe("VersionedStorage schema version", () => {
     test("a written save records its schema version", async () => {
-        const storage = createVersionedStorage(
-            createOptions(3),
-        );
+        const storage = createVersionedStorage(createOptions(3));
 
         await storage.save("player", "save", { name: "alice", level: 1 });
 
@@ -156,10 +135,7 @@ describe("VersionedStorage consecutive migration", () => {
 
         await storage.load("player", "save");
 
-        expect(seen).toEqual([
-            { name: "alice" },
-            { name: "alice", step: "v1-to-v2" },
-        ]);
+        expect(seen).toEqual([{ name: "alice" }, { name: "alice", step: "v1-to-v2" }]);
     });
 
     test("a missing migration step fails with a typed error naming the gap", async () => {
@@ -178,9 +154,7 @@ describe("VersionedStorage consecutive migration", () => {
             },
         });
 
-        expect(() => storage.load("player", "save")).toThrow(
-            SaveMigrationError,
-        );
+        expect(() => storage.load("player", "save")).toThrow(SaveMigrationError);
     });
 
     test("a migration that throws fails the whole load with a typed error", async () => {
@@ -285,88 +259,60 @@ describe("VersionedStorage future version and serialization guards", () => {
     });
 
     test("a DTO with undefined is rejected before any write", async () => {
-        const storage = createVersionedStorage(
-            createOptions(1),
-        );
+        const storage = createVersionedStorage(createOptions(1));
 
-        expect(() =>
-            storage.save("player", "save", { name: "alice", extra: undefined }),
-        ).toThrow(SaveSerializationError);
+        expect(() => storage.save("player", "save", { name: "alice", extra: undefined })).toThrow(SaveSerializationError);
 
         expect(await storage.load("player", "save")).toBeNull();
     });
 
     test("a DTO containing a function is rejected before any write", async () => {
-        const storage = createVersionedStorage(
-            createOptions(1),
-        );
+        const storage = createVersionedStorage(createOptions(1));
 
-        expect(() =>
-            storage.save("player", "save", { name: "alice", fn: () => { } }),
-        ).toThrow(SaveSerializationError);
+        expect(() => storage.save("player", "save", { name: "alice", fn: () => {} })).toThrow(SaveSerializationError);
 
         expect(await storage.load("player", "save")).toBeNull();
     });
 
     test("a DTO with a circular reference is rejected before any write", async () => {
-        const storage = createVersionedStorage(
-            createOptions(1),
-        );
+        const storage = createVersionedStorage(createOptions(1));
 
         const circular: Record<string, unknown> = { name: "alice" };
         circular.self = circular;
 
-        expect(() =>
-            storage.save("player", "save", circular),
-        ).toThrow(SaveSerializationError);
+        expect(() => storage.save("player", "save", circular)).toThrow(SaveSerializationError);
 
         expect(await storage.load("player", "save")).toBeNull();
     });
 
     test("a DTO containing a BigInt is rejected before any write", async () => {
-        const storage = createVersionedStorage(
-            createOptions(1),
-        );
+        const storage = createVersionedStorage(createOptions(1));
 
-        expect(() =>
-            storage.save("player", "save", { name: "alice", big: 123n }),
-        ).toThrow(SaveSerializationError);
+        expect(() => storage.save("player", "save", { name: "alice", big: 123n })).toThrow(SaveSerializationError);
 
         expect(await storage.load("player", "save")).toBeNull();
     });
 
     test("a DTO containing a symbol is rejected before any write", async () => {
-        const storage = createVersionedStorage(
-            createOptions(1),
-        );
+        const storage = createVersionedStorage(createOptions(1));
 
-        expect(() =>
-            storage.save("player", "save", { name: "alice", sym: Symbol("id") }),
-        ).toThrow(SaveSerializationError);
+        expect(() => storage.save("player", "save", { name: "alice", sym: Symbol("id") })).toThrow(SaveSerializationError);
 
         expect(await storage.load("player", "save")).toBeNull();
     });
 
     test("a DTO containing a non-finite number is rejected before any write", async () => {
-        const storage = createVersionedStorage(
-            createOptions(1),
-        );
+        const storage = createVersionedStorage(createOptions(1));
 
-        expect(() =>
-            storage.save("player", "save", { name: "alice", score: NaN }),
-        ).toThrow(SaveSerializationError);
+        expect(() => storage.save("player", "save", { name: "alice", score: NaN })).toThrow(SaveSerializationError);
 
         expect(await storage.load("player", "save")).toBeNull();
 
-        expect(() =>
-            storage.save("player", "save", { name: "alice", score: Infinity }),
-        ).toThrow(SaveSerializationError);
+        expect(() => storage.save("player", "save", { name: "alice", score: Infinity })).toThrow(SaveSerializationError);
     });
 
     test("a nested non-serializable value is rejected before any write", async () => {
-        const storage = createVersionedStorage(
-            createOptions(1),
-        );
+        const storage = createVersionedStorage(createOptions(1));
 
         expect(() =>
             storage.save("player", "save", {
@@ -399,9 +345,7 @@ describe("VersionedStorage corruption guards", () => {
             currentVersion: 3,
         });
 
-        expect(() => storage.load("player", "save")).toThrow(
-            SaveCorruptionError,
-        );
+        expect(() => storage.load("player", "save")).toThrow(SaveCorruptionError);
     });
 
     test("a record that is not an object is rejected as corrupted", async () => {
@@ -413,9 +357,7 @@ describe("VersionedStorage corruption guards", () => {
             currentVersion: 3,
         });
 
-        expect(() => storage.load("player", "save")).toThrow(
-            SaveCorruptionError,
-        );
+        expect(() => storage.load("player", "save")).toThrow(SaveCorruptionError);
     });
 
     test("a record missing the version field is rejected as corrupted", async () => {
@@ -427,26 +369,19 @@ describe("VersionedStorage corruption guards", () => {
             currentVersion: 3,
         });
 
-        expect(() => storage.load("player", "save")).toThrow(
-            SaveCorruptionError,
-        );
+        expect(() => storage.load("player", "save")).toThrow(SaveCorruptionError);
     });
 
     test("a record with a non-positive version is rejected as corrupted", async () => {
         const backend = emptyBackend();
-        await backend.set(
-            "save:player:save",
-            JSON.stringify({ version: 0, data: {} }),
-        );
+        await backend.set("save:player:save", JSON.stringify({ version: 0, data: {} }));
 
         const storage = createVersionedStorage({
             storage: backend,
             currentVersion: 3,
         });
 
-        expect(() => storage.load("player", "save")).toThrow(
-            SaveCorruptionError,
-        );
+        expect(() => storage.load("player", "save")).toThrow(SaveCorruptionError);
     });
 });
 

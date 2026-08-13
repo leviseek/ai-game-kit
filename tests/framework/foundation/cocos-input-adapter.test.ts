@@ -13,14 +13,8 @@ mock.module("cc", () => ({
     },
 }));
 
-import type {
-    InputEvent,
-    InputSourceId,
-} from "../../../assets/framework/contracts/input/Input";
-import {
-    createInputMapper,
-    type InputMapper,
-} from "../../../assets/framework/core/input/InputMapper";
+import type { InputEvent, InputSourceId } from "../../../assets/framework/contracts/input/Input";
+import { createInputMapper, type InputMapper } from "../../../assets/framework/core/input/InputMapper";
 
 type TestAction = "jump" | "move" | "confirm";
 
@@ -53,21 +47,15 @@ interface CocosInputAdapterFactory {
 }
 
 const projectRoot = resolve(import.meta.dir, "../../..");
-const adapterFile = resolve(
-    projectRoot,
-    "assets/framework/adapters/cocos/input/CocosInputAdapter.ts",
-);
+const adapterFile = resolve(projectRoot, "assets/framework/adapters/cocos/input/CocosInputAdapter.ts");
 
 async function loadFactory(): Promise<CocosInputAdapterFactory> {
-    const exports = (await import(
-        pathToFileURL(adapterFile).href
-    )) as Partial<CocosInputAdapterFactory>;
+    const exports = (await import(pathToFileURL(adapterFile).href)) as Partial<CocosInputAdapterFactory>;
 
     expect(typeof exports.createCocosInputAdapter).toBe("function");
 
     return {
-        createCocosInputAdapter:
-            exports.createCocosInputAdapter as CocosInputAdapterFactory["createCocosInputAdapter"],
+        createCocosInputAdapter: exports.createCocosInputAdapter as CocosInputAdapterFactory["createCocosInputAdapter"],
     };
 }
 
@@ -85,12 +73,7 @@ function createMockInput(): MockInput {
             unregistrations.push([eventType, callback, target]);
             // 模拟引擎 CallbacksInvoker 的引用匹配语义：仅删除同 callback 且同
             // target 的注册项，使退订后的 emit 不再派发给该 handler
-            const index = registrations.findIndex(
-                ([type, registered, registeredTarget]) =>
-                    type === eventType &&
-                    registered === callback &&
-                    registeredTarget === target,
-            );
+            const index = registrations.findIndex(([type, registered, registeredTarget]) => type === eventType && registered === callback && registeredTarget === target);
             if (index >= 0) {
                 registrations.splice(index, 1);
             }
@@ -212,9 +195,7 @@ describe("CocosInputAdapter translation", () => {
         });
         mockInput.emit(EVENT_TYPES.gamepadInput, { gamepad });
 
-        expect(events).toEqual([
-            { sourceId: "gamepad:0:south", pressed: true, value: 1 },
-        ]);
+        expect(events).toEqual([{ sourceId: "gamepad:0:south", pressed: true, value: 1 }]);
 
         unsubscribe();
     });
@@ -278,10 +259,7 @@ describe("CocosInputAdapter translation", () => {
         mockInput.emit(EVENT_TYPES.gamepadChange, { gamepad });
         mockInput.emit(EVENT_TYPES.gamepadInput, { gamepad });
 
-        expect(events.map((event) => event.sourceId)).toEqual([
-            "gamepad:0:south",
-            "gamepad:0:south",
-        ]);
+        expect(events.map((event) => event.sourceId)).toEqual(["gamepad:0:south", "gamepad:0:south"]);
 
         unsubscribe();
     });
@@ -303,7 +281,7 @@ describe("CocosInputAdapter translation", () => {
             EVENT_TYPES.gamepadInput,
         ];
 
-        const unsubscribe = adapter.subscribe(() => { });
+        const unsubscribe = adapter.subscribe(() => {});
         expect(mockInput.registrations.map(([type]) => type)).toEqual(expectedTypes);
 
         const registeredTarget = mockInput.registrations[0]?.[2];
@@ -320,8 +298,8 @@ describe("CocosInputAdapter translation", () => {
         const mockInput = createMockInput();
         const adapter = createCocosInputAdapter({ input: mockInput, eventTypes: EVENT_TYPES });
 
-        const unsubscribeA = adapter.subscribe(() => { });
-        const unsubscribeB = adapter.subscribe(() => { });
+        const unsubscribeA = adapter.subscribe(() => {});
+        const unsubscribeB = adapter.subscribe(() => {});
 
         expect(mockInput.registrations).toHaveLength(9);
 
@@ -437,7 +415,11 @@ describe("CocosInputAdapter integration with InputMapper", () => {
 
     test("a modal navigator blocks gameplay actions and releases after close", async () => {
         let modal = true;
-        const navigator = { get modal() { return modal; } };
+        const navigator = {
+            get modal() {
+                return modal;
+            },
+        };
         const rig = await createRig({ "touch:1": "jump" }, navigator);
 
         rig.mockInput.emit(EVENT_TYPES.touchStart, { touch: { getID: () => 1 } });

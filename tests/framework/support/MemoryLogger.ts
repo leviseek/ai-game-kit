@@ -1,8 +1,4 @@
-import type {
-    LogContext,
-    Logger,
-    LogRecord,
-} from "../../../assets/framework";
+import type { LogContext, Logger, LogRecord } from "../../../assets/framework";
 import { createScopedLogger } from "../../../assets/framework/diagnostics/logging/ScopedLogger";
 
 export class MemoryLogger implements Logger {
@@ -10,11 +6,7 @@ export class MemoryLogger implements Logger {
     private readonly delegate: Logger;
 
     public constructor(scope = "", context: LogContext = {}) {
-        this.delegate = createScopedLogger(
-            (record) => this.recordStore.push(record),
-            scope,
-            context,
-        );
+        this.delegate = createScopedLogger((record) => this.recordStore.push(record), scope, context);
     }
 
     public get records(): readonly LogRecord[] {

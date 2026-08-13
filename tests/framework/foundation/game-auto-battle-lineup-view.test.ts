@@ -1,17 +1,9 @@
 import { describe, expect, test } from "bun:test";
 
 import { createViewModelRenderer, type ViewModelNode } from "../../../assets/framework";
-import {
-    createLineupEditorBindings,
-    createLineupEditorViewModel,
-    type LineupEditorCommands,
-    type LineupEditorViewModel,
-} from "../../../assets/samples/game_auto_battle/view/lineup";
+import { createLineupEditorBindings, createLineupEditorViewModel, type LineupEditorCommands, type LineupEditorViewModel } from "../../../assets/samples/game_auto_battle/view/lineup";
 import { FORMATION_GRID_SIZE } from "../../../assets/samples/game_auto_battle/logic/grid";
-import type {
-    AutoBattleHero,
-    AutoBattleLineup,
-} from "../../../assets/samples/game_auto_battle/models";
+import type { AutoBattleHero, AutoBattleLineup } from "../../../assets/samples/game_auto_battle/models";
 
 /** 记录型视图节点：记录 setter 与点击回调，供断言绑定行为。 */
 interface RecordingNode {
@@ -105,7 +97,10 @@ describe("Auto-battle lineup editor view model", () => {
 });
 
 describe("Auto-battle lineup editor bindings", () => {
-    function render(commands: LineupEditorCommands, vm: LineupEditorViewModel): {
+    function render(
+        commands: LineupEditorCommands,
+        vm: LineupEditorViewModel,
+    ): {
         view: ReturnType<typeof recordingView>;
     } {
         const view = recordingView();
@@ -119,10 +114,7 @@ describe("Auto-battle lineup editor bindings", () => {
 
     test("slot bindings cover the full formation size (9 slots)", () => {
         const calls: string[] = [];
-        const heroes: readonly AutoBattleHero[] = Array.from(
-            { length: 9 },
-            (_, i) => hero(`h${i}`, `H${i}`),
-        );
+        const heroes: readonly AutoBattleHero[] = Array.from({ length: 9 }, (_, i) => hero(`h${i}`, `H${i}`));
         const vm = createLineupEditorViewModel(heroes, lineup(["h0", null, "h2", "h3", null, "h5", "h6", null, "h8"]), null);
         const view = recordingView();
         const renderer = createViewModelRenderer<LineupEditorViewModel>({

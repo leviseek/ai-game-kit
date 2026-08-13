@@ -40,9 +40,7 @@ describe("GameLobbyHostImpl source contract", () => {
         expect(ensureCall).toBeGreaterThan(-1);
 
         // 入口页与全局页共用通用包加载路径（`${entry.packageName}/...`），各一次
-        const pkgLoads = [
-            ...source.matchAll(/const pkgPath = `\$\{entry\.packageName\}/g),
-        ].map((match) => match.index ?? -1);
+        const pkgLoads = [...source.matchAll(/const pkgPath = `\$\{entry\.packageName\}/g)].map((match) => match.index ?? -1);
         expect(pkgLoads.length).toBe(2);
         for (const index of pkgLoads) {
             expect(index).toBeGreaterThan(ensureCall);
@@ -76,14 +74,8 @@ describe("GameLobbyHostImpl session resource scope (release loop)", () => {
         // 内存 provider + 真实 UiHost 验证该会话 scope 释放闭环：品类包 bundle 卸载触发、
         // 列表包（全局 uiScope 常驻）不受影响。品类包与列表包按 bundle 隔离使 canUnload
         // 可观察（对齐设计预加载分层 L2 会话 / L0 常驻）。
-        const uiHostModule = (await import(
-            pathToFileURL(resolve(projectRoot, "assets/boot/host/UiHost.ts")).href
-        )) as {
-            createUiHost: (deps: {
-                uiRoot: unknown;
-                resourceProvider: IResourceProvider;
-                logger: MemoryLogger;
-            }) => {
+        const uiHostModule = (await import(pathToFileURL(resolve(projectRoot, "assets/boot/host/UiHost.ts")).href)) as {
+            createUiHost: (deps: { uiRoot: unknown; resourceProvider: IResourceProvider; logger: MemoryLogger }) => {
                 loadPackage: (bundle: string, path: string) => Promise<{ state: string }>;
                 canUnload: (bundle: string) => boolean;
                 release: () => void;
@@ -100,7 +92,7 @@ describe("GameLobbyHostImpl session resource scope (release loop)", () => {
         const host = createUiHost({
             uiRoot: {
                 getRoot: () => undefined,
-                subscribeResize: () => () => { },
+                subscribeResize: () => () => {},
             },
             resourceProvider: provider,
             logger: new MemoryLogger(),
@@ -137,25 +129,18 @@ interface TestUiHostLike {
     dispose(): void;
     readonly pageAdapter:
         | {
-            dispose(): void;
-            destroy(page: unknown): void;
-            createPage(
-                route: string,
-                layer: string,
-                options?: { packageName?: string; resName?: string },
-            ): unknown;
-        }
+              dispose(): void;
+              destroy(page: unknown): void;
+              createPage(route: string, layer: string, options?: { packageName?: string; resName?: string }): unknown;
+          }
         | undefined;
     readonly navigator:
         | {
-            open(
-                route: string,
-                options?: { layer?: string; blocking?: boolean },
-            ): { ok: boolean };
-            readonly top: { id: string } | undefined;
-            close(...args: unknown[]): unknown;
-            dispose(): void;
-        }
+              open(route: string, options?: { layer?: string; blocking?: boolean }): { ok: boolean };
+              readonly top: { id: string } | undefined;
+              close(...args: unknown[]): unknown;
+              dispose(): void;
+          }
         | undefined;
 }
 
@@ -172,7 +157,7 @@ function makeRootLike(): unknown {
         name: "GRoot",
         width: 1280,
         height: 720,
-        setSize(_width: number, _height: number) { },
+        setSize(_width: number, _height: number) {},
         addChild(child: unknown) {
             children.push(child);
             const name = (child as { name?: string } | undefined)?.name ?? "container";
@@ -224,9 +209,9 @@ function makeUiRoot(onResize?: () => () => void): unknown {
     return {
         initialized: true,
         root: makeRootLike(),
-        init: () => { },
-        onResize: onResize ?? (() => () => { }),
-        dispose: () => { },
+        init: () => {},
+        onResize: onResize ?? (() => () => {}),
+        dispose: () => {},
     };
 }
 
@@ -238,14 +223,8 @@ describe("GameLobbyHostImpl.closeEntryPage cleanup failure isolation", () => {
                 unloaded.push(bundle);
             },
         });
-        const uiHostModule = (await import(
-            pathToFileURL(resolve(projectRoot, "assets/boot/host/UiHost.ts")).href
-        )) as {
-            createUiHost: (deps: {
-                uiRoot: unknown;
-                resourceProvider: IResourceProvider;
-                logger: MemoryLogger;
-            }) => TestUiHostLike;
+        const uiHostModule = (await import(pathToFileURL(resolve(projectRoot, "assets/boot/host/UiHost.ts")).href)) as {
+            createUiHost: (deps: { uiRoot: unknown; resourceProvider: IResourceProvider; logger: MemoryLogger }) => TestUiHostLike;
         };
         const host = uiHostModule.createUiHost({
             uiRoot: makeUiRoot(),
@@ -284,19 +263,13 @@ describe("GameLobbyHostImpl.closeEntryPage cleanup failure isolation", () => {
         const page = {
             route: "cardgame/battle",
             layer: "normal",
-            view: { name: "CardBattleView", dispose: () => { } },
+            view: { name: "CardBattleView", dispose: () => {} },
             mounted: true,
             disposed: false,
             error: undefined,
         };
-        const lobbyHostModule = (await import(
-            pathToFileURL(lobbyHostFile).href
-        )) as {
-            createGameLobbyHost: (deps: {
-                host: unknown;
-                resourceProvider: IResourceProvider;
-                logger: MemoryLogger;
-            }) => TestLobbyHostLike;
+        const lobbyHostModule = (await import(pathToFileURL(lobbyHostFile).href)) as {
+            createGameLobbyHost: (deps: { host: unknown; resourceProvider: IResourceProvider; logger: MemoryLogger }) => TestLobbyHostLike;
         };
         const lobby = lobbyHostModule.createGameLobbyHost({
             host,
@@ -340,14 +313,8 @@ describe("UiHost.dispose cleanup failure isolation", () => {
         const unsubscribeError = new Error("resize unsubscribe failed");
         const adapterError = new Error("page adapter dispose failed");
 
-        const uiHostModule = (await import(
-            pathToFileURL(resolve(projectRoot, "assets/boot/host/UiHost.ts")).href
-        )) as {
-            createUiHost: (deps: {
-                uiRoot: unknown;
-                resourceProvider: IResourceProvider;
-                logger: MemoryLogger;
-            }) => TestUiHostLike;
+        const uiHostModule = (await import(pathToFileURL(resolve(projectRoot, "assets/boot/host/UiHost.ts")).href)) as {
+            createUiHost: (deps: { uiRoot: unknown; resourceProvider: IResourceProvider; logger: MemoryLogger }) => TestUiHostLike;
         };
         // onResize 返回抛错退订：adapter.dispose 失败后 nav/release 仍须执行
         const host = uiHostModule.createUiHost({

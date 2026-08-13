@@ -3,9 +3,7 @@ import { pathToFileURL } from "node:url";
 import { describe, expect, mock, test } from "bun:test";
 
 import { createFairyGuiMock } from "./helpers/fairygui-mock";
-import {
-    UI_LAYER_ORDER,
-} from "../../../assets/framework/contracts/ui/Navigation";
+import { UI_LAYER_ORDER } from "../../../assets/framework/contracts/ui/Navigation";
 
 // CocosUiRoot 与 FairyGuiPageAdapter 均经工厂间接依赖 fairygui-cc；测试不加载
 // 真实运行时，统一使用共享 fixture（bun mock.module 全局共享首个生效）。
@@ -46,9 +44,7 @@ interface CocosUiRoot {
 
 interface CocosUiRootOptions {
     readonly getRoot?: () => GRootLike;
-    readonly subscribeResize?: (
-        callback: (width: number, height: number) => void,
-    ) => () => void;
+    readonly subscribeResize?: (callback: (width: number, height: number) => void) => () => void;
 }
 
 interface CocosUiRootFactory {
@@ -63,10 +59,7 @@ interface FairyGuiViewLike {
 
 interface FairyGuiPageAdapterOptions {
     readonly root: GRootLike;
-    readonly createView?: (
-        packageName: string,
-        resName: string,
-    ) => FairyGuiViewLike;
+    readonly createView?: (packageName: string, resName: string) => FairyGuiViewLike;
 }
 
 interface FairyGuiPageAdapter {
@@ -81,21 +74,14 @@ interface FairyGuiPageAdapterFactory {
 }
 
 const projectRoot = resolve(import.meta.dir, "../../..");
-const uiRootFile = resolve(
-    projectRoot,
-    "assets/framework/adapters/cocos/ui/CocosUiRoot.ts",
-);
-const adapterFile = resolve(
-    projectRoot,
-    "assets/framework/adapters/cocos/ui/FairyGuiPageAdapter.ts",
-);
+const uiRootFile = resolve(projectRoot, "assets/framework/adapters/cocos/ui/CocosUiRoot.ts");
+const adapterFile = resolve(projectRoot, "assets/framework/adapters/cocos/ui/FairyGuiPageAdapter.ts");
 
 async function loadUiRootFactory(): Promise<CocosUiRootFactory> {
     const exports = (await import(pathToFileURL(uiRootFile).href)) as Partial<CocosUiRootFactory>;
     expect(typeof exports.createCocosUiRoot).toBe("function");
     return {
-        createCocosUiRoot:
-            exports.createCocosUiRoot as CocosUiRootFactory["createCocosUiRoot"],
+        createCocosUiRoot: exports.createCocosUiRoot as CocosUiRootFactory["createCocosUiRoot"],
     };
 }
 
@@ -103,8 +89,7 @@ async function loadAdapterFactory(): Promise<FairyGuiPageAdapterFactory> {
     const exports = (await import(pathToFileURL(adapterFile).href)) as Partial<FairyGuiPageAdapterFactory>;
     expect(typeof exports.createFairyGuiPageAdapter).toBe("function");
     return {
-        createFairyGuiPageAdapter:
-            exports.createFairyGuiPageAdapter as FairyGuiPageAdapterFactory["createFairyGuiPageAdapter"],
+        createFairyGuiPageAdapter: exports.createFairyGuiPageAdapter as FairyGuiPageAdapterFactory["createFairyGuiPageAdapter"],
     };
 }
 
@@ -181,7 +166,7 @@ function createResizableRoot(): {
         removeChild(child, _dispose = false) {
             return child;
         },
-        removeChildren(_beginIndex = 0, _endIndex?: number, _dispose = false) { },
+        removeChildren(_beginIndex = 0, _endIndex?: number, _dispose = false) {},
         getChildAt(_index: number) {
             return undefined;
         },
@@ -215,7 +200,7 @@ describe("window resize sync", () => {
 
         const adapter = createFairyGuiPageAdapter({
             root: recording.root,
-            createView: () => ({ name: "view", dispose: () => { } }),
+            createView: () => ({ name: "view", dispose: () => {} }),
         });
         adapter.init();
 
@@ -259,7 +244,7 @@ describe("window resize sync", () => {
             getRoot: () => recording.root,
             subscribeResize: (callback) => {
                 resizeCallback = callback;
-                return () => { };
+                return () => {};
             },
         });
 
@@ -302,14 +287,14 @@ describe("window resize sync", () => {
             getRoot: () => recording.root,
             subscribeResize: (callback) => {
                 resizeCallback = callback;
-                return () => { };
+                return () => {};
             },
         });
         uiRoot.init();
 
         const adapter = createFairyGuiPageAdapter({
             root: recording.root,
-            createView: () => ({ name: "view", dispose: () => { } }),
+            createView: () => ({ name: "view", dispose: () => {} }),
         });
         adapter.init();
         adapter.setModal(true);

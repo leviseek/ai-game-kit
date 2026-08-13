@@ -3,10 +3,7 @@ import { describe, expect, test } from "bun:test";
 import { MemoryPlatform } from "../../../assets/framework/adapters/memory/MemoryPlatform";
 import { createIdleRewardClock } from "../../../assets/samples/game_auto_battle/logic/clock";
 import { createIdleRewardsHandle } from "../../../assets/samples/game_auto_battle/logic/IdleRewards";
-import {
-    IDLE_REWARDS_STORAGE_KEY,
-    createIdleRewardsStore,
-} from "../../../assets/samples/game_auto_battle/logic/IdleRewardsStore";
+import { IDLE_REWARDS_STORAGE_KEY, createIdleRewardsStore } from "../../../assets/samples/game_auto_battle/logic/IdleRewardsStore";
 import { createAutoBattleFixture } from "../../../assets/samples/game_auto_battle/assembly";
 
 /** 直接把一条原始记录写入底层存储键（模拟旧版本/损坏存档）。 */
@@ -99,10 +96,7 @@ describe("Auto-battle fixture idle rewards wiring", () => {
     test("lineup read failure falls back to the default rate and does not block settlement", async () => {
         const storage = new MemoryPlatform();
         // 注入损坏的 lineup 存档：restoreLineup 读取时抛错，模拟编队读取失败
-        await storage.set(
-            `auto-battle:${encodeURIComponent("auto_battle")}:${encodeURIComponent("lineup")}`,
-            "not-json",
-        );
+        await storage.set(`auto-battle:${encodeURIComponent("auto_battle")}:${encodeURIComponent("lineup")}`, "not-json");
         const idleClock = createIdleRewardClock(() => 0);
         const fixture = createAutoBattleFixture({ storage, idleClock });
 

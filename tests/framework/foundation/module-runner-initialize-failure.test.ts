@@ -2,11 +2,7 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, test } from "bun:test";
 
-import type {
-    ApplicationContext,
-    Module,
-    ModuleRuntimeState,
-} from "../../../assets/framework";
+import type { ApplicationContext, Module, ModuleRuntimeState } from "../../../assets/framework";
 import { MemoryLogger } from "../support/MemoryLogger";
 
 interface ModuleRunnerInstance {
@@ -14,43 +10,35 @@ interface ModuleRunnerInstance {
     getState(moduleId: string): ModuleRuntimeState | undefined;
 }
 
-type ModuleRunnerConstructor = new (
-    modules: readonly Module[],
-    context: ApplicationContext,
-) => ModuleRunnerInstance;
+type ModuleRunnerConstructor = new (modules: readonly Module[], context: ApplicationContext) => ModuleRunnerInstance;
 
 interface ModuleRunnerExports {
     readonly ModuleRunner: ModuleRunnerConstructor;
 }
 
 const projectRoot = resolve(import.meta.dir, "../../..");
-const moduleRunnerFile = resolve(
-    projectRoot,
-    "assets/framework/application/ModuleRunner.ts",
-);
+const moduleRunnerFile = resolve(projectRoot, "assets/framework/application/ModuleRunner.ts");
 const context: ApplicationContext = {
     logger: new MemoryLogger(),
     state: "created",
 };
 
 async function loadModuleRunner(): Promise<ModuleRunnerConstructor> {
-    const exports = (await import(
-        pathToFileURL(moduleRunnerFile).href
-    )) as ModuleRunnerExports;
+    const exports = (await import(pathToFileURL(moduleRunnerFile).href)) as ModuleRunnerExports;
 
     return exports.ModuleRunner;
 }
 
-function createModule(
-    id: string,
-    calls: string[],
-    dependencies: readonly string[] = [],
-): Module {
+function createModule(id: string, calls: string[], dependencies: readonly string[] = []): Module {
     return {
         id,
         dependencies,
-        initialize: async () => { calls.push(`${id}:initialize`); },
-        dispose: async () => { calls.push(`${id}:dispose`); },
+        initialize: async () => {
+            calls.push(`${id}:initialize`);
+        },
+        dispose: async () => {
+            calls.push(`${id}:dispose`);
+        },
     };
 }
 
@@ -68,27 +56,16 @@ describe("ModuleRunner initialize rollback", () => {
                 calls.push("gameplay:initialize");
                 throw initializeFailure;
             },
-            dispose: async () => { calls.push("gameplay:dispose"); },
+            dispose: async () => {
+                calls.push("gameplay:dispose");
+            },
         };
-        const presentation = createModule(
-            "presentation",
-            calls,
-            [gameplay.id],
-        );
-        const runner = new ModuleRunner(
-            [logging, inventory, gameplay, presentation],
-            context,
-        );
+        const presentation = createModule("presentation", calls, [gameplay.id]);
+        const runner = new ModuleRunner([logging, inventory, gameplay, presentation], context);
 
         await expect(runner.initialize()).rejects.toThrow();
 
-        expect(calls).toEqual([
-            "logging:initialize",
-            "inventory:initialize",
-            "gameplay:initialize",
-            "inventory:dispose",
-            "logging:dispose",
-        ]);
+        expect(calls).toEqual(["logging:initialize", "inventory:initialize", "gameplay:initialize", "inventory:dispose", "logging:dispose"]);
         expect(runner.getState(logging.id)).toBe("disposed");
         expect(runner.getState(inventory.id)).toBe("disposed");
         expect(runner.getState(gameplay.id)).toBe("registered");

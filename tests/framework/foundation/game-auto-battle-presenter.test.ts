@@ -2,10 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import type { ViewModelNode } from "../../../assets/framework";
 import { createAutoBattlePresenter } from "../../../assets/samples/game_auto_battle/view/presenter";
-import {
-    AUTO_BATTLE_ASSEMBLY_EXISTS,
-    loadCreateAutoBattleFixture,
-} from "../support/auto-battle-fixture";
+import { AUTO_BATTLE_ASSEMBLY_EXISTS, loadCreateAutoBattleFixture } from "../support/auto-battle-fixture";
 
 /** 记录型视图节点：记录 setter 与点击回调。 */
 interface RecordingNode {
@@ -82,62 +79,59 @@ function battleContent(): Record<string, unknown> {
     };
 }
 
-describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)(
-    "Auto-battle battle presenter",
-    () => {
-        test("renders static HUD and dynamic unit bindings", async () => {
-            const createAutoBattleFixture = await loadCreateAutoBattleFixture();
-            const fixture = createAutoBattleFixture({ configContent: battleContent() });
-            await fixture.start();
-            const view = recordingView();
-            const presenter = createAutoBattlePresenter(fixture, view.node);
+describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)("Auto-battle battle presenter", () => {
+    test("renders static HUD and dynamic unit bindings", async () => {
+        const createAutoBattleFixture = await loadCreateAutoBattleFixture();
+        const fixture = createAutoBattleFixture({ configContent: battleContent() });
+        await fixture.start();
+        const view = recordingView();
+        const presenter = createAutoBattlePresenter(fixture, view.node);
 
-            expect(view.nodes.get("txt_round")?.text).toBe("第 1 回合");
-            expect(view.nodes.get("btn_speed")?.text).toBe("x1");
-            // 动态单位绑定：存活单位按 id 生成（节点名 unit_{id} 系列）
-            expect(view.nodes.get("txt_unit_a_name")?.text).toBe("a");
-            expect(view.nodes.get("txt_unit_b_name")?.text).toBe("b");
-            expect(view.nodes.get("txt_unit_e_name")?.text).toBe("e");
+        expect(view.nodes.get("txt_round")?.text).toBe("第 1 回合");
+        expect(view.nodes.get("btn_speed")?.text).toBe("x1");
+        // 动态单位绑定：存活单位按 id 生成（节点名 unit_{id} 系列）
+        expect(view.nodes.get("txt_unit_a_name")?.text).toBe("a");
+        expect(view.nodes.get("txt_unit_b_name")?.text).toBe("b");
+        expect(view.nodes.get("txt_unit_e_name")?.text).toBe("e");
 
-            presenter.dispose();
-            await fixture.dispose();
-        });
+        presenter.dispose();
+        await fixture.dispose();
+    });
 
-        test("clicking the speed button cycles the speed and updates the text", async () => {
-            const createAutoBattleFixture = await loadCreateAutoBattleFixture();
-            const fixture = createAutoBattleFixture({ configContent: battleContent() });
-            await fixture.start();
-            const view = recordingView();
-            const presenter = createAutoBattlePresenter(fixture, view.node);
+    test("clicking the speed button cycles the speed and updates the text", async () => {
+        const createAutoBattleFixture = await loadCreateAutoBattleFixture();
+        const fixture = createAutoBattleFixture({ configContent: battleContent() });
+        await fixture.start();
+        const view = recordingView();
+        const presenter = createAutoBattlePresenter(fixture, view.node);
 
-            expect(view.nodes.get("btn_speed")?.text).toBe("x1");
-            view.nodes.get("btn_speed")?.clickHandler?.();
-            expect(fixture.getSpeed()).toBe(2);
-            expect(view.nodes.get("btn_speed")?.text).toBe("x2");
+        expect(view.nodes.get("btn_speed")?.text).toBe("x1");
+        view.nodes.get("btn_speed")?.clickHandler?.();
+        expect(fixture.getSpeed()).toBe(2);
+        expect(view.nodes.get("btn_speed")?.text).toBe("x2");
 
-            view.nodes.get("btn_speed")?.clickHandler?.();
-            expect(fixture.getSpeed()).toBe(3);
-            expect(view.nodes.get("btn_speed")?.text).toBe("x3");
+        view.nodes.get("btn_speed")?.clickHandler?.();
+        expect(fixture.getSpeed()).toBe(3);
+        expect(view.nodes.get("btn_speed")?.text).toBe("x3");
 
-            presenter.dispose();
-            await fixture.dispose();
-        });
+        presenter.dispose();
+        await fixture.dispose();
+    });
 
-        test("presenter runs VS phase before entrance and fighting (phases)", async () => {
-            const createAutoBattleFixture = await loadCreateAutoBattleFixture();
-            const fixture = createAutoBattleFixture({ configContent: battleContent() });
-            await fixture.start();
-            const view = recordingView();
-            const presenter = createAutoBattlePresenter(fixture, view.node);
+    test("presenter runs VS phase before entrance and fighting (phases)", async () => {
+        const createAutoBattleFixture = await loadCreateAutoBattleFixture();
+        const fixture = createAutoBattleFixture({ configContent: battleContent() });
+        await fixture.start();
+        const view = recordingView();
+        const presenter = createAutoBattlePresenter(fixture, view.node);
 
-            // VS 阶段：VS 节点已写入队长名（每方 index 最小存活单位）
-            // 注意 presenter 用内部 GameClock 驱动（interval 推进），此测试只验证初始渲染即进入 VS 阶段
-            expect(view.nodes.get("vs_left")?.text).toBe("e"); // 敌方唯一单位 e
-            expect(view.nodes.get("vs_right")?.text).toBe("a"); // 己方 index 0 → a
-            expect(view.nodes.get("vs_badge")?.text).toBe("VS");
+        // VS 阶段：VS 节点已写入队长名（每方 index 最小存活单位）
+        // 注意 presenter 用内部 GameClock 驱动（interval 推进），此测试只验证初始渲染即进入 VS 阶段
+        expect(view.nodes.get("vs_left")?.text).toBe("e"); // 敌方唯一单位 e
+        expect(view.nodes.get("vs_right")?.text).toBe("a"); // 己方 index 0 → a
+        expect(view.nodes.get("vs_badge")?.text).toBe("VS");
 
-            presenter.dispose();
-            await fixture.dispose();
-        });
-    },
-);
+        presenter.dispose();
+        await fixture.dispose();
+    });
+});

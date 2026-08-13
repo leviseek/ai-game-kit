@@ -3,12 +3,7 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, test } from "bun:test";
 
-import type {
-    LogContext,
-    Logger,
-    LogLevel,
-    LogRecord,
-} from "../../../assets/framework";
+import type { LogContext, Logger, LogLevel, LogRecord } from "../../../assets/framework";
 
 interface ConsoleOutput {
     debug(record: LogRecord): void;
@@ -17,20 +12,13 @@ interface ConsoleOutput {
     error(record: LogRecord): void;
 }
 
-type ConsoleLoggerConstructor = new (
-    output?: ConsoleOutput,
-    scope?: string,
-    context?: LogContext,
-) => Logger;
+type ConsoleLoggerConstructor = new (output?: ConsoleOutput, scope?: string, context?: LogContext) => Logger;
 
 interface MemoryLogger extends Logger {
     readonly records: readonly LogRecord[];
 }
 
-type MemoryLoggerConstructor = new (
-    scope?: string,
-    context?: LogContext,
-) => MemoryLogger;
+type MemoryLoggerConstructor = new (scope?: string, context?: LogContext) => MemoryLogger;
 
 interface ConsoleLoggerModule {
     readonly ConsoleLogger?: ConsoleLoggerConstructor;
@@ -41,21 +29,13 @@ interface MemoryLoggerModule {
 }
 
 const projectRoot = resolve(import.meta.dir, "../../..");
-const consoleLoggerFile = resolve(
-    projectRoot,
-    "assets/framework/diagnostics/logging/ConsoleLogger.ts",
-);
-const memoryLoggerFile = resolve(
-    projectRoot,
-    "tests/framework/support/MemoryLogger.ts",
-);
+const consoleLoggerFile = resolve(projectRoot, "assets/framework/diagnostics/logging/ConsoleLogger.ts");
+const memoryLoggerFile = resolve(projectRoot, "tests/framework/support/MemoryLogger.ts");
 
 async function loadConsoleLogger(): Promise<ConsoleLoggerConstructor> {
     expect(existsSync(consoleLoggerFile)).toBe(true);
 
-    const module = (await import(
-        pathToFileURL(consoleLoggerFile).href
-    )) as ConsoleLoggerModule;
+    const module = (await import(pathToFileURL(consoleLoggerFile).href)) as ConsoleLoggerModule;
 
     expect(typeof module.ConsoleLogger).toBe("function");
 
@@ -65,9 +45,7 @@ async function loadConsoleLogger(): Promise<ConsoleLoggerConstructor> {
 async function loadMemoryLogger(): Promise<MemoryLoggerConstructor> {
     expect(existsSync(memoryLoggerFile)).toBe(true);
 
-    const module = (await import(
-        pathToFileURL(memoryLoggerFile).href
-    )) as MemoryLoggerModule;
+    const module = (await import(pathToFileURL(memoryLoggerFile).href)) as MemoryLoggerModule;
 
     expect(typeof module.MemoryLogger).toBe("function");
 
@@ -77,8 +55,7 @@ async function loadMemoryLogger(): Promise<MemoryLoggerConstructor> {
 describe("Logger outputs", () => {
     test("ConsoleLogger sends each structured record to its matching level", async () => {
         const ConsoleLogger = await loadConsoleLogger();
-        const calls: Array<{ readonly method: LogLevel; readonly record: LogRecord }> =
-            [];
+        const calls: Array<{ readonly method: LogLevel; readonly record: LogRecord }> = [];
         const output: ConsoleOutput = {
             debug: (record) => calls.push({ method: "debug", record }),
             info: (record) => calls.push({ method: "info", record }),
@@ -91,23 +68,10 @@ describe("Logger outputs", () => {
         logger.info("info message");
         logger.warn("warn message");
         logger.error("error message");
-        logger.child("inventory", { moduleId: "inventory" }).info(
-            "inventory started",
-            { phase: "start" },
-        );
+        logger.child("inventory", { moduleId: "inventory" }).info("inventory started", { phase: "start" });
 
-        expect(calls.slice(0, 4).map(({ method }) => method)).toEqual([
-            "debug",
-            "info",
-            "warn",
-            "error",
-        ]);
-        expect(calls.slice(0, 4).map(({ record }) => record.level)).toEqual([
-            "debug",
-            "info",
-            "warn",
-            "error",
-        ]);
+        expect(calls.slice(0, 4).map(({ method }) => method)).toEqual(["debug", "info", "warn", "error"]);
+        expect(calls.slice(0, 4).map(({ record }) => record.level)).toEqual(["debug", "info", "warn", "error"]);
         expect(calls[4]?.record).toMatchObject({
             level: "info",
             message: "inventory started",
@@ -144,10 +108,7 @@ describe("Logger outputs", () => {
         const MemoryLogger = await loadMemoryLogger();
         const logger = new MemoryLogger("application", { source: "test" });
 
-        logger.child("inventory", { moduleId: "inventory" }).warn(
-            "inventory delayed",
-            { phase: "start" },
-        );
+        logger.child("inventory", { moduleId: "inventory" }).warn("inventory delayed", { phase: "start" });
 
         expect(logger.records).toHaveLength(1);
         expect(logger.records[0]).toMatchObject({

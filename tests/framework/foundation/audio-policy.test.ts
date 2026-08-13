@@ -2,11 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import { MemoryPlatform } from "../../../assets/framework/adapters/memory/MemoryPlatform";
 import { createAudioService } from "../../../assets/framework/core/audio/AudioService";
-import type {
-    AudioBackend,
-    AudioGroup,
-    AudioTrackRef,
-} from "../../../assets/framework/contracts/audio/Audio";
+import type { AudioBackend, AudioGroup, AudioTrackRef } from "../../../assets/framework/contracts/audio/Audio";
 
 const TRACKS = {
     musicMain: { bundle: "audio", path: "music/main" } as AudioTrackRef,
@@ -15,8 +11,7 @@ const TRACKS = {
 
 class RecordingBackend implements AudioBackend {
     public readonly available = true;
-    public readonly playCalls: Array<{ group: AudioGroup; track: AudioTrackRef }> =
-        [];
+    public readonly playCalls: Array<{ group: AudioGroup; track: AudioTrackRef }> = [];
     public readonly stopCalls: AudioGroup[] = [];
     public readonly pauseCalls: AudioGroup[] = [];
     public readonly resumeCalls: AudioGroup[] = [];
@@ -116,8 +111,7 @@ describe("前后台切换策略", () => {
 
     test("切换处理捕获后端异常并记录结构化诊断，不影响其他可见性变化", () => {
         const platform = new MemoryPlatform();
-        const records: Array<{ message: string; context?: Record<string, unknown> }> =
-            [];
+        const records: Array<{ message: string; context?: Record<string, unknown> }> = [];
         const backend = new RecordingBackend();
         // 仅 sfx 分组 pause 抛错：验证异常被隔离，music 仍正常处理
         const throwingPauseBackend: AudioBackend = {
@@ -134,12 +128,12 @@ describe("前后台切换策略", () => {
             setVolume: (group, volume) => backend.setVolume(group, volume),
         };
         const noopLogger = {
-            debug() { },
-            info() { },
+            debug() {},
+            info() {},
             warn(message: string, context?: Record<string, unknown>) {
                 records.push({ message, context });
             },
-            error() { },
+            error() {},
             child() {
                 return noopLogger;
             },

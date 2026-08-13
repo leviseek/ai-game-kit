@@ -2,21 +2,17 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, test, mock } from "bun:test";
 
-import {
-    createServiceToken,
-    ServiceResolutionError,
-    type ServiceRegistry,
-} from "../../../assets/framework";
+import { createServiceToken, ServiceResolutionError, type ServiceRegistry } from "../../../assets/framework";
 import { MemoryLogger } from "../support/MemoryLogger";
 import { createFairyGuiMock } from "./helpers/fairygui-mock";
 
 mock.module("cc", () => ({
     game: {
-        on(_event: string, _callback: () => void, _target: unknown) { },
-        off(_event: string, _callback: () => void, _target: unknown) { },
+        on(_event: string, _callback: () => void, _target: unknown) {},
+        off(_event: string, _callback: () => void, _target: unknown) {},
     },
     director: {
-        addPersistRootNode(_node: unknown) { },
+        addPersistRootNode(_node: unknown) {},
     },
     Game: {
         EVENT_HIDE: "game_hide",
@@ -24,17 +20,16 @@ mock.module("cc", () => ({
     },
     _decorator: {
         ccclass(_name: string) {
-            return <TFunction extends (...args: unknown[]) => unknown>(target: TFunction): TFunction =>
-                target;
+            return <TFunction extends (...args: unknown[]) => unknown>(target: TFunction): TFunction => target;
         },
     },
-    Component: class { },
+    Component: class {},
     Node: class {
         static EventType: Record<string, string> = {};
     },
-    EventTouch: class { },
-    Touch: class { },
-    Vec3: class { },
+    EventTouch: class {},
+    Touch: class {},
+    Vec3: class {},
     profiler: { stats: null },
     sys: { isNative: false },
 }));
@@ -145,9 +140,7 @@ describe("service registry composition root", () => {
         registry?.register(greeterToken, greeter);
 
         // 组合根把已解析服务经构造显式注入业务对象
-        const controller = new GreetingController(
-            registry?.resolve(greeterToken) as GreeterService,
-        );
+        const controller = new GreetingController(registry?.resolve(greeterToken) as GreeterService);
 
         expect(controller.greet("levi")).toBe("hello levi");
     });
@@ -159,13 +152,14 @@ describe("service registry composition root", () => {
 
         // 注入失败的装配前校验：必需 token 缺失（模拟模块依赖未注册）
         const missingToken = createServiceToken<GreeterService>("greeter");
-        const appState = () =>
-            (instance as unknown as { app: { readonly state: string } }).app.state;
+        const appState = () => (instance as unknown as { app: { readonly state: string } }).app.state;
 
-        (instance as unknown as {
-            validateAssembly: () => void;
-            logger: MemoryLogger;
-        }).validateAssembly = () => {
+        (
+            instance as unknown as {
+                validateAssembly: () => void;
+                logger: MemoryLogger;
+            }
+        ).validateAssembly = () => {
             throw new ServiceResolutionError(missingToken.description);
         };
         (instance as unknown as { logger: MemoryLogger }).logger = new MemoryLogger();
@@ -177,11 +171,8 @@ describe("service registry composition root", () => {
         expect(appState()).toBe("created");
 
         // 类型化错误经既有失败路径上报（logger.error 携带 ServiceResolutionError）
-        const errorRecords = (instance as unknown as { logger: MemoryLogger }).logger
-            .records;
-        const assemblyError = errorRecords.find(
-            (record) => record.level === "error" && record.error instanceof ServiceResolutionError,
-        );
+        const errorRecords = (instance as unknown as { logger: MemoryLogger }).logger.records;
+        const assemblyError = errorRecords.find((record) => record.level === "error" && record.error instanceof ServiceResolutionError);
         expect(assemblyError).toBeDefined();
     });
 });

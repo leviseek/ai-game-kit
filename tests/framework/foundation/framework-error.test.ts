@@ -1,19 +1,10 @@
 import { describe, expect, test } from "bun:test";
 
-import {
-    FrameworkError,
-    isRecoverableError,
-} from "../../../assets/framework/core/errors/FrameworkError";
+import { FrameworkError, isRecoverableError } from "../../../assets/framework/core/errors/FrameworkError";
 import { ModuleLifecycleError } from "../../../assets/framework/application/ModuleLifecycleError";
 import { ApplicationStateError } from "../../../assets/framework/application/ApplicationStateError";
 import type { FuiComponentUrl } from "../../../assets/framework/core/fui/FuiComponentRegistry";
-import {
-    FuiBindingError,
-    FuiComponentRegistrationError,
-    FuiViewBindingRegistrationError,
-    FuiViewCleanupError,
-    FuiViewCreationError,
-} from "../../../assets/framework/core/fui/FuiErrors";
+import { FuiBindingError, FuiComponentRegistrationError, FuiViewBindingRegistrationError, FuiViewCleanupError, FuiViewCreationError } from "../../../assets/framework/core/fui/FuiErrors";
 
 type ErrorWithCause = Error & { readonly cause?: unknown };
 
@@ -28,9 +19,7 @@ describe("FrameworkError nested cause", () => {
         expect(error).toBeInstanceOf(Error);
         expect(error).toBeInstanceOf(FrameworkError);
         expect((error as ErrorWithCause).cause).toBe(middleCause);
-        expect(((error as ErrorWithCause).cause as ErrorWithCause).cause).toBe(
-            rootCause,
-        );
+        expect(((error as ErrorWithCause).cause as ErrorWithCause).cause).toBe(rootCause);
     });
 
     test("uses native Error cause semantics without making cause enumerable", () => {
@@ -73,29 +62,19 @@ describe("FrameworkError recoverability classification", () => {
                 }),
             ),
         ).toBe(true);
-        expect(isRecoverableError(new FrameworkError("save corrupted"))).toBe(
-            false,
-        );
+        expect(isRecoverableError(new FrameworkError("save corrupted"))).toBe(false);
         expect(isRecoverableError(new Error("plain error"))).toBe(false);
     });
 
     test("isRecoverableError classifies migrated subclasses by explicit flag", () => {
-        expect(
-            isRecoverableError(
-                new ModuleLifecycleError("inventory", "start", new Error("retry")),
-            ),
-        ).toBe(false);
+        expect(isRecoverableError(new ModuleLifecycleError("inventory", "start", new Error("retry")))).toBe(false);
     });
 });
 
 describe("FrameworkError subclass name preservation", () => {
     test("migrated subclasses keep their own error name", () => {
-        expect(new ApplicationStateError("running").name).toBe(
-            "ApplicationStateError",
-        );
-        expect(
-            new ModuleLifecycleError("inventory", "start", new Error("boom")).name,
-        ).toBe("ModuleLifecycleError");
+        expect(new ApplicationStateError("running").name).toBe("ApplicationStateError");
+        expect(new ModuleLifecycleError("inventory", "start", new Error("boom")).name).toBe("ModuleLifecycleError");
         expect(new FrameworkError("generic").name).toBe("FrameworkError");
     });
 });
@@ -166,10 +145,7 @@ describe("FuiViewCleanupError", () => {
 
     test("preserves the first cause for the call chain", () => {
         const first = new Error("first failure");
-        const error = new FuiViewCleanupError("CloseDialog", [
-            first,
-            new Error("second failure"),
-        ]);
+        const error = new FuiViewCleanupError("CloseDialog", [first, new Error("second failure")]);
 
         expect((error as ErrorWithCause).cause).toBe(first);
     });
@@ -181,14 +157,8 @@ describe("FuiErrors error family", () => {
 
         expect(new FuiComponentRegistrationError(url)).toBeInstanceOf(FrameworkError);
         expect(new FuiViewBindingRegistrationError(url)).toBeInstanceOf(FrameworkError);
-        expect(
-            new FuiViewCreationError(url, new Error("component creation failed")),
-        ).toBeInstanceOf(FrameworkError);
-        expect(new FuiBindingError(url, "txt_title", "field")).toBeInstanceOf(
-            FrameworkError,
-        );
-        expect(new FuiBindingError(url, "btn_login", "click")).toBeInstanceOf(
-            FrameworkError,
-        );
+        expect(new FuiViewCreationError(url, new Error("component creation failed"))).toBeInstanceOf(FrameworkError);
+        expect(new FuiBindingError(url, "txt_title", "field")).toBeInstanceOf(FrameworkError);
+        expect(new FuiBindingError(url, "btn_login", "click")).toBeInstanceOf(FrameworkError);
     });
 });

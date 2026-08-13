@@ -1,10 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import {
-    createDevInfoSampler,
-    effectiveType,
-    formatUptime,
-} from "../../../assets/boot/dev/DevInfo";
+import { createDevInfoSampler, effectiveType, formatUptime } from "../../../assets/boot/dev/DevInfo";
 import type { DeviceInfo, TimeSource } from "../../../assets/framework";
 import type { PerfSampler } from "../../../assets/game/fixture/perf";
 

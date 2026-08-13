@@ -1,10 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { MemoryPlatform } from "../../../assets/framework/adapters/memory/MemoryPlatform";
-import {
-    AUTO_BATTLE_ASSEMBLY_EXISTS,
-    loadCreateAutoBattleFixture,
-} from "../support/auto-battle-fixture";
+import { AUTO_BATTLE_ASSEMBLY_EXISTS, loadCreateAutoBattleFixture } from "../support/auto-battle-fixture";
 
 /** 构造英雄池条目。 */
 function hero(id: string, name: string): Record<string, unknown> {
@@ -36,121 +33,114 @@ function lineupContent(): Record<string, unknown> {
     };
 }
 
-describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)(
-    "Auto-battle lineup editor commands",
-    () => {
-        test("selectHero fills the first empty slot", async () => {
-            const createAutoBattleFixture = await loadCreateAutoBattleFixture();
-            const fixture = createAutoBattleFixture({
-                configContent: lineupContent(),
-            });
-            await fixture.start();
+describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)("Auto-battle lineup editor commands", () => {
+    test("selectHero fills the first empty slot", async () => {
+        const createAutoBattleFixture = await loadCreateAutoBattleFixture();
+        const fixture = createAutoBattleFixture({
+            configContent: lineupContent(),
+        });
+        await fixture.start();
 
-            fixture.lineup.selectHero("c");
-            expect(fixture.lineup.value.slots[0]).toBe("a");
-            expect(fixture.lineup.value.slots[1]).toBe("b");
-            expect(fixture.lineup.value.slots[2]).toBe("c");
+        fixture.lineup.selectHero("c");
+        expect(fixture.lineup.value.slots[0]).toBe("a");
+        expect(fixture.lineup.value.slots[1]).toBe("b");
+        expect(fixture.lineup.value.slots[2]).toBe("c");
 
-            await fixture.dispose();
+        await fixture.dispose();
+    });
+
+    test("selecting a slot then a hero replaces that occupied slot", async () => {
+        const createAutoBattleFixture = await loadCreateAutoBattleFixture();
+        const fixture = createAutoBattleFixture({
+            configContent: lineupContent(),
+        });
+        await fixture.start();
+
+        fixture.lineup.selectSlot(1);
+        fixture.lineup.selectHero("c");
+        expect(fixture.lineup.value.slots[1]).toBe("c");
+        // 原英雄被替换（英雄唯一性：不在其它槽重复出现）
+        expect(fixture.lineup.value.slots.includes("b")).toBe(false);
+
+        await fixture.dispose();
+    });
+
+    test("removeFromSlot removes the hero from that slot", async () => {
+        const createAutoBattleFixture = await loadCreateAutoBattleFixture();
+        const fixture = createAutoBattleFixture({
+            configContent: lineupContent(),
+        });
+        await fixture.start();
+
+        fixture.lineup.removeFromSlot(0);
+        expect(fixture.lineup.value.slots[0]).toBeNull();
+        expect(fixture.lineup.value.slots[1]).toBe("b");
+
+        await fixture.dispose();
+    });
+
+    test("edits persist to the store and are restored after a restart", async () => {
+        const createAutoBattleFixture = await loadCreateAutoBattleFixture();
+        const storage = new MemoryPlatform();
+        const fixture = createAutoBattleFixture({
+            configContent: lineupContent(),
+            storage,
+        });
+        await fixture.start();
+
+        fixture.lineup.selectHero("c");
+        expect(fixture.lineup.store.currentVersion).toBeGreaterThan(0);
+
+        // 新夹具 + 同一存储：初始用配置编队，restoreLineup 恢复上次编辑
+        const restarted = createAutoBattleFixture({
+            configContent: lineupContent(),
+            storage,
+        });
+        await restarted.start();
+        expect(restarted.lineup.value.slots[2]).toBeNull();
+
+        await restarted.lineup.restoreLineup();
+        expect(restarted.lineup.value.slots[2]).toBe("c");
+
+        await fixture.dispose();
+        await restarted.dispose();
+    });
+
+    test("restoreLineup rejects a saved lineup referencing unknown heroes", async () => {
+        const createAutoBattleFixture = await loadCreateAutoBattleFixture();
+        const storage = new MemoryPlatform();
+        const fixture = createAutoBattleFixture({
+            configContent: lineupContent(),
+            storage,
+        });
+        await fixture.start();
+
+        // 手工播种含未知英雄 id 的存档（绕过编辑 reducer 的正常写入路径）
+        const store = fixture.lineup.store;
+        await store.save({
+            slots: ["ghost", "a", null, null, null, null, null, null, null],
         });
 
-        test("selecting a slot then a hero replaces that occupied slot", async () => {
-            const createAutoBattleFixture = await loadCreateAutoBattleFixture();
-            const fixture = createAutoBattleFixture({
-                configContent: lineupContent(),
-            });
-            await fixture.start();
+        await expect(fixture.lineup.restoreLineup()).rejects.toThrow(/unknown hero/);
+        // 恢复失败保持当前编队不变
+        expect(fixture.lineup.value.slots[0]).toBe("a");
 
-            fixture.lineup.selectSlot(1);
-            fixture.lineup.selectHero("c");
-            expect(fixture.lineup.value.slots[1]).toBe("c");
-            // 原英雄被替换（英雄唯一性：不在其它槽重复出现）
-            expect(fixture.lineup.value.slots.includes("b")).toBe(false);
+        await fixture.dispose();
+    });
 
-            await fixture.dispose();
+    test("startBattle reopens the battle with the current lineup", async () => {
+        const createAutoBattleFixture = await loadCreateAutoBattleFixture();
+        const fixture = createAutoBattleFixture({
+            configContent: lineupContent(),
         });
+        await fixture.start();
 
-        test("removeFromSlot removes the hero from that slot", async () => {
-            const createAutoBattleFixture = await loadCreateAutoBattleFixture();
-            const fixture = createAutoBattleFixture({
-                configContent: lineupContent(),
-            });
-            await fixture.start();
+        fixture.lineup.selectHero("c");
+        fixture.lineup.startBattle();
 
-            fixture.lineup.removeFromSlot(0);
-            expect(fixture.lineup.value.slots[0]).toBeNull();
-            expect(fixture.lineup.value.slots[1]).toBe("b");
+        const allyIds = fixture.battle.state.units.filter((u) => u.side === "ally").map((u) => u.id);
+        expect(allyIds).toEqual(["a", "b", "c"]);
 
-            await fixture.dispose();
-        });
-
-        test("edits persist to the store and are restored after a restart", async () => {
-            const createAutoBattleFixture = await loadCreateAutoBattleFixture();
-            const storage = new MemoryPlatform();
-            const fixture = createAutoBattleFixture({
-                configContent: lineupContent(),
-                storage,
-            });
-            await fixture.start();
-
-            fixture.lineup.selectHero("c");
-            expect(fixture.lineup.store.currentVersion).toBeGreaterThan(0);
-
-            // 新夹具 + 同一存储：初始用配置编队，restoreLineup 恢复上次编辑
-            const restarted = createAutoBattleFixture({
-                configContent: lineupContent(),
-                storage,
-            });
-            await restarted.start();
-            expect(restarted.lineup.value.slots[2]).toBeNull();
-
-            await restarted.lineup.restoreLineup();
-            expect(restarted.lineup.value.slots[2]).toBe("c");
-
-            await fixture.dispose();
-            await restarted.dispose();
-        });
-
-        test("restoreLineup rejects a saved lineup referencing unknown heroes", async () => {
-            const createAutoBattleFixture = await loadCreateAutoBattleFixture();
-            const storage = new MemoryPlatform();
-            const fixture = createAutoBattleFixture({
-                configContent: lineupContent(),
-                storage,
-            });
-            await fixture.start();
-
-            // 手工播种含未知英雄 id 的存档（绕过编辑 reducer 的正常写入路径）
-            const store = fixture.lineup.store;
-            await store.save({
-                slots: ["ghost", "a", null, null, null, null, null, null, null],
-            });
-
-            await expect(fixture.lineup.restoreLineup()).rejects.toThrow(
-                /unknown hero/,
-            );
-            // 恢复失败保持当前编队不变
-            expect(fixture.lineup.value.slots[0]).toBe("a");
-
-            await fixture.dispose();
-        });
-
-        test("startBattle reopens the battle with the current lineup", async () => {
-            const createAutoBattleFixture = await loadCreateAutoBattleFixture();
-            const fixture = createAutoBattleFixture({
-                configContent: lineupContent(),
-            });
-            await fixture.start();
-
-            fixture.lineup.selectHero("c");
-            fixture.lineup.startBattle();
-
-            const allyIds = fixture.battle.state.units
-                .filter((u) => u.side === "ally")
-                .map((u) => u.id);
-            expect(allyIds).toEqual(["a", "b", "c"]);
-
-            await fixture.dispose();
-        });
-    },
-);
+        await fixture.dispose();
+    });
+});

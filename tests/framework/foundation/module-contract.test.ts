@@ -2,10 +2,7 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, isAbsolute, relative, resolve } from "node:path";
 import { describe, expect, test } from "bun:test";
 
-import type {
-    ApplicationContext,
-    Module,
-} from "../../../assets/framework";
+import type { ApplicationContext, Module } from "../../../assets/framework";
 
 const projectRoot = resolve(import.meta.dir, "../../..");
 const frameworkRoot = resolve(projectRoot, "assets/framework");
@@ -17,10 +14,7 @@ const runtimeImportScanner = new Bun.Transpiler({ loader: "ts" });
 
 function isWithin(path: string, directory: string): boolean {
     const pathFromDirectory = relative(directory, path);
-    return (
-        pathFromDirectory === "" ||
-        (!pathFromDirectory.startsWith("..") && !isAbsolute(pathFromDirectory))
-    );
+    return pathFromDirectory === "" || (!pathFromDirectory.startsWith("..") && !isAbsolute(pathFromDirectory));
 }
 
 function collectTypeScriptFiles(directory: string): readonly string[] {
@@ -55,9 +49,7 @@ function extractTypeOnlyImports(source: string): readonly string[] {
 }
 
 function resolveRelativeImport(importer: string, specifier: string): string | undefined {
-    return specifier.startsWith(".")
-        ? resolve(dirname(importer), specifier)
-        : undefined;
+    return specifier.startsWith(".") ? resolve(dirname(importer), specifier) : undefined;
 }
 
 function readModuleContractSources(): readonly {
@@ -79,12 +71,24 @@ function createSynchronousModule(calls: string[]): Module {
     return {
         id: "synchronous",
         dependencies: [],
-        initialize: () => { calls.push("initialize"); },
-        start: () => { calls.push("start"); },
-        pause: () => { calls.push("pause"); },
-        resume: () => { calls.push("resume"); },
-        stop: () => { calls.push("stop"); },
-        dispose: () => { calls.push("dispose"); },
+        initialize: () => {
+            calls.push("initialize");
+        },
+        start: () => {
+            calls.push("start");
+        },
+        pause: () => {
+            calls.push("pause");
+        },
+        resume: () => {
+            calls.push("resume");
+        },
+        stop: () => {
+            calls.push("stop");
+        },
+        dispose: () => {
+            calls.push("dispose");
+        },
     };
 }
 
@@ -92,12 +96,24 @@ function createAsynchronousModule(calls: string[]): Module {
     return {
         id: "asynchronous",
         dependencies: [metadataOnlyModule.id],
-        initialize: async () => { calls.push("initialize"); },
-        start: async () => { calls.push("start"); },
-        pause: async () => { calls.push("pause"); },
-        resume: async () => { calls.push("resume"); },
-        stop: async () => { calls.push("stop"); },
-        dispose: async () => { calls.push("dispose"); },
+        initialize: async () => {
+            calls.push("initialize");
+        },
+        start: async () => {
+            calls.push("start");
+        },
+        pause: async () => {
+            calls.push("pause");
+        },
+        resume: async () => {
+            calls.push("resume");
+        },
+        stop: async () => {
+            calls.push("stop");
+        },
+        dispose: async () => {
+            calls.push("dispose");
+        },
     };
 }
 
@@ -116,14 +132,10 @@ describe("Module contract", () => {
         const frameworkSource = readFileSync(frameworkEntry, "utf8");
 
         expect(moduleSource).toMatch(/\bexport\s+interface\s+Module\b/);
-        expect(frameworkSource).toMatch(
-            /export\s+type\s*\{[\s\S]*?\bModule\b[\s\S]*?\}\s*from\s*["']\.\/contracts\/module\/Module["']/,
-        );
+        expect(frameworkSource).toMatch(/export\s+type\s*\{[\s\S]*?\bModule\b[\s\S]*?\}\s*from\s*["']\.\/contracts\/module\/Module["']/);
         expect(allModuleSources).not.toMatch(/\bextends\s+(?:BaseModule|Component)\b/);
         expect(allModuleSources).not.toMatch(/\b(?:globalThis|registerSingleton|registerModule)\b/);
-        expect(allModuleSources).not.toMatch(
-            /\bstatic\s+(?:readonly\s+)?(?:instance|shared)\b/,
-        );
+        expect(allModuleSources).not.toMatch(/\bstatic\s+(?:readonly\s+)?(?:instance|shared)\b/);
     });
 
     test("uses stable string ids as module and dependency identity", () => {
@@ -133,11 +145,8 @@ describe("Module contract", () => {
     });
 
     test("erases contracts/module completely from runtime output", () => {
-        const runtimeFiles = readModuleContractSources().flatMap(
-            ({ file, source }) =>
-                runtimeImportScanner.transformSync(source).trim().length === 0
-                    ? []
-                    : [relative(moduleContractRoot, file).replaceAll("\\", "/")],
+        const runtimeFiles = readModuleContractSources().flatMap(({ file, source }) =>
+            runtimeImportScanner.transformSync(source).trim().length === 0 ? [] : [relative(moduleContractRoot, file).replaceAll("\\", "/")],
         );
 
         expect(runtimeFiles).toEqual([]);
@@ -163,14 +172,7 @@ describe("Module contract", () => {
         expect(module.resume?.(context)).toBeUndefined();
         expect(module.stop?.(context)).toBeUndefined();
         expect(module.dispose?.(context)).toBeUndefined();
-        expect(calls).toEqual([
-            "initialize",
-            "start",
-            "pause",
-            "resume",
-            "stop",
-            "dispose",
-        ]);
+        expect(calls).toEqual(["initialize", "start", "pause", "resume", "stop", "dispose"]);
     });
 
     test("allows asynchronous lifecycle hooks", async () => {
@@ -185,14 +187,7 @@ describe("Module contract", () => {
         await module.stop?.(context);
         await module.dispose?.(context);
 
-        expect(calls).toEqual([
-            "initialize",
-            "start",
-            "pause",
-            "resume",
-            "stop",
-            "dispose",
-        ]);
+        expect(calls).toEqual(["initialize", "start", "pause", "resume", "stop", "dispose"]);
     });
 
     test("imports ApplicationContext only as a type from contracts/application", () => {
@@ -209,12 +204,8 @@ describe("Module contract", () => {
             .imports.map(({ path }) => resolveRelativeImport(moduleContractFile, path))
             .filter((target): target is string => target !== undefined);
 
-        expect(typeOnlyTargets.some((target) => isWithin(target, applicationContractRoot)))
-            .toBe(true);
-        expect(runtimeTargets.some((target) => isWithin(target, applicationContractRoot)))
-            .toBe(false);
-        expect(source).not.toMatch(
-            /\bfrom\s*["']\.\.\/\.\.\/application(?:\/|["'])/,
-        );
+        expect(typeOnlyTargets.some((target) => isWithin(target, applicationContractRoot))).toBe(true);
+        expect(runtimeTargets.some((target) => isWithin(target, applicationContractRoot))).toBe(false);
+        expect(source).not.toMatch(/\bfrom\s*["']\.\.\/\.\.\/application(?:\/|["'])/);
     });
 });

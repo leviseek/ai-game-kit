@@ -32,13 +32,10 @@ const unitMapping = {
 };
 
 /** 动态实例句柄实现路径（mock 后动态加载，避免静态 import 在 mock 前解析）。 */
-const HANDLE_FILE = resolve(
-    import.meta.dir,
-    "../../../assets/framework/adapters/cocos/ui/DynamicComponentViewHandle.ts",
-);
+const HANDLE_FILE = resolve(import.meta.dir, "../../../assets/framework/adapters/cocos/ui/DynamicComponentViewHandle.ts");
 
 async function loadHandle(): Promise<{
-    createDynamicComponentViewHandle: typeof import("../../../assets/framework/adapters/cocos/ui/DynamicComponentViewHandle")["createDynamicComponentViewHandle"];
+    createDynamicComponentViewHandle: (typeof import("../../../assets/framework/adapters/cocos/ui/DynamicComponentViewHandle"))["createDynamicComponentViewHandle"];
 }> {
     return (await import(pathToFileURL(HANDLE_FILE).href)) as never;
 }
@@ -82,10 +79,7 @@ describe("DynamicComponentViewHandle instance lifecycle", () => {
     test("lazily creates an instance for a dynamic node and reuses it by id", async () => {
         const { createDynamicComponentViewHandle } = await loadHandle();
         const { view, container } = makeView();
-        const resolver = createDynamicComponentViewHandle(
-            view as never,
-            unitMapping as never,
-        );
+        const resolver = createDynamicComponentViewHandle(view as never, unitMapping as never);
 
         const nameNode = resolver("txt_unit_a_name");
         const hpNode = resolver("bar_unit_a_hp");
@@ -99,10 +93,7 @@ describe("DynamicComponentViewHandle instance lifecycle", () => {
     test("prune destroys instances whose id is no longer bound", async () => {
         const { createDynamicComponentViewHandle } = await loadHandle();
         const { view, container } = makeView();
-        const resolver = createDynamicComponentViewHandle(
-            view as never,
-            unitMapping as never,
-        );
+        const resolver = createDynamicComponentViewHandle(view as never, unitMapping as never);
 
         resolver("unit_a");
         resolver("unit_b");
@@ -120,10 +111,7 @@ describe("DynamicComponentViewHandle instance lifecycle", () => {
     test("prune keeps instances that are re-bound after being created", async () => {
         const { createDynamicComponentViewHandle } = await loadHandle();
         const { view, container } = makeView();
-        const resolver = createDynamicComponentViewHandle(
-            view as never,
-            unitMapping as never,
-        );
+        const resolver = createDynamicComponentViewHandle(view as never, unitMapping as never);
 
         resolver("unit_a");
         resolver.prune(["unit_a"]);
@@ -201,10 +189,7 @@ describe("DynamicComponentViewHandle multiple mappings", () => {
     test("resolves fx nodes through the second mapping into its own container", async () => {
         const { createDynamicComponentViewHandle } = await loadHandle();
         const { view, unitContainer, fxContainer } = makeMultiView();
-        const resolver = createDynamicComponentViewHandle(
-            view as never,
-            [unitMapping as never, fxMapping as never],
-        );
+        const resolver = createDynamicComponentViewHandle(view as never, [unitMapping as never, fxMapping as never]);
 
         const floatNode = resolver("fx_float_a");
         expect(floatNode).toBeDefined();
@@ -220,10 +205,7 @@ describe("DynamicComponentViewHandle multiple mappings", () => {
     test("prune reaps fx instances when their unit is no longer bound", async () => {
         const { createDynamicComponentViewHandle } = await loadHandle();
         const { view, fxContainer } = makeMultiView();
-        const resolver = createDynamicComponentViewHandle(
-            view as never,
-            [unitMapping as never, fxMapping as never],
-        );
+        const resolver = createDynamicComponentViewHandle(view as never, [unitMapping as never, fxMapping as never]);
 
         resolver("unit_a");
         resolver("unit_b");

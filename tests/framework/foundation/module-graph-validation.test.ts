@@ -12,24 +12,16 @@ interface ModuleGraphExports {
 }
 
 const projectRoot = resolve(import.meta.dir, "../../..");
-const moduleGraphFile = resolve(
-    projectRoot,
-    "assets/framework/application/ModuleGraph.ts",
-);
+const moduleGraphFile = resolve(projectRoot, "assets/framework/application/ModuleGraph.ts");
 
-function createModule(
-    id: string,
-    dependencies: readonly string[] = [],
-): Module {
+function createModule(id: string, dependencies: readonly string[] = []): Module {
     return { id, dependencies };
 }
 
 async function loadModuleGraph(): Promise<ModuleGraphConstructor> {
     expect(existsSync(moduleGraphFile)).toBe(true);
 
-    const exports = (await import(
-        pathToFileURL(moduleGraphFile).href
-    )) as ModuleGraphExports;
+    const exports = (await import(pathToFileURL(moduleGraphFile).href)) as ModuleGraphExports;
 
     expect(typeof exports.ModuleGraph).toBe("function");
 
@@ -80,12 +72,24 @@ describe("ModuleGraph validation", () => {
         const invalidModule: Module = {
             id: "inventory",
             dependencies: ["missing"],
-            initialize: () => { calls.push("initialize"); },
-            start: () => { calls.push("start"); },
-            pause: () => { calls.push("pause"); },
-            resume: () => { calls.push("resume"); },
-            stop: () => { calls.push("stop"); },
-            dispose: () => { calls.push("dispose"); },
+            initialize: () => {
+                calls.push("initialize");
+            },
+            start: () => {
+                calls.push("start");
+            },
+            pause: () => {
+                calls.push("pause");
+            },
+            resume: () => {
+                calls.push("resume");
+            },
+            stop: () => {
+                calls.push("stop");
+            },
+            dispose: () => {
+                calls.push("dispose");
+            },
         };
 
         expect(() => new ModuleGraph([invalidModule])).toThrow();

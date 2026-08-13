@@ -32,9 +32,7 @@ describe("ScopedEventChannel subscription disposal", () => {
         const channel = createScopedEventChannel<GameEvents>();
         const scores: number[] = [];
 
-        const handle: DisposeHandle = channel.on("scoreChanged", (payload) =>
-            scores.push(payload.score),
-        );
+        const handle: DisposeHandle = channel.on("scoreChanged", (payload) => scores.push(payload.score));
 
         channel.emit("scoreChanged", { score: 1 });
         handle.dispose();
@@ -47,9 +45,7 @@ describe("ScopedEventChannel subscription disposal", () => {
         const channel = createScopedEventChannel<GameEvents>();
         const scores: number[] = [];
 
-        const handle: DisposeHandle = channel.on("scoreChanged", (payload) =>
-            scores.push(payload.score),
-        );
+        const handle: DisposeHandle = channel.on("scoreChanged", (payload) => scores.push(payload.score));
 
         handle.dispose();
         handle.dispose();
@@ -123,9 +119,7 @@ describe("ScopedEventChannel scope closure", () => {
 
         channel.dispose();
 
-        expect(() =>
-            channel.on("scoreChanged", () => { }),
-        ).toThrow("cannot subscribe after disposal");
+        expect(() => channel.on("scoreChanged", () => {})).toThrow("cannot subscribe after disposal");
     });
 
     test("a subscription added during emit is not called in the current batch", () => {
@@ -151,9 +145,7 @@ describe("ScopedEventChannel scope closure", () => {
         channel.on("scoreChanged", () => {
             handle?.dispose();
         });
-        const handle = channel.on("scoreChanged", (payload) =>
-            scores.push(payload.score),
-        );
+        const handle = channel.on("scoreChanged", (payload) => scores.push(payload.score));
 
         channel.emit("scoreChanged", { score: 1 });
         channel.emit("scoreChanged", { score: 2 });
@@ -205,7 +197,7 @@ describe("ScopedEventChannel boundary isolation", () => {
         const second = createScopedEventChannel<GameEvents>();
         const secondScores: number[] = [];
 
-        first.on("scoreChanged", () => { });
+        first.on("scoreChanged", () => {});
         second.on("scoreChanged", (payload) => secondScores.push(payload.score));
 
         first.dispose();
@@ -215,13 +207,7 @@ describe("ScopedEventChannel boundary isolation", () => {
     });
 
     test("no module-level event bus or singleton is exposed", () => {
-        const source = readFileSync(
-            resolve(
-                import.meta.dir,
-                "../../../assets/framework/core/events/ScopedEventChannel.ts",
-            ),
-            "utf8",
-        );
+        const source = readFileSync(resolve(import.meta.dir, "../../../assets/framework/core/events/ScopedEventChannel.ts"), "utf8");
 
         expect(source).not.toMatch(/\bglobalThis\b/);
         expect(source).not.toMatch(/\bsingleton\b/);
@@ -230,13 +216,7 @@ describe("ScopedEventChannel boundary isolation", () => {
 
     test("no string-keyed global event registry leaks from the channel", () => {
         const channel = createScopedEventChannel<GameEvents>();
-        const source = readFileSync(
-            resolve(
-                import.meta.dir,
-                "../../../assets/framework/core/events/ScopedEventChannel.ts",
-            ),
-            "utf8",
-        );
+        const source = readFileSync(resolve(import.meta.dir, "../../../assets/framework/core/events/ScopedEventChannel.ts"), "utf8");
 
         expect(source).not.toMatch(/window\./);
         expect(source).not.toMatch(/globalThis\./);

@@ -1,10 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import {
-    createMotionTween,
-    easeOutCubic,
-    easeOutQuad,
-} from "../../../assets/framework/core/time/MotionTween";
+import { createMotionTween, easeOutCubic, easeOutQuad } from "../../../assets/framework/core/time/MotionTween";
 import type { TimeSource } from "../../../assets/framework";
 
 function makeClock(start = 0): {

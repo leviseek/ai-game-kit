@@ -1,11 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import {
-    createLoadCoordinator,
-    type LoadCoordinator,
-    type ResourceHandle,
-    type ResourceKey,
-} from "../../../assets/framework/core/resource/LoadCoordinator";
+import { createLoadCoordinator, type LoadCoordinator, type ResourceHandle, type ResourceKey } from "../../../assets/framework/core/resource/LoadCoordinator";
 
 interface ControlledDeferred {
     readonly resolve: (value: unknown) => void;

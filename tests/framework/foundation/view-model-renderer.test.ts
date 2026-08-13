@@ -1,14 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
-import type {
-    Bindable,
-    ViewModelNode,
-} from "../../../assets/framework/contracts/ui/ViewModel";
-import {
-    createBindable,
-    createViewModelRenderer,
-    type ViewModelRenderer,
-} from "../../../assets/framework/core/ui/ViewModelRenderer";
+import type { Bindable, ViewModelNode } from "../../../assets/framework/contracts/ui/ViewModel";
+import { createBindable, createViewModelRenderer, type ViewModelRenderer } from "../../../assets/framework/core/ui/ViewModelRenderer";
 
 /** 记录型视图节点：记录每次 setter 调用与注册的点击回调，供断言 diff 行为。 */
 interface RecordingNode {
@@ -111,9 +104,7 @@ describe("ViewModelRenderer binding declarations", () => {
         view.nodes.set("txt_hp", hpNode);
         const renderer: ViewModelRenderer<DemoViewModel> = createViewModelRenderer({
             node: view.node,
-            bindings: [
-                { kind: "text", node: "txt_hp", get: (vm) => `HP ${vm.hp}` },
-            ],
+            bindings: [{ kind: "text", node: "txt_hp", get: (vm) => `HP ${vm.hp}` }],
         });
         renderer.setViewModel({ hp: 10, name: "Hero", showResult: false });
         expect(hpNode.text).toBe("HP 10");
@@ -125,9 +116,7 @@ describe("ViewModelRenderer binding declarations", () => {
         view.nodes.set("bar_hp", barNode);
         const renderer: ViewModelRenderer<DemoViewModel> = createViewModelRenderer({
             node: view.node,
-            bindings: [
-                { kind: "progress", node: "bar_hp", get: (vm) => vm.hp / 100 },
-            ],
+            bindings: [{ kind: "progress", node: "bar_hp", get: (vm) => vm.hp / 100 }],
         });
         renderer.setViewModel({ hp: 50, name: "Hero", showResult: false });
         expect(barNode.progress).toBe(0.5);
@@ -139,9 +128,7 @@ describe("ViewModelRenderer binding declarations", () => {
         view.nodes.set("txt_result", resultNode);
         const renderer: ViewModelRenderer<DemoViewModel> = createViewModelRenderer({
             node: view.node,
-            bindings: [
-                { kind: "visible", node: "txt_result", get: (vm) => vm.showResult },
-            ],
+            bindings: [{ kind: "visible", node: "txt_result", get: (vm) => vm.showResult }],
         });
         renderer.setViewModel({ hp: 10, name: "Hero", showResult: true });
         expect(resultNode.visible).toBe(true);
@@ -331,9 +318,7 @@ describe("ViewModelRenderer lifecycle", () => {
         view.nodes.set("txt_hp", hpNode);
         const renderer: ViewModelRenderer<DemoViewModel> = createViewModelRenderer({
             node: view.node,
-            bindings: [
-                { kind: "text", node: "txt_hp", get: (vm) => `HP ${vm.hp}` },
-            ],
+            bindings: [{ kind: "text", node: "txt_hp", get: (vm) => `HP ${vm.hp}` }],
         });
         renderer.setViewModel({ hp: 10, name: "Hero", showResult: false });
         expect(hpNode.text).toBe("HP 10");
@@ -401,9 +386,7 @@ describe("ViewModelRenderer dynamic instance reclaim", () => {
             bindings: [],
         });
 
-        renderer.setBindings([
-            { kind: "text", node: "unit_a", get: (vm) => `HP ${vm.hp}` },
-        ]);
+        renderer.setBindings([{ kind: "text", node: "unit_a", get: (vm) => `HP ${vm.hp}` }]);
         renderer.setViewModel({ hp: 100 });
 
         // 每次 setBindings 全量刷新后，渲染器把当前绑定节点名交给 resolver 回收
@@ -417,9 +400,7 @@ describe("ViewModelRenderer dynamic instance reclaim", () => {
         view.nodes.set("txt_name", nameNode);
         const renderer = createViewModelRenderer<ReclaimVM>({
             node: view.node,
-            bindings: [
-                { kind: "text", node: "txt_name", get: (vm) => String(vm.hp) },
-            ],
+            bindings: [{ kind: "text", node: "txt_name", get: (vm) => String(vm.hp) }],
         });
         expect(() => {
             renderer.setViewModel({ hp: 10 });

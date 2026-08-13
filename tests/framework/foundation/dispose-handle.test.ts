@@ -172,7 +172,7 @@ describe("DisposeHandle", () => {
     test("satisfies the DisposeHandle contract shape", () => {
         const clock = new SimulationClock({ initialTime: 0 });
         const scheduler = new PassiveScheduler(clock);
-        const handle: DisposeHandle = scheduler.schedule(() => { }, 100);
+        const handle: DisposeHandle = scheduler.schedule(() => {}, 100);
 
         expect(typeof handle.dispose).toBe("function");
     });

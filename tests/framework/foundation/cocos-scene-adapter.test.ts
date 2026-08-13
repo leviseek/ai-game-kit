@@ -13,10 +13,7 @@ mock.module("cc", () => ({
 import type { SceneFlowOptions } from "../../../assets/framework/core/scene/SceneFlow";
 
 interface CocosDirectorLike {
-    loadScene(
-        sceneName: string,
-        onLaunched?: (error: Error | null, scene?: unknown) => void,
-    ): boolean;
+    loadScene(sceneName: string, onLaunched?: (error: Error | null, scene?: unknown) => void): boolean;
 }
 
 interface CocosSceneAdapter {
@@ -24,27 +21,19 @@ interface CocosSceneAdapter {
 }
 
 interface CocosSceneAdapterFactory {
-    createCocosSceneAdapter(options?: {
-        readonly director?: CocosDirectorLike;
-    }): CocosSceneAdapter;
+    createCocosSceneAdapter(options?: { readonly director?: CocosDirectorLike }): CocosSceneAdapter;
 }
 
 const projectRoot = resolve(import.meta.dir, "../../..");
-const adapterFile = resolve(
-    projectRoot,
-    "assets/framework/adapters/cocos/scene/CocosSceneAdapter.ts",
-);
+const adapterFile = resolve(projectRoot, "assets/framework/adapters/cocos/scene/CocosSceneAdapter.ts");
 
 async function loadFactory(): Promise<CocosSceneAdapterFactory> {
-    const exports = (await import(
-        pathToFileURL(adapterFile).href
-    )) as Partial<CocosSceneAdapterFactory>;
+    const exports = (await import(pathToFileURL(adapterFile).href)) as Partial<CocosSceneAdapterFactory>;
 
     expect(typeof exports.createCocosSceneAdapter).toBe("function");
 
     return {
-        createCocosSceneAdapter:
-            exports.createCocosSceneAdapter as CocosSceneAdapterFactory["createCocosSceneAdapter"],
+        createCocosSceneAdapter: exports.createCocosSceneAdapter as CocosSceneAdapterFactory["createCocosSceneAdapter"],
     };
 }
 
@@ -62,9 +51,7 @@ interface CocosDirectorMock {
 
 function createCocosDirectorMock(): CocosDirectorMock {
     const sceneLoads: string[] = [];
-    let launched:
-        | ((error: Error | null, scene?: unknown) => void)
-        | undefined;
+    let launched: ((error: Error | null, scene?: unknown) => void) | undefined;
     let startResult = true;
 
     const director: CocosDirectorLike = {

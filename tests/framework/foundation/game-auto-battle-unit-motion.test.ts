@@ -1,27 +1,14 @@
 import { describe, expect, test } from "bun:test";
 
-import {
-    createAutoBattleBattle,
-    type AutoBattleLineupPair,
-} from "../../../assets/samples/game_auto_battle/logic/battle";
+import { createAutoBattleBattle, type AutoBattleLineupPair } from "../../../assets/samples/game_auto_battle/logic/battle";
 import { createAutoBattleClock } from "../../../assets/samples/game_auto_battle/logic/clock";
-import {
-    createAutoBattleConfig,
-    type AutoBattleConfigHandle,
-} from "../../../assets/samples/game_auto_battle/logic/config";
+import { createAutoBattleConfig, type AutoBattleConfigHandle } from "../../../assets/samples/game_auto_battle/logic/config";
 import { createMapGrid } from "../../../assets/samples/game_auto_battle/logic/grid";
-import {
-    manhattanDistance,
-    resolveMovePath,
-} from "../../../assets/samples/game_auto_battle/logic/move";
+import { manhattanDistance, resolveMovePath } from "../../../assets/samples/game_auto_battle/logic/move";
 import type { AutoBattleState } from "../../../assets/samples/game_auto_battle/models";
 
 /** 构造英雄池条目（heroes 格式），支持 attackRange 覆盖。 */
-function hero(
-    id: string,
-    name: string,
-    overrides: Record<string, unknown> = {},
-): Record<string, unknown> {
+function hero(id: string, name: string, overrides: Record<string, unknown> = {}): Record<string, unknown> {
     return {
         id,
         name,
@@ -242,12 +229,8 @@ describe("Auto-battle move in battle", () => {
             first.tick();
             second.tick();
         }
-        expect(first.events().map((e) => e.type)).toEqual(
-            second.events().map((e) => e.type),
-        );
-        expect(first.state().units.map((u) => u.gridKey)).toEqual(
-            second.state().units.map((u) => u.gridKey),
-        );
+        expect(first.events().map((e) => e.type)).toEqual(second.events().map((e) => e.type));
+        expect(first.state().units.map((u) => u.gridKey)).toEqual(second.state().units.map((u) => u.gridKey));
         first.dispose();
         second.dispose();
     });

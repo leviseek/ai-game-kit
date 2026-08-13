@@ -5,15 +5,7 @@ import { describe, expect, test } from "bun:test";
 
 import type { GameFixture } from "../../../assets/game/fixture/GameFixture";
 import { createResourceProvider } from "../../../assets/framework";
-import type {
-    AudioBackend,
-    AudioGroup,
-    AudioTrackRef,
-    IResourceProvider,
-    InputSample,
-    InputSource,
-    ResourceScope,
-} from "../../../assets/framework";
+import type { AudioBackend, AudioGroup, AudioTrackRef, IResourceProvider, InputSample, InputSource, ResourceScope } from "../../../assets/framework";
 
 const projectRoot = resolve(import.meta.dir, "../../..");
 const assemblyFile = resolve(projectRoot, "assets/samples/game_fight/assembly.ts");
@@ -114,9 +106,7 @@ type FightFixture = GameFixture & FightFixtureHooks;
 type CreateFightFixture = (options?: FightFixtureOptions) => FightFixture;
 
 async function loadCreateFightFixture(): Promise<CreateFightFixture> {
-    const mod = (await import(
-        pathToFileURL(assemblyFile).href
-    )) as { createFightFixture: CreateFightFixture };
+    const mod = (await import(pathToFileURL(assemblyFile).href)) as { createFightFixture: CreateFightFixture };
     return mod.createFightFixture;
 }
 
@@ -138,8 +128,7 @@ async function driveUniformLifecycle(fixture: GameFixture): Promise<string[]> {
 // 记录型音频后端：可用性可控，play/stop 调用可断言
 class RecordingBackend implements AudioBackend {
     public readonly available: boolean;
-    public readonly playCalls: Array<{ group: AudioGroup; track: AudioTrackRef }> =
-        [];
+    public readonly playCalls: Array<{ group: AudioGroup; track: AudioTrackRef }> = [];
     public readonly stopCalls: AudioGroup[] = [];
 
     constructor(available = true) {
@@ -154,19 +143,16 @@ class RecordingBackend implements AudioBackend {
         this.stopCalls.push(group);
     }
 
-    pause(_group: AudioGroup): void { }
+    pause(_group: AudioGroup): void {}
 
-    resume(_group: AudioGroup): void { }
+    resume(_group: AudioGroup): void {}
 
-    setVolume(_group: AudioGroup, _volume: number): void { }
+    setVolume(_group: AudioGroup, _volume: number): void {}
 }
 
 describe("Fight fixture contract file", () => {
     test("declares createFightFixture without cc or fgui imports", () => {
-        expect(
-            existsSync(assemblyFile),
-            "assets/game_fight/assembly.ts not implemented yet (task 6.2)",
-        ).toBe(true);
+        expect(existsSync(assemblyFile), "assets/game_fight/assembly.ts not implemented yet (task 6.2)").toBe(true);
 
         if (!existsSync(assemblyFile)) {
             return;
@@ -181,300 +167,273 @@ describe("Fight fixture contract file", () => {
     });
 });
 
-describe.skipIf(!assemblyExists)(
-    "Fight fixture composition capabilities",
-    () => {
-        test("createFightFixture returns a GameFixture exposing the uniform lifecycle", async () => {
-            const createFightFixture = await loadCreateFightFixture();
-            const fixture = createFightFixture();
+describe.skipIf(!assemblyExists)("Fight fixture composition capabilities", () => {
+    test("createFightFixture returns a GameFixture exposing the uniform lifecycle", async () => {
+        const createFightFixture = await loadCreateFightFixture();
+        const fixture = createFightFixture();
 
-            expect(fixture.id).toBe("fight");
-            expect(Array.isArray(fixture.modules)).toBe(true);
+        expect(fixture.id).toBe("fight");
+        expect(Array.isArray(fixture.modules)).toBe(true);
 
-            for (const seam of [
-                "start",
-                "pause",
-                "resume",
-                "failRollback",
-                "dispose",
-            ] as const) {
-                expect(typeof fixture[seam]).toBe("function");
-            }
+        for (const seam of ["start", "pause", "resume", "failRollback", "dispose"] as const) {
+            expect(typeof fixture[seam]).toBe("function");
+        }
 
-            await expect(driveUniformLifecycle(fixture)).resolves.toEqual([
-                "start",
-                "pause",
-                "resume",
-                "dispose",
-            ]);
-        });
+        await expect(driveUniformLifecycle(fixture)).resolves.toEqual(["start", "pause", "resume", "dispose"]);
+    });
 
-        test("the module list only contains declared capabilities including audio", async () => {
-            const createFightFixture = await loadCreateFightFixture();
-            const fixture = createFightFixture();
+    test("the module list only contains declared capabilities including audio", async () => {
+        const createFightFixture = await loadCreateFightFixture();
+        const fixture = createFightFixture();
 
-            // 精确断言装配清单：可控时钟、战斗、对象池、输入、资源、音频
-            // 六类能力模块；格斗品类声明音频能力（与其他品类负向断言不同）
-            expect(fixture.modules.map((m) => m.id)).toEqual([
-                "fight.clock",
-                "fight.battle",
-                "fight.pool",
-                "fight.input",
-                "fight.resource",
-                "fight.audio",
-            ]);
-        });
+        // 精确断言装配清单：可控时钟、战斗、对象池、输入、资源、音频
+        // 六类能力模块；格斗品类声明音频能力（与其他品类负向断言不同）
+        expect(fixture.modules.map((m) => m.id)).toEqual(["fight.clock", "fight.battle", "fight.pool", "fight.input", "fight.resource", "fight.audio"]);
+    });
 
-        test("a controlled clock drives a deterministic fight under fixed steps", async () => {
-            const createFightFixture = await loadCreateFightFixture();
+    test("a controlled clock drives a deterministic fight under fixed steps", async () => {
+        const createFightFixture = await loadCreateFightFixture();
 
-            // 相同输入序列 + 相同帧数运行两次：结果必须完全一致
-            const runSequence = async (): Promise<FightBattleState> => {
-                const fixture = createFightFixture();
-                await fixture.start();
-
-                // 玩家输入出招
-                fixture.input.push("keyboard.j", true);
-                fixture.input.push("keyboard.j", false);
-
-                // 固定步长逐帧推进：每 tick 一帧，招式经 startup/active/recovery 结算
-                for (let index = 0; index < 30; index += 1) {
-                    fixture.battle.tick();
-                }
-
-                const state = fixture.battle.state;
-                await fixture.dispose();
-                return state;
-            };
-
-            const first = await runSequence();
-            const second = await runSequence();
-
-            // 确定性：两次独立运行结果逐字段一致
-            expect(first).toEqual(second);
-
-            // 输入序列产生确定伤害与连招：punch 命中一次，enemyHp 100-10=90、combo=1
-            expect(first.playerHp).toBe(100);
-            expect(first.enemyHp).toBe(90);
-            expect(first.combo).toBe(1);
-            expect(first.frame).toBe(30);
-        });
-
-        test("the object pool reuses effects instead of recreating them", async () => {
-            const createFightFixture = await loadCreateFightFixture();
+        // 相同输入序列 + 相同帧数运行两次：结果必须完全一致
+        const runSequence = async (): Promise<FightBattleState> => {
             const fixture = createFightFixture();
             await fixture.start();
 
-            // 显式复用：归还后再次借出得到同一对象，工厂不再创建
-            const first = fixture.pool.acquire();
-            const _second = fixture.pool.acquire();
-            fixture.pool.release(first);
-            const reused = fixture.pool.acquire();
-            expect(reused).toBe(first);
-            expect(fixture.pool.created).toBe(2);
-
-            // 战斗命中持续发生：对象池复用而非反复创建（created 保持在小值）
+            // 玩家输入出招
             fixture.input.push("keyboard.j", true);
             fixture.input.push("keyboard.j", false);
-            for (let index = 0; index < 40; index += 1) {
-                fixture.battle.tick();
-            }
-            expect(fixture.battle.state.combo).toBeGreaterThan(0);
-            expect(fixture.pool.created).toBeLessThanOrEqual(4);
 
-            await fixture.dispose();
-        });
-
-        test("repeated hits borrow and return pool objects across full move cycles", async () => {
-            const createFightFixture = await loadCreateFightFixture();
-            const fixture = createFightFixture();
-            await fixture.start();
-
-            const overflowLogs: string[] = [];
-            const originalError = console.error;
-            console.error = (message?: unknown) => {
-                overflowLogs.push(String(message));
-            };
-
-            try {
-                // 连续 5 次 punch：每次招式 6 帧（startup 1 + active 2 + recovery 3）
-                // 结束归还命中特效。若借还成对，created 稳定在容量内且无溢出。
-                for (let round = 0; round < 5; round += 1) {
-                    fixture.input.push("keyboard.j", true);
-                    fixture.input.push("keyboard.j", false);
-                    for (let index = 0; index < 6; index += 1) {
-                        fixture.battle.tick();
-                    }
-                }
-
-                expect(fixture.battle.state.combo).toBe(5);
-                expect(fixture.battle.state.enemyHp).toBe(50);
-                // 借还成对：特效对象被复用，工厂创建不随命中线性增长、不溢出
-                expect(fixture.pool.created).toBeLessThanOrEqual(4);
-                expect(overflowLogs.filter((line) => line.includes("overflow"))).toEqual(
-                    [],
-                );
-            } finally {
-                console.error = originalError;
-            }
-
-            await fixture.dispose();
-        });
-
-        test("resources are held by the fixture scope and released on dispose", async () => {
-            const createFightFixture = await loadCreateFightFixture();
-            const unloaded: string[] = [];
-            const provider = createResourceProvider({
-                loader: async (key) => key,
-                unloadBundle: (bundle: string) => {
-                    unloaded.push(bundle);
-                },
-            });
-
-            const fixture = createFightFixture({ provider });
-            await fixture.start();
-
-            expect(fixture.resource.scope).toBeDefined();
-            const handle = provider.load("fight", "fx/hit.png");
-            fixture.resource.scope?.retain(handle);
-            expect(provider.canUnload("fight")).toBe(false);
-
-            await fixture.dispose();
-
-            // 作用域释放后资源可卸载
-            expect(unloaded).toContain("fight");
-            expect(provider.canUnload("fight")).toBe(true);
-        });
-
-        test("audio plays the hit sfx through a scope and stops on dispose", async () => {
-            const createFightFixture = await loadCreateFightFixture();
-            const backend = new RecordingBackend();
-
-            const fixture = createFightFixture({ audioBackend: backend });
-            await fixture.start();
-
-            expect(fixture.audio.degraded).toBe(false);
-
-            // 出招命中触发 sfx 播放
-            fixture.input.push("keyboard.j", true);
-            fixture.input.push("keyboard.j", false);
+            // 固定步长逐帧推进：每 tick 一帧，招式经 startup/active/recovery 结算
             for (let index = 0; index < 30; index += 1) {
                 fixture.battle.tick();
             }
 
-            expect(
-                backend.playCalls.some(
-                    (call) => call.group === "sfx" && call.track.path.includes("hit"),
-                ),
-            ).toBe(true);
-
+            const state = fixture.battle.state;
             await fixture.dispose();
+            return state;
+        };
 
-            // 音频作用域 release 停止命中 sfx
-            expect(backend.stopCalls).toContain("sfx");
-        });
+        const first = await runSequence();
+        const second = await runSequence();
 
-        test("input routes typed actions and links to the battle move", async () => {
-            const createFightFixture = await loadCreateFightFixture();
-            const fixture = createFightFixture();
-            await fixture.start();
+        // 确定性：两次独立运行结果逐字段一致
+        expect(first).toEqual(second);
 
-            expect(typeof fixture.input.activeContext).toBe("string");
+        // 输入序列产生确定伤害与连招：punch 命中一次，enemyHp 100-10=90、combo=1
+        expect(first.playerHp).toBe(100);
+        expect(first.enemyHp).toBe(90);
+        expect(first.combo).toBe(1);
+        expect(first.frame).toBe(30);
+    });
 
-            const before = fixture.input.samples.length;
-            fixture.input.push("keyboard.j", true);
-            fixture.input.push("keyboard.j", false);
+    test("the object pool reuses effects instead of recreating them", async () => {
+        const createFightFixture = await loadCreateFightFixture();
+        const fixture = createFightFixture();
+        await fixture.start();
 
-            // 输入事件被映射为类型化 action 采样
-            expect(fixture.input.samples.length).toBe(before + 2);
-            const pressed = fixture.input.samples[fixture.input.samples.length - 2];
-            expect(pressed.action).toBe("punch");
-            expect(pressed.pressed).toBe(true);
+        // 显式复用：归还后再次借出得到同一对象，工厂不再创建
+        const first = fixture.pool.acquire();
+        const _second = fixture.pool.acquire();
+        fixture.pool.release(first);
+        const reused = fixture.pool.acquire();
+        expect(reused).toBe(first);
+        expect(fixture.pool.created).toBe(2);
 
-            // 输入联动出招：punch 进入活动招式，帧推进后对敌人造成伤害
-            for (let index = 0; index < 2; index += 1) {
-                fixture.battle.tick();
-            }
-            expect(fixture.battle.state.activeMoveId).not.toBeNull();
-            expect(fixture.battle.state.enemyHp).toBeLessThan(100);
-
-            // 激活上下文可切换，且切换不产生额外采样
-            const current = fixture.input.activeContext;
-            fixture.input.setActiveContext(current === "gameplay" ? "ui" : "gameplay");
-            expect(fixture.input.samples.length).toBe(before + 2);
-
-            await fixture.dispose();
-        });
-
-        test("frame data and hitboxes are exposed only from the game layer", async () => {
-            const createFightFixture = await loadCreateFightFixture();
-            const fixture = createFightFixture();
-            await fixture.start();
-
-            // 招式帧数据清单：判定盒/连招/帧数据由夹具暴露，框架层不承载
-            expect(fixture.battle.moves.length).toBeGreaterThan(0);
-            for (const move of fixture.battle.moves) {
-                expect(move.startupFrames).toBeGreaterThanOrEqual(0);
-                expect(move.activeFrames).toBeGreaterThan(0);
-                expect(move.recoveryFrames).toBeGreaterThanOrEqual(0);
-                expect(move.damage).toBeGreaterThan(0);
-                expect(move.hitbox).toBeDefined();
-                expect(move.hitbox.width).toBeGreaterThan(0);
-                expect(move.hitbox.height).toBeGreaterThan(0);
-            }
-
-            await fixture.dispose();
-        });
-
-        test("failRollback does not disturb the fixture's own capabilities", async () => {
-            const createFightFixture = await loadCreateFightFixture();
-            const fixture = createFightFixture();
-            await fixture.start();
-
-            // 契约保证：探针驱动注定失败的启动并回滚，不改动夹具自身 app 状态
-            await fixture.failRollback();
-
-            // 探针后夹具自身能力保持可用
-            const before = fixture.input.samples.length;
-            fixture.input.push("keyboard.j", true);
-            expect(fixture.input.samples.length).toBe(before + 1);
-
+        // 战斗命中持续发生：对象池复用而非反复创建（created 保持在小值）
+        fixture.input.push("keyboard.j", true);
+        fixture.input.push("keyboard.j", false);
+        for (let index = 0; index < 40; index += 1) {
             fixture.battle.tick();
-            expect(fixture.battle.state.frame).toBeGreaterThan(0);
+        }
+        expect(fixture.battle.state.combo).toBeGreaterThan(0);
+        expect(fixture.pool.created).toBeLessThanOrEqual(4);
 
-            await fixture.dispose();
+        await fixture.dispose();
+    });
+
+    test("repeated hits borrow and return pool objects across full move cycles", async () => {
+        const createFightFixture = await loadCreateFightFixture();
+        const fixture = createFightFixture();
+        await fixture.start();
+
+        const overflowLogs: string[] = [];
+        const originalError = console.error;
+        console.error = (message?: unknown) => {
+            overflowLogs.push(String(message));
+        };
+
+        try {
+            // 连续 5 次 punch：每次招式 6 帧（startup 1 + active 2 + recovery 3）
+            // 结束归还命中特效。若借还成对，created 稳定在容量内且无溢出。
+            for (let round = 0; round < 5; round += 1) {
+                fixture.input.push("keyboard.j", true);
+                fixture.input.push("keyboard.j", false);
+                for (let index = 0; index < 6; index += 1) {
+                    fixture.battle.tick();
+                }
+            }
+
+            expect(fixture.battle.state.combo).toBe(5);
+            expect(fixture.battle.state.enemyHp).toBe(50);
+            // 借还成对：特效对象被复用，工厂创建不随命中线性增长、不溢出
+            expect(fixture.pool.created).toBeLessThanOrEqual(4);
+            expect(overflowLogs.filter((line) => line.includes("overflow"))).toEqual([]);
+        } finally {
+            console.error = originalError;
+        }
+
+        await fixture.dispose();
+    });
+
+    test("resources are held by the fixture scope and released on dispose", async () => {
+        const createFightFixture = await loadCreateFightFixture();
+        const unloaded: string[] = [];
+        const provider = createResourceProvider({
+            loader: async (key) => key,
+            unloadBundle: (bundle: string) => {
+                unloaded.push(bundle);
+            },
         });
 
-        test("dispose stops input sampling and releases shared capabilities", async () => {
-            const createFightFixture = await loadCreateFightFixture();
-            const fixture = createFightFixture();
-            await fixture.start();
+        const fixture = createFightFixture({ provider });
+        await fixture.start();
 
-            const before = fixture.input.samples.length;
-            fixture.input.push("keyboard.j", true);
-            expect(fixture.input.samples.length).toBe(before + 1);
+        expect(fixture.resource.scope).toBeDefined();
+        const handle = provider.load("fight", "fx/hit.png");
+        fixture.resource.scope?.retain(handle);
+        expect(provider.canUnload("fight")).toBe(false);
 
-            await fixture.dispose();
+        await fixture.dispose();
 
-            // 释放后：输入不再路由采样，重复释放幂等
-            fixture.input.push("keyboard.j", true);
-            expect(fixture.input.samples.length).toBe(before + 1);
+        // 作用域释放后资源可卸载
+        expect(unloaded).toContain("fight");
+        expect(provider.canUnload("fight")).toBe(true);
+    });
 
-            await fixture.dispose();
-        });
+    test("audio plays the hit sfx through a scope and stops on dispose", async () => {
+        const createFightFixture = await loadCreateFightFixture();
+        const backend = new RecordingBackend();
 
-        test("clock advance rejects negative values", async () => {
-            const createFightFixture = await loadCreateFightFixture();
-            const fixture = createFightFixture();
-            await fixture.start();
+        const fixture = createFightFixture({ audioBackend: backend });
+        await fixture.start();
 
-            // 时钟只应正向推进：负值推进会破坏帧推进与命中结算的确定性
-            expect(() => fixture.clock.advance(-1)).toThrow();
+        expect(fixture.audio.degraded).toBe(false);
 
-            await fixture.dispose();
-        });
-    },
-);
+        // 出招命中触发 sfx 播放
+        fixture.input.push("keyboard.j", true);
+        fixture.input.push("keyboard.j", false);
+        for (let index = 0; index < 30; index += 1) {
+            fixture.battle.tick();
+        }
+
+        expect(backend.playCalls.some((call) => call.group === "sfx" && call.track.path.includes("hit"))).toBe(true);
+
+        await fixture.dispose();
+
+        // 音频作用域 release 停止命中 sfx
+        expect(backend.stopCalls).toContain("sfx");
+    });
+
+    test("input routes typed actions and links to the battle move", async () => {
+        const createFightFixture = await loadCreateFightFixture();
+        const fixture = createFightFixture();
+        await fixture.start();
+
+        expect(typeof fixture.input.activeContext).toBe("string");
+
+        const before = fixture.input.samples.length;
+        fixture.input.push("keyboard.j", true);
+        fixture.input.push("keyboard.j", false);
+
+        // 输入事件被映射为类型化 action 采样
+        expect(fixture.input.samples.length).toBe(before + 2);
+        const pressed = fixture.input.samples[fixture.input.samples.length - 2];
+        expect(pressed.action).toBe("punch");
+        expect(pressed.pressed).toBe(true);
+
+        // 输入联动出招：punch 进入活动招式，帧推进后对敌人造成伤害
+        for (let index = 0; index < 2; index += 1) {
+            fixture.battle.tick();
+        }
+        expect(fixture.battle.state.activeMoveId).not.toBeNull();
+        expect(fixture.battle.state.enemyHp).toBeLessThan(100);
+
+        // 激活上下文可切换，且切换不产生额外采样
+        const current = fixture.input.activeContext;
+        fixture.input.setActiveContext(current === "gameplay" ? "ui" : "gameplay");
+        expect(fixture.input.samples.length).toBe(before + 2);
+
+        await fixture.dispose();
+    });
+
+    test("frame data and hitboxes are exposed only from the game layer", async () => {
+        const createFightFixture = await loadCreateFightFixture();
+        const fixture = createFightFixture();
+        await fixture.start();
+
+        // 招式帧数据清单：判定盒/连招/帧数据由夹具暴露，框架层不承载
+        expect(fixture.battle.moves.length).toBeGreaterThan(0);
+        for (const move of fixture.battle.moves) {
+            expect(move.startupFrames).toBeGreaterThanOrEqual(0);
+            expect(move.activeFrames).toBeGreaterThan(0);
+            expect(move.recoveryFrames).toBeGreaterThanOrEqual(0);
+            expect(move.damage).toBeGreaterThan(0);
+            expect(move.hitbox).toBeDefined();
+            expect(move.hitbox.width).toBeGreaterThan(0);
+            expect(move.hitbox.height).toBeGreaterThan(0);
+        }
+
+        await fixture.dispose();
+    });
+
+    test("failRollback does not disturb the fixture's own capabilities", async () => {
+        const createFightFixture = await loadCreateFightFixture();
+        const fixture = createFightFixture();
+        await fixture.start();
+
+        // 契约保证：探针驱动注定失败的启动并回滚，不改动夹具自身 app 状态
+        await fixture.failRollback();
+
+        // 探针后夹具自身能力保持可用
+        const before = fixture.input.samples.length;
+        fixture.input.push("keyboard.j", true);
+        expect(fixture.input.samples.length).toBe(before + 1);
+
+        fixture.battle.tick();
+        expect(fixture.battle.state.frame).toBeGreaterThan(0);
+
+        await fixture.dispose();
+    });
+
+    test("dispose stops input sampling and releases shared capabilities", async () => {
+        const createFightFixture = await loadCreateFightFixture();
+        const fixture = createFightFixture();
+        await fixture.start();
+
+        const before = fixture.input.samples.length;
+        fixture.input.push("keyboard.j", true);
+        expect(fixture.input.samples.length).toBe(before + 1);
+
+        await fixture.dispose();
+
+        // 释放后：输入不再路由采样，重复释放幂等
+        fixture.input.push("keyboard.j", true);
+        expect(fixture.input.samples.length).toBe(before + 1);
+
+        await fixture.dispose();
+    });
+
+    test("clock advance rejects negative values", async () => {
+        const createFightFixture = await loadCreateFightFixture();
+        const fixture = createFightFixture();
+        await fixture.start();
+
+        // 时钟只应正向推进：负值推进会破坏帧推进与命中结算的确定性
+        expect(() => fixture.clock.advance(-1)).toThrow();
+
+        await fixture.dispose();
+    });
+});
 
 describe("Fight fixture framework boundary", () => {
     test("the framework layer declares no hitbox/combo/frame-data models", () => {
@@ -482,8 +441,7 @@ describe("Fight fixture framework boundary", () => {
         // 对应类型声明（含裸名与 `Fight` 前缀名，防止业务模型以品类前缀命名侵入框架）。
         // 词表排除 Handle/Play/Scope 等通用前缀（框架有 HandleState/PlayScopeState 等命名），
         // 只保留无歧义的格斗业务词，避免把框架通用概念误判为业务模型。
-        const modelPattern =
-            /\b(?:interface|class|type|enum)\s+(?:(?:Fight|Fighter|Battle|Hitbox|Combo|FrameData|Attack|Impact|Strike|Punch|Kick|Round)\w*)\b/;
+        const modelPattern = /\b(?:interface|class|type|enum)\s+(?:(?:Fight|Fighter|Battle|Hitbox|Combo|FrameData|Attack|Impact|Strike|Punch|Kick|Round)\w*)\b/;
 
         const offenders: string[] = [];
         const collect = (directory: string): void => {

@@ -124,22 +124,14 @@ function createControlledProvider(): ControlledProvider {
 }
 
 const projectRoot = resolve(import.meta.dir, "../../..");
-const adapterFile = resolve(
-    projectRoot,
-    "assets/framework/adapters/cocos/audio/CocosAudioAdapter.ts",
-);
+const adapterFile = resolve(projectRoot, "assets/framework/adapters/cocos/audio/CocosAudioAdapter.ts");
 
 interface CocosAudioAdapterFactory {
-    createCocosAudioAdapter(options: {
-        readonly provider: IResourceProvider;
-        readonly createSource?: (group: AudioGroup) => unknown;
-    }): unknown;
+    createCocosAudioAdapter(options: { readonly provider: IResourceProvider; readonly createSource?: (group: AudioGroup) => unknown }): unknown;
 }
 
 async function loadAdapter(): Promise<CocosAudioAdapterFactory["createCocosAudioAdapter"]> {
-    const exports = (await import(
-        pathToFileURL(adapterFile).href
-    )) as Partial<CocosAudioAdapterFactory>;
+    const exports = (await import(pathToFileURL(adapterFile).href)) as Partial<CocosAudioAdapterFactory>;
 
     expect(typeof exports.createCocosAudioAdapter).toBe("function");
 

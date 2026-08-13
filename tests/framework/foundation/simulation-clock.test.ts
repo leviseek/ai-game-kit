@@ -105,9 +105,7 @@ describe("SimulationClock", () => {
         expect(() => new SimulationClock({ timeScale: 0 })).toThrow();
         expect(() => new SimulationClock({ timeScale: -1 })).toThrow();
         expect(() => new SimulationClock({ timeScale: Number.NaN })).toThrow();
-        expect(
-            () => new SimulationClock({ timeScale: Number.POSITIVE_INFINITY }),
-        ).toThrow();
+        expect(() => new SimulationClock({ timeScale: Number.POSITIVE_INFINITY })).toThrow();
     });
 
     test("stays paused after repeated pause calls", () => {

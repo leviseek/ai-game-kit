@@ -30,21 +30,14 @@ interface FairyGuiListLike {
 // ---- Adapter 契约（红期锁定，实现必须匹配）----
 interface FairyGuiListHandleExports {
     readonly createFairyGuiListHandle?: (list: FairyGuiListLike) => FairyGuiListHandle<unknown>;
-    readonly createFairyGuiListViewHandle?: (
-        view: unknown,
-    ) => (name: string) => FairyGuiListHandle<unknown> | undefined;
+    readonly createFairyGuiListViewHandle?: (view: unknown) => (name: string) => FairyGuiListHandle<unknown> | undefined;
 }
 
 const projectRoot = resolve(import.meta.dir, "../../..");
-const handleFile = resolve(
-    projectRoot,
-    "assets/framework/adapters/cocos/ui/FairyGuiListHandle.ts",
-);
+const handleFile = resolve(projectRoot, "assets/framework/adapters/cocos/ui/FairyGuiListHandle.ts");
 
 async function loadFactory(): Promise<FairyGuiListHandleExports> {
-    const exports = (await import(
-        pathToFileURL(handleFile).href
-    )) as Partial<FairyGuiListHandleExports>;
+    const exports = (await import(pathToFileURL(handleFile).href)) as Partial<FairyGuiListHandleExports>;
 
     expect(typeof exports.createFairyGuiListHandle).toBe("function");
 

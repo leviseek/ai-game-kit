@@ -1,23 +1,10 @@
 import { describe, expect, test } from "bun:test";
 
-import type {
-    IResourceProvider,
-    SceneResources,
-} from "../../../assets/framework";
-import {
-    createSceneFlow,
-    type SceneFlow,
-} from "../../../assets/framework/core/scene/SceneFlow";
+import type { IResourceProvider, SceneResources } from "../../../assets/framework";
+import { createSceneFlow, type SceneFlow } from "../../../assets/framework/core/scene/SceneFlow";
 import { createMemoryResourceProvider } from "../../../assets/framework/adapters/memory/MemoryResourceProvider";
-import {
-    createBootFlow,
-    type BootFlow,
-    type BootFlowDeps,
-} from "../../../assets/boot/flow/BootFlow";
-import {
-    createSmokeRouter,
-    type SmokeRouter,
-} from "../../../assets/boot/flow/SmokeRouter";
+import { createBootFlow, type BootFlow, type BootFlowDeps } from "../../../assets/boot/flow/BootFlow";
+import { createSmokeRouter, type SmokeRouter } from "../../../assets/boot/flow/SmokeRouter";
 import { MemoryLogger } from "../support/MemoryLogger";
 
 interface RecordingLobbyHost {
@@ -330,16 +317,16 @@ describe("BootFlow preload layering (L0 resident + L1 scene preload)", () => {
         const provider = createMemoryResourceProvider();
         const sceneFlow = createSceneFlow({
             provider,
-            activateScene: async () => { },
+            activateScene: async () => {},
             onProgress: (_sceneId, progress) => {
                 progresses.push(progress);
             },
         });
         const bootFlow = createBootFlow({
             sceneFlow,
-            uiHost: { init: () => { } },
+            uiHost: { init: () => {} },
             lobbyHost: {
-                ensureSharedUiDependencies: async () => { },
+                ensureSharedUiDependencies: async () => {},
             },
             smokeRouter: createSmokeRouterRecording([]).router,
             getSceneMap: () => ({
@@ -349,7 +336,7 @@ describe("BootFlow preload layering (L0 resident + L1 scene preload)", () => {
             isNative: () => false,
             getSearch: () => "",
             scheduleSmoke: (callback) => callback(),
-            onGameSceneActive: () => { },
+            onGameSceneActive: () => {},
         });
 
         await bootFlow.launch();

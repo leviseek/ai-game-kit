@@ -29,7 +29,7 @@ describe("PassiveScheduler reentrancy", () => {
             runs += 1;
             scheduler.tick();
         }, 100);
-        scheduler.schedule(() => { }, 200);
+        scheduler.schedule(() => {}, 200);
 
         clock.advance(200);
         scheduler.tick();
@@ -80,7 +80,7 @@ describe("PassiveScheduler reentrancy", () => {
         // mockImplementation 隔离原实现：bun 的 spyOn 默认 callThrough，会继续调用
         // 原 console.error，把传入的 Error 上报给测试运行器；批跑大量文件时被判定为
         // 失败（同 fsm/object-pool 的错误上报用例写法）
-        const errorSpy = spyOn(console, "error").mockImplementation(() => { });
+        const errorSpy = spyOn(console, "error").mockImplementation(() => {});
 
         try {
             scheduler.schedule(() => {
@@ -102,22 +102,22 @@ describe("PassiveScheduler reentrancy", () => {
 
         scheduler.dispose();
 
-        expect(() => scheduler.schedule(() => { }, 100)).toThrow();
+        expect(() => scheduler.schedule(() => {}, 100)).toThrow();
     });
 
     test("throws for non-finite delay", () => {
         const clock = new SimulationClock({ initialTime: 0 });
         const scheduler = new PassiveScheduler(clock);
 
-        expect(() => scheduler.schedule(() => { }, Number.NaN)).toThrow();
-        expect(() => scheduler.schedule(() => { }, Number.POSITIVE_INFINITY)).toThrow();
+        expect(() => scheduler.schedule(() => {}, Number.NaN)).toThrow();
+        expect(() => scheduler.schedule(() => {}, Number.POSITIVE_INFINITY)).toThrow();
     });
 
     test("throws for a negative delay", () => {
         const clock = new SimulationClock({ initialTime: 0 });
         const scheduler = new PassiveScheduler(clock);
 
-        expect(() => scheduler.schedule(() => { }, -1)).toThrow();
+        expect(() => scheduler.schedule(() => {}, -1)).toThrow();
     });
 
     test("a repeating task skipped across a large advance runs once, not once per missed interval", () => {

@@ -3,10 +3,7 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, test } from "bun:test";
 
-import type {
-    ApplicationContext,
-    Logger,
-} from "../../../assets/framework";
+import type { ApplicationContext, Logger } from "../../../assets/framework";
 import { MemoryLogger } from "../support/MemoryLogger";
 
 interface CreateApplicationContextFn {
@@ -18,17 +15,12 @@ interface ApplicationContextExports {
 }
 
 const projectRoot = resolve(import.meta.dir, "../../..");
-const applicationContextImpl = resolve(
-    projectRoot,
-    "assets/framework/application/ApplicationContext.ts",
-);
+const applicationContextImpl = resolve(projectRoot, "assets/framework/application/ApplicationContext.ts");
 
 async function loadFactory(): Promise<CreateApplicationContextFn> {
     expect(existsSync(applicationContextImpl)).toBe(true);
 
-    const exports = (await import(
-        pathToFileURL(applicationContextImpl).href
-    )) as ApplicationContextExports;
+    const exports = (await import(pathToFileURL(applicationContextImpl).href)) as ApplicationContextExports;
 
     expect(typeof exports.createApplicationContext).toBe("function");
 
@@ -36,10 +28,7 @@ async function loadFactory(): Promise<CreateApplicationContextFn> {
 }
 
 function collectKeys(target: object): readonly string[] {
-    return [
-        ...Object.getOwnPropertyNames(target),
-        ...Object.getOwnPropertyNames(Object.getPrototypeOf(target)),
-    ];
+    return [...Object.getOwnPropertyNames(target), ...Object.getOwnPropertyNames(Object.getPrototypeOf(target))];
 }
 
 describe("ApplicationContext implementation", () => {
@@ -65,9 +54,7 @@ describe("ApplicationContext implementation", () => {
         const context = createApplicationContext(new MemoryLogger());
 
         const keys = collectKeys(context as object);
-        const forbidden = [
-            "get", "resolve", "registry", "container", "provide",
-        ];
+        const forbidden = ["get", "resolve", "registry", "container", "provide"];
 
         for (const key of forbidden) {
             expect(keys).not.toContain(key);
@@ -79,9 +66,7 @@ describe("ApplicationContext implementation", () => {
         const context = createApplicationContext(new MemoryLogger());
 
         const keys = collectKeys(context as object);
-        const forbidden = [
-            "application", "app", "identity", "owner",
-        ];
+        const forbidden = ["application", "app", "identity", "owner"];
 
         for (const key of forbidden) {
             expect(keys).not.toContain(key);
@@ -111,10 +96,7 @@ describe("ApplicationContext implementation", () => {
         const createApplicationContext = await loadFactory();
         const context = createApplicationContext(new MemoryLogger());
 
-        const stateDescriptor = Object.getOwnPropertyDescriptor(
-            context,
-            "state",
-        );
+        const stateDescriptor = Object.getOwnPropertyDescriptor(context, "state");
 
         expect(stateDescriptor?.get).toBeDefined();
         expect(stateDescriptor?.set).toBeUndefined();
@@ -155,8 +137,6 @@ describe("ApplicationContext implementation", () => {
         const rootSource = resolve(projectRoot, "assets/framework/index.ts");
         const content = readFileSync(rootSource, "utf8");
 
-        expect(content).not.toMatch(
-            /\bcreateApplicationContext\b/,
-        );
+        expect(content).not.toMatch(/\bcreateApplicationContext\b/);
     });
 });

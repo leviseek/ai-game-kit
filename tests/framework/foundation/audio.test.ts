@@ -3,11 +3,7 @@ import { describe, expect, test } from "bun:test";
 // 红期：contracts/audio 与 core/audio 尚未实现，模块解析失败属预期；
 // 本文件通过使用方式锁定待实现契约的形状（分组、后端、作用域、服务）。
 import { createAudioService } from "../../../assets/framework/core/audio/AudioService";
-import type {
-    AudioBackend,
-    AudioGroup,
-    AudioTrackRef,
-} from "../../../assets/framework/contracts/audio/Audio";
+import type { AudioBackend, AudioGroup, AudioTrackRef } from "../../../assets/framework/contracts/audio/Audio";
 
 const DEFAULT_VOLUME = 1;
 
@@ -21,8 +17,7 @@ const TRACKS = {
 // 记录型后端替身：可用性可控，所有调用可断言
 class RecordingBackend implements AudioBackend {
     public readonly available: boolean;
-    public readonly playCalls: Array<{ group: AudioGroup; track: AudioTrackRef }> =
-        [];
+    public readonly playCalls: Array<{ group: AudioGroup; track: AudioTrackRef }> = [];
     public readonly stopCalls: AudioGroup[] = [];
     public readonly pauseCalls: AudioGroup[] = [];
     public readonly resumeCalls: AudioGroup[] = [];
@@ -167,9 +162,7 @@ describe("播放、停止与切歌", () => {
 
         scope.play("music", TRACKS.musicMain);
 
-        expect(backend.playCalls).toEqual([
-            { group: "music", track: TRACKS.musicMain },
-        ]);
+        expect(backend.playCalls).toEqual([{ group: "music", track: TRACKS.musicMain }]);
     });
 
     test("切歌停止前一首并开始新一首", () => {

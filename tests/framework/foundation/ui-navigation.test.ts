@@ -1,20 +1,9 @@
 import { describe, expect, test } from "bun:test";
 
-import type {
-    UiLayer,
-    UiPage,
-    UiResult,
-} from "../../../assets/framework/contracts/ui/Navigation";
-import {
-    createUiNavigator,
-    type UiNavigator,
-} from "../../../assets/framework/core/ui/UiNavigator";
+import type { UiLayer, UiPage, UiResult } from "../../../assets/framework/contracts/ui/Navigation";
+import { createUiNavigator, type UiNavigator } from "../../../assets/framework/core/ui/UiNavigator";
 
-function openResult(
-    navigator: UiNavigator,
-    route: string,
-    options?: { layer?: UiLayer; blocking?: boolean },
-): UiResult {
+function openResult(navigator: UiNavigator, route: string, options?: { layer?: UiLayer; blocking?: boolean }): UiResult {
     return navigator.open(route, options);
 }
 
@@ -138,11 +127,7 @@ describe("UiNavigator layer contract", () => {
 
         expect(normal.ok).toBe(true);
         // 后打开的 normal 层必须插入到 popup/toast 之下，而不是简单压栈到栈顶
-        expect(navigator.pages.map((p) => p.layer)).toEqual([
-            "normal",
-            "popup",
-            "toast",
-        ]);
+        expect(navigator.pages.map((p) => p.layer)).toEqual(["normal", "popup", "toast"]);
         expect(navigator.top?.route).toBe("toast");
     });
 
@@ -157,11 +142,7 @@ describe("UiNavigator layer contract", () => {
         expect(result.ok).toBe(true);
         expect(result.page?.layer).toBe("popup");
         // 层级不变量：popup 提升到 popup 层最高位置，但不得压过更高层的 toast
-        expect(navigator.pages.map((p) => p.layer)).toEqual([
-            "normal",
-            "popup",
-            "toast",
-        ]);
+        expect(navigator.pages.map((p) => p.layer)).toEqual(["normal", "popup", "toast"]);
         expect(navigator.top?.route).toBe("toast");
         // 模态由栈顶推导：toast 非阻断，focus 的 popup 虽被激活但不处于栈顶
         expect(navigator.modal).toBe(false);
@@ -203,15 +184,7 @@ describe("UiNavigator layer contract", () => {
             opened.push({ route, layer });
         }
 
-        expect(navigator.pages.map((p) => p.layer)).toEqual([
-            "scene",
-            "normal",
-            "popup",
-            "guide",
-            "toast",
-            "loading",
-            "system",
-        ]);
+        expect(navigator.pages.map((p) => p.layer)).toEqual(["scene", "normal", "popup", "guide", "toast", "loading", "system"]);
         expect(navigator.top?.route).toBe("sys");
     });
 });

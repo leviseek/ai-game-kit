@@ -1,14 +1,8 @@
 import { describe, expect, test } from "bun:test";
 
 import type { ServiceToken } from "../../../assets/framework/core/services/ServiceRegistry";
-import {
-    createServiceRegistry,
-    createServiceToken,
-} from "../../../assets/framework/core/services/ServiceRegistry";
-import {
-    ServiceRegistrationError,
-    ServiceResolutionError,
-} from "../../../assets/framework/core/services/ServiceRegistry";
+import { createServiceRegistry, createServiceToken } from "../../../assets/framework/core/services/ServiceRegistry";
+import { ServiceRegistrationError, ServiceResolutionError } from "../../../assets/framework/core/services/ServiceRegistry";
 
 interface AudioService {
     readonly play: () => void;
@@ -16,19 +10,14 @@ interface AudioService {
 
 describe("ServiceToken typed binding", () => {
     test("each createServiceToken call produces a distinct token", () => {
-        const first: ServiceToken<AudioService> = createServiceToken<AudioService>(
-            "audio",
-        );
-        const second: ServiceToken<AudioService> = createServiceToken<AudioService>(
-            "audio",
-        );
+        const first: ServiceToken<AudioService> = createServiceToken<AudioService>("audio");
+        const second: ServiceToken<AudioService> = createServiceToken<AudioService>("audio");
 
         expect(first).not.toBe(second);
     });
 
     test("token exposes its description for diagnostics", () => {
-        const token: ServiceToken<AudioService> =
-            createServiceToken<AudioService>("audio");
+        const token: ServiceToken<AudioService> = createServiceToken<AudioService>("audio");
 
         expect(token.description).toBe("audio");
     });
@@ -38,8 +27,8 @@ describe("ServiceToken typed binding", () => {
         const second = createServiceToken<AudioService>("audio");
 
         const registry = new Map<ServiceToken<AudioService>, AudioService>();
-        registry.set(first, { play: () => { } });
-        registry.set(second, { play: () => { } });
+        registry.set(first, { play: () => {} });
+        registry.set(second, { play: () => {} });
 
         // 相同 description 的 token 仍以各自对象身份独立存储。
         expect(registry.size).toBe(2);
@@ -50,7 +39,7 @@ describe("ServiceRegistry register and resolve", () => {
     test("resolves an instance registered by its token", () => {
         const registry = createServiceRegistry();
         const token = createServiceToken<AudioService>("audio");
-        const service: AudioService = { play: () => { } };
+        const service: AudioService = { play: () => {} };
 
         registry.register(token, service);
 
@@ -60,7 +49,7 @@ describe("ServiceRegistry register and resolve", () => {
     test("repeated resolve returns the same registered instance", () => {
         const registry = createServiceRegistry();
         const token = createServiceToken<AudioService>("audio");
-        const service: AudioService = { play: () => { } };
+        const service: AudioService = { play: () => {} };
 
         registry.register(token, service);
 
@@ -73,7 +62,7 @@ describe("ServiceRegistry register and resolve", () => {
         const registered = createServiceToken<AudioService>("audio");
         const unregistered = createServiceToken<AudioService>("other");
 
-        registry.register(registered, { play: () => { } });
+        registry.register(registered, { play: () => {} });
 
         expect(registry.isRegistered(registered)).toBe(true);
         expect(registry.isRegistered(unregistered)).toBe(false);
@@ -92,14 +81,12 @@ describe("ServiceRegistry error paths", () => {
     test("registering the same token twice is rejected without overriding", () => {
         const registry = createServiceRegistry();
         const token = createServiceToken<AudioService>("audio");
-        const first: AudioService = { play: () => { } };
-        const second: AudioService = { play: () => { } };
+        const first: AudioService = { play: () => {} };
+        const second: AudioService = { play: () => {} };
 
         registry.register(token, first);
 
-        expect(() => registry.register(token, second)).toThrow(
-            ServiceRegistrationError,
-        );
+        expect(() => registry.register(token, second)).toThrow(ServiceRegistrationError);
         expect(registry.resolve(token)).toBe(first);
     });
 
@@ -126,7 +113,7 @@ describe("ServiceRegistry factory registration", () => {
         const playerToken = createServiceToken<AudioPlayer>("player");
         const engineToken = createServiceToken<SoundEngine>("engine");
 
-        registry.register(playerToken, { play: () => { } });
+        registry.register(playerToken, { play: () => {} });
         registry.registerFactory(engineToken, (resolve) => ({
             player: resolve(playerToken),
         }));
@@ -141,7 +128,7 @@ describe("ServiceRegistry factory registration", () => {
         const playerToken = createServiceToken<AudioPlayer>("player");
         const engineToken = createServiceToken<SoundEngine>("engine");
 
-        registry.registerFactory(playerToken, () => ({ play: () => { } }));
+        registry.registerFactory(playerToken, () => ({ play: () => {} }));
         registry.registerFactory(engineToken, (resolve) => ({
             player: resolve(playerToken),
         }));
@@ -155,7 +142,7 @@ describe("ServiceRegistry factory registration", () => {
         const registry = createServiceRegistry();
         const playerToken = createServiceToken<AudioPlayer>("player");
 
-        registry.registerFactory(playerToken, () => ({ play: () => { } }));
+        registry.registerFactory(playerToken, () => ({ play: () => {} }));
 
         const player = registry.resolve(playerToken);
 

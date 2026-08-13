@@ -1,22 +1,12 @@
 import { describe, expect, test } from "bun:test";
 
-import {
-    createAutoBattleBattle,
-    type AutoBattleLineupPair,
-} from "../../../assets/samples/game_auto_battle/logic/battle";
+import { createAutoBattleBattle, type AutoBattleLineupPair } from "../../../assets/samples/game_auto_battle/logic/battle";
 import { createAutoBattleClock } from "../../../assets/samples/game_auto_battle/logic/clock";
-import {
-    createAutoBattleConfig,
-    type AutoBattleConfigHandle,
-} from "../../../assets/samples/game_auto_battle/logic/config";
+import { createAutoBattleConfig, type AutoBattleConfigHandle } from "../../../assets/samples/game_auto_battle/logic/config";
 import type { AutoBattleState } from "../../../assets/samples/game_auto_battle/models";
 
 /** 构造英雄池条目（heroes 格式）。 */
-function hero(
-    id: string,
-    name: string,
-    overrides: Record<string, unknown> = {},
-): Record<string, unknown> {
+function hero(id: string, name: string, overrides: Record<string, unknown> = {}): Record<string, unknown> {
     return {
         id,
         name,
@@ -37,10 +27,7 @@ function hero(
 }
 
 /** 构造 heroes + lineups 格式配置：双方编队引用池内 heroId。 */
-function lineupContent(
-    ally: readonly string[],
-    enemy: readonly string[],
-): Record<string, unknown> {
+function lineupContent(ally: readonly string[], enemy: readonly string[]): Record<string, unknown> {
     const heroes = [...ally, ...enemy].map((id) => hero(id, id));
     return {
         heroes,
@@ -79,9 +66,7 @@ function createBattle(configContent: Record<string, unknown>): {
 describe("Auto-battle target lock", () => {
     test("first attack locks the front-row target", () => {
         // 敌方前排 ef 存活：ally 首次行动锁定 ef，后续行动持续攻击它
-        const battle = createBattle(
-            lineupContent(["a"], ["ef", "eb"]),
-        );
+        const battle = createBattle(lineupContent(["a"], ["ef", "eb"]));
         battle.tick();
         const ally = battle.state().units.find((u) => u.side === "ally")!;
         expect(ally.lockedTargetId).toBe("ef");
@@ -93,19 +78,13 @@ describe("Auto-battle target lock", () => {
         // 锁定目标存活期间，ally 后续行动持续攻击同一目标（不因重新按前排选择而漂移）。
         // 当前战斗无换位/生成，锁定目标必为前排存活者；"更靠前目标出现"的换向场景
         // 由 resolveAutoBattleTarget 的锁定优先分支保证，此处验证存活期间锁定不松动。
-        const battle = createBattle(
-            lineupContent(["a"], ["aef"]),
-        );
+        const battle = createBattle(lineupContent(["a"], ["aef"]));
         battle.tick();
-        expect(
-            battle.state().units.find((u) => u.side === "ally")!.lockedTargetId,
-        ).toBe("aef");
+        expect(battle.state().units.find((u) => u.side === "ally")!.lockedTargetId).toBe("aef");
         for (let i = 0; i < 6; i += 1) {
             battle.tick();
         }
-        expect(
-            battle.state().units.find((u) => u.side === "ally")!.lockedTargetId,
-        ).toBe("aef");
+        expect(battle.state().units.find((u) => u.side === "ally")!.lockedTargetId).toBe("aef");
         // 攻击落点也持续为锁定目标：a 的每次普攻 targetId 都是 aef（不含敌方回击 a 的事件）
         const attacks = battle
             .events()
@@ -119,11 +98,7 @@ describe("Auto-battle target lock", () => {
     test("locked target death falls back to front-row reselection", () => {
         // 敌方前排 ef 被秒杀后，ally 下一行动顺延锁定后排 eb
         const battle = createBattle({
-            heroes: [
-                hero("a", "a", { attack: 200 }),
-                hero("ef", "ef"),
-                hero("eb", "eb", { position: "back" }),
-            ],
+            heroes: [hero("a", "a", { attack: 200 }), hero("ef", "ef"), hero("eb", "eb", { position: "back" })],
             lineups: { ally: ["a"], enemy: ["ef", "eb"] },
             energyGainAttacker: 10,
             energyGainTarget: 5,
@@ -134,9 +109,7 @@ describe("Auto-battle target lock", () => {
             battle.tick();
         }
         expect(battle.events().some((e) => e.type === "unit-dead")).toBe(true);
-        expect(
-            battle.state().units.find((u) => u.side === "ally")!.lockedTargetId,
-        ).toBe("eb");
+        expect(battle.state().units.find((u) => u.side === "ally")!.lockedTargetId).toBe("eb");
         battle.dispose();
     });
 
@@ -169,9 +142,7 @@ describe("Auto-battle target lock", () => {
         }
         expect(battle.events().some((e) => e.type === "skill-damage")).toBe(true);
         expect(battle.events().some((e) => e.type === "unit-dead")).toBe(true);
-        expect(
-            battle.state().units.find((u) => u.side === "ally")!.lockedTargetId,
-        ).toBe("eb");
+        expect(battle.state().units.find((u) => u.side === "ally")!.lockedTargetId).toBe("eb");
         battle.dispose();
     });
 
@@ -179,12 +150,7 @@ describe("Auto-battle target lock", () => {
         // 2v1：b（speed 9）先行动杀死共享前排 x，同轮内 a（speed 1）行动时 x 已死 → a 顺延锁定后排 y。
         // 行动顺序 b(9) → x/y(5) → a(1)，a 是该轮最后行动的 ally 单位。
         const battle = createBattle({
-            heroes: [
-                hero("a", "a", { attack: 10, speed: 1 }),
-                hero("b", "b", { attack: 200, speed: 9 }),
-                hero("x", "x", { position: "front" }),
-                hero("y", "y", { position: "back" }),
-            ],
+            heroes: [hero("a", "a", { attack: 10, speed: 1 }), hero("b", "b", { attack: 200, speed: 9 }), hero("x", "x", { position: "front" }), hero("y", "y", { position: "back" })],
             lineups: { ally: ["a", "b"], enemy: ["x", "y"] },
             energyGainAttacker: 10,
             energyGainTarget: 5,
@@ -230,20 +196,14 @@ describe("Auto-battle target lock", () => {
             battle.tick();
         }
         expect(battle.events().some((ev) => ev.type === "skill-heal")).toBe(true);
-        expect(
-            battle.state().units.find((u) => u.side === "ally")!.lockedTargetId,
-        ).toBe(before);
+        expect(battle.state().units.find((u) => u.side === "ally")!.lockedTargetId).toBe(before);
         battle.dispose();
     });
 
     test("state snapshot exposes lockedTargetId and restart clears it", () => {
-        const battle = createBattle(
-            lineupContent(["a"], ["ef", "eb"]),
-        );
+        const battle = createBattle(lineupContent(["a"], ["ef", "eb"]));
         battle.tick();
-        expect(
-            battle.state().units.find((u) => u.side === "ally")!.lockedTargetId,
-        ).toBe("ef");
+        expect(battle.state().units.find((u) => u.side === "ally")!.lockedTargetId).toBe("ef");
 
         // 重开对局：锁定清空，从无锁定状态重新开始
         battle.restart();
@@ -255,17 +215,11 @@ describe("Auto-battle target lock", () => {
 
 describe("Auto-battle opening instantiation from lineup", () => {
     test("units are placed onto distinct formation cells within their own side", () => {
-        const battle = createBattle(
-            lineupContent(["a0", "a1"], ["e0", "e1"]),
-        );
+        const battle = createBattle(lineupContent(["a0", "a1"], ["e0", "e1"]));
         const { units } = battle.state();
 
-        const allyCells = units
-            .filter((u) => u.side === "ally")
-            .map((u) => u.gridKey);
-        const enemyCells = units
-            .filter((u) => u.side === "enemy")
-            .map((u) => u.gridKey);
+        const allyCells = units.filter((u) => u.side === "ally").map((u) => u.gridKey);
+        const enemyCells = units.filter((u) => u.side === "enemy").map((u) => u.gridKey);
 
         expect(allyCells).toHaveLength(2);
         expect(enemyCells).toHaveLength(2);
@@ -282,9 +236,7 @@ describe("Auto-battle opening instantiation from lineup", () => {
     });
 
     test("a unit is placed onto the grid cell matching its lineup slot", () => {
-        const config = createAutoBattleConfig(
-            lineupContent(["a", "b"], ["e"]),
-        );
+        const config = createAutoBattleConfig(lineupContent(["a", "b"], ["e"]));
         const clock = createAutoBattleClock();
         const pair: AutoBattleLineupPair = {
             ally: [
@@ -308,18 +260,12 @@ describe("Auto-battle opening instantiation from lineup", () => {
     });
 
     test("opening units match the configured lineup", () => {
-        const battle = createBattle(
-            lineupContent(["a0", "a1", "a2"], ["e0"]),
-        );
+        const battle = createBattle(lineupContent(["a0", "a1", "a2"], ["e0"]));
         const { units } = battle.state();
 
-        const allyIds = units
-            .filter((u) => u.side === "ally")
-            .map((u) => u.id);
+        const allyIds = units.filter((u) => u.side === "ally").map((u) => u.id);
         expect(allyIds).toEqual(["a0", "a1", "a2"]);
-        expect(units.filter((u) => u.side === "enemy").map((u) => u.id)).toEqual([
-            "e0",
-        ]);
+        expect(units.filter((u) => u.side === "enemy").map((u) => u.id)).toEqual(["e0"]);
 
         battle.dispose();
     });
@@ -327,10 +273,7 @@ describe("Auto-battle opening instantiation from lineup", () => {
 
 describe("Auto-battle determinism and lineup decoupling", () => {
     test("two battles from the same lineup replay identical event sequences", () => {
-        const content = lineupContent(
-            ["a", "b"],
-            ["e", "f"],
-        );
+        const content = lineupContent(["a", "b"], ["e", "f"]);
         const first = createBattle(content);
         const second = createBattle(content);
 
@@ -379,8 +322,7 @@ describe("Auto-battle determinism and lineup decoupling", () => {
             lineups: () => pair,
         });
 
-        const idsOf = (): string[] =>
-            battle.state.units.map((u) => u.id).sort();
+        const idsOf = (): string[] => battle.state.units.map((u) => u.id).sort();
         expect(idsOf()).toEqual(["a", "b", "e"]);
 
         // 玩家改编队后重开：战斗按新编队重新实例化

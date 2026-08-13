@@ -1,10 +1,7 @@
 import { describe, expect, spyOn, test } from "bun:test";
 
 import type { DisposeHandle } from "../../../assets/framework/core/scheduling/DisposeHandle";
-import {
-    createObjectPool,
-    type ObjectPool,
-} from "../../../assets/framework/core/pooling/ObjectPool";
+import { createObjectPool, type ObjectPool } from "../../../assets/framework/core/pooling/ObjectPool";
 
 interface Token {
     readonly id: number;
@@ -421,7 +418,7 @@ describe("ObjectPool contract shape", () => {
 
 describe("ObjectPool error reporter isolation", () => {
     test("a throwing error reporter is contained and does not break the pool", () => {
-        const errorSpy = spyOn(console, "error").mockImplementation(() => { });
+        const errorSpy = spyOn(console, "error").mockImplementation(() => {});
 
         try {
             const { pool } = createTokenPool({

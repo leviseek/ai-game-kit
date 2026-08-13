@@ -1,11 +1,7 @@
 import { describe, expect, spyOn, test } from "bun:test";
 
 import type { DisposeHandle } from "../../../assets/framework/core/scheduling/DisposeHandle";
-import {
-    createStateMachine,
-    type StateMachine,
-    type StateTransitionTable,
-} from "../../../assets/framework/core/fsm/StateMachine";
+import { createStateMachine, type StateMachine, type StateTransitionTable } from "../../../assets/framework/core/fsm/StateMachine";
 
 type DoorState = "closed" | "open" | "locked";
 type DoorEvent = "open" | "close" | "lock" | "unlock";
@@ -473,7 +469,7 @@ describe("StateMachine contract shape", () => {
 
 describe("StateMachine error reporter isolation", () => {
     test("a throwing error reporter is contained and does not break send", () => {
-        const errorSpy = spyOn(console, "error").mockImplementation(() => { });
+        const errorSpy = spyOn(console, "error").mockImplementation(() => {});
 
         try {
             const machine = createStateMachine<DoorState, DoorEvent>({

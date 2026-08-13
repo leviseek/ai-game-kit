@@ -6,9 +6,7 @@ interface CounterState {
     readonly label: string;
 }
 
-type CounterAction =
-    | { readonly type: "increment"; readonly by: number }
-    | { readonly type: "rename"; readonly label: string };
+type CounterAction = { readonly type: "increment"; readonly by: number } | { readonly type: "rename"; readonly label: string };
 
 const INITIAL: CounterState = { count: 0, label: "init" };
 

@@ -3,22 +3,11 @@ import { describe, expect, test } from "bun:test";
 import { MemoryPlatform } from "../../../assets/framework/adapters/memory/MemoryPlatform";
 import type { PlatformStorage } from "../../../assets/framework/contracts/platform/Platform";
 import { createIdleRewardClock } from "../../../assets/samples/game_auto_battle/logic/clock";
-import {
-    computeIdleRewards,
-    createIdleRewardsHandle,
-    DEFAULT_IDLE_RATE,
-} from "../../../assets/samples/game_auto_battle/logic/IdleRewards";
-import {
-    IDLE_REWARDS_STORAGE_KEY,
-    IDLE_REWARDS_SAVE_VERSION,
-    createIdleRewardsStore,
-    isIdleRewardRecord,
-} from "../../../assets/samples/game_auto_battle/logic/IdleRewardsStore";
+import { computeIdleRewards, createIdleRewardsHandle, DEFAULT_IDLE_RATE } from "../../../assets/samples/game_auto_battle/logic/IdleRewards";
+import { IDLE_REWARDS_STORAGE_KEY, IDLE_REWARDS_SAVE_VERSION, createIdleRewardsStore, isIdleRewardRecord } from "../../../assets/samples/game_auto_battle/logic/IdleRewardsStore";
 import type { IdleRewardState } from "../../../assets/samples/game_auto_battle/models";
 
-const state = (
-    overrides: Partial<IdleRewardState> = {},
-): IdleRewardState => ({
+const state = (overrides: Partial<IdleRewardState> = {}): IdleRewardState => ({
     lastSeenAtMs: 0,
     totalRewards: 0,
     earnedAtMs: 0,
@@ -57,9 +46,7 @@ describe("Idle rewards pure settlement", () => {
 
     test("rejects non-finite timestamps and rates", () => {
         expect(() => computeIdleRewards(Number.NaN, 0, 1)).toThrow(/finite/);
-        expect(() => computeIdleRewards(0, Number.POSITIVE_INFINITY, 1)).toThrow(
-            /finite/,
-        );
+        expect(() => computeIdleRewards(0, Number.POSITIVE_INFINITY, 1)).toThrow(/finite/);
         expect(() => computeIdleRewards(0, 1_000, -1)).toThrow(/non-negative/);
         expect(() => computeIdleRewards(0, 1_000, Number.NaN)).toThrow(/finite/);
     });
@@ -156,15 +143,11 @@ describe("Idle rewards store round-trip and guards", () => {
 
     test("a fresh store over the same storage restores the saved state", async () => {
         const storage = new MemoryPlatform();
-        await createIdleRewardsStore({ storage }).save(
-            state({ lastSeenAtMs: 50, totalRewards: 3, earnedAtMs: 50 }),
-        );
+        await createIdleRewardsStore({ storage }).save(state({ lastSeenAtMs: 50, totalRewards: 3, earnedAtMs: 50 }));
 
         const restarted = await createIdleRewardsStore({ storage }).load();
 
-        expect(restarted?.data).toEqual(
-            state({ lastSeenAtMs: 50, totalRewards: 3, earnedAtMs: 50 }),
-        );
+        expect(restarted?.data).toEqual(state({ lastSeenAtMs: 50, totalRewards: 3, earnedAtMs: 50 }));
     });
 
     test("load returns null when no record exists", async () => {
@@ -175,9 +158,7 @@ describe("Idle rewards store round-trip and guards", () => {
     test("rejects a corrupted record with invalid JSON", async () => {
         const storage = new MemoryPlatform();
         await seed(storage, "not-json");
-        await expect(
-            createIdleRewardsStore({ storage }).load(),
-        ).rejects.toThrow(/corrupted/);
+        await expect(createIdleRewardsStore({ storage }).load()).rejects.toThrow(/corrupted/);
     });
 
     test("rejects a record whose data is not a valid idle rewards shape", async () => {
@@ -189,20 +170,13 @@ describe("Idle rewards store round-trip and guards", () => {
                 data: { foo: "bar" },
             }),
         );
-        await expect(
-            createIdleRewardsStore({ storage }).load(),
-        ).rejects.toThrow(/corrupted/);
+        await expect(createIdleRewardsStore({ storage }).load()).rejects.toThrow(/corrupted/);
     });
 
     test("rejects a record with a future save version", async () => {
         const storage = new MemoryPlatform();
-        await seed(
-            storage,
-            JSON.stringify({ version: 99, data: state() }),
-        );
-        await expect(
-            createIdleRewardsStore({ storage }).load(),
-        ).rejects.toThrow(/newer/);
+        await seed(storage, JSON.stringify({ version: 99, data: state() }));
+        await expect(createIdleRewardsStore({ storage }).load()).rejects.toThrow(/newer/);
     });
 
     test("rejects an older record when no migrator is registered", async () => {
@@ -265,11 +239,7 @@ describe("Idle reward record guard", () => {
         expect(isIdleRewardRecord(state())).toBe(true);
         expect(isIdleRewardRecord(null)).toBe(false);
         expect(isIdleRewardRecord(42)).toBe(false);
-        expect(
-            isIdleRewardRecord({ lastSeenAtMs: -1, totalRewards: 0, earnedAtMs: 0 }),
-        ).toBe(false);
-        expect(
-            isIdleRewardRecord({ lastSeenAtMs: 0, totalRewards: Number.NaN, earnedAtMs: 0 }),
-        ).toBe(false);
+        expect(isIdleRewardRecord({ lastSeenAtMs: -1, totalRewards: 0, earnedAtMs: 0 })).toBe(false);
+        expect(isIdleRewardRecord({ lastSeenAtMs: 0, totalRewards: Number.NaN, earnedAtMs: 0 })).toBe(false);
     });
 });

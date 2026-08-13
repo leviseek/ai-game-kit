@@ -2,17 +2,8 @@ import { describe, expect, test } from "bun:test";
 
 import type { TimeSource } from "../../../assets/framework/contracts/time/TimeSource";
 import { MonotonicClock } from "../../../assets/framework/core/time/MonotonicClock";
-import type {
-    InputEvent,
-    InputSample,
-    InputSource,
-    InputSourceId,
-} from "../../../assets/framework/contracts/input/Input";
-import {
-    createInputMapper,
-    type InputMapper,
-    type InputMapperOptions,
-} from "../../../assets/framework/core/input/InputMapper";
+import type { InputEvent, InputSample, InputSource, InputSourceId } from "../../../assets/framework/contracts/input/Input";
+import { createInputMapper, type InputMapper, type InputMapperOptions } from "../../../assets/framework/core/input/InputMapper";
 
 type TestAction = "jump" | "confirm" | "move";
 
@@ -61,10 +52,7 @@ function createControllableClock(): ControllableClock {
     };
 }
 
-function createMapper(
-    options: Omit<InputMapperOptions<TestAction>, "onSample">,
-    samples: InputSample<TestAction>[],
-): InputMapper<TestAction> {
+function createMapper(options: Omit<InputMapperOptions<TestAction>, "onSample">, samples: InputSample<TestAction>[]): InputMapper<TestAction> {
     return createInputMapper<TestAction>({
         ...options,
         onSample: (sample) => samples.push(sample),
@@ -135,10 +123,7 @@ describe("input mapping", () => {
         mapper.setMappings({ gameplay: { "keyboard.space": "confirm" } });
         source.emit({ sourceId: "keyboard.space", pressed: true });
 
-        expect(samples.map((sample) => sample.action)).toEqual([
-            "jump",
-            "confirm",
-        ]);
+        expect(samples.map((sample) => sample.action)).toEqual(["jump", "confirm"]);
     });
 });
 
@@ -185,10 +170,7 @@ describe("input context switching", () => {
         mapper.setActiveContext("gameplay");
         source.emit({ sourceId: "keyboard.space", pressed: true });
 
-        expect(samples.map((sample) => sample.action)).toEqual([
-            "confirm",
-            "jump",
-        ]);
+        expect(samples.map((sample) => sample.action)).toEqual(["confirm", "jump"]);
     });
 
     test("stale samples from the previous context are not dispatched", () => {
@@ -287,9 +269,7 @@ describe("input sampling", () => {
         source.emit({ sourceId: "keyboard.space", pressed: false });
 
         expect(samples.map((sample) => sample.timestamp)).toEqual([100, 160]);
-        expect(samples[1]?.timestamp).toBeGreaterThan(
-            samples[0]?.timestamp ?? 0,
-        );
+        expect(samples[1]?.timestamp).toBeGreaterThan(samples[0]?.timestamp ?? 0);
     });
 });
 
@@ -341,10 +321,7 @@ describe("input source replacement", () => {
         mapper.setActiveContext("gameplay");
         newSource.emit({ sourceId: "keyboard.space", pressed: true });
 
-        expect(samples.map((sample) => sample.action)).toEqual([
-            "confirm",
-            "jump",
-        ]);
+        expect(samples.map((sample) => sample.action)).toEqual(["confirm", "jump"]);
     });
 
     test("dispose unsubscribes the current source", () => {
@@ -403,7 +380,11 @@ describe("input source replacement", () => {
 describe("input UI blocking", () => {
     test("a modal navigator blocks gameplay actions until it closes", () => {
         let modal = true;
-        const navigator = { get modal() { return modal; } };
+        const navigator = {
+            get modal() {
+                return modal;
+            },
+        };
         const source = createFakeSource("keyboard");
         const samples: InputSample<TestAction>[] = [];
 

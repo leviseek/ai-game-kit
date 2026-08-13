@@ -40,20 +40,13 @@ interface FairyGuiPageHandle {
 
 interface FairyGuiPageAdapterOptions {
     readonly root: FairyGuiRootLike;
-    readonly createView?: (
-        packageName: string,
-        resName: string,
-    ) => FairyGuiViewLike;
+    readonly createView?: (packageName: string, resName: string) => FairyGuiViewLike;
     readonly createMask?: (width: number, height: number) => unknown;
 }
 
 interface FairyGuiPageAdapter {
     init(): void;
-    createPage(
-        route: string,
-        layer: string,
-        options?: { packageName?: string; resName?: string },
-    ): FairyGuiPageHandle;
+    createPage(route: string, layer: string, options?: { packageName?: string; resName?: string }): FairyGuiPageHandle;
     mount(page: FairyGuiPageHandle): void;
     setModal(modal: boolean): void;
     dispose(): void;
@@ -64,21 +57,15 @@ interface FairyGuiPageAdapterFactory {
 }
 
 const projectRoot = resolve(import.meta.dir, "../../..");
-const adapterFile = resolve(
-    projectRoot,
-    "assets/framework/adapters/cocos/ui/FairyGuiPageAdapter.ts",
-);
+const adapterFile = resolve(projectRoot, "assets/framework/adapters/cocos/ui/FairyGuiPageAdapter.ts");
 
 async function loadFactory(): Promise<FairyGuiPageAdapterFactory> {
-    const exports = (await import(
-        pathToFileURL(adapterFile).href
-    )) as Partial<FairyGuiPageAdapterFactory>;
+    const exports = (await import(pathToFileURL(adapterFile).href)) as Partial<FairyGuiPageAdapterFactory>;
 
     expect(typeof exports.createFairyGuiPageAdapter).toBe("function");
 
     return {
-        createFairyGuiPageAdapter:
-            exports.createFairyGuiPageAdapter as FairyGuiPageAdapterFactory["createFairyGuiPageAdapter"],
+        createFairyGuiPageAdapter: exports.createFairyGuiPageAdapter as FairyGuiPageAdapterFactory["createFairyGuiPageAdapter"],
     };
 }
 
@@ -162,14 +149,8 @@ function createRecordingRoot(): {
     return { root, calls, containers };
 }
 
-function findContainerCalls(
-    calls: readonly ContainerCall[],
-    containerName: string,
-    action: string,
-): ContainerCall[] {
-    return calls.filter(
-        (call) => call.container === containerName && call.action === action,
-    );
+function findContainerCalls(calls: readonly ContainerCall[], containerName: string, action: string): ContainerCall[] {
+    return calls.filter((call) => call.container === containerName && call.action === action);
 }
 
 // ---- 遮罩形状：GGraph 具备 drawRect 填充记录，GComponent 空容器没有 ----
@@ -186,34 +167,20 @@ interface MaskLike {
 
 function isGraphMask(value: unknown): value is MaskLike {
     const mask = value as MaskLike | undefined;
-    return (
-        mask !== undefined &&
-        typeof mask.lineSize === "number" &&
-        mask.fillColor !== undefined
-    );
+    return mask !== undefined && typeof mask.lineSize === "number" && mask.fillColor !== undefined;
 }
 
 // 模拟 FairyGUI 命中规则：从最上层子对象向下查找第一个可触摸且点在其尺寸内者。
 // 真实命中链见 GObject.hitTest（touch 命中需 touchable）与 GComponent._hitTest
 // （自顶向下找第一个命中子对象）。
-function hitTestAt(
-    container: FairyGuiContainerLike,
-    x: number,
-    y: number,
-): unknown | undefined {
+function hitTestAt(container: FairyGuiContainerLike, x: number, y: number): unknown | undefined {
     for (let index = container.numChildren - 1; index >= 0; index -= 1) {
         const child = container.getChildAt(index) as {
             touchable?: boolean;
             width?: number;
             height?: number;
         };
-        if (
-            child.touchable !== false &&
-            x >= 0 &&
-            y >= 0 &&
-            x < (child.width ?? 0) &&
-            y < (child.height ?? 0)
-        ) {
+        if (child.touchable !== false && x >= 0 && y >= 0 && x < (child.width ?? 0) && y < (child.height ?? 0)) {
             return child;
         }
     }
@@ -254,7 +221,7 @@ describe("modal mask visibility and input blocking", () => {
             root: recording.root,
             createView: () => ({
                 name: "underlying-page",
-                dispose: () => { },
+                dispose: () => {},
                 touchable: true,
                 width: 300,
                 height: 200,

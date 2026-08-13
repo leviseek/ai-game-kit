@@ -1,9 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { createResourceProvider } from "../../../assets/framework/core/resource/ResourceProvider";
-import type {
-    ResourceKey,
-} from "../../../assets/framework/contracts/resource/Resource";
+import type { ResourceKey } from "../../../assets/framework/contracts/resource/Resource";
 
 interface ControlledDeferred {
     readonly resolve: (value: unknown) => void;
@@ -37,7 +35,7 @@ function createControlledLoader(): ControlledLoader {
 describe("FairyGUI package loading contract", () => {
     test("loadPackage requests the resource with a fairygui-package identity", async () => {
         const { loader, calls, pending } = createControlledLoader();
-        const provider = createResourceProvider({ loader, unloadBundle: () => { } });
+        const provider = createResourceProvider({ loader, unloadBundle: () => {} });
 
         const handle = provider.loadPackage("ui", "main");
 
@@ -54,7 +52,7 @@ describe("FairyGUI package loading contract", () => {
 
     test("concurrent package requests share a single underlying load", async () => {
         const { loader, calls, pending } = createControlledLoader();
-        const provider = createResourceProvider({ loader, unloadBundle: () => { } });
+        const provider = createResourceProvider({ loader, unloadBundle: () => {} });
 
         const first = provider.loadPackage("ui", "main");
         const second = provider.loadPackage("ui", "main");
@@ -75,7 +73,7 @@ describe("FairyGUI package loading contract", () => {
 
     test("a failed package load keeps the original cause and resource identity", async () => {
         const { loader, pending } = createControlledLoader();
-        const provider = createResourceProvider({ loader, unloadBundle: () => { } });
+        const provider = createResourceProvider({ loader, unloadBundle: () => {} });
         const original = new Error("package corrupt");
 
         const handle = provider.loadPackage("ui", "missing");
@@ -93,7 +91,7 @@ describe("FairyGUI package loading contract", () => {
 
     test("a failed package load is isolated from other waiters", async () => {
         const { loader, pending } = createControlledLoader();
-        const provider = createResourceProvider({ loader, unloadBundle: () => { } });
+        const provider = createResourceProvider({ loader, unloadBundle: () => {} });
         const original = new Error("first attempt failed");
 
         const first = provider.loadPackage("ui", "missing");
@@ -103,9 +101,7 @@ describe("FairyGUI package loading contract", () => {
         const late = provider.loadPackage("ui", "missing");
 
         expect(late.state).toBe("failed");
-        expect((late.error as Error & { readonly cause?: unknown }).cause).toBe(
-            original,
-        );
+        expect((late.error as Error & { readonly cause?: unknown }).cause).toBe(original);
     });
 
     test("package handles participate in scope release without premature unload", async () => {
@@ -188,7 +184,7 @@ describe("FairyGUI package loading contract", () => {
 
     test("invalidatePackage clears a failed package entry so it can be reloaded", async () => {
         const { loader, calls, pending } = createControlledLoader();
-        const provider = createResourceProvider({ loader, unloadBundle: () => { } });
+        const provider = createResourceProvider({ loader, unloadBundle: () => {} });
         const original = new Error("first attempt failed");
 
         const first = provider.loadPackage("ui", "missing");
@@ -211,7 +207,7 @@ describe("FairyGUI package loading contract", () => {
 
     test("invalidatePackage on an unknown package key is a no-op", async () => {
         const { loader, calls } = createControlledLoader();
-        const provider = createResourceProvider({ loader, unloadBundle: () => { } });
+        const provider = createResourceProvider({ loader, unloadBundle: () => {} });
 
         provider.invalidatePackage("ui", "never-loaded");
 

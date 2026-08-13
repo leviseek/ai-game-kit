@@ -2,19 +2,13 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, test } from "bun:test";
 
-import {
-    createGameFixture,
-    type GameFixture,
-} from "../../../assets/game/fixture/GameFixture";
+import { createGameFixture, type GameFixture } from "../../../assets/game/fixture/GameFixture";
 import type { GameFixtureRegistry } from "../../../assets/game/fixture/registry";
 import { runFixtureSmoke } from "../../../assets/game/fixture/smoke";
 
 const projectRoot = resolve(import.meta.dir, "../../..");
 
-async function captureFixtureSmoke(
-    fixtureId: string,
-    registry: GameFixtureRegistry,
-): Promise<string[]> {
+async function captureFixtureSmoke(fixtureId: string, registry: GameFixtureRegistry): Promise<string[]> {
     const logs: string[] = [];
     const originalLog = console.log;
     console.log = (message?: unknown) => logs.push(String(message));
@@ -32,9 +26,7 @@ describe("game fixture smoke runner", () => {
     test("reports an unknown fixture without throwing", async () => {
         const markers = await captureFixtureSmoke("rpg", {});
 
-        expect(markers.some((line) => line.includes("fixture-unknown: FAIL"))).toBe(
-            true,
-        );
+        expect(markers.some((line) => line.includes("fixture-unknown: FAIL"))).toBe(true);
     });
 
     test("drives a registered fixture through the uniform lifecycle", async () => {
@@ -44,14 +36,7 @@ describe("game fixture smoke runner", () => {
 
         const markers = await captureFixtureSmoke("rpg", registry);
 
-        const expectedSteps = [
-            "fixture-found",
-            "start",
-            "pause",
-            "resume",
-            "failRollback",
-            "dispose",
-        ];
+        const expectedSteps = ["fixture-found", "start", "pause", "resume", "failRollback", "dispose"];
 
         for (const step of expectedSteps) {
             expect(markers.some((line) => line.includes(`${step}: ok`))).toBe(true);
@@ -70,12 +55,8 @@ describe("game fixture smoke runner", () => {
 
         const markers = await captureFixtureSmoke("fight", registry);
 
-        expect(
-            markers.some((line) => line.includes("audio-degraded: ok")),
-        ).toBe(true);
-        expect(
-            markers.some((line) => line.includes("degraded=true")),
-        ).toBe(true);
+        expect(markers.some((line) => line.includes("audio-degraded: ok"))).toBe(true);
+        expect(markers.some((line) => line.includes("degraded=true"))).toBe(true);
     });
 
     test("reports audio-degraded FAIL when the fixture audio backend is available", async () => {
@@ -89,12 +70,8 @@ describe("game fixture smoke runner", () => {
 
         const markers = await captureFixtureSmoke("fight", registry);
 
-        expect(
-            markers.some((line) => line.includes("audio-degraded: FAIL")),
-        ).toBe(true);
-        expect(
-            markers.some((line) => line.includes("degraded=false")),
-        ).toBe(true);
+        expect(markers.some((line) => line.includes("audio-degraded: FAIL"))).toBe(true);
+        expect(markers.some((line) => line.includes("degraded=false"))).toBe(true);
     });
 
     test("does not emit audio-degraded marker for fixtures without the audio capability", async () => {
@@ -104,9 +81,7 @@ describe("game fixture smoke runner", () => {
 
         const markers = await captureFixtureSmoke("rpg", registry);
 
-        expect(
-            markers.some((line) => line.includes("audio-degraded")),
-        ).toBe(false);
+        expect(markers.some((line) => line.includes("audio-degraded"))).toBe(false);
     });
 
     test("reports a lifecycle failure without throwing", async () => {
@@ -116,10 +91,10 @@ describe("game fixture smoke runner", () => {
             start: async () => {
                 throw new Error("boom");
             },
-            pause: async () => { },
-            resume: async () => { },
-            failRollback: async () => { },
-            dispose: async () => { },
+            pause: async () => {},
+            resume: async () => {},
+            failRollback: async () => {},
+            dispose: async () => {},
         };
         const registry: GameFixtureRegistry = {
             broken: () => failingFixture,
@@ -139,9 +114,7 @@ describe("game fixture smoke runner", () => {
 
         const markers = await captureFixtureSmoke("boom", registry);
 
-        expect(markers.some((line) => line.includes("fixture-create: FAIL"))).toBe(
-            true,
-        );
+        expect(markers.some((line) => line.includes("fixture-create: FAIL"))).toBe(true);
         expect(markers.some((line) => line.includes("factory boom"))).toBe(true);
     });
 });

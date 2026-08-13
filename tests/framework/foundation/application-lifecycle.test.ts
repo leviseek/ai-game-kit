@@ -2,11 +2,7 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, test } from "bun:test";
 
-import type {
-    ApplicationContext,
-    ApplicationState,
-    Module,
-} from "../../../assets/framework";
+import type { ApplicationContext, ApplicationState, Module } from "../../../assets/framework";
 import { MemoryLogger } from "../support/MemoryLogger";
 
 interface ApplicationInstance {
@@ -17,10 +13,7 @@ interface ApplicationInstance {
     dispose(): Promise<void>;
 }
 
-type ApplicationConstructor = new (
-    modules: readonly Module[],
-    context: ApplicationContext,
-) => ApplicationInstance;
+type ApplicationConstructor = new (modules: readonly Module[], context: ApplicationContext) => ApplicationInstance;
 
 interface FrameworkExports {
     readonly Application?: ApplicationConstructor;
@@ -30,9 +23,7 @@ const projectRoot = resolve(import.meta.dir, "../../..");
 const frameworkEntry = resolve(projectRoot, "assets/framework/index.ts");
 
 async function loadApplication(): Promise<ApplicationConstructor> {
-    const exports = (await import(
-        pathToFileURL(frameworkEntry).href,
-    )) as FrameworkExports;
+    const exports = (await import(pathToFileURL(frameworkEntry).href)) as FrameworkExports;
 
     expect(typeof exports.Application).toBe("function");
 
@@ -43,13 +34,7 @@ function createContext(): ApplicationContext {
     return { logger: new MemoryLogger(), state: "created" };
 }
 
-function createLifecycleModule(
-    id: string,
-    calls: string[],
-    states: ApplicationState[],
-    app: () => ApplicationInstance,
-    dependencies: readonly string[] = [],
-): Module {
+function createLifecycleModule(id: string, calls: string[], states: ApplicationState[], app: () => ApplicationInstance, dependencies: readonly string[] = []): Module {
     const observe = (phase: string): void => {
         states.push(app().state);
         calls.push(`${id}:${phase}`);
@@ -58,12 +43,24 @@ function createLifecycleModule(
     return {
         id,
         dependencies,
-        initialize: async () => { observe("initialize"); },
-        start: async () => { observe("start"); },
-        pause: async () => { observe("pause"); },
-        resume: async () => { observe("resume"); },
-        stop: async () => { observe("stop"); },
-        dispose: async () => { observe("dispose"); },
+        initialize: async () => {
+            observe("initialize");
+        },
+        start: async () => {
+            observe("start");
+        },
+        pause: async () => {
+            observe("pause");
+        },
+        resume: async () => {
+            observe("resume");
+        },
+        stop: async () => {
+            observe("stop");
+        },
+        dispose: async () => {
+            observe("dispose");
+        },
     };
 }
 
@@ -80,10 +77,7 @@ describe("Application lifecycle", () => {
         const calls: string[] = [];
         const states: ApplicationState[] = [];
 
-        const app = new Application(
-            [createLifecycleModule("inventory", calls, states, () => app)],
-            createContext(),
-        );
+        const app = new Application([createLifecycleModule("inventory", calls, states, () => app)], createContext());
 
         expect(app.state).toBe("created");
 
@@ -99,22 +93,8 @@ describe("Application lifecycle", () => {
         await app.dispose();
         expect(app.state).toBe("disposed");
 
-        expect(calls).toEqual([
-            "inventory:initialize",
-            "inventory:start",
-            "inventory:pause",
-            "inventory:resume",
-            "inventory:stop",
-            "inventory:dispose",
-        ]);
-        expect(states).toEqual([
-            "initializing",
-            "initializing",
-            "running",
-            "paused",
-            "stopping",
-            "stopping",
-        ]);
+        expect(calls).toEqual(["inventory:initialize", "inventory:start", "inventory:pause", "inventory:resume", "inventory:stop", "inventory:dispose"]);
+        expect(states).toEqual(["initializing", "initializing", "running", "paused", "stopping", "stopping"]);
     });
 
     test("runs the complete lifecycle with no modules", async () => {
@@ -144,7 +124,9 @@ describe("Application lifecycle", () => {
         const module: Module = {
             id: "probe",
             dependencies: [],
-            initialize: async (ctx) => { receivedContext = ctx; },
+            initialize: async (ctx) => {
+                receivedContext = ctx;
+            },
         };
 
         const app = new Application([module], context);

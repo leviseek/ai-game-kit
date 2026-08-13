@@ -3,10 +3,7 @@ import { describe, expect, test } from "bun:test";
 // 副作用导入 samples/entry：触发 samples bundle 单点登记，使运行时夹具登记表非空
 import "../../../assets/samples/entry";
 import { gameFixtureRegistry } from "../../../assets/game/fixture/registry";
-import {
-    AUTO_BATTLE_BATTLE_ENTRY,
-    gameTypeCatalog,
-} from "../../../assets/game/lobby/catalog";
+import { AUTO_BATTLE_BATTLE_ENTRY, gameTypeCatalog } from "../../../assets/game/lobby/catalog";
 
 describe("game lobby catalog", () => {
     test("every catalog id aligns with the fixture registry", () => {
@@ -16,9 +13,7 @@ describe("game lobby catalog", () => {
     });
 
     test("card and auto_battle are the playable game types", () => {
-        const playable = gameTypeCatalog
-            .filter((info) => info.playable)
-            .map((info) => info.id);
+        const playable = gameTypeCatalog.filter((info) => info.playable).map((info) => info.id);
         expect(playable).toEqual(["card", "auto_battle"]);
     });
 

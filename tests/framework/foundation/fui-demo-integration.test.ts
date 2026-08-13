@@ -4,10 +4,7 @@ import { describe, expect, mock, test } from "bun:test";
 
 import { lookupBundle } from "../../../assets/framework";
 import { getFuiComponentRegistry } from "../../../assets/framework/core/fui/FuiComponentRegistry";
-import {
-    FuiViewBindingRegistrationError,
-    FuiViewCreationError,
-} from "../../../assets/framework/core/fui/FuiErrors";
+import { FuiViewBindingRegistrationError, FuiViewCreationError } from "../../../assets/framework/core/fui/FuiErrors";
 import { CLOSE_DIALOG_ACTIONS } from "../../../assets/samples/game_fui_demo/store";
 import { UiDemoCloseDialog } from "../../../assets/ui/generated/ui-demo";
 import { createCcMock } from "./helpers/cc-mock";
@@ -32,9 +29,7 @@ interface DialogComponent {
     dispose(): void;
 }
 
-function makeDialogComponent(
-    children: Record<string, { text?: string; visible?: boolean }>,
-): DialogComponent {
+function makeDialogComponent(children: Record<string, { text?: string; visible?: boolean }>): DialogComponent {
     const clickHandlers = new Map<string, () => void>();
     return {
         name: "CloseDialog",
@@ -71,8 +66,8 @@ function makeDialogComponent(
                 },
             };
         },
-        on() { },
-        off() { },
+        on() {},
+        off() {},
         dispose() {
             this.disposed++;
         },
@@ -122,27 +117,18 @@ describe("CloseDialog 示范静态页生产链集成", () => {
             // import samples entry：CloseDialog 装饰器登记组件元数据，并经
             // registerBundle 注册真实 samples bundle descriptor；从 lookupBundle
             // 取 Feature factory，但暂不安装 Feature（先验证 required binder missing）
-            await import(
-                pathToFileURL(resolve(import.meta.dir, "../../../assets/samples/entry.ts")).href
-            );
+            await import(pathToFileURL(resolve(import.meta.dir, "../../../assets/samples/entry.ts")).href);
             const registry = getFuiComponentRegistry();
             expect(registry.lookup(UiDemoCloseDialog)).toBeDefined();
 
             const descriptor = lookupBundle("samples") as {
-                createCloseDialogFeature?: (
-                    registrar: unknown,
-                    effects: { confirm: () => void; cancel: () => void },
-                ) => CloseDialogFeatureLike;
+                createCloseDialogFeature?: (registrar: unknown, effects: { confirm: () => void; cancel: () => void }) => CloseDialogFeatureLike;
             };
             expect(typeof descriptor?.createCloseDialogFeature).toBe("function");
             const createFeature = descriptor.createCloseDialogFeature!;
 
-            const appRoot = (await import(
-                pathToFileURL(resolve(import.meta.dir, "../../../assets/boot/assembly.ts")).href
-            )) as {
-                assembleApp(options?: {
-                    fuiObjectFactory?: (packageName: string, resName: string) => unknown | null;
-                }): AppAssemblyLike;
+            const appRoot = (await import(pathToFileURL(resolve(import.meta.dir, "../../../assets/boot/assembly.ts")).href)) as {
+                assembleApp(options?: { fuiObjectFactory?: (packageName: string, resName: string) => unknown | null }): AppAssemblyLike;
             };
 
             const confirm = mock(() => {});
@@ -276,9 +262,7 @@ describe("CloseDialog 示范静态页生产链集成", () => {
     });
 
     test("投影为纯函数：可独立单测", async () => {
-        const demo = (await import(
-            pathToFileURL(resolve(import.meta.dir, "../../../assets/samples/game_fui_demo/store.ts")).href
-        )) as {
+        const demo = (await import(pathToFileURL(resolve(import.meta.dir, "../../../assets/samples/game_fui_demo/store.ts")).href)) as {
             projectCloseDialog: (state: { visible: boolean; content: string }) => { content: string; title: string };
             closeDialogReducer: (state: { visible: boolean; content: string }, action: { type: string }) => unknown;
         };

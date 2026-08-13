@@ -3,11 +3,7 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, test } from "bun:test";
 
-import type {
-    ApplicationContext,
-    Module,
-    ModuleRuntimeState,
-} from "../../../assets/framework";
+import type { ApplicationContext, Module, ModuleRuntimeState } from "../../../assets/framework";
 import { MemoryLogger } from "../support/MemoryLogger";
 
 interface ModuleRunnerInstance {
@@ -18,47 +14,43 @@ interface ModuleRunnerInstance {
     getState(moduleId: string): ModuleRuntimeState | undefined;
 }
 
-type ModuleRunnerConstructor = new (
-    modules: readonly Module[],
-    context: ApplicationContext,
-) => ModuleRunnerInstance;
+type ModuleRunnerConstructor = new (modules: readonly Module[], context: ApplicationContext) => ModuleRunnerInstance;
 
 interface ModuleRunnerExports {
     readonly ModuleRunner?: ModuleRunnerConstructor;
 }
 
 const projectRoot = resolve(import.meta.dir, "../../..");
-const moduleRunnerFile = resolve(
-    projectRoot,
-    "assets/framework/application/ModuleRunner.ts",
-);
+const moduleRunnerFile = resolve(projectRoot, "assets/framework/application/ModuleRunner.ts");
 
 const context: ApplicationContext = {
     logger: new MemoryLogger(),
     state: "created",
 };
 
-function createModule(
-    id: string,
-    calls: string[],
-    dependencies: readonly string[] = [],
-): Module {
+function createModule(id: string, calls: string[], dependencies: readonly string[] = []): Module {
     return {
         id,
         dependencies,
-        initialize: async () => { calls.push(`${id}:initialize`); },
-        start: async () => { calls.push(`${id}:start`); },
-        stop: async () => { calls.push(`${id}:stop`); },
-        dispose: async () => { calls.push(`${id}:dispose`); },
+        initialize: async () => {
+            calls.push(`${id}:initialize`);
+        },
+        start: async () => {
+            calls.push(`${id}:start`);
+        },
+        stop: async () => {
+            calls.push(`${id}:stop`);
+        },
+        dispose: async () => {
+            calls.push(`${id}:dispose`);
+        },
     };
 }
 
 async function loadModuleRunner(): Promise<ModuleRunnerConstructor> {
     expect(existsSync(moduleRunnerFile)).toBe(true);
 
-    const exports = (await import(
-        pathToFileURL(moduleRunnerFile).href
-    )) as ModuleRunnerExports;
+    const exports = (await import(pathToFileURL(moduleRunnerFile).href)) as ModuleRunnerExports;
 
     expect(typeof exports.ModuleRunner).toBe("function");
 
@@ -72,32 +64,18 @@ describe("ModuleRunner main lifecycle", () => {
         const logging = createModule("logging", calls);
         const inventory = createModule("inventory", calls, [logging.id]);
         const gameplay = createModule("gameplay", calls, [inventory.id]);
-        const runner = new ModuleRunner(
-            [logging, inventory, gameplay],
-            context,
-        );
+        const runner = new ModuleRunner([logging, inventory, gameplay], context);
 
         await runner.initialize();
 
-        expect(calls).toEqual([
-            "logging:initialize",
-            "inventory:initialize",
-            "gameplay:initialize",
-        ]);
+        expect(calls).toEqual(["logging:initialize", "inventory:initialize", "gameplay:initialize"]);
         expect(runner.getState(logging.id)).toBe("initialized");
         expect(runner.getState(inventory.id)).toBe("initialized");
         expect(runner.getState(gameplay.id)).toBe("initialized");
 
         await runner.start();
 
-        expect(calls).toEqual([
-            "logging:initialize",
-            "inventory:initialize",
-            "gameplay:initialize",
-            "logging:start",
-            "inventory:start",
-            "gameplay:start",
-        ]);
+        expect(calls).toEqual(["logging:initialize", "inventory:initialize", "gameplay:initialize", "logging:start", "inventory:start", "gameplay:start"]);
         expect(runner.getState(logging.id)).toBe("started");
         expect(runner.getState(inventory.id)).toBe("started");
         expect(runner.getState(gameplay.id)).toBe("started");
@@ -109,10 +87,7 @@ describe("ModuleRunner main lifecycle", () => {
         const logging = createModule("logging", calls);
         const inventory = createModule("inventory", calls, [logging.id]);
         const gameplay = createModule("gameplay", calls, [inventory.id]);
-        const runner = new ModuleRunner(
-            [logging, inventory, gameplay],
-            context,
-        );
+        const runner = new ModuleRunner([logging, inventory, gameplay], context);
 
         await runner.initialize();
         await runner.start();
@@ -120,25 +95,14 @@ describe("ModuleRunner main lifecycle", () => {
 
         await runner.stop();
 
-        expect(calls).toEqual([
-            "gameplay:stop",
-            "inventory:stop",
-            "logging:stop",
-        ]);
+        expect(calls).toEqual(["gameplay:stop", "inventory:stop", "logging:stop"]);
         expect(runner.getState(logging.id)).toBe("stopped");
         expect(runner.getState(inventory.id)).toBe("stopped");
         expect(runner.getState(gameplay.id)).toBe("stopped");
 
         await runner.dispose();
 
-        expect(calls).toEqual([
-            "gameplay:stop",
-            "inventory:stop",
-            "logging:stop",
-            "gameplay:dispose",
-            "inventory:dispose",
-            "logging:dispose",
-        ]);
+        expect(calls).toEqual(["gameplay:stop", "inventory:stop", "logging:stop", "gameplay:dispose", "inventory:dispose", "logging:dispose"]);
         expect(runner.getState(logging.id)).toBe("disposed");
         expect(runner.getState(inventory.id)).toBe("disposed");
         expect(runner.getState(gameplay.id)).toBe("disposed");
@@ -159,12 +123,7 @@ describe("ModuleRunner main lifecycle", () => {
         await runner.dispose();
         await runner.dispose();
 
-        expect(calls).toEqual([
-            "inventory:initialize",
-            "inventory:start",
-            "inventory:stop",
-            "inventory:dispose",
-        ]);
+        expect(calls).toEqual(["inventory:initialize", "inventory:start", "inventory:stop", "inventory:dispose"]);
         expect(runner.getState(module.id)).toBe("disposed");
     });
 });

@@ -2,12 +2,7 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, test } from "bun:test";
 
-import {
-    FrameworkError,
-    ModuleLifecycleError,
-    type ApplicationContext,
-    type Module,
-} from "../../../assets/framework";
+import { FrameworkError, ModuleLifecycleError, type ApplicationContext, type Module } from "../../../assets/framework";
 import { MemoryLogger } from "../support/MemoryLogger";
 
 interface ModuleRunnerInstance {
@@ -17,10 +12,7 @@ interface ModuleRunnerInstance {
     dispose(): Promise<void>;
 }
 
-type ModuleRunnerConstructor = new (
-    modules: readonly Module[],
-    context: ApplicationContext,
-) => ModuleRunnerInstance;
+type ModuleRunnerConstructor = new (modules: readonly Module[], context: ApplicationContext) => ModuleRunnerInstance;
 
 interface ModuleRunnerExports {
     readonly ModuleRunner: ModuleRunnerConstructor;
@@ -34,29 +26,19 @@ type ErrorWithCleanupErrors = Error & {
 };
 
 const projectRoot = resolve(import.meta.dir, "../../..");
-const moduleRunnerFile = resolve(
-    projectRoot,
-    "assets/framework/application/ModuleRunner.ts",
-);
+const moduleRunnerFile = resolve(projectRoot, "assets/framework/application/ModuleRunner.ts");
 const context: ApplicationContext = {
     logger: new MemoryLogger(),
     state: "created",
 };
 
 async function loadModuleRunner(): Promise<ModuleRunnerConstructor> {
-    const exports = (await import(
-        pathToFileURL(moduleRunnerFile).href
-    )) as ModuleRunnerExports;
+    const exports = (await import(pathToFileURL(moduleRunnerFile).href)) as ModuleRunnerExports;
 
     return exports.ModuleRunner;
 }
 
-function createModule(
-    id: string,
-    calls: string[],
-    dependencies: readonly string[] = [],
-    failures: LifecycleFailures = {},
-): Module {
+function createModule(id: string, calls: string[], dependencies: readonly string[] = [], failures: LifecycleFailures = {}): Module {
     const run = async (phase: LifecyclePhase): Promise<void> => {
         calls.push(`${id}:${phase}`);
 
@@ -77,9 +59,7 @@ function createModule(
     };
 }
 
-async function captureRejection(
-    operation: () => Promise<void>,
-): Promise<unknown> {
+async function captureRejection(operation: () => Promise<void>): Promise<unknown> {
     try {
         await operation();
     } catch (error) {
@@ -125,9 +105,7 @@ function expectCleanupErrors(
         expect(lifecycleError).toBeInstanceOf(ModuleLifecycleError);
         expect(lifecycleError.moduleId).toBe(expected[index]?.moduleId);
         expect(lifecycleError.phase).toBe(expected[index]?.phase);
-        expect((lifecycleError as ErrorWithCause).cause).toBe(
-            expected[index]?.cause,
-        );
+        expect((lifecycleError as ErrorWithCause).cause).toBe(expected[index]?.cause);
     }
 }
 
@@ -137,17 +115,9 @@ describe("ModuleRunner cleanup failures", () => {
         const calls: string[] = [];
         const stopFailure = new Error("inventory stop failed");
         const logging = createModule("logging", calls);
-        const inventory = createModule(
-            "inventory",
-            calls,
-            [logging.id],
-            { stop: stopFailure },
-        );
+        const inventory = createModule("inventory", calls, [logging.id], { stop: stopFailure });
         const gameplay = createModule("gameplay", calls, [inventory.id]);
-        const runner = new ModuleRunner(
-            [logging, inventory, gameplay],
-            context,
-        );
+        const runner = new ModuleRunner([logging, inventory, gameplay], context);
 
         await runner.initialize();
         await runner.start();
@@ -157,14 +127,8 @@ describe("ModuleRunner cleanup failures", () => {
 
         expect(containsError(error, stopFailure)).toBe(true);
         expect(error).toBeInstanceOf(FrameworkError);
-        expectCleanupErrors(error, [
-            { moduleId: inventory.id, phase: "stop", cause: stopFailure },
-        ]);
-        expect(calls).toEqual([
-            "gameplay:stop",
-            "inventory:stop",
-            "logging:stop",
-        ]);
+        expectCleanupErrors(error, [{ moduleId: inventory.id, phase: "stop", cause: stopFailure }]);
+        expect(calls).toEqual(["gameplay:stop", "inventory:stop", "logging:stop"]);
     });
 
     test("continues disposing remaining modules after one dispose fails", async () => {
@@ -172,17 +136,9 @@ describe("ModuleRunner cleanup failures", () => {
         const calls: string[] = [];
         const disposeFailure = new Error("inventory dispose failed");
         const logging = createModule("logging", calls);
-        const inventory = createModule(
-            "inventory",
-            calls,
-            [logging.id],
-            { dispose: disposeFailure },
-        );
+        const inventory = createModule("inventory", calls, [logging.id], { dispose: disposeFailure });
         const gameplay = createModule("gameplay", calls, [inventory.id]);
-        const runner = new ModuleRunner(
-            [logging, inventory, gameplay],
-            context,
-        );
+        const runner = new ModuleRunner([logging, inventory, gameplay], context);
 
         await runner.initialize();
         calls.length = 0;
@@ -190,14 +146,8 @@ describe("ModuleRunner cleanup failures", () => {
         const error = await captureRejection(() => runner.dispose());
 
         expect(containsError(error, disposeFailure)).toBe(true);
-        expectCleanupErrors(error, [
-            { moduleId: inventory.id, phase: "dispose", cause: disposeFailure },
-        ]);
-        expect(calls).toEqual([
-            "gameplay:dispose",
-            "inventory:dispose",
-            "logging:dispose",
-        ]);
+        expectCleanupErrors(error, [{ moduleId: inventory.id, phase: "dispose", cause: disposeFailure }]);
+        expect(calls).toEqual(["gameplay:dispose", "inventory:dispose", "logging:dispose"]);
     });
 
     test("preserves initialize failure when rollback dispose also fails", async () => {
@@ -206,41 +156,16 @@ describe("ModuleRunner cleanup failures", () => {
         const initializeFailure = new Error("gameplay initialize failed");
         const disposeFailure = new Error("inventory dispose failed");
         const logging = createModule("logging", calls);
-        const inventory = createModule(
-            "inventory",
-            calls,
-            [logging.id],
-            { dispose: disposeFailure },
-        );
-        const gameplay = createModule(
-            "gameplay",
-            calls,
-            [inventory.id],
-            { initialize: initializeFailure },
-        );
-        const presentation = createModule(
-            "presentation",
-            calls,
-            [gameplay.id],
-        );
-        const runner = new ModuleRunner(
-            [logging, inventory, gameplay, presentation],
-            context,
-        );
+        const inventory = createModule("inventory", calls, [logging.id], { dispose: disposeFailure });
+        const gameplay = createModule("gameplay", calls, [inventory.id], { initialize: initializeFailure });
+        const presentation = createModule("presentation", calls, [gameplay.id]);
+        const runner = new ModuleRunner([logging, inventory, gameplay, presentation], context);
 
         const error = await captureRejection(() => runner.initialize());
 
         expect(containsError(error, initializeFailure)).toBe(true);
-        expectCleanupErrors(error, [
-            { moduleId: inventory.id, phase: "dispose", cause: disposeFailure },
-        ]);
-        expect(calls).toEqual([
-            "logging:initialize",
-            "inventory:initialize",
-            "gameplay:initialize",
-            "inventory:dispose",
-            "logging:dispose",
-        ]);
+        expectCleanupErrors(error, [{ moduleId: inventory.id, phase: "dispose", cause: disposeFailure }]);
+        expect(calls).toEqual(["logging:initialize", "inventory:initialize", "gameplay:initialize", "inventory:dispose", "logging:dispose"]);
     });
 
     test("preserves start failure when rollback stop also fails", async () => {
@@ -249,33 +174,11 @@ describe("ModuleRunner cleanup failures", () => {
         const startFailure = new Error("gameplay start failed");
         const stopFailure = new Error("inventory stop failed");
         const disposeFailure = new Error("logging dispose failed");
-        const logging = createModule(
-            "logging",
-            calls,
-            [],
-            { dispose: disposeFailure },
-        );
-        const inventory = createModule(
-            "inventory",
-            calls,
-            [logging.id],
-            { stop: stopFailure },
-        );
-        const gameplay = createModule(
-            "gameplay",
-            calls,
-            [inventory.id],
-            { start: startFailure },
-        );
-        const presentation = createModule(
-            "presentation",
-            calls,
-            [gameplay.id],
-        );
-        const runner = new ModuleRunner(
-            [logging, inventory, gameplay, presentation],
-            context,
-        );
+        const logging = createModule("logging", calls, [], { dispose: disposeFailure });
+        const inventory = createModule("inventory", calls, [logging.id], { stop: stopFailure });
+        const gameplay = createModule("gameplay", calls, [inventory.id], { start: startFailure });
+        const presentation = createModule("presentation", calls, [gameplay.id]);
+        const runner = new ModuleRunner([logging, inventory, gameplay, presentation], context);
 
         await runner.initialize();
         calls.length = 0;

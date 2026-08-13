@@ -4,10 +4,7 @@ import { describe, expect, mock, test } from "bun:test";
 
 import { createFairyGuiMock } from "./helpers/fairygui-mock";
 import { FuiViewCleanupError } from "../../../assets/framework/core/fui/FuiErrors";
-import {
-    UI_LAYER_ORDER,
-    type UiLayer,
-} from "../../../assets/framework/contracts/ui/Navigation";
+import { UI_LAYER_ORDER, type UiLayer } from "../../../assets/framework/contracts/ui/Navigation";
 
 // 3.2 实现值导入 fairygui-cc，统一使用共享 fixture 避免全量运行解析失败。
 // bun 的 mock.module 全局共享且首个注册生效，所有 mock 该模块的文件须注册相同内容。
@@ -39,10 +36,7 @@ interface FairyGuiPageAdapterOptions {
     /** 资源入口（预留）：adapter 不直接读取，逆序释放编排由 4.x 接入。 */
     readonly provider?: unknown;
     /** 页面创建接缝：按 package + 资源名创建页面视图，可抛错模拟失败。 */
-    readonly createView?: (
-        packageName: string,
-        resName: string,
-    ) => FairyGuiViewLike;
+    readonly createView?: (packageName: string, resName: string) => FairyGuiViewLike;
     /** 遮罩创建接缝：按 GRoot 尺寸创建模态遮罩对象（4.2 引入）。 */
     readonly createMask?: (width: number, height: number) => unknown;
 }
@@ -61,11 +55,7 @@ interface FairyGuiPageAdapter {
     /** 按 UI_LAYER_ORDER 建立七层 GRoot 容器，幂等。 */
     init(): void;
     containerFor(layer: UiLayer): FairyGuiContainerLike | undefined;
-    createPage(
-        route: string,
-        layer: UiLayer,
-        options?: { packageName?: string; resName?: string },
-    ): FairyGuiPageHandle;
+    createPage(route: string, layer: UiLayer, options?: { packageName?: string; resName?: string }): FairyGuiPageHandle;
     mount(page: FairyGuiPageHandle): void;
     /** 移除挂载；重复卸载幂等。 */
     unmount(page: FairyGuiPageHandle): void;
@@ -81,21 +71,15 @@ interface FairyGuiPageAdapterFactory {
 }
 
 const projectRoot = resolve(import.meta.dir, "../../..");
-const adapterFile = resolve(
-    projectRoot,
-    "assets/framework/adapters/cocos/ui/FairyGuiPageAdapter.ts",
-);
+const adapterFile = resolve(projectRoot, "assets/framework/adapters/cocos/ui/FairyGuiPageAdapter.ts");
 
 async function loadFactory(): Promise<FairyGuiPageAdapterFactory> {
-    const exports = (await import(
-        pathToFileURL(adapterFile).href
-    )) as Partial<FairyGuiPageAdapterFactory>;
+    const exports = (await import(pathToFileURL(adapterFile).href)) as Partial<FairyGuiPageAdapterFactory>;
 
     expect(typeof exports.createFairyGuiPageAdapter).toBe("function");
 
     return {
-        createFairyGuiPageAdapter:
-            exports.createFairyGuiPageAdapter as FairyGuiPageAdapterFactory["createFairyGuiPageAdapter"],
+        createFairyGuiPageAdapter: exports.createFairyGuiPageAdapter as FairyGuiPageAdapterFactory["createFairyGuiPageAdapter"],
     };
 }
 
@@ -181,14 +165,8 @@ function createRecordingRoot(): {
     return { root, calls, containers };
 }
 
-function findContainerCalls(
-    calls: readonly ContainerCall[],
-    containerName: string,
-    action: string,
-): ContainerCall[] {
-    return calls.filter(
-        (call) => call.container === containerName && call.action === action,
-    );
+function findContainerCalls(calls: readonly ContainerCall[], containerName: string, action: string): ContainerCall[] {
+    return calls.filter((call) => call.container === containerName && call.action === action);
 }
 
 function makeSimpleAdapter(
@@ -198,7 +176,7 @@ function makeSimpleAdapter(
 ): FairyGuiPageAdapter {
     return createFairyGuiPageAdapter({
         root: recording.root,
-        createView: createView ?? (() => ({ name: "view", dispose: () => { } })),
+        createView: createView ?? (() => ({ name: "view", dispose: () => {} })),
     });
 }
 
@@ -212,15 +190,11 @@ describe("FairyGuiPageAdapter", () => {
 
         const addCalls = recording.calls.filter((call) => call.action === "addChild");
         expect(addCalls).toHaveLength(UI_LAYER_ORDER.length);
-        expect(addCalls.map((call) => (call.child as { name?: string } | undefined)?.name)).toEqual(
-            [...UI_LAYER_ORDER],
-        );
+        expect(addCalls.map((call) => (call.child as { name?: string } | undefined)?.name)).toEqual([...UI_LAYER_ORDER]);
 
         // 重复 init 幂等：不重复创建容器
         adapter.init();
-        expect(
-            recording.calls.filter((call) => call.action === "addChild"),
-        ).toHaveLength(UI_LAYER_ORDER.length);
+        expect(recording.calls.filter((call) => call.action === "addChild")).toHaveLength(UI_LAYER_ORDER.length);
     });
 
     test("createPage uses explicit package/resName parameters", async () => {
@@ -228,7 +202,7 @@ describe("FairyGuiPageAdapter", () => {
         const recording = createRecordingRoot();
         const createView = mock((packageName: string, resName: string) => ({
             name: `${packageName}:${resName}`,
-            dispose: mock(() => { }),
+            dispose: mock(() => {}),
         }));
         const adapter = makeSimpleAdapter(createFairyGuiPageAdapter, recording, createView);
 
@@ -276,18 +250,14 @@ describe("FairyGuiPageAdapter", () => {
         adapter.unmount(page);
 
         expect(page.mounted).toBe(false);
-        const removeCalls = findContainerCalls(
-            recording.calls,
-            "popup",
-            "removeChild",
-        );
+        const removeCalls = findContainerCalls(recording.calls, "popup", "removeChild");
         expect(removeCalls).toHaveLength(1);
     });
 
     test("destroy unmounts then disposes the view, and is idempotent", async () => {
         const { createFairyGuiPageAdapter } = await loadFactory();
         const recording = createRecordingRoot();
-        const viewDispose = mock(() => { });
+        const viewDispose = mock(() => {});
         const view = { name: "view", dispose: viewDispose };
         const adapter = createFairyGuiPageAdapter({
             root: recording.root,
@@ -306,9 +276,7 @@ describe("FairyGuiPageAdapter", () => {
         expect(page.disposed).toBe(true);
         expect(viewDispose).toHaveBeenCalledTimes(1);
         // 销毁先移除挂载：popup 容器收到 removeChild，容器内无残留
-        expect(
-            findContainerCalls(recording.calls, "popup", "removeChild"),
-        ).toHaveLength(1);
+        expect(findContainerCalls(recording.calls, "popup", "removeChild")).toHaveLength(1);
         expect(recording.containers.get("popup")?.numChildren).toBe(0);
     });
 
@@ -386,9 +354,7 @@ describe("FairyGuiPageAdapter", () => {
 
         // 重复进入模态幂等：不重复添加遮罩
         adapter.setModal(true);
-        expect(
-            findContainerCalls(recording.calls, "system", "addChild"),
-        ).toHaveLength(2);
+        expect(findContainerCalls(recording.calls, "system", "addChild")).toHaveLength(2);
 
         adapter.setModal(false);
         // 精确移除遮罩，保留预置页面
@@ -404,7 +370,7 @@ describe("FairyGuiPageAdapter", () => {
         const adapter = createFairyGuiPageAdapter({
             root: recording.root,
             // 缺省 createMask 用 GGraph：drawRect 半透明填充 + opaque + touchable
-            createView: () => ({ name: "view", dispose: () => { } }),
+            createView: () => ({ name: "view", dispose: () => {} }),
         });
 
         adapter.init();
@@ -424,9 +390,7 @@ describe("FairyGuiPageAdapter", () => {
         expect(mask.opaque).toBe(true);
 
         adapter.setModal(false);
-        expect(
-            findContainerCalls(recording.calls, "system", "removeChild"),
-        ).toHaveLength(1);
+        expect(findContainerCalls(recording.calls, "system", "removeChild")).toHaveLength(1);
     });
 
     test("dispose removes containers from the root and leaves no residual mask", async () => {
@@ -445,11 +409,7 @@ describe("FairyGuiPageAdapter", () => {
         adapter.dispose();
 
         // 七个容器都从 GRoot 移除（遮罩移除记录在 system 容器级，不算入此）
-        expect(
-            recording.calls.filter(
-                (call) => call.container === "GRoot" && call.action === "removeChild",
-            ),
-        ).toHaveLength(UI_LAYER_ORDER.length);
+        expect(recording.calls.filter((call) => call.container === "GRoot" && call.action === "removeChild")).toHaveLength(UI_LAYER_ORDER.length);
         // 遮罩被移除，system 容器不再持有任何子对象
         const system = recording.containers.get("system");
         expect(system?.numChildren).toBe(0);
@@ -461,7 +421,12 @@ describe("FairyGuiPageAdapter", () => {
         const { createFairyGuiPageAdapter } = await loadFactory();
         const recording = createRecordingRoot();
         const disposeError = new Error("view dispose failed");
-        const view = { name: "view", dispose: () => { throw disposeError; } };
+        const view = {
+            name: "view",
+            dispose: () => {
+                throw disposeError;
+            },
+        };
         const adapter = createFairyGuiPageAdapter({
             root: recording.root,
             createView: () => view,
@@ -497,14 +462,16 @@ describe("FairyGuiPageAdapter", () => {
         const { createFairyGuiPageAdapter } = await loadFactory();
         const recording = createRecordingRoot();
         const boomError = new Error("boom page dispose failed");
-        const boomView = { name: "boom", dispose: () => { throw boomError; } };
-        const okViewDispose = mock(() => { });
+        const boomView = {
+            name: "boom",
+            dispose: () => {
+                throw boomError;
+            },
+        };
+        const okViewDispose = mock(() => {});
         const adapter = createFairyGuiPageAdapter({
             root: recording.root,
-            createView: (_pkg, res) =>
-                res === "Boom"
-                    ? boomView
-                    : { name: "ok", dispose: okViewDispose },
+            createView: (_pkg, res) => (res === "Boom" ? boomView : { name: "ok", dispose: okViewDispose }),
         });
 
         adapter.init();
@@ -531,11 +498,7 @@ describe("FairyGuiPageAdapter", () => {
         expect(pageB.disposed).toBe(true);
         expect(okViewDispose).toHaveBeenCalledTimes(1);
         // 七层容器全部从 GRoot 移除（不因页面失败中断容器清理）
-        expect(
-            recording.calls.filter(
-                (call) => call.container === "GRoot" && call.action === "removeChild",
-            ),
-        ).toHaveLength(UI_LAYER_ORDER.length);
+        expect(recording.calls.filter((call) => call.container === "GRoot" && call.action === "removeChild")).toHaveLength(UI_LAYER_ORDER.length);
         // 聚合错误携带唯一失败
         expect(thrown).toBeInstanceOf(FuiViewCleanupError);
         const cleanupError = thrown as FuiViewCleanupError;
@@ -550,9 +513,11 @@ describe("FairyGuiPageAdapter", () => {
         const removalError = new Error("container removal failed");
         let failedRemoval = false;
         // 首个容器移除失败：记录调用后抛错，验证失败不阻断其余容器移除
-        (recording.root as unknown as {
-            removeChild(child: unknown, dispose?: boolean): unknown;
-        }).removeChild = (child, dispose) => {
+        (
+            recording.root as unknown as {
+                removeChild(child: unknown, dispose?: boolean): unknown;
+            }
+        ).removeChild = (child, dispose) => {
             originalRemoveChild(child, dispose);
             if (!failedRemoval) {
                 failedRemoval = true;
@@ -576,11 +541,7 @@ describe("FairyGuiPageAdapter", () => {
         }
 
         // 单个容器移除失败不阻断其余：七个容器移除全部被尝试
-        expect(
-            recording.calls.filter(
-                (call) => call.container === "GRoot" && call.action === "removeChild",
-            ),
-        ).toHaveLength(UI_LAYER_ORDER.length);
+        expect(recording.calls.filter((call) => call.container === "GRoot" && call.action === "removeChild")).toHaveLength(UI_LAYER_ORDER.length);
         // 容器清理失败发生在页面清理之后：页面仍被销毁
         expect(page.disposed).toBe(true);
         // 聚合错误携带容器移除失败

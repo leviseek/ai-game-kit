@@ -3,10 +3,7 @@ import { describe, expect, test } from "bun:test";
 import type { Module } from "../../../assets/framework";
 // 副作用导入 samples/entry：触发 samples bundle 单点登记，使运行时夹具登记表非空
 import "../../../assets/samples/entry";
-import {
-    createGameFixture,
-    type GameFixture,
-} from "../../../assets/game/fixture/GameFixture";
+import { createGameFixture, type GameFixture } from "../../../assets/game/fixture/GameFixture";
 import { gameFixtureRegistry } from "../../../assets/game/fixture/registry";
 
 // ---- 8.6 统一生命周期测试：以同一驱动对六个夹具执行统一接缝 ----
@@ -47,13 +44,7 @@ describe("8.6 unified lifecycle test", () => {
             expect(fixture.modules.length).toBeGreaterThan(0);
 
             const steps = await driveUniformLifecycle(fixture);
-            expect(steps).toEqual([
-                "start",
-                "pause",
-                "resume",
-                "failRollback",
-                "dispose",
-            ]);
+            expect(steps).toEqual(["start", "pause", "resume", "failRollback", "dispose"]);
         });
     }
 });
@@ -91,11 +82,7 @@ describe("8.6 failure rollback leaves no half-started state", () => {
         };
         const fixture = createGameFixture({
             id: "rollback",
-            modules: [
-                createRecordingModule("alpha", log),
-                createRecordingModule("beta", log),
-                failingModule,
-            ],
+            modules: [createRecordingModule("alpha", log), createRecordingModule("beta", log), failingModule],
         });
 
         // 启动中某模块失败：start 接缝 reject（框架包装为 ModuleLifecycleError）
@@ -104,9 +91,7 @@ describe("8.6 failure rollback leaves no half-started state", () => {
         // 已启动模块逆序回滚：先 stop 已 started 模块，再 dispose 全部注册模块，
         // 后启动的模块先清理（beta 后于 alpha 启动，先被 stop/dispose）
         expect(log.indexOf("beta:stop")).toBeLessThan(log.indexOf("alpha:stop"));
-        expect(log.indexOf("beta:dispose")).toBeLessThan(
-            log.indexOf("alpha:dispose"),
-        );
+        expect(log.indexOf("beta:dispose")).toBeLessThan(log.indexOf("alpha:dispose"));
 
         // disposed 终态下释放幂等：重复 dispose 是安全的 no-op
         await expect(fixture.dispose()).resolves.toBeUndefined();
@@ -133,13 +118,7 @@ describe("8.6 failure rollback leaves no half-started state", () => {
             id: "rebuilt",
             modules: [createRecordingModule("alpha", log)],
         });
-        await expect(driveUniformLifecycle(rebuilt)).resolves.toEqual([
-            "start",
-            "pause",
-            "resume",
-            "failRollback",
-            "dispose",
-        ]);
+        await expect(driveUniformLifecycle(rebuilt)).resolves.toEqual(["start", "pause", "resume", "failRollback", "dispose"]);
     });
 
     test("the five real fixtures roll back without leaving their own apps disturbed", async () => {

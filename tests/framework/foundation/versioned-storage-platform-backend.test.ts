@@ -9,31 +9,18 @@ mock.module("cc", () => ({
     sys: {
         localStorage: {
             getItem: () => null,
-            setItem: () => { },
-            removeItem: () => { },
+            setItem: () => {},
+            removeItem: () => {},
         },
     },
 }));
 
-import {
-    SaveCorruptionError,
-    SaveMigrationError,
-    SaveSerializationError,
-    SaveVersionError,
-    createVersionedStorage,
-} from "../../../assets/framework/core/storage/VersionedStorage";
-import type {
-    SaveMigrator,
-    SaveVersion,
-    VersionedStorage,
-} from "../../../assets/framework/contracts/storage/VersionedStorage";
+import { SaveCorruptionError, SaveMigrationError, SaveSerializationError, SaveVersionError, createVersionedStorage } from "../../../assets/framework/core/storage/VersionedStorage";
+import type { SaveMigrator, SaveVersion, VersionedStorage } from "../../../assets/framework/contracts/storage/VersionedStorage";
 import type { PlatformStorage } from "../../../assets/framework/contracts/platform/Platform";
 
 const projectRoot = resolve(import.meta.dir, "../../..");
-const adapterFile = resolve(
-    projectRoot,
-    "assets/framework/adapters/cocos/storage/CocosStorageAdapter.ts",
-);
+const adapterFile = resolve(projectRoot, "assets/framework/adapters/cocos/storage/CocosStorageAdapter.ts");
 
 interface LocalStorageLike {
     getItem(key: string): string | null;
@@ -41,14 +28,10 @@ interface LocalStorageLike {
     removeItem(key: string): void;
 }
 
-type CreateCocosStorageAdapter = (options?: {
-    readonly localStorage?: LocalStorageLike;
-}) => PlatformStorage;
+type CreateCocosStorageAdapter = (options?: { readonly localStorage?: LocalStorageLike }) => PlatformStorage;
 
 async function loadCreateAdapter(): Promise<CreateCocosStorageAdapter> {
-    const exports = (await import(
-        pathToFileURL(adapterFile).href,
-    )) as { createCocosStorageAdapter: CreateCocosStorageAdapter };
+    const exports = (await import(pathToFileURL(adapterFile).href)) as { createCocosStorageAdapter: CreateCocosStorageAdapter };
 
     expect(typeof exports.createCocosStorageAdapter).toBe("function");
 
@@ -90,11 +73,7 @@ async function createBackendHarness(): Promise<BackendHarness> {
     };
 }
 
-function createRepository(
-    backend: PlatformStorage,
-    currentVersion: SaveVersion,
-    migrators?: Readonly<Record<SaveVersion, SaveMigrator>>,
-): VersionedStorage {
+function createRepository(backend: PlatformStorage, currentVersion: SaveVersion, migrators?: Readonly<Record<SaveVersion, SaveMigrator>>): VersionedStorage {
     return createVersionedStorage({ storage: backend, currentVersion, migrators });
 }
 
@@ -209,9 +188,7 @@ describe("VersionedStorage over the platform storage adapter", () => {
         const harness = await createBackendHarness();
         const storage = createRepository(harness.backend(), 1);
 
-        expect(() =>
-            storage.save("player", "save", { name: "alice", fn: () => { } }),
-        ).toThrow(SaveSerializationError);
+        expect(() => storage.save("player", "save", { name: "alice", fn: () => {} })).toThrow(SaveSerializationError);
 
         expect(await storage.load("player", "save")).toBeNull();
     });

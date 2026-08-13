@@ -1,16 +1,8 @@
 import { describe, expect, test } from "bun:test";
 
 import type { FuiComponentUrl } from "../../../assets/framework/core/fui/FuiComponentRegistry";
-import {
-    FuiBindingError,
-    FuiViewBindingRegistrationError,
-} from "../../../assets/framework/core/fui/FuiErrors";
-import {
-    createFuiViewBinderRegistry,
-    createFuiViewBindingScope,
-    defineFuiViewBinding,
-    type FuiViewBindingScope,
-} from "../../../assets/framework/core/fui/FuiViewBinderRegistry";
+import { FuiBindingError, FuiViewBindingRegistrationError } from "../../../assets/framework/core/fui/FuiErrors";
+import { createFuiViewBinderRegistry, createFuiViewBindingScope, defineFuiViewBinding, type FuiViewBindingScope } from "../../../assets/framework/core/fui/FuiViewBinderRegistry";
 
 /** 合成测试 URL：非真实 FGUI 包，拼接避免 scan-ts 扫到裸 ui:// 字面量。 */
 const URL = ("ui" + "://Demo/ViewA") as FuiComponentUrl;
@@ -25,7 +17,7 @@ class ViewB {
 
 describe("defineFuiViewBinding", () => {
     test("returns a frozen binding descriptor carrying url/ctor/bind", () => {
-        const bind = (_view: ViewA, _scope: FuiViewBindingScope): void => { };
+        const bind = (_view: ViewA, _scope: FuiViewBindingScope): void => {};
 
         const binding = defineFuiViewBinding(URL, ViewA, bind);
 
@@ -39,25 +31,21 @@ describe("defineFuiViewBinding", () => {
 describe("FuiViewBindingRegistrar register", () => {
     test("registering the same URL twice is rejected without overriding", () => {
         const registry = createFuiViewBinderRegistry();
-        const first = defineFuiViewBinding(URL, ViewA, () => { });
-        const second = defineFuiViewBinding(URL, ViewB, () => { });
+        const first = defineFuiViewBinding(URL, ViewA, () => {});
+        const second = defineFuiViewBinding(URL, ViewB, () => {});
 
         registry.register(first);
 
-        expect(() => registry.register(second)).toThrow(
-            FuiViewBindingRegistrationError,
-        );
+        expect(() => registry.register(second)).toThrow(FuiViewBindingRegistrationError);
 
         // 首注册仍可解析（重复注册不得覆盖）
         const view = new ViewA();
-        expect(() =>
-            registry.bindRequired(URL, view, createFuiViewBindingScope()),
-        ).not.toThrow();
+        expect(() => registry.bindRequired(URL, view, createFuiViewBindingScope())).not.toThrow();
     });
 
     test("registration dispose removes the binding and is idempotent", () => {
         const registry = createFuiViewBinderRegistry();
-        const handle = registry.register(defineFuiViewBinding(URL, ViewA, () => { }));
+        const handle = registry.register(defineFuiViewBinding(URL, ViewA, () => {}));
 
         handle.dispose();
 
@@ -66,19 +54,15 @@ describe("FuiViewBindingRegistrar register", () => {
 
         // 移除后缺少 binder → 类型化错误
         const view = new ViewA();
-        expect(() =>
-            registry.bindRequired(URL, view, createFuiViewBindingScope()),
-        ).toThrow(FuiViewBindingRegistrationError);
+        expect(() => registry.bindRequired(URL, view, createFuiViewBindingScope())).toThrow(FuiViewBindingRegistrationError);
     });
 
     test("after dispose the same URL can be registered again", () => {
         const registry = createFuiViewBinderRegistry();
-        const handle = registry.register(defineFuiViewBinding(URL, ViewA, () => { }));
+        const handle = registry.register(defineFuiViewBinding(URL, ViewA, () => {}));
         handle.dispose();
 
-        expect(() =>
-            registry.register(defineFuiViewBinding(URL, ViewB, () => { })),
-        ).not.toThrow();
+        expect(() => registry.register(defineFuiViewBinding(URL, ViewB, () => {}))).not.toThrow();
     });
 });
 
@@ -113,9 +97,7 @@ describe("FuiViewBindingResolver bindRequired", () => {
 
         const viewB = new ViewB();
 
-        expect(() =>
-            registry.bindRequired(URL, viewB, createFuiViewBindingScope()),
-        ).toThrow(FuiBindingError);
+        expect(() => registry.bindRequired(URL, viewB, createFuiViewBindingScope())).toThrow(FuiBindingError);
 
         let caught: unknown;
         try {
@@ -136,9 +118,7 @@ describe("FuiViewBindingResolver bindRequired", () => {
     test("a missing binder throws a typed registration error", () => {
         const registry = createFuiViewBinderRegistry();
 
-        expect(() =>
-            registry.bindRequired(URL, new ViewA(), createFuiViewBindingScope()),
-        ).toThrow(FuiViewBindingRegistrationError);
+        expect(() => registry.bindRequired(URL, new ViewA(), createFuiViewBindingScope())).toThrow(FuiViewBindingRegistrationError);
 
         let caught: unknown;
         try {

@@ -2,10 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import { createResourceProvider } from "../../../assets/framework/core/resource/ResourceProvider";
 import type { ResourceKey } from "../../../assets/framework/contracts/resource/Resource";
-import {
-    createSceneFlow,
-    type SceneResources,
-} from "../../../assets/framework/core/scene/SceneFlow";
+import { createSceneFlow, type SceneResources } from "../../../assets/framework/core/scene/SceneFlow";
 
 interface ControlledDeferred {
     readonly resolve: (value: unknown) => void;
@@ -36,7 +33,7 @@ describe("SceneFlow preload", () => {
     test("preload loads resources in the background without switching the current scene", async () => {
         const { loader, pending } = createControlledLoader();
         const activated: string[] = [];
-        const provider = createResourceProvider({ loader, unloadBundle: () => { } });
+        const provider = createResourceProvider({ loader, unloadBundle: () => {} });
         const flow = createSceneFlow({
             provider,
             activateScene: async (sceneId: string) => {
@@ -138,10 +135,10 @@ describe("SceneFlow progress", () => {
     test("progress is monotonic, stays in [0, 1], and converges on success", async () => {
         const { loader, pending } = createControlledLoader();
         const progresses: number[] = [];
-        const provider = createResourceProvider({ loader, unloadBundle: () => { } });
+        const provider = createResourceProvider({ loader, unloadBundle: () => {} });
         const flow = createSceneFlow({
             provider,
-            activateScene: async () => { },
+            activateScene: async () => {},
             onProgress: (_sceneId, progress) => {
                 progresses.push(progress);
             },
@@ -219,7 +216,7 @@ describe("SceneFlow repeated switch rejection", () => {
     test("a second switch to the same target while switching is in progress is rejected", async () => {
         const { loader, pending } = createControlledLoader();
         const activated: string[] = [];
-        const provider = createResourceProvider({ loader, unloadBundle: () => { } });
+        const provider = createResourceProvider({ loader, unloadBundle: () => {} });
         const flow = createSceneFlow({
             provider,
             activateScene: async (sceneId: string) => {
@@ -259,7 +256,7 @@ describe("SceneFlow failed switch", () => {
         });
         const flow = createSceneFlow({
             provider,
-            activateScene: async () => { },
+            activateScene: async () => {},
         });
 
         const toA = flow.switchTo("scene-a", {
@@ -330,7 +327,7 @@ describe("SceneFlow failed switch", () => {
 
     test("a synchronously throwing activateScene fails the switch without hanging", async () => {
         const { loader, pending } = createControlledLoader();
-        const provider = createResourceProvider({ loader, unloadBundle: () => { } });
+        const provider = createResourceProvider({ loader, unloadBundle: () => {} });
         const flow = createSceneFlow({
             provider,
             activateScene: () => {
@@ -353,10 +350,10 @@ describe("SceneFlow failed switch", () => {
 
     test("retry after failure starts clean and reloads resources", async () => {
         const { loader, calls, pending } = createControlledLoader();
-        const provider = createResourceProvider({ loader, unloadBundle: () => { } });
+        const provider = createResourceProvider({ loader, unloadBundle: () => {} });
         const flow = createSceneFlow({
             provider,
-            activateScene: async () => { },
+            activateScene: async () => {},
         });
 
         const first = flow.switchTo("scene-b", {
@@ -385,7 +382,7 @@ describe("SceneFlow releasable scope", () => {
     test("disposing the flow cancels an in-flight switch and is idempotent", async () => {
         const { loader, pending: _pending } = createControlledLoader();
         const activated: string[] = [];
-        const provider = createResourceProvider({ loader, unloadBundle: () => { } });
+        const provider = createResourceProvider({ loader, unloadBundle: () => {} });
         const flow = createSceneFlow({
             provider,
             activateScene: async (sceneId: string) => {
@@ -410,10 +407,10 @@ describe("SceneFlow releasable scope", () => {
 
     test("disposing the flow cancels an in-flight preload", async () => {
         const { loader, pending } = createControlledLoader();
-        const provider = createResourceProvider({ loader, unloadBundle: () => { } });
+        const provider = createResourceProvider({ loader, unloadBundle: () => {} });
         const flow = createSceneFlow({
             provider,
-            activateScene: async () => { },
+            activateScene: async () => {},
         });
 
         const preload = flow.preload("scene-b", {
@@ -431,7 +428,7 @@ describe("SceneFlow releasable scope", () => {
         const { loader, pending } = createControlledLoader();
         const activated: string[] = [];
         let resolveActivation: (() => void) | undefined;
-        const provider = createResourceProvider({ loader, unloadBundle: () => { } });
+        const provider = createResourceProvider({ loader, unloadBundle: () => {} });
         const flow = createSceneFlow({
             provider,
             activateScene: (sceneId: string) =>
@@ -481,7 +478,7 @@ describe("SceneFlow releasable scope", () => {
         });
         const flow = createSceneFlow({
             provider,
-            activateScene: async () => { },
+            activateScene: async () => {},
         });
 
         const preload = flow.preload("scene-b", {
@@ -502,7 +499,7 @@ describe("SceneFlow edge cases", () => {
     test("switchTo with an empty path list still activates the target scene", async () => {
         const { loader, pending } = createControlledLoader();
         const activated: string[] = [];
-        const provider = createResourceProvider({ loader, unloadBundle: () => { } });
+        const provider = createResourceProvider({ loader, unloadBundle: () => {} });
         const flow = createSceneFlow({
             provider,
             activateScene: async (sceneId: string) => {
@@ -532,7 +529,7 @@ describe("SceneFlow edge cases", () => {
         });
         const flow = createSceneFlow({
             provider,
-            activateScene: async () => { },
+            activateScene: async () => {},
         });
 
         const toA = flow.switchTo("scene-a", {
@@ -559,10 +556,10 @@ describe("SceneFlow edge cases", () => {
 
     test("a second preload while one is in flight is skipped", async () => {
         const { loader, calls, pending } = createControlledLoader();
-        const provider = createResourceProvider({ loader, unloadBundle: () => { } });
+        const provider = createResourceProvider({ loader, unloadBundle: () => {} });
         const flow = createSceneFlow({
             provider,
-            activateScene: async () => { },
+            activateScene: async () => {},
         });
 
         const first = flow.preload("scene-b", {
@@ -588,7 +585,7 @@ describe("SceneFlow edge cases", () => {
     test("preload with an empty path list completes and stays idle without activating", async () => {
         const { loader, calls } = createControlledLoader();
         const activated: string[] = [];
-        const provider = createResourceProvider({ loader, unloadBundle: () => { } });
+        const provider = createResourceProvider({ loader, unloadBundle: () => {} });
         const flow = createSceneFlow({
             provider,
             activateScene: async (sceneId: string) => {
@@ -609,10 +606,10 @@ describe("SceneFlow edge cases", () => {
 
     test("preload after a failed switch still works from the failed state", async () => {
         const { loader, calls, pending } = createControlledLoader();
-        const provider = createResourceProvider({ loader, unloadBundle: () => { } });
+        const provider = createResourceProvider({ loader, unloadBundle: () => {} });
         const flow = createSceneFlow({
             provider,
-            activateScene: async () => { },
+            activateScene: async () => {},
         });
 
         const failed = flow.switchTo("scene-b", {
@@ -638,7 +635,7 @@ describe("SceneFlow edge cases", () => {
     test("switching to the currently active scene performs a fresh switch", async () => {
         const { loader, calls, pending } = createControlledLoader();
         const activated: string[] = [];
-        const provider = createResourceProvider({ loader, unloadBundle: () => { } });
+        const provider = createResourceProvider({ loader, unloadBundle: () => {} });
         const flow = createSceneFlow({
             provider,
             activateScene: async (sceneId: string) => {

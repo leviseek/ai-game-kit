@@ -72,10 +72,7 @@ describe("PassiveScheduler failure isolation", () => {
         scheduler.tick();
 
         expect(failures).toHaveLength(2);
-        expect(failures.map(({ error }) => error.message).sort()).toEqual([
-            "one",
-            "two",
-        ]);
+        expect(failures.map(({ error }) => error.message).sort()).toEqual(["one", "two"]);
     });
 
     test("a failing one-shot task is still removed after failure", () => {

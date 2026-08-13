@@ -2,11 +2,7 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, test } from "bun:test";
 
-import type {
-    ApplicationContext,
-    ApplicationState,
-    Module,
-} from "../../../assets/framework";
+import type { ApplicationContext, ApplicationState, Module } from "../../../assets/framework";
 import { MemoryLogger } from "../support/MemoryLogger";
 
 interface ApplicationInstance {
@@ -15,10 +11,7 @@ interface ApplicationInstance {
     dispose(): Promise<void>;
 }
 
-type ApplicationConstructor = new (
-    modules: readonly Module[],
-    context: ApplicationContext,
-) => ApplicationInstance;
+type ApplicationConstructor = new (modules: readonly Module[], context: ApplicationContext) => ApplicationInstance;
 
 interface FrameworkExports {
     readonly Application?: ApplicationConstructor;
@@ -30,9 +23,7 @@ const projectRoot = resolve(import.meta.dir, "../../..");
 const frameworkEntry = resolve(projectRoot, "assets/framework/index.ts");
 
 async function loadApplication(): Promise<ApplicationConstructor> {
-    const exports = (await import(
-        pathToFileURL(frameworkEntry).href,
-    )) as FrameworkExports;
+    const exports = (await import(pathToFileURL(frameworkEntry).href)) as FrameworkExports;
 
     expect(typeof exports.Application).toBe("function");
 
@@ -43,18 +34,22 @@ function createContext(): ApplicationContext {
     return { logger: new MemoryLogger(), state: "created" };
 }
 
-function createModule(
-    id: string,
-    calls: string[],
-    dependencies: readonly string[] = [],
-): Module {
+function createModule(id: string, calls: string[], dependencies: readonly string[] = []): Module {
     return {
         id,
         dependencies,
-        initialize: async () => { calls.push(`${id}:initialize`); },
-        start: async () => { calls.push(`${id}:start`); },
-        stop: async () => { calls.push(`${id}:stop`); },
-        dispose: async () => { calls.push(`${id}:dispose`); },
+        initialize: async () => {
+            calls.push(`${id}:initialize`);
+        },
+        start: async () => {
+            calls.push(`${id}:start`);
+        },
+        stop: async () => {
+            calls.push(`${id}:stop`);
+        },
+        dispose: async () => {
+            calls.push(`${id}:dispose`);
+        },
     };
 }
 
@@ -118,7 +113,9 @@ describe("Application start failure", () => {
                 calls.push("inventory:initialize");
                 throw initializeFailure;
             },
-            dispose: async () => { calls.push("inventory:dispose"); },
+            dispose: async () => {
+                calls.push("inventory:dispose");
+            },
         };
         const app = new Application([stable, failing], createContext());
 
@@ -127,11 +124,7 @@ describe("Application start failure", () => {
         expect(error).toBeInstanceOf(Error);
         expect(collectMessages(error)).toContain(initializeFailure.message);
         expect(app.state).toBe("disposed");
-        expect(calls).toEqual([
-            "stable:initialize",
-            "inventory:initialize",
-            "stable:dispose",
-        ]);
+        expect(calls).toEqual(["stable:initialize", "inventory:initialize", "stable:dispose"]);
     });
 
     test("rejects when a module start fails without hiding the start error", async () => {
@@ -142,13 +135,19 @@ describe("Application start failure", () => {
         const failing: Module = {
             id: "gameplay",
             dependencies: [stable.id],
-            initialize: async () => { calls.push("gameplay:initialize"); },
+            initialize: async () => {
+                calls.push("gameplay:initialize");
+            },
             start: async () => {
                 calls.push("gameplay:start");
                 throw startFailure;
             },
-            stop: async () => { calls.push("gameplay:stop"); },
-            dispose: async () => { calls.push("gameplay:dispose"); },
+            stop: async () => {
+                calls.push("gameplay:stop");
+            },
+            dispose: async () => {
+                calls.push("gameplay:dispose");
+            },
         };
         const app = new Application([stable, failing], createContext());
 
@@ -157,14 +156,6 @@ describe("Application start failure", () => {
         expect(error).toBeInstanceOf(Error);
         expect(collectMessages(error)).toContain(startFailure.message);
         expect(app.state).toBe("disposed");
-        expect(calls).toEqual([
-            "stable:initialize",
-            "gameplay:initialize",
-            "stable:start",
-            "gameplay:start",
-            "stable:stop",
-            "gameplay:dispose",
-            "stable:dispose",
-        ]);
+        expect(calls).toEqual(["stable:initialize", "gameplay:initialize", "stable:start", "gameplay:start", "stable:stop", "gameplay:dispose", "stable:dispose"]);
     });
 });

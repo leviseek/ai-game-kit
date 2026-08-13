@@ -8,20 +8,15 @@ import { createFairyGuiMock } from "./helpers/fairygui-mock";
 // 采用动态加载模式（mock 后 import），避免静态 import 在 mock 前解析。
 mock.module("fairygui-cc", () => createFairyGuiMock());
 
-const HANDLE_FILE = resolve(
-    import.meta.dir,
-    "../../../assets/framework/adapters/cocos/ui/FairyGuiViewHandle.ts",
-);
+const HANDLE_FILE = resolve(import.meta.dir, "../../../assets/framework/adapters/cocos/ui/FairyGuiViewHandle.ts");
 
 async function loadHandle(): Promise<{
-    wrapFairyGuiObjectTyped: typeof import("../../../assets/framework/adapters/cocos/ui/FairyGuiViewHandle")["wrapFairyGuiObjectTyped"];
+    wrapFairyGuiObjectTyped: (typeof import("../../../assets/framework/adapters/cocos/ui/FairyGuiViewHandle"))["wrapFairyGuiObjectTyped"];
 }> {
     return (await import(pathToFileURL(HANDLE_FILE).href)) as never;
 }
 
-type FuiElementKind =
-    | "button" | "input" | "progress" | "text" | "richText"
-    | "list" | "component" | "image" | "movieclip";
+type FuiElementKind = "button" | "input" | "progress" | "text" | "richText" | "list" | "component" | "image" | "movieclip";
 
 // duck-typed fgui 对象（text/value/on/visible），不依赖类引用，对齐运行时能力探测。
 type DuckNode = {

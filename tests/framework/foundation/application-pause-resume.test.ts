@@ -2,11 +2,7 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, test } from "bun:test";
 
-import type {
-    ApplicationContext,
-    ApplicationState,
-    Module,
-} from "../../../assets/framework";
+import type { ApplicationContext, ApplicationState, Module } from "../../../assets/framework";
 import { MemoryLogger } from "../support/MemoryLogger";
 
 interface ApplicationInstance {
@@ -17,10 +13,7 @@ interface ApplicationInstance {
     dispose(): Promise<void>;
 }
 
-type ApplicationConstructor = new (
-    modules: readonly Module[],
-    context: ApplicationContext,
-) => ApplicationInstance;
+type ApplicationConstructor = new (modules: readonly Module[], context: ApplicationContext) => ApplicationInstance;
 
 interface FrameworkExports {
     readonly Application?: ApplicationConstructor;
@@ -30,23 +23,15 @@ type ApplicationStateError = Error & {
     readonly currentState: ApplicationState;
 };
 
-function isApplicationStateError(
-    error: unknown,
-): error is ApplicationStateError {
-    return (
-        error instanceof Error &&
-        error.name === "ApplicationStateError" &&
-        "currentState" in (error as Record<string, unknown>)
-    );
+function isApplicationStateError(error: unknown): error is ApplicationStateError {
+    return error instanceof Error && error.name === "ApplicationStateError" && "currentState" in (error as Record<string, unknown>);
 }
 
 const projectRoot = resolve(import.meta.dir, "../../..");
 const frameworkEntry = resolve(projectRoot, "assets/framework/index.ts");
 
 async function loadApplication(): Promise<ApplicationConstructor> {
-    const exports = (await import(
-        pathToFileURL(frameworkEntry).href,
-    )) as FrameworkExports;
+    const exports = (await import(pathToFileURL(frameworkEntry).href)) as FrameworkExports;
 
     expect(typeof exports.Application).toBe("function");
 
@@ -57,20 +42,28 @@ function createContext(): ApplicationContext {
     return { logger: new MemoryLogger(), state: "created" };
 }
 
-function createRecorderModule(
-    id: string,
-    calls: string[],
-    dependencies: readonly string[] = [],
-): Module {
+function createRecorderModule(id: string, calls: string[], dependencies: readonly string[] = []): Module {
     return {
         id,
         dependencies,
-        initialize: async () => { calls.push(`${id}:initialize`); },
-        start: async () => { calls.push(`${id}:start`); },
-        pause: async () => { calls.push(`${id}:pause`); },
-        resume: async () => { calls.push(`${id}:resume`); },
-        stop: async () => { calls.push(`${id}:stop`); },
-        dispose: async () => { calls.push(`${id}:dispose`); },
+        initialize: async () => {
+            calls.push(`${id}:initialize`);
+        },
+        start: async () => {
+            calls.push(`${id}:start`);
+        },
+        pause: async () => {
+            calls.push(`${id}:pause`);
+        },
+        resume: async () => {
+            calls.push(`${id}:resume`);
+        },
+        stop: async () => {
+            calls.push(`${id}:stop`);
+        },
+        dispose: async () => {
+            calls.push(`${id}:dispose`);
+        },
     };
 }
 
@@ -169,10 +162,18 @@ describe("Application pause and resume", () => {
         const module: Module = {
             id: "partial",
             dependencies: [],
-            initialize: async () => { calls.push("partial:initialize"); },
-            start: async () => { calls.push("partial:start"); },
-            stop: async () => { calls.push("partial:stop"); },
-            dispose: async () => { calls.push("partial:dispose"); },
+            initialize: async () => {
+                calls.push("partial:initialize");
+            },
+            start: async () => {
+                calls.push("partial:start");
+            },
+            stop: async () => {
+                calls.push("partial:stop");
+            },
+            dispose: async () => {
+                calls.push("partial:dispose");
+            },
         };
 
         const app = new Application([module], createContext());
@@ -182,12 +183,7 @@ describe("Application pause and resume", () => {
         await app.resume();
         await app.dispose();
 
-        expect(calls).toEqual([
-            "partial:initialize",
-            "partial:start",
-            "partial:stop",
-            "partial:dispose",
-        ]);
+        expect(calls).toEqual(["partial:initialize", "partial:start", "partial:stop", "partial:dispose"]);
     });
 
     test("invokes pause hooks in reverse order and resume in forward order", async () => {
@@ -198,31 +194,20 @@ describe("Application pause and resume", () => {
         const inventory = createRecorderModule("inventory", calls, [logging.id]);
         const gameplay = createRecorderModule("gameplay", calls, [inventory.id]);
 
-        const app = new Application(
-            [logging, inventory, gameplay],
-            createContext(),
-        );
+        const app = new Application([logging, inventory, gameplay], createContext());
 
         await app.start();
         calls.length = 0;
 
         await app.pause();
 
-        expect(calls).toEqual([
-            "gameplay:pause",
-            "inventory:pause",
-            "logging:pause",
-        ]);
+        expect(calls).toEqual(["gameplay:pause", "inventory:pause", "logging:pause"]);
 
         calls.length = 0;
 
         await app.resume();
 
-        expect(calls).toEqual([
-            "logging:resume",
-            "inventory:resume",
-            "gameplay:resume",
-        ]);
+        expect(calls).toEqual(["logging:resume", "inventory:resume", "gameplay:resume"]);
 
         await app.dispose();
     });

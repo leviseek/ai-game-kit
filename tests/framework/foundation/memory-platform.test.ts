@@ -1,9 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import type {
-    ApplicationVisibilityState,
-    DeviceInfo,
-} from "../../../assets/framework/contracts/platform/Platform";
+import type { ApplicationVisibilityState, DeviceInfo } from "../../../assets/framework/contracts/platform/Platform";
 import type { TimeSource } from "../../../assets/framework/contracts/time/TimeSource";
 import { MemoryPlatform } from "../../../assets/framework/adapters/memory/MemoryPlatform";
 
@@ -91,9 +88,7 @@ describe("MemoryPlatform", () => {
             seen.push(state);
         });
 
-        expect(() => platform.setVisibility("background")).toThrow(
-            "listener failed",
-        );
+        expect(() => platform.setVisibility("background")).toThrow("listener failed");
         expect(seen).toEqual(["background"]);
     });
 

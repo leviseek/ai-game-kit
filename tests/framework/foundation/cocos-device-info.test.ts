@@ -6,9 +6,7 @@ import { createCcMock } from "./helpers/cc-mock";
 // （全局共享首个生效）。断言全部注入 sys 接缝，不依赖 mock 的 sys 值。
 mock.module("cc", () => createCcMock());
 
-const { createCocosDeviceInfo } = await import(
-    "../../../assets/framework/adapters/cocos/device/CocosDeviceInfo"
-);
+const { createCocosDeviceInfo } = await import("../../../assets/framework/adapters/cocos/device/CocosDeviceInfo");
 
 describe("createCocosDeviceInfo", () => {
     test("注入 sys：platform=平台标识、model=OS 描述、language=语言", () => {

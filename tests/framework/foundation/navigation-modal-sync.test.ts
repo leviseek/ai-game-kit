@@ -33,10 +33,7 @@ interface FairyGuiViewLike {
 interface FairyGuiPageAdapterOptions {
     readonly root: FairyGuiRootLike;
     readonly provider?: unknown;
-    readonly createView?: (
-        packageName: string,
-        resName: string,
-    ) => FairyGuiViewLike;
+    readonly createView?: (packageName: string, resName: string) => FairyGuiViewLike;
     readonly createMask?: (width: number, height: number) => unknown;
     /** 导航器：提供时适配器消费其模态状态，导航阻断自动呈现遮罩、收敛自动移除。 */
     readonly navigator?: UiNavigator;
@@ -44,11 +41,7 @@ interface FairyGuiPageAdapterOptions {
 
 interface FairyGuiPageAdapter {
     init(): void;
-    createPage(
-        route: string,
-        layer: UiLayer,
-        options?: { packageName?: string; resName?: string },
-    ): unknown;
+    createPage(route: string, layer: UiLayer, options?: { packageName?: string; resName?: string }): unknown;
     mount(page: unknown): void;
     destroy(page: unknown): void;
     setModal(modal: boolean): void;
@@ -60,21 +53,15 @@ interface FairyGuiPageAdapterFactory {
 }
 
 const projectRoot = resolve(import.meta.dir, "../../..");
-const adapterFile = resolve(
-    projectRoot,
-    "assets/framework/adapters/cocos/ui/FairyGuiPageAdapter.ts",
-);
+const adapterFile = resolve(projectRoot, "assets/framework/adapters/cocos/ui/FairyGuiPageAdapter.ts");
 
 async function loadFactory(): Promise<FairyGuiPageAdapterFactory> {
-    const exports = (await import(
-        pathToFileURL(adapterFile).href
-    )) as Partial<FairyGuiPageAdapterFactory>;
+    const exports = (await import(pathToFileURL(adapterFile).href)) as Partial<FairyGuiPageAdapterFactory>;
 
     expect(typeof exports.createFairyGuiPageAdapter).toBe("function");
 
     return {
-        createFairyGuiPageAdapter:
-            exports.createFairyGuiPageAdapter as FairyGuiPageAdapterFactory["createFairyGuiPageAdapter"],
+        createFairyGuiPageAdapter: exports.createFairyGuiPageAdapter as FairyGuiPageAdapterFactory["createFairyGuiPageAdapter"],
     };
 }
 
@@ -158,14 +145,8 @@ function createRecordingRoot(): {
     return { root, calls, containers };
 }
 
-function findContainerCalls(
-    calls: readonly ContainerCall[],
-    containerName: string,
-    action: string,
-): ContainerCall[] {
-    return calls.filter(
-        (call) => call.container === containerName && call.action === action,
-    );
+function findContainerCalls(calls: readonly ContainerCall[], containerName: string, action: string): ContainerCall[] {
+    return calls.filter((call) => call.container === containerName && call.action === action);
 }
 
 async function makeAutoSyncAdapter(): Promise<{
@@ -179,7 +160,7 @@ async function makeAutoSyncAdapter(): Promise<{
     const adapter = createFairyGuiPageAdapter({
         root: recording.root,
         navigator,
-        createView: () => ({ name: "view", dispose: () => { } }),
+        createView: () => ({ name: "view", dispose: () => {} }),
     });
     adapter.init();
     return { navigator, recording, adapter };
@@ -203,9 +184,7 @@ describe("navigator modal auto-sync", () => {
         // 关闭阻断页面：模态收敛，遮罩自动移除
         navigator.close();
         expect(navigator.modal).toBe(false);
-        expect(
-            findContainerCalls(recording.calls, "system", "removeChild"),
-        ).toHaveLength(1);
+        expect(findContainerCalls(recording.calls, "system", "removeChild")).toHaveLength(1);
         expect(recording.containers.get("system")?.numChildren).toBe(0);
     });
 
@@ -220,23 +199,17 @@ describe("navigator modal auto-sync", () => {
         // 仍有阻断页面在栈顶时，遮罩保留
         navigator.close();
         expect(navigator.modal).toBe(true);
-        expect(
-            findContainerCalls(recording.calls, "system", "removeChild"),
-        ).toHaveLength(0);
+        expect(findContainerCalls(recording.calls, "system", "removeChild")).toHaveLength(0);
 
         // 关闭最后一个阻断页面：遮罩仅移除一次
         navigator.close();
         expect(navigator.modal).toBe(false);
-        expect(
-            findContainerCalls(recording.calls, "system", "removeChild"),
-        ).toHaveLength(1);
+        expect(findContainerCalls(recording.calls, "system", "removeChild")).toHaveLength(1);
         expect(recording.containers.get("system")?.numChildren).toBe(0);
 
         // 空栈重复关闭被拒绝：不产生额外移除，保持幂等
         navigator.close();
-        expect(
-            findContainerCalls(recording.calls, "system", "removeChild"),
-        ).toHaveLength(1);
+        expect(findContainerCalls(recording.calls, "system", "removeChild")).toHaveLength(1);
     });
 
     test("non-blocking pages do not present the mask", async () => {
@@ -247,9 +220,7 @@ describe("navigator modal auto-sync", () => {
         expect(findContainerCalls(recording.calls, "system", "addChild")).toHaveLength(0);
 
         navigator.close();
-        expect(
-            findContainerCalls(recording.calls, "system", "removeChild"),
-        ).toHaveLength(0);
+        expect(findContainerCalls(recording.calls, "system", "removeChild")).toHaveLength(0);
     });
 
     test("disposing the adapter stops the auto-sync (later navigation no longer drives the mask)", async () => {
@@ -270,9 +241,7 @@ describe("navigator modal auto-sync", () => {
         // 导航器释放：栈清空、模态收敛，遮罩经包装的 dispose 自动移除
         navigator.dispose();
         expect(navigator.modal).toBe(false);
-        expect(
-            findContainerCalls(recording.calls, "system", "removeChild"),
-        ).toHaveLength(1);
+        expect(findContainerCalls(recording.calls, "system", "removeChild")).toHaveLength(1);
         expect(recording.containers.get("system")?.numChildren).toBe(0);
     });
 
@@ -284,7 +253,7 @@ describe("navigator modal auto-sync", () => {
         const adapter = createFairyGuiPageAdapter({
             root: recording.root,
             navigator,
-            createView: () => ({ name: "view", dispose: () => { } }),
+            createView: () => ({ name: "view", dispose: () => {} }),
         });
         adapter.init();
 
@@ -306,9 +275,7 @@ describe("navigator modal auto-sync", () => {
 
         navigator.back();
         expect(navigator.modal).toBe(false);
-        expect(
-            findContainerCalls(recording.calls, "system", "removeChild"),
-        ).toHaveLength(1);
+        expect(findContainerCalls(recording.calls, "system", "removeChild")).toHaveLength(1);
         expect(recording.containers.get("system")?.numChildren).toBe(0);
     });
 });

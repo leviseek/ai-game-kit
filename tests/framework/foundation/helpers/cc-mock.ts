@@ -10,11 +10,11 @@
 export function createCcMock(): Record<string, unknown> {
     return {
         game: {
-            on() { },
-            off() { },
+            on() {},
+            off() {},
         },
         director: {
-            addPersistRootNode() { },
+            addPersistRootNode() {},
         },
         Game: {
             EVENT_HIDE: "game_hide",
@@ -22,17 +22,16 @@ export function createCcMock(): Record<string, unknown> {
         },
         _decorator: {
             ccclass(_name: string) {
-                return <TFunction extends (...args: unknown[]) => unknown>(target: TFunction): TFunction =>
-                    target;
+                return <TFunction extends (...args: unknown[]) => unknown>(target: TFunction): TFunction => target;
             },
         },
-        Component: class { },
+        Component: class {},
         Node: class {
             static EventType: Record<string, string> = {};
         },
-        EventTouch: class { },
-        Touch: class { },
-        Vec3: class { },
+        EventTouch: class {},
+        Touch: class {},
+        Vec3: class {},
         profiler: { stats: null },
         sys: {
             isNative: false,

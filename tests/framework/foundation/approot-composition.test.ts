@@ -6,10 +6,7 @@ import { describe, expect, test, mock } from "bun:test";
 import { FuiView } from "../../../assets/framework/contracts/ui/FuiView";
 import type { FuiComponentUrl } from "../../../assets/framework/core/fui/FuiComponentRegistry";
 import { getFuiComponentRegistry } from "../../../assets/framework/core/fui/FuiComponentRegistry";
-import {
-    FuiViewBindingRegistrationError,
-    FuiViewCreationError,
-} from "../../../assets/framework/core/fui/FuiErrors";
+import { FuiViewBindingRegistrationError, FuiViewCreationError } from "../../../assets/framework/core/fui/FuiErrors";
 import { createCcMock } from "./helpers/cc-mock";
 import { createFairyGuiMock } from "./helpers/fairygui-mock";
 
@@ -62,11 +59,7 @@ interface AppAssembly {
     readonly uiHost?: {
         smokeUiInit(): boolean;
         readonly pageAdapter?: {
-            createPage(
-                route: string,
-                layer: string,
-                options?: { packageName?: string; resName?: string },
-            ): { readonly disposed: boolean; readonly error: unknown };
+            createPage(route: string, layer: string, options?: { packageName?: string; resName?: string }): { readonly disposed: boolean; readonly error: unknown };
         };
     };
     readonly fuiViewBindingRegistrar?: object;
@@ -74,10 +67,7 @@ interface AppAssembly {
 
 /** 测试覆盖对象创建的可选装配选项（对齐 assembleApp 的 FuiObjectFactory 接缝）。 */
 interface AssemblyOptions {
-    readonly fuiObjectFactory?: (
-        packageName: string,
-        resName: string,
-    ) => unknown | null;
+    readonly fuiObjectFactory?: (packageName: string, resName: string) => unknown | null;
 }
 
 type AssembleAppFn = (options?: AssemblyOptions) => AppAssembly;
@@ -99,9 +89,7 @@ async function loadAssembly(): Promise<{
     assembleApp: AssembleAppFn;
     createModules: () => readonly unknown[];
 }> {
-    const exports = (await import(
-        pathToFileURL(assemblyFile).href
-    )) as AssemblyExports;
+    const exports = (await import(pathToFileURL(assemblyFile).href)) as AssemblyExports;
 
     expect(typeof exports.assembleApp).toBe("function");
 
@@ -114,9 +102,7 @@ async function loadAssembly(): Promise<{
 async function loadAppRoot(): Promise<{
     AppRoot: new (...args: unknown[]) => CocosComponent;
 }> {
-    const exports = (await import(
-        pathToFileURL(appRootFile).href
-    )) as AppRootExports;
+    const exports = (await import(pathToFileURL(appRootFile).href)) as AppRootExports;
 
     expect(typeof exports.AppRoot).toBe("function");
 
@@ -185,16 +171,9 @@ describe("AppRoot Composition Root", () => {
         const { createModules } = await loadAssembly();
         const modules = createModules();
 
-        const moduleIds = new Set(
-            modules
-                .filter((m): m is { id?: string } => typeof m === "object" && m !== null)
-                .map((m) => m.id),
-        );
+        const moduleIds = new Set(modules.filter((m): m is { id?: string } => typeof m === "object" && m !== null).map((m) => m.id));
 
-        const forbiddenIds = [
-            "ui", "fairygui", "resource", "scene", "config",
-            "network", "ecs", "battle", "combat", "time",
-        ];
+        const forbiddenIds = ["ui", "fairygui", "resource", "scene", "config", "network", "ecs", "battle", "combat", "time"];
 
         for (const id of forbiddenIds) {
             expect(moduleIds.has(id)).toBe(false);
@@ -449,20 +428,16 @@ describe("AppRoot lobby host", () => {
         const instance = new AppRoot();
         instance.onLoad();
 
-        await expect(
-            instance.closeEntryPage({} as unknown as { node(): unknown; onClose(): void }),
-        ).resolves.toBeUndefined();
-        await expect(
-            instance.closeEntryPage({} as unknown as { node(): unknown; onClose(): void }),
-        ).resolves.toBeUndefined();
+        await expect(instance.closeEntryPage({} as unknown as { node(): unknown; onClose(): void })).resolves.toBeUndefined();
+        await expect(instance.closeEntryPage({} as unknown as { node(): unknown; onClose(): void })).resolves.toBeUndefined();
     });
 });
 
 describe("AppRoot FuiView binder 接线", () => {
     /** required 组件视图：fields/clicks 为空，仅触发 runtime binding 装配路径。 */
     class RequiredView extends FuiView<unknown, unknown> {
-        protected onConstruct(): void { }
-        protected onState(_vm: unknown): void { }
+        protected onConstruct(): void {}
+        protected onState(_vm: unknown): void {}
     }
 
     const LOGIN_VIEW_URL = ("ui" + "://Login/LoginView") as FuiComponentUrl;
@@ -552,9 +527,7 @@ describe("startup.scene", () => {
         const content = readFileSync(sceneFile, "utf8");
         const scene = JSON.parse(content) as Array<{ _name?: string; __type__?: string; _components?: Array<{ __id__: number }> }>;
 
-        const appRootNode = scene.find(
-            (entry) => entry._name === "AppRoot" && entry.__type__ === "cc.Node",
-        );
+        const appRootNode = scene.find((entry) => entry._name === "AppRoot" && entry.__type__ === "cc.Node");
 
         expect(appRootNode).toBeDefined();
 
@@ -591,9 +564,7 @@ describe("startup.scene", () => {
         const content = readFileSync(sceneFile, "utf8");
         const scene = JSON.parse(content) as Array<{ _name?: string; __type__?: string; _components?: Array<{ __id__: number }> }>;
 
-        const appRootNode = scene.find(
-            (entry) => entry._name === "AppRoot" && entry.__type__ === "cc.Node",
-        );
+        const appRootNode = scene.find((entry) => entry._name === "AppRoot" && entry.__type__ === "cc.Node");
 
         expect(appRootNode).toBeDefined();
 
@@ -638,25 +609,10 @@ describe("game.scene (smoke switch target)", () => {
         // JSON.parse 仅用于校验场景文件可解析；后续断言直接在原始文本上做正则匹配
         const _scene = JSON.parse(content) as Array<{ __type__?: string }>;
 
-        const forbiddenUI = [
-            "cc.Sprite",
-            "cc.Label",
-            "cc.Button",
-            "cc.RichText",
-            "cc.EditBox",
-            "cc.Layout",
-            "cc.ScrollView",
-            "cc.ProgressBar",
-            "cc.Slider",
-            "cc.Toggle",
-            "cc.Mask",
-            "cc.Graphics",
-        ];
+        const forbiddenUI = ["cc.Sprite", "cc.Label", "cc.Button", "cc.RichText", "cc.EditBox", "cc.Layout", "cc.ScrollView", "cc.ProgressBar", "cc.Slider", "cc.Toggle", "cc.Mask", "cc.Graphics"];
 
         for (const component of forbiddenUI) {
-            expect(content).not.toMatch(
-                new RegExp(`"__type__"\\s*:\\s*"${component.replace(".", "\\.")}"`),
-            );
+            expect(content).not.toMatch(new RegExp(`"__type__"\\s*:\\s*"${component.replace(".", "\\.")}"`));
         }
     });
 });

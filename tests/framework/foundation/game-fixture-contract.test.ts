@@ -3,26 +3,14 @@ import { resolve } from "node:path";
 import { describe, expect, test } from "bun:test";
 
 import type { Module } from "../../../assets/framework";
-import {
-    createGameFixture,
-    type GameFixture,
-} from "../../../assets/game/fixture/GameFixture";
+import { createGameFixture, type GameFixture } from "../../../assets/game/fixture/GameFixture";
 
 const projectRoot = resolve(import.meta.dir, "../../..");
 // 契约实现迁至 framework=main（bundle 共享）：本文件只做薄重导出，契约声明
 // 与接缝检查指向 framework/application/GameFixture
-const contractFile = resolve(
-    projectRoot,
-    "assets/framework/application/GameFixture.ts",
-);
+const contractFile = resolve(projectRoot, "assets/framework/application/GameFixture.ts");
 
-const lifecycleSeams = [
-    "start",
-    "pause",
-    "resume",
-    "failRollback",
-    "dispose",
-] as const;
+const lifecycleSeams = ["start", "pause", "resume", "failRollback", "dispose"] as const;
 
 function createRecordingModule(id: string, log: string[]): Module {
     return {
@@ -126,24 +114,11 @@ describe("uniform lifecycle driving", () => {
         });
         const fixtureB = createGameFixture({
             id: "b",
-            modules: [
-                createRecordingModule("core", logB),
-                createRecordingModule("save", logB),
-            ],
+            modules: [createRecordingModule("core", logB), createRecordingModule("save", logB)],
         });
 
-        await expect(driveHappyPath(fixtureA)).resolves.toEqual([
-            "start",
-            "pause",
-            "resume",
-            "dispose",
-        ]);
-        await expect(driveHappyPath(fixtureB)).resolves.toEqual([
-            "start",
-            "pause",
-            "resume",
-            "dispose",
-        ]);
+        await expect(driveHappyPath(fixtureA)).resolves.toEqual(["start", "pause", "resume", "dispose"]);
+        await expect(driveHappyPath(fixtureB)).resolves.toEqual(["start", "pause", "resume", "dispose"]);
 
         expect(logA).toContain("core:start");
         expect(logB).toContain("core:start");

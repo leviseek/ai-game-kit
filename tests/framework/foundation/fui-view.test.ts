@@ -1,14 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { FClick, FUIBind, collectClickMeta } from "../../../assets/framework/core/fui/FuiBindings";
-import {
-    FuiBindingError,
-    FuiComponentRegistrationError,
-    FuiViewCleanupError,
-} from "../../../assets/framework/core/fui/FuiErrors";
-import {
-    getFuiComponentRegistry,
-    type FuiComponentUrl,
-} from "../../../assets/framework/core/fui/FuiComponentRegistry";
+import { FuiBindingError, FuiComponentRegistrationError, FuiViewCleanupError } from "../../../assets/framework/core/fui/FuiErrors";
+import { getFuiComponentRegistry, type FuiComponentUrl } from "../../../assets/framework/core/fui/FuiComponentRegistry";
 import { FuiView, type FuiViewSeam } from "../../../assets/framework/contracts/ui/FuiView";
 import { createStore } from "../../../assets/framework/core/state/Store";
 
@@ -102,7 +95,7 @@ describe("FUIBind / FClick", () => {
                     // 字段已注入
                     void this._txt_status;
                 }
-                protected onState(): void { }
+                protected onState(): void {}
             }
             void LoginView;
 
@@ -124,8 +117,8 @@ describe("FUIBind / FClick", () => {
             @FUIBind(LOGIN_VIEW_URL, fields, { runtimeBinding: "required" })
             class A extends FuiView<LoginState, LoginViewShape> {
                 readonly _txt_status!: { setText(v: string): void; text(): string };
-                protected onConstruct(): void { }
-                protected onState(): void { }
+                protected onConstruct(): void {}
+                protected onState(): void {}
             }
             void A;
 
@@ -148,12 +141,12 @@ describe("FUIBind / FClick", () => {
         try {
             class Base extends FuiView<LoginState, LoginViewShape> {
                 readonly _txt_status!: { setText(v: string): void; text(): string };
-                protected onConstruct(): void { }
-                protected onState(): void { }
+                protected onConstruct(): void {}
+                protected onState(): void {}
             }
             class Derived extends Base {
                 @FClick<"txt_status">("txt_status")
-                private _onStatus(): void { }
+                private _onStatus(): void {}
             }
 
             const meta = collectClickMeta(Derived);
@@ -211,8 +204,8 @@ describe("FuiView 生命周期", () => {
         const view = new (class extends FuiView<LoginState, LoginViewShape> implements LoginViewShape {
             readonly _txt_status!: { setText(v: string): void; text(): string };
             readonly _txt_missing!: { setText(v: string): void; text(): string };
-            protected onConstruct(): void { }
-            protected onState(): void { }
+            protected onConstruct(): void {}
+            protected onState(): void {}
         })();
 
         expect(() => view.__attach(seam, fields, [])).toThrow(FuiBindingError);
@@ -227,7 +220,7 @@ describe("FuiView 生命周期", () => {
         const view = new (class extends FuiView<LoginState, { readonly status: string }> implements LoginViewShape {
             readonly _txt_status!: { setText(v: string): void; text(): string };
             readonly _btn_login!: { setText(v: string): void; onClick(h: () => void): void };
-            protected onConstruct(): void { }
+            protected onConstruct(): void {}
             protected onState(vm: { readonly status: string }): void {
                 states.push(vm.status);
                 this._txt_status.setText(vm.status);
@@ -259,8 +252,8 @@ describe("FuiView 生命周期", () => {
             readonly _txt_status!: { setText(v: string): void; text(): string };
             readonly _btn_login!: { setText(v: string): void; onClick(h: () => void): void };
             closed = 0;
-            protected onConstruct(): void { }
-            protected onState(): void { }
+            protected onConstruct(): void {}
+            protected onState(): void {}
             protected onClose(): void {
                 this.closed++;
             }
@@ -286,22 +279,30 @@ describe("FuiView 生命周期", () => {
         const { seam } = makeSeam({});
         const calls: string[] = [];
         class CleanupView extends FuiView<LoginState, LoginViewShape> {
-            protected onConstruct(): void { }
-            protected onState(): void { }
+            protected onConstruct(): void {}
+            protected onState(): void {}
             protected onClose(): void {
                 calls.push("onClose");
             }
         }
         const view = new CleanupView();
         view.__attach(seam, {}, []);
-        view.__own({ dispose: () => { calls.push("first"); } });
+        view.__own({
+            dispose: () => {
+                calls.push("first");
+            },
+        });
         view.__own({
             dispose: () => {
                 calls.push("second");
                 throw new Error("second boom");
             },
         });
-        view.__own({ dispose: () => { calls.push("third"); } });
+        view.__own({
+            dispose: () => {
+                calls.push("third");
+            },
+        });
 
         let thrown: unknown;
         try {
@@ -323,8 +324,8 @@ describe("FuiView 生命周期", () => {
         const { seam } = makeSeam({});
         const calls: string[] = [];
         class ClosingView extends FuiView<LoginState, LoginViewShape> {
-            protected onConstruct(): void { }
-            protected onState(): void { }
+            protected onConstruct(): void {}
+            protected onState(): void {}
             protected onClose(): void {
                 calls.push("onClose");
                 throw new Error("onClose boom");
@@ -345,8 +346,8 @@ describe("FuiView 生命周期", () => {
         const { seam } = makeSeam({});
         const calls: string[] = [];
         const view = new (class extends FuiView<LoginState, LoginViewShape> {
-            protected onConstruct(): void { }
-            protected onState(): void { }
+            protected onConstruct(): void {}
+            protected onState(): void {}
         })();
         view.__attach(seam, {}, []);
         view.dispose();

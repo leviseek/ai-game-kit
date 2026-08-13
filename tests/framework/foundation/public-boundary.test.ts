@@ -2,15 +2,7 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, isAbsolute, relative, resolve } from "node:path";
 import { describe, expect, test } from "bun:test";
 
-type FrameworkLayer =
-    | "root"
-    | "core"
-    | "contracts"
-    | "application"
-    | "diagnostics"
-    | "adapters/cocos"
-    | "adapters/memory"
-    | "unknown";
+type FrameworkLayer = "root" | "core" | "contracts" | "application" | "diagnostics" | "adapters/cocos" | "adapters/memory" | "unknown";
 
 interface ImportViolation {
     readonly file: string;
@@ -29,9 +21,7 @@ const samplesRoot = resolve(assetsRoot, "samples");
 const bootRoot = resolve(assetsRoot, "boot");
 const importScanner = new Bun.Transpiler({ loader: "ts" });
 
-const allowedFrameworkDependencies: Readonly<
-    Record<FrameworkLayer, readonly FrameworkLayer[]>
-> = {
+const allowedFrameworkDependencies: Readonly<Record<FrameworkLayer, readonly FrameworkLayer[]>> = {
     root: ["core", "contracts", "application", "diagnostics"],
     core: ["core", "contracts"],
     contracts: ["core", "contracts"],
@@ -48,10 +38,7 @@ function normalizePath(path: string): string {
 
 function isWithin(path: string, directory: string): boolean {
     const pathFromDirectory = relative(directory, path);
-    return (
-        pathFromDirectory === "" ||
-        (!pathFromDirectory.startsWith("..") && !isAbsolute(pathFromDirectory))
-    );
+    return pathFromDirectory === "" || (!pathFromDirectory.startsWith("..") && !isAbsolute(pathFromDirectory));
 }
 
 /**
@@ -173,11 +160,8 @@ function stripComments(source: string): string {
 
 function extractModuleSpecifiers(source: string): readonly string[] {
     const sourceWithoutComments = stripComments(source);
-    const specifiers = new Set(
-        importScanner.scan(source).imports.map((entry) => entry.path),
-    );
-    const staticImportPattern =
-        /^\s*(?:import|export)\b(?:[\s\S]*?\bfrom\s*)?["']([^"']+)["']/gm;
+    const specifiers = new Set(importScanner.scan(source).imports.map((entry) => entry.path));
+    const staticImportPattern = /^\s*(?:import|export)\b(?:[\s\S]*?\bfrom\s*)?["']([^"']+)["']/gm;
     const requirePattern = /\brequire\s*\(\s*["']([^"']+)["']\s*\)/g;
 
     for (const match of sourceWithoutComments.matchAll(staticImportPattern)) {
@@ -199,11 +183,7 @@ function extractModuleSpecifiers(source: string): readonly string[] {
     return [...specifiers];
 }
 
-function resolveAliasedPath(
-    specifier: string,
-    prefix: string,
-    targetRoot: string,
-): string | undefined {
+function resolveAliasedPath(specifier: string, prefix: string, targetRoot: string): string | undefined {
     if (specifier !== prefix && !specifier.startsWith(`${prefix}/`)) {
         return undefined;
     }
@@ -245,11 +225,7 @@ function getFrameworkLayer(path: string): FrameworkLayer | undefined {
         return undefined;
     }
 
-    if (
-        pathFromFramework === "" ||
-        pathFromFramework === "index" ||
-        pathFromFramework === "index.ts"
-    ) {
+    if (pathFromFramework === "" || pathFromFramework === "index" || pathFromFramework === "index.ts") {
         return "root";
     }
 
@@ -282,22 +258,14 @@ function getFrameworkLayer(path: string): FrameworkLayer | undefined {
 
 function isFrameworkPublicTarget(path: string): boolean {
     const pathFromFramework = normalizePath(relative(frameworkRoot, path));
-    return (
-        pathFromFramework === "" ||
-        pathFromFramework === "index" ||
-        pathFromFramework === "index.ts"
-    );
+    return pathFromFramework === "" || pathFromFramework === "index" || pathFromFramework === "index.ts";
 }
 
 function isCocosImport(specifier: string): boolean {
     return specifier === "cc" || specifier.startsWith("cc/");
 }
 
-function createViolation(
-    file: string,
-    specifier: string,
-    reason: string,
-): ImportViolation {
+function createViolation(file: string, specifier: string, reason: string): ImportViolation {
     return {
         file: normalizePath(relative(projectRoot, file)),
         specifier,
@@ -305,12 +273,7 @@ function createViolation(
     };
 }
 
-function validateFrameworkImport(
-    file: string,
-    sourceLayer: FrameworkLayer,
-    specifier: string,
-    target: string | undefined,
-): ImportViolation | undefined {
+function validateFrameworkImport(file: string, sourceLayer: FrameworkLayer, specifier: string, target: string | undefined): ImportViolation | undefined {
     if (isCocosImport(specifier) && sourceLayer !== "adapters/cocos") {
         return createViolation(file, specifier, `${sourceLayer} cannot depend on Cocos`);
     }
@@ -330,41 +293,22 @@ function validateFrameworkImport(
     }
 
     if (targetLayer === "root" && sourceLayer !== "root") {
-        return createViolation(
-            file,
-            specifier,
-            "Framework internals cannot import the root barrel",
-        );
+        return createViolation(file, specifier, "Framework internals cannot import the root barrel");
     }
 
     if (!allowedFrameworkDependencies[sourceLayer].includes(targetLayer)) {
-        return createViolation(
-            file,
-            specifier,
-            `${sourceLayer} cannot depend on ${targetLayer}`,
-        );
+        return createViolation(file, specifier, `${sourceLayer} cannot depend on ${targetLayer}`);
     }
 
     if (sourceLayer === "diagnostics" && targetLayer === "contracts") {
         const targetFromFramework = normalizePath(relative(frameworkRoot, target));
 
-        if (
-            targetFromFramework !== "contracts/logging" &&
-            !targetFromFramework.startsWith("contracts/logging/")
-        ) {
-            return createViolation(
-                file,
-                specifier,
-                "diagnostics/logging can only depend on contracts/logging",
-            );
+        if (targetFromFramework !== "contracts/logging" && !targetFromFramework.startsWith("contracts/logging/")) {
+            return createViolation(file, specifier, "diagnostics/logging can only depend on contracts/logging");
         }
     }
 
-    if (
-        isWithin(file, moduleContractsRoot) &&
-        targetLayer === "contracts" &&
-        target !== undefined
-    ) {
+    if (isWithin(file, moduleContractsRoot) && targetLayer === "contracts" && target !== undefined) {
         const targetFromFramework = normalizePath(relative(frameworkRoot, target));
         const isAllowedModuleContract =
             targetFromFramework === "contracts/module" ||
@@ -373,11 +317,7 @@ function validateFrameworkImport(
             targetFromFramework.startsWith("contracts/application/");
 
         if (!isAllowedModuleContract) {
-            return createViolation(
-                file,
-                specifier,
-                "contracts/module can only depend on contracts/application and core",
-            );
+            return createViolation(file, specifier, "contracts/module can only depend on contracts/application and core");
         }
     }
 
@@ -399,23 +339,11 @@ function findImportViolations(file: string, source: string): readonly ImportViol
 
             if (isGameLayerFile(file) && target !== undefined && isWithin(target, bootRoot)) {
                 // 依赖方向单向：boot 可依赖 game，game 不得反向依赖 boot
-                return [
-                    createViolation(file, specifier, "Game cannot depend on boot"),
-                ];
+                return [createViolation(file, specifier, "Game cannot depend on boot")];
             }
 
-            if (
-                target !== undefined &&
-                isWithin(target, frameworkRoot) &&
-                !isFrameworkPublicTarget(target)
-            ) {
-                return [
-                    createViolation(
-                        file,
-                        specifier,
-                        "External consumers must import the Framework root entry",
-                    ),
-                ];
+            if (target !== undefined && isWithin(target, frameworkRoot) && !isFrameworkPublicTarget(target)) {
+                return [createViolation(file, specifier, "External consumers must import the Framework root entry")];
             }
 
             return [];
@@ -427,9 +355,7 @@ function findImportViolations(file: string, source: string): readonly ImportViol
 }
 
 function findProjectImportViolations(): readonly ImportViolation[] {
-    return collectTypeScriptFiles(assetsRoot).flatMap((file) =>
-        findImportViolations(file, readFileSync(file, "utf8")),
-    );
+    return collectTypeScriptFiles(assetsRoot).flatMap((file) => findImportViolations(file, readFileSync(file, "utf8")));
 }
 
 function analyzeFixture(file: string, source: string): readonly ImportViolation[] {
@@ -439,9 +365,7 @@ function analyzeFixture(file: string, source: string): readonly ImportViolation[
 function extractRootExportNames(source: string): readonly string[] {
     const names = new Set<string>();
 
-    for (const match of source.matchAll(
-        /\bexport\s+(?:type\s+)?\{([^}]*)\}\s*from\b/g,
-    )) {
+    for (const match of source.matchAll(/\bexport\s+(?:type\s+)?\{([^}]*)\}\s*from\b/g)) {
         const body = match[1];
 
         if (body === undefined) {
@@ -457,9 +381,7 @@ function extractRootExportNames(source: string): readonly string[] {
         }
     }
 
-    for (const match of source.matchAll(
-        /\bexport\s+(?:declare\s+)?(?:class|interface|type|const|function|enum)\s+([A-Za-z_$][A-Za-z0-9_$]*)/g,
-    )) {
+    for (const match of source.matchAll(/\bexport\s+(?:declare\s+)?(?:class|interface|type|const|function|enum)\s+([A-Za-z_$][A-Za-z0-9_$]*)/g)) {
         const name = match[1];
 
         if (name !== undefined) {
@@ -679,11 +601,7 @@ describe("framework public boundary", () => {
       import type { Module } from "@framework/contracts/module/Module";
     `;
 
-        expect(
-            analyzeFixture("assets/game/Feature.ts", source).map(
-                ({ specifier, reason }) => ({ specifier, reason }),
-            ),
-        ).toEqual([
+        expect(analyzeFixture("assets/game/Feature.ts", source).map(({ specifier, reason }) => ({ specifier, reason }))).toEqual([
             {
                 specifier: "../framework/application/Application",
                 reason: "External consumers must import the Framework root entry",
@@ -697,22 +615,10 @@ describe("framework public boundary", () => {
 
     test("allows the declared internal dependency direction", () => {
         const fixtures = [
-            analyzeFixture(
-                "assets/framework/core/lifecycle/State.ts",
-                'import type { Failure } from "../errors/Failure";',
-            ),
-            analyzeFixture(
-                "assets/framework/contracts/module/Module.ts",
-                'import type { State } from "../../core/lifecycle/State";',
-            ),
-            analyzeFixture(
-                "assets/framework/application/Application.ts",
-                'import type { Module } from "../contracts/module/Module";',
-            ),
-            analyzeFixture(
-                "assets/framework/diagnostics/logging/ConsoleLogger.ts",
-                'import type { Logger } from "../../contracts/logging/Logger";',
-            ),
+            analyzeFixture("assets/framework/core/lifecycle/State.ts", 'import type { Failure } from "../errors/Failure";'),
+            analyzeFixture("assets/framework/contracts/module/Module.ts", 'import type { State } from "../../core/lifecycle/State";'),
+            analyzeFixture("assets/framework/application/Application.ts", 'import type { Module } from "../contracts/module/Module";'),
+            analyzeFixture("assets/framework/diagnostics/logging/ConsoleLogger.ts", 'import type { Logger } from "../../contracts/logging/Logger";'),
             analyzeFixture(
                 "assets/framework/adapters/cocos/application/CocosApplicationAdapter.ts",
                 `
@@ -740,9 +646,7 @@ describe("framework public boundary", () => {
       import type { TimeSource } from "../../contracts/time/TimeSource";
     `;
 
-        expect(
-            analyzeFixture("assets/framework/core/time/WallClock.ts", source),
-        ).toEqual([]);
+        expect(analyzeFixture("assets/framework/core/time/WallClock.ts", source)).toEqual([]);
     });
 
     test("allows memory adapters to depend on core and contracts only", () => {
@@ -752,9 +656,7 @@ describe("framework public boundary", () => {
       import type { SimulationClock } from "../../core/time/SimulationClock";
     `;
 
-        expect(
-            analyzeFixture("assets/framework/adapters/memory/MemoryPlatform.ts", source),
-        ).toEqual([]);
+        expect(analyzeFixture("assets/framework/adapters/memory/MemoryPlatform.ts", source)).toEqual([]);
     });
 
     test("rejects runtime, reverse and cross-adapter dependencies from memory adapters", () => {
@@ -767,21 +669,11 @@ describe("framework public boundary", () => {
       import type { Battle } from "../../../game/Battle";
     `;
 
-        expect(
-            Object.fromEntries(
-                analyzeFixture(
-                    "assets/framework/adapters/memory/MemoryPlatform.ts",
-                    source,
-                ).map(({ specifier, reason }) => [specifier, reason]),
-            ),
-        ).toEqual({
+        expect(Object.fromEntries(analyzeFixture("assets/framework/adapters/memory/MemoryPlatform.ts", source).map(({ specifier, reason }) => [specifier, reason]))).toEqual({
             cc: "adapters/memory cannot depend on Cocos",
-            "../../application/Application":
-                "adapters/memory cannot depend on application",
-            "../../diagnostics/logging/ConsoleLogger":
-                "adapters/memory cannot depend on diagnostics",
-            "../../adapters/cocos/application/CocosApplicationAdapter":
-                "adapters/memory cannot depend on adapters/cocos",
+            "../../application/Application": "adapters/memory cannot depend on application",
+            "../../diagnostics/logging/ConsoleLogger": "adapters/memory cannot depend on diagnostics",
+            "../../adapters/cocos/application/CocosApplicationAdapter": "adapters/memory cannot depend on adapters/cocos",
             "../../../game/Battle": "Framework cannot depend on Game",
         });
     });
@@ -792,9 +684,7 @@ describe("framework public boundary", () => {
       import type { LifecycleState } from "../../core/lifecycle/LifecycleState";
     `;
 
-        expect(
-            analyzeFixture("assets/framework/contracts/module/Module.ts", source),
-        ).toEqual([]);
+        expect(analyzeFixture("assets/framework/contracts/module/Module.ts", source)).toEqual([]);
     });
 
     test("rejects forbidden contracts/module architecture dependencies", () => {
@@ -806,58 +696,26 @@ describe("framework public boundary", () => {
       import { Component } from "cc";
     `;
 
-        const violations = analyzeFixture(
-            "assets/framework/contracts/module/Module.ts",
-            source,
-        );
+        const violations = analyzeFixture("assets/framework/contracts/module/Module.ts", source);
 
-        expect(
-            Object.fromEntries(
-                violations.map(({ specifier, reason }) => [specifier, reason]),
-            ),
-        ).toEqual({
-            "../../application/ApplicationContext":
-                "contracts cannot depend on application",
-            "../../adapters/cocos/application/CocosAdapter":
-                "contracts cannot depend on adapters/cocos",
-            "../../diagnostics/logging/ConsoleLogger":
-                "contracts cannot depend on diagnostics",
-            "../logging/Logger":
-                "contracts/module can only depend on contracts/application and core",
+        expect(Object.fromEntries(violations.map(({ specifier, reason }) => [specifier, reason]))).toEqual({
+            "../../application/ApplicationContext": "contracts cannot depend on application",
+            "../../adapters/cocos/application/CocosAdapter": "contracts cannot depend on adapters/cocos",
+            "../../diagnostics/logging/ConsoleLogger": "contracts cannot depend on diagnostics",
+            "../logging/Logger": "contracts/module can only depend on contracts/application and core",
             cc: "contracts cannot depend on Cocos",
         });
     });
 
     test("rejects reverse, concrete, Cocos, boot and Game dependencies", () => {
         const fixtures = [
-            analyzeFixture(
-                "assets/framework/core/lifecycle/State.ts",
-                'import { game } from "cc";',
-            ),
-            analyzeFixture(
-                "assets/framework/contracts/module/Module.ts",
-                'import type { Context } from "../../application/ApplicationContext";',
-            ),
-            analyzeFixture(
-                "assets/framework/application/Application.ts",
-                'import { ConsoleLogger } from "../diagnostics/logging/ConsoleLogger";',
-            ),
-            analyzeFixture(
-                "assets/framework/application/Application.ts",
-                'import type { Battle } from "../../game/Battle";',
-            ),
-            analyzeFixture(
-                "assets/framework/diagnostics/logging/ConsoleLogger.ts",
-                'import type { Application } from "../../application/Application";',
-            ),
-            analyzeFixture(
-                "assets/framework/adapters/cocos/application/CocosApplicationAdapter.ts",
-                'import { AppRoot } from "../../../../boot/AppRoot";',
-            ),
-            analyzeFixture(
-                "assets/framework/contracts/module/Module.ts",
-                'import type { Framework } from "../../index";',
-            ),
+            analyzeFixture("assets/framework/core/lifecycle/State.ts", 'import { game } from "cc";'),
+            analyzeFixture("assets/framework/contracts/module/Module.ts", 'import type { Context } from "../../application/ApplicationContext";'),
+            analyzeFixture("assets/framework/application/Application.ts", 'import { ConsoleLogger } from "../diagnostics/logging/ConsoleLogger";'),
+            analyzeFixture("assets/framework/application/Application.ts", 'import type { Battle } from "../../game/Battle";'),
+            analyzeFixture("assets/framework/diagnostics/logging/ConsoleLogger.ts", 'import type { Application } from "../../application/Application";'),
+            analyzeFixture("assets/framework/adapters/cocos/application/CocosApplicationAdapter.ts", 'import { AppRoot } from "../../../../boot/AppRoot";'),
+            analyzeFixture("assets/framework/contracts/module/Module.ts", 'import type { Framework } from "../../index";'),
         ];
 
         expect(fixtures.map((violations) => violations[0]?.reason)).toEqual([
@@ -875,20 +733,11 @@ describe("framework public boundary", () => {
         // 框架内核不得反向依赖任何游戏层目录：既包括 assets/game，也包括顶层
         // game_* 品类目录（2.x 起各品类在此建业务模型，漏检会让负向断言失真）
         const fixtures = [
-            analyzeFixture(
-                "assets/framework/application/Application.ts",
-                'import type { Battle } from "../../game_rpg/Battle";',
-            ),
-            analyzeFixture(
-                "assets/framework/contracts/module/Module.ts",
-                'import { CardDeck } from "../../../game_card/CardDeck";',
-            ),
+            analyzeFixture("assets/framework/application/Application.ts", 'import type { Battle } from "../../game_rpg/Battle";'),
+            analyzeFixture("assets/framework/contracts/module/Module.ts", 'import { CardDeck } from "../../../game_card/CardDeck";'),
         ];
 
-        expect(fixtures.map((violations) => violations[0]?.reason)).toEqual([
-            "Framework cannot depend on Game",
-            "Framework cannot depend on Game",
-        ]);
+        expect(fixtures.map((violations) => violations[0]?.reason)).toEqual(["Framework cannot depend on Game", "Framework cannot depend on Game"]);
     });
 
     test("allows boot to depend on Game as the composition root", () => {
@@ -914,11 +763,7 @@ describe("framework public boundary", () => {
 
         const violations = analyzeFixture("assets/game/fixture/GameFixture.ts", source);
 
-        expect(
-            violations
-                .map(({ specifier, reason }) => ({ specifier, reason }))
-                .sort((left, right) => left.specifier.localeCompare(right.specifier)),
-        ).toEqual(
+        expect(violations.map(({ specifier, reason }) => ({ specifier, reason })).sort((left, right) => left.specifier.localeCompare(right.specifier))).toEqual(
             [
                 {
                     specifier: "../../framework/application/Application",
@@ -965,11 +810,7 @@ describe("framework public boundary", () => {
       `,
         );
 
-        expect(
-            violations
-                .map(({ specifier, reason }) => ({ specifier, reason }))
-                .sort((left, right) => left.specifier.localeCompare(right.specifier)),
-        ).toEqual(
+        expect(violations.map(({ specifier, reason }) => ({ specifier, reason })).sort((left, right) => left.specifier.localeCompare(right.specifier))).toEqual(
             [
                 {
                     specifier: "../framework/application/ModuleRunner",
@@ -1007,11 +848,7 @@ describe("framework public boundary", () => {
       const cocos = require("cc");
     `;
 
-        expect(
-            analyzeFixture("assets/framework/application/Application.ts", source).map(
-                ({ specifier, reason }) => ({ specifier, reason }),
-            ),
-        ).toEqual([
+        expect(analyzeFixture("assets/framework/application/Application.ts", source).map(({ specifier, reason }) => ({ specifier, reason }))).toEqual([
             {
                 specifier: "@game/Battle",
                 reason: "Framework cannot depend on Game",
@@ -1028,12 +865,7 @@ describe("framework public boundary", () => {
     });
 
     test("locks the resource layer dependency boundary", () => {
-        const allowed = [
-            analyzeFixture(
-                "assets/framework/core/resource/LoadCoordinator.ts",
-                'import { FrameworkError } from "../errors/FrameworkError";',
-            ),
-        ];
+        const allowed = [analyzeFixture("assets/framework/core/resource/LoadCoordinator.ts", 'import { FrameworkError } from "../errors/FrameworkError";')];
 
         expect(allowed).toEqual([[]]);
 
@@ -1049,42 +881,29 @@ describe("framework public boundary", () => {
       `,
         );
 
-        expect(
-            Object.fromEntries(
-                violations.map(({ specifier, reason }) => [specifier, reason]),
-            ),
-        ).toEqual({
+        expect(Object.fromEntries(violations.map(({ specifier, reason }) => [specifier, reason]))).toEqual({
             cc: "core cannot depend on Cocos",
             "../../application/Application": "core cannot depend on application",
-            "../../diagnostics/logging/ConsoleLogger":
-                "core cannot depend on diagnostics",
-            "../../adapters/cocos/application/CocosApplicationAdapter":
-                "core cannot depend on adapters/cocos",
+            "../../diagnostics/logging/ConsoleLogger": "core cannot depend on diagnostics",
+            "../../adapters/cocos/application/CocosApplicationAdapter": "core cannot depend on adapters/cocos",
             "../../../game/Battle": "Framework cannot depend on Game",
             "../../index": "Framework internals cannot import the root barrel",
         });
     });
 
     test("keeps the resource package extension free of fgui imports", () => {
-        const resourceRoots = [
-            resolve(frameworkRoot, "core/resource"),
-            resolve(frameworkRoot, "contracts/resource"),
-        ];
+        const resourceRoots = [resolve(frameworkRoot, "core/resource"), resolve(frameworkRoot, "contracts/resource")];
 
         for (const root of resourceRoots) {
             for (const file of collectTypeScriptFiles(root)) {
                 const source = stripComments(readFileSync(file, "utf8"));
-                expect(source).not.toMatch(
-                    /from\s*["']fairygui(?:-cc)?(?:["']|\/)/,
-                );
+                expect(source).not.toMatch(/from\s*["']fairygui(?:-cc)?(?:["']|\/)/);
             }
         }
     });
 
     test("keeps the package kind pinned to the provider entry only", () => {
-        const coreResourceFiles = collectTypeScriptFiles(
-            resolve(frameworkRoot, "core/resource"),
-        );
+        const coreResourceFiles = collectTypeScriptFiles(resolve(frameworkRoot, "core/resource"));
 
         for (const file of coreResourceFiles) {
             const source = stripComments(readFileSync(file, "utf8"));
@@ -1113,19 +932,13 @@ describe("framework public boundary", () => {
 
             const specifiers = extractModuleSpecifiers(readFileSync(file, "utf8"));
             const importsFairyGui = specifiers.some((specifier) => {
-                if (
-                    specifier === "fairygui-cc" ||
-                    specifier.startsWith("fairygui-cc/")
-                ) {
+                if (specifier === "fairygui-cc" || specifier.startsWith("fairygui-cc/")) {
                     return true;
                 }
 
                 // 相对/别名路径直指 vendor 目录同样绕过白名单，一并锁定
                 const target = resolveImportTarget(file, specifier);
-                return (
-                    target !== undefined &&
-                    isWithin(target, fairyGuiVendorRoot)
-                );
+                return target !== undefined && isWithin(target, fairyGuiVendorRoot);
             });
 
             return importsFairyGui;
@@ -1146,21 +959,13 @@ describe("framework public boundary", () => {
 
             const specifiers = extractModuleSpecifiers(readFileSync(file, "utf8"));
             return specifiers.some((specifier) => {
-                if (
-                    specifier === "fairygui-cc" ||
-                    specifier.startsWith("fairygui-cc/") ||
-                    specifier === "fairygui" ||
-                    specifier.startsWith("fairygui/")
-                ) {
+                if (specifier === "fairygui-cc" || specifier.startsWith("fairygui-cc/") || specifier === "fairygui" || specifier.startsWith("fairygui/")) {
                     return true;
                 }
 
                 // 相对/别名路径直指 vendor 目录同样绕过白名单，一并锁定
                 const target = resolveImportTarget(file, specifier);
-                return (
-                    target !== undefined &&
-                    isWithin(target, fairyGuiVendorRoot)
-                );
+                return target !== undefined && isWithin(target, fairyGuiVendorRoot);
             });
         });
 
@@ -1191,19 +996,13 @@ describe("framework public boundary", () => {
         const coreFiles = collectTypeScriptFiles(resolve(frameworkRoot, "core/resource"));
         expect(coreFiles.length).toBeGreaterThan(0);
 
-        const coreSources = coreFiles
-            .map((file) => stripComments(readFileSync(file, "utf8")))
-            .join("\n");
+        const coreSources = coreFiles.map((file) => stripComments(readFileSync(file, "utf8"))).join("\n");
 
         expect(coreSources).not.toMatch(/from\s*["']cc(?:["']|\/)/);
-        expect(coreSources).not.toMatch(
-            /\b(?:getInstance|singleton|ServiceLocator)\b/,
-        );
+        expect(coreSources).not.toMatch(/\b(?:getInstance|singleton|ServiceLocator)\b/);
     });
 
-    test.skipIf(
-        !existsSync(resolve(frameworkRoot, "contracts/resource")),
-    )("keeps resource contracts free of core implementations", () => {
+    test.skipIf(!existsSync(resolve(frameworkRoot, "contracts/resource")))("keeps resource contracts free of core implementations", () => {
         const contractsResourceRoot = resolve(frameworkRoot, "contracts/resource");
 
         for (const file of collectTypeScriptFiles(contractsResourceRoot)) {
@@ -1212,9 +1011,7 @@ describe("framework public boundary", () => {
         }
     });
 
-    test.skipIf(
-        !existsSync(resolve(frameworkRoot, "contracts/ui")),
-    )("keeps ui contracts free of core implementations and Cocos", () => {
+    test.skipIf(!existsSync(resolve(frameworkRoot, "contracts/ui")))("keeps ui contracts free of core implementations and Cocos", () => {
         const contractsUiRoot = resolve(frameworkRoot, "contracts/ui");
 
         for (const file of collectTypeScriptFiles(contractsUiRoot)) {
@@ -1224,9 +1021,7 @@ describe("framework public boundary", () => {
         }
     });
 
-    test.skipIf(
-        !existsSync(resolve(frameworkRoot, "contracts/config")),
-    )("keeps config contracts engine-agnostic and free of core implementations", () => {
+    test.skipIf(!existsSync(resolve(frameworkRoot, "contracts/config")))("keeps config contracts engine-agnostic and free of core implementations", () => {
         const contractsConfigRoot = resolve(frameworkRoot, "contracts/config");
 
         for (const file of collectTypeScriptFiles(contractsConfigRoot)) {
@@ -1235,17 +1030,13 @@ describe("framework public boundary", () => {
             // 反向依赖 core 实现细节
             expect(source).not.toMatch(/from\s*["'][^"']*core\/config/);
             expect(source).not.toMatch(/from\s*["']cc(?:["']|\/)/);
-            expect(source).not.toMatch(
-                /from\s*["']fairygui(?:-cc)?(?:["']|\/)/,
-            );
+            expect(source).not.toMatch(/from\s*["']fairygui(?:-cc)?(?:["']|\/)/);
             // 配置与玩家存档严格分离：契约层不得触达任何存储实现
             expect(source).not.toMatch(/from\s*["'][^"']*\/storage\//);
         }
     });
 
-    test.skipIf(
-        !existsSync(resolve(frameworkRoot, "core/config")),
-    )("keeps the config core layer engine-agnostic and separate from saves", () => {
+    test.skipIf(!existsSync(resolve(frameworkRoot, "core/config")))("keeps the config core layer engine-agnostic and separate from saves", () => {
         const coreConfigRoot = resolve(frameworkRoot, "core/config");
 
         const sources = collectTypeScriptFiles(coreConfigRoot)
@@ -1256,23 +1047,17 @@ describe("framework public boundary", () => {
         expect(sources).not.toMatch(/from\s*["']fairygui(?:-cc)?(?:["']|\/)/);
         // 配置走资源读取路径，内核不得依赖存档键值后端（core/contracts 同级 import 需显式拦截）
         expect(sources).not.toMatch(/from\s*["'][^"']*\/storage\//);
-        expect(sources).not.toMatch(
-            /\b(?:getInstance|singleton|ServiceLocator)\b/,
-        );
+        expect(sources).not.toMatch(/\b(?:getInstance|singleton|ServiceLocator)\b/);
     });
 
-    test.skipIf(
-        !existsSync(resolve(frameworkRoot, "adapters/cocos/config")),
-    )("keeps the cocos config adapter on the resource path only", () => {
+    test.skipIf(!existsSync(resolve(frameworkRoot, "adapters/cocos/config")))("keeps the cocos config adapter on the resource path only", () => {
         const cocosConfigRoot = resolve(frameworkRoot, "adapters/cocos/config");
 
         for (const file of collectTypeScriptFiles(cocosConfigRoot)) {
             const source = stripComments(readFileSync(file, "utf8"));
             // 适配器允许 cc 导入，但不得触达存档后端，且不得依赖 FairyGUI
             expect(source).not.toMatch(/from\s*["'][^"']*\/storage\//);
-            expect(source).not.toMatch(
-                /from\s*["']fairygui(?:-cc)?(?:["']|\/)/,
-            );
+            expect(source).not.toMatch(/from\s*["']fairygui(?:-cc)?(?:["']|\/)/);
         }
     });
 
@@ -1287,9 +1072,7 @@ describe("framework public boundary", () => {
             .join("\n");
 
         expect(sources).not.toMatch(/from\s*["']cc(?:["']|\/)/);
-        expect(sources).not.toMatch(
-            /\b(?:getInstance|singleton|ServiceLocator|globalThis|window)\b/,
-        );
+        expect(sources).not.toMatch(/\b(?:getInstance|singleton|ServiceLocator|globalThis|window)\b/);
     });
 
     test("keeps platform, time and scheduling layers free of service locators and global singletons", () => {
@@ -1308,8 +1091,6 @@ describe("framework public boundary", () => {
 
         expect(sources).not.toMatch(/\b(?:getInstance|singleton|ServiceLocator)\b/);
         expect(sources).not.toMatch(/\b(?:globalThis|window)\b/);
-        expect(sources).not.toMatch(
-            /\bstatic\s+(?:readonly\s+)?(?:instance|shared)\b/,
-        );
+        expect(sources).not.toMatch(/\bstatic\s+(?:readonly\s+)?(?:instance|shared)\b/);
     });
 });

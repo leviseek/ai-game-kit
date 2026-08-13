@@ -2,11 +2,7 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, test } from "bun:test";
 
-import type {
-    ApplicationContext,
-    ApplicationState,
-    Module,
-} from "../../../assets/framework";
+import type { ApplicationContext, ApplicationState, Module } from "../../../assets/framework";
 import { MemoryLogger } from "../support/MemoryLogger";
 
 interface ApplicationInstance {
@@ -17,10 +13,7 @@ interface ApplicationInstance {
     dispose(): Promise<void>;
 }
 
-type ApplicationConstructor = new (
-    modules: readonly Module[],
-    context: ApplicationContext,
-) => ApplicationInstance;
+type ApplicationConstructor = new (modules: readonly Module[], context: ApplicationContext) => ApplicationInstance;
 
 interface FrameworkExports {
     readonly Application?: ApplicationConstructor;
@@ -30,9 +23,7 @@ const projectRoot = resolve(import.meta.dir, "../../..");
 const frameworkEntry = resolve(projectRoot, "assets/framework/index.ts");
 
 async function loadApplication(): Promise<ApplicationConstructor> {
-    const exports = (await import(
-        pathToFileURL(frameworkEntry).href,
-    )) as FrameworkExports;
+    const exports = (await import(pathToFileURL(frameworkEntry).href)) as FrameworkExports;
 
     expect(typeof exports.Application).toBe("function");
 

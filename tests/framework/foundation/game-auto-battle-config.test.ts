@@ -1,16 +1,9 @@
 import { describe, expect, test } from "bun:test";
 
-import {
-    MAX_TEAM_SIZE,
-    createAutoBattleConfig,
-} from "../../../assets/samples/game_auto_battle/logic/config";
+import { MAX_TEAM_SIZE, createAutoBattleConfig } from "../../../assets/samples/game_auto_battle/logic/config";
 
 /** 构造英雄池条目：形状为 AutoBattleUnit 去掉 side/index。 */
-function hero(
-    id: string,
-    name: string,
-    overrides: Record<string, unknown> = {},
-): Record<string, unknown> {
+function hero(id: string, name: string, overrides: Record<string, unknown> = {}): Record<string, unknown> {
     return {
         id,
         name,
@@ -109,10 +102,7 @@ describe("Auto-battle config heroes + lineups", () => {
     });
 
     test("rejects a lineup exceeding the team size upper bound", () => {
-        const ids = Array.from(
-            { length: MAX_TEAM_SIZE + 1 },
-            (_, i) => `a${i}`,
-        );
+        const ids = Array.from({ length: MAX_TEAM_SIZE + 1 }, (_, i) => `a${i}`);
 
         expect(() =>
             createAutoBattleConfig({
@@ -163,10 +153,7 @@ describe("Auto-battle config legacy teams fallback", () => {
     });
 
     test("legacy fallback keeps the team size upper bound", () => {
-        const ids = Array.from(
-            { length: MAX_TEAM_SIZE + 1 },
-            (_, i) => `a${i}`,
-        );
+        const ids = Array.from({ length: MAX_TEAM_SIZE + 1 }, (_, i) => `a${i}`);
 
         expect(() =>
             createAutoBattleConfig({

@@ -3,36 +3,23 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, test } from "bun:test";
 
-import type {
-    LogContext,
-    Logger,
-    LogRecord,
-} from "../../../assets/framework";
+import type { LogContext, Logger, LogRecord } from "../../../assets/framework";
 
 type LogRecordSink = (record: LogRecord) => void;
 
-type CreateScopedLogger = (
-    sink: LogRecordSink,
-    scope?: string,
-    context?: LogContext,
-) => Logger;
+type CreateScopedLogger = (sink: LogRecordSink, scope?: string, context?: LogContext) => Logger;
 
 interface ScopedLoggerModule {
     readonly createScopedLogger?: CreateScopedLogger;
 }
 
 const projectRoot = resolve(import.meta.dir, "../../..");
-const scopedLoggerFile = resolve(
-    projectRoot,
-    "assets/framework/diagnostics/logging/ScopedLogger.ts",
-);
+const scopedLoggerFile = resolve(projectRoot, "assets/framework/diagnostics/logging/ScopedLogger.ts");
 
 async function loadCreateScopedLogger(): Promise<CreateScopedLogger> {
     expect(existsSync(scopedLoggerFile)).toBe(true);
 
-    const module = (await import(
-        pathToFileURL(scopedLoggerFile).href
-    )) as ScopedLoggerModule;
+    const module = (await import(pathToFileURL(scopedLoggerFile).href)) as ScopedLoggerModule;
 
     expect(typeof module.createScopedLogger).toBe("function");
 
@@ -53,11 +40,7 @@ describe("child logger", () => {
     test("merges parent, child and call context with nearest values winning", async () => {
         const createScopedLogger = await loadCreateScopedLogger();
         const records: LogRecord[] = [];
-        const root = createScopedLogger(
-            (record) => records.push(record),
-            "application",
-            { applicationState: "running", shared: "parent" },
-        );
+        const root = createScopedLogger((record) => records.push(record), "application", { applicationState: "running", shared: "parent" });
         const child = root.child("inventory", {
             moduleId: "inventory",
             shared: "child",
@@ -83,11 +66,7 @@ describe("child logger", () => {
             applicationState: "running",
             shared: "parent",
         };
-        const parent = createScopedLogger(
-            (record) => records.push(record),
-            "application",
-            parentContext,
-        );
+        const parent = createScopedLogger((record) => records.push(record), "application", parentContext);
 
         parent.child("inventory", { shared: "child" }).info("child record");
         parent.info("parent record");

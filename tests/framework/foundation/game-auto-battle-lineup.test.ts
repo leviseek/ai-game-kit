@@ -12,10 +12,7 @@ function emptyLineup(): AutoBattleLineup {
 
 /** 构造带指定占用槽的编队：{[slot]: heroId}。 */
 function lineupWith(occupied: Readonly<Record<number, string>>): AutoBattleLineup {
-    const slots = Array.from<unknown, string | null>(
-        { length: FORMATION_GRID_SIZE },
-        () => null,
-    );
+    const slots = Array.from<unknown, string | null>({ length: FORMATION_GRID_SIZE }, () => null);
     for (const [slot, heroId] of Object.entries(occupied)) {
         slots[Number(slot)] = heroId;
     }

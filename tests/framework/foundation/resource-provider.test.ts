@@ -4,10 +4,7 @@ import { resolve } from "node:path";
 
 import { createResourceProvider } from "../../../assets/framework/core/resource/ResourceProvider";
 import { createMemoryResourceProvider } from "../../../assets/framework/adapters/memory/MemoryResourceProvider";
-import type {
-    ResourceHandle,
-    ResourceKey,
-} from "../../../assets/framework/contracts/resource/Resource";
+import type { ResourceHandle, ResourceKey } from "../../../assets/framework/contracts/resource/Resource";
 
 interface ControlledDeferred {
     readonly resolve: (value: unknown) => void;
@@ -51,10 +48,7 @@ function collectTypeScriptFiles(directory: string): readonly string[] {
 }
 
 describe("IResourceProvider contract shape", () => {
-    const contractsResourceRoot = resolve(
-        import.meta.dir,
-        "../../../assets/framework/contracts/resource",
-    );
+    const contractsResourceRoot = resolve(import.meta.dir, "../../../assets/framework/contracts/resource");
     const providerContract = resolve(contractsResourceRoot, "ResourceProvider.ts");
 
     test("defines IResourceProvider as the unified resource entry", () => {
@@ -83,7 +77,7 @@ describe("IResourceProvider contract shape", () => {
 describe("IResourceProvider as the only resource entry", () => {
     test("load deduplicates concurrent requests for the same resource", async () => {
         const { loader, calls, pending } = createControlledLoader();
-        const provider = createResourceProvider({ loader, unloadBundle: () => { } });
+        const provider = createResourceProvider({ loader, unloadBundle: () => {} });
 
         const first = provider.load("common", "a.png");
         const second = provider.load("common", "a.png");
@@ -101,7 +95,7 @@ describe("IResourceProvider as the only resource entry", () => {
 
     test("load returns a handle synchronously carrying identity and loading state", () => {
         const { loader, pending } = createControlledLoader();
-        const provider = createResourceProvider({ loader, unloadBundle: () => { } });
+        const provider = createResourceProvider({ loader, unloadBundle: () => {} });
 
         const handle = provider.load("common", "config.json");
 
@@ -117,7 +111,7 @@ describe("IResourceProvider as the only resource entry", () => {
 
     test("preload initiates a load with the same handle shape", async () => {
         const { loader, calls, pending } = createControlledLoader();
-        const provider = createResourceProvider({ loader, unloadBundle: () => { } });
+        const provider = createResourceProvider({ loader, unloadBundle: () => {} });
 
         const handle = provider.preload("common", "ui/panel.json");
 
@@ -131,7 +125,7 @@ describe("IResourceProvider as the only resource entry", () => {
 
     test("failure preserves the original cause and resource identity", async () => {
         const { loader, pending } = createControlledLoader();
-        const provider = createResourceProvider({ loader, unloadBundle: () => { } });
+        const provider = createResourceProvider({ loader, unloadBundle: () => {} });
         const original = new Error("disk read failed");
 
         const handle = provider.load("common", "missing.txt");
@@ -148,7 +142,7 @@ describe("IResourceProvider as the only resource entry", () => {
 
     test("invalidate drops the cached terminal state so reload triggers a fresh underlying load", async () => {
         const { loader, calls, pending } = createControlledLoader();
-        const provider = createResourceProvider({ loader, unloadBundle: () => { } });
+        const provider = createResourceProvider({ loader, unloadBundle: () => {} });
 
         const first = provider.load("common", "config.json");
         pending[0].resolve({ id: "cached" });
@@ -168,7 +162,7 @@ describe("IResourceProvider as the only resource entry", () => {
 
     test("invalidate enables retry after a cached failure", async () => {
         const { loader, calls, pending } = createControlledLoader();
-        const provider = createResourceProvider({ loader, unloadBundle: () => { } });
+        const provider = createResourceProvider({ loader, unloadBundle: () => {} });
 
         const first = provider.load("common", "flaky.json");
         pending[0].reject(new Error("first attempt failed"));
@@ -286,11 +280,7 @@ describe("Creator build-transpilation guard: Set/iterator spreads", () => {
     // 全库扫描锁定：任何 `[...x]` 后接 `.values()`/`.keys()`/`.entries()` 或展开的
     // 变量名指向 Set/Map 的场景都必须经 Array.from，禁止直接展开运算符。
 
-    const suspiciousPatterns: Array<RegExp> = [
-        /\[\.\.\.[A-Za-z_$][\w$]*\.values\(\)\]/,
-        /\[\.\.\.[A-Za-z_$][\w$]*\.keys\(\)\]/,
-        /\[\.\.\.[A-Za-z_$][\w$]*\.entries\(\)\]/,
-    ];
+    const suspiciousPatterns: Array<RegExp> = [/\[\.\.\.[A-Za-z_$][\w$]*\.values\(\)\]/, /\[\.\.\.[A-Za-z_$][\w$]*\.keys\(\)\]/, /\[\.\.\.[A-Za-z_$][\w$]*\.entries\(\)\]/];
 
     const knownSetLikeNames = ["waiters", "pages", "visibilityListeners"];
 
@@ -305,37 +295,25 @@ describe("Creator build-transpilation guard: Set/iterator spreads", () => {
     }
 
     test("LoadCoordinator snapshots waiters with Array.from", () => {
-        const source = readFileSync(
-            resolve(frameworkRoot, "core/resource/LoadCoordinator.ts"),
-            "utf8",
-        );
+        const source = readFileSync(resolve(frameworkRoot, "core/resource/LoadCoordinator.ts"), "utf8");
         expect(source).toMatch(/Array\.from\(entry\.waiters\)/);
         expect(source).not.toMatch(/\[\.\.\.entry\.waiters\]/);
     });
 
     test("ResourceScope iterates held values with Array.from", () => {
-        const source = readFileSync(
-            resolve(frameworkRoot, "core/resource/ResourceScope.ts"),
-            "utf8",
-        );
+        const source = readFileSync(resolve(frameworkRoot, "core/resource/ResourceScope.ts"), "utf8");
         expect(source).toMatch(/Array\.from\(held\.values\(\)\)/);
         expect(source).not.toMatch(/\[\.\.\.held\.values\(\)\]/);
     });
 
     test("FairyGuiPageAdapter snapshots pages with Array.from", () => {
-        const source = readFileSync(
-            resolve(frameworkRoot, "adapters/cocos/ui/FairyGuiPageAdapter.ts"),
-            "utf8",
-        );
+        const source = readFileSync(resolve(frameworkRoot, "adapters/cocos/ui/FairyGuiPageAdapter.ts"), "utf8");
         expect(source).toMatch(/Array\.from\(pages\)/);
         expect(source).not.toMatch(/\[\.\.\.pages\]/);
     });
 
     test("MemoryPlatform iterates visibility listeners with Array.from", () => {
-        const source = readFileSync(
-            resolve(frameworkRoot, "adapters/memory/MemoryPlatform.ts"),
-            "utf8",
-        );
+        const source = readFileSync(resolve(frameworkRoot, "adapters/memory/MemoryPlatform.ts"), "utf8");
         expect(source).toMatch(/Array\.from\(this\.visibilityListeners\)/);
         expect(source).not.toMatch(/\[\.\.\.this\.visibilityListeners\]/);
     });
@@ -352,10 +330,7 @@ describe("Creator build-transpilation guard: Set/iterator spreads", () => {
                 }
                 // 展开的变量名若命中已知 Set/Map 名，视为危险展开
                 const expanded = line.match(/\[\.\.\.([A-Za-z_$][\w$]*)\]/);
-                if (
-                    expanded !== null &&
-                    knownSetLikeNames.includes(expanded[1])
-                ) {
+                if (expanded !== null && knownSetLikeNames.includes(expanded[1])) {
                     offenders.push({ file, line: line.trim() });
                 }
             }

@@ -1,12 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import {
-    BATTLEFIELD_COLS,
-    FORMATION_GRID_COLS,
-    FORMATION_GRID_ROWS,
-    FORMATION_GRID_SIZE,
-    createMapGrid,
-} from "../../../assets/samples/game_auto_battle/logic/grid";
+import { BATTLEFIELD_COLS, FORMATION_GRID_COLS, FORMATION_GRID_ROWS, FORMATION_GRID_SIZE, createMapGrid } from "../../../assets/samples/game_auto_battle/logic/grid";
 
 describe("Auto-battle MapGrid formation cells", () => {
     test("each side gets FORMATION_GRID_SIZE distinct cells", () => {

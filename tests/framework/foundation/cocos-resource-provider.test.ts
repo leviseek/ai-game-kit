@@ -21,36 +21,25 @@ interface CocosBundleLike {
 }
 
 interface CocosAssetManagerLike {
-    loadBundle(
-        name: string,
-        onComplete: (err: Error | null, bundle?: CocosBundleLike) => void,
-    ): void;
+    loadBundle(name: string, onComplete: (err: Error | null, bundle?: CocosBundleLike) => void): void;
     getBundle(name: string): CocosBundleLike | null;
     removeBundle(bundle: CocosBundleLike): void;
 }
 
 interface CocosResourceProviderFactory {
-    createCocosResourceProvider(options?: {
-        readonly assetManager?: CocosAssetManagerLike;
-    }): IResourceProvider;
+    createCocosResourceProvider(options?: { readonly assetManager?: CocosAssetManagerLike }): IResourceProvider;
 }
 
 const projectRoot = resolve(import.meta.dir, "../../..");
-const adapterFile = resolve(
-    projectRoot,
-    "assets/framework/adapters/cocos/resource/CocosResourceProvider.ts",
-);
+const adapterFile = resolve(projectRoot, "assets/framework/adapters/cocos/resource/CocosResourceProvider.ts");
 
 async function loadFactory(): Promise<CocosResourceProviderFactory> {
-    const exports = (await import(
-        pathToFileURL(adapterFile).href
-    )) as Partial<CocosResourceProviderFactory>;
+    const exports = (await import(pathToFileURL(adapterFile).href)) as Partial<CocosResourceProviderFactory>;
 
     expect(typeof exports.createCocosResourceProvider).toBe("function");
 
     return {
-        createCocosResourceProvider:
-            exports.createCocosResourceProvider as CocosResourceProviderFactory["createCocosResourceProvider"],
+        createCocosResourceProvider: exports.createCocosResourceProvider as CocosResourceProviderFactory["createCocosResourceProvider"],
     };
 }
 
@@ -73,11 +62,7 @@ interface CocosMock {
 
 // 模拟 fairygui-cc 的 UIPackage 静态 API（3.3 loader kind 分派的目标）
 interface UIPackageLike {
-    loadPackage(
-        bundle: CocosBundleLike,
-        path: string,
-        onComplete?: (error: unknown, pkg?: { readonly name: string }) => void,
-    ): void;
+    loadPackage(bundle: CocosBundleLike, path: string, onComplete?: (error: unknown, pkg?: { readonly name: string }) => void): void;
     removePackage(nameOrId: string): void;
 }
 
@@ -94,9 +79,7 @@ interface UIPackageMock {
 function createUIPackageMock(): UIPackageMock {
     const packageLoads: Array<{ bundle: string; path: string }> = [];
     const removeCalls: string[] = [];
-    const pending: Array<
-        (error: unknown, pkg?: { readonly name: string }) => void
-    > = [];
+    const pending: Array<(error: unknown, pkg?: { readonly name: string }) => void> = [];
 
     const uiPackage: UIPackageLike = {
         loadPackage(bundle, path, onComplete) {
@@ -129,12 +112,8 @@ function createCocosMock(): CocosMock {
     const removeBundleCalls: string[] = [];
     const unloadSequence: string[] = [];
     const loadedBundles = new Map<string, CocosBundleLike>();
-    const pendingBundleCallbacks: Array<
-        (err: Error | null, bundle?: CocosBundleLike) => void
-    > = [];
-    const pendingAssetCallbacks: Array<
-        (err: Error | null, asset?: unknown) => void
-    > = [];
+    const pendingBundleCallbacks: Array<(err: Error | null, bundle?: CocosBundleLike) => void> = [];
+    const pendingAssetCallbacks: Array<(err: Error | null, asset?: unknown) => void> = [];
 
     function makeBundle(name: string): CocosBundleLike {
         return {
@@ -203,9 +182,7 @@ describe("CocosResourceProvider", () => {
         expect(cocos.state.bundleLoads).toEqual(["common"]);
 
         cocos.resolveBundle("common");
-        expect(cocos.state.assetLoads).toEqual([
-            { bundle: "common", path: "config.json" },
-        ]);
+        expect(cocos.state.assetLoads).toEqual([{ bundle: "common", path: "config.json" }]);
 
         const asset = { id: "cfg" };
         cocos.resolveAsset(asset);
@@ -381,8 +358,7 @@ describe("CocosResourceProvider", () => {
         const pkg = createUIPackageMock();
         const unloadOrder: string[] = [];
         const trackingPkg: UIPackageLike = {
-            loadPackage: (bundle, path, onComplete) =>
-                pkg.uiPackage.loadPackage(bundle, path, onComplete),
+            loadPackage: (bundle, path, onComplete) => pkg.uiPackage.loadPackage(bundle, path, onComplete),
             removePackage(nameOrId) {
                 unloadOrder.push(`removePackage:${nameOrId}`);
                 pkg.uiPackage.removePackage(nameOrId);

@@ -2,10 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import type { LogRecord } from "../../../assets/framework";
 import { createScopedLogger } from "../../../assets/framework/diagnostics/logging/ScopedLogger";
-import {
-    redactContext,
-    redactRecord,
-} from "../../../assets/framework/diagnostics/logging/redact";
+import { redactContext, redactRecord } from "../../../assets/framework/diagnostics/logging/redact";
 
 describe("diagnostics redact sensitive fields", () => {
     test("redacts sensitive keys while preserving non-sensitive context", () => {
@@ -31,12 +28,8 @@ describe("diagnostics redact sensitive fields", () => {
         const result = redactContext(context);
 
         expect(result.phase).toBe("start");
-        expect((result.credentials as { password: unknown }).password).toBe(
-            "[REDACTED]",
-        );
-        expect((result.credentials as { sessionToken: unknown }).sessionToken).toBe(
-            "[REDACTED]",
-        );
+        expect((result.credentials as { password: unknown }).password).toBe("[REDACTED]");
+        expect((result.credentials as { sessionToken: unknown }).sessionToken).toBe("[REDACTED]");
     });
 
     test("does not mutate the original context", () => {
@@ -90,12 +83,8 @@ describe("diagnostics redact sensitive fields", () => {
 
         expect(result.moduleId).toBe("inventory");
         expect(result.phase).toBe("start");
-        expect((result.credentials as { token: unknown }).token).toBe(
-            "[REDACTED]",
-        );
-        expect((result.credentials as { password: unknown }).password).toBe(
-            "[REDACTED]",
-        );
+        expect((result.credentials as { token: unknown }).token).toBe("[REDACTED]");
+        expect((result.credentials as { password: unknown }).password).toBe("[REDACTED]");
     });
 
     test("redacts delimiter-variant sensitive keys", () => {
@@ -168,24 +157,14 @@ describe("diagnostics redact sensitive fields", () => {
         const context = { steps };
         const result = redactContext(context);
 
-        expect(result.steps).toEqual([
-            { name: "loop", list: "[Circular]" },
-        ]);
+        expect(result.steps).toEqual([{ name: "loop", list: "[Circular]" }]);
     });
 
     test("ScopedLogger applies an injected filter to every record shape", () => {
         const records: LogRecord[] = [];
-        const logger = createScopedLogger(
-            (record) => records.push(record),
-            "application",
-            { source: "boot", secret: "root-secret" },
-            redactRecord,
-        );
+        const logger = createScopedLogger((record) => records.push(record), "application", { source: "boot", secret: "root-secret" }, redactRecord);
 
-        logger.child("inventory", { moduleId: "inventory" }).info(
-            "inventory started",
-            { token: "call-token", phase: "start" },
-        );
+        logger.child("inventory", { moduleId: "inventory" }).info("inventory started", { token: "call-token", phase: "start" });
 
         expect(records).toHaveLength(1);
         expect(records[0]).toMatchObject({

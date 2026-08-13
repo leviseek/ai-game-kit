@@ -2,12 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, test } from "bun:test";
 
-import type {
-    LogContext,
-    Logger,
-    LogLevel,
-    LogRecord,
-} from "../../../assets/framework";
+import type { LogContext, Logger, LogLevel, LogRecord } from "../../../assets/framework";
 
 type ErrorWithCause = Error & { readonly cause?: unknown };
 
@@ -19,29 +14,17 @@ interface LoggerProbe {
 const projectRoot = resolve(import.meta.dir, "../../..");
 const frameworkRoot = resolve(projectRoot, "assets/framework");
 const frameworkEntry = resolve(frameworkRoot, "index.ts");
-const loggerContractFile = resolve(
-    frameworkRoot,
-    "contracts/logging/Logger.ts",
-);
+const loggerContractFile = resolve(frameworkRoot, "contracts/logging/Logger.ts");
 const contractImportScanner = new Bun.Transpiler({ loader: "ts" });
 
 function joinScopes(parentScope: string, childScope: string): string {
     return parentScope.length === 0 ? childScope : `${parentScope}.${childScope}`;
 }
 
-function createLoggerProbe(
-    scope: string,
-    context: LogContext = {},
-    records: LogRecord[] = [],
-): LoggerProbe {
+function createLoggerProbe(scope: string, context: LogContext = {}, records: LogRecord[] = []): LoggerProbe {
     const baseContext = { ...context };
 
-    const record = (
-        level: LogLevel,
-        message: string,
-        callContext: LogContext = {},
-        error?: Error,
-    ): void => {
+    const record = (level: LogLevel, message: string, callContext: LogContext = {}, error?: Error): void => {
         records.push({
             level,
             message,
@@ -56,14 +39,8 @@ function createLoggerProbe(
         debug: (message, callContext) => record("debug", message, callContext),
         info: (message, callContext) => record("info", message, callContext),
         warn: (message, callContext) => record("warn", message, callContext),
-        error: (message, callContext, error) =>
-            record("error", message, callContext, error),
-        child: (childScope, childContext = {}) =>
-            createLoggerProbe(
-                joinScopes(scope, childScope),
-                { ...baseContext, ...childContext },
-                records,
-            ).logger,
+        error: (message, callContext, error) => record("error", message, callContext, error),
+        child: (childScope, childContext = {}) => createLoggerProbe(joinScopes(scope, childScope), { ...baseContext, ...childContext }, records).logger,
     };
 
     return { logger, records };
@@ -74,23 +51,14 @@ describe("Logger contract", () => {
         expect(existsSync(loggerContractFile)).toBe(true);
 
         const contractSource = readFileSync(loggerContractFile, "utf8");
-        const contractImports = contractImportScanner
-            .scan(contractSource)
-            .imports.map(({ path }) => path);
+        const contractImports = contractImportScanner.scan(contractSource).imports.map(({ path }) => path);
 
-        expect(contractImports.some((path) => path === "cc" || path.startsWith("cc/")))
-            .toBe(false);
-        expect(
-            contractImports.some(
-                (path) => path.includes("/application/") || path.startsWith("application/"),
-            ),
-        ).toBe(false);
+        expect(contractImports.some((path) => path === "cc" || path.startsWith("cc/"))).toBe(false);
+        expect(contractImports.some((path) => path.includes("/application/") || path.startsWith("application/"))).toBe(false);
 
         const frameworkSource = readFileSync(frameworkEntry, "utf8");
 
-        expect(frameworkSource).toMatch(
-            /export\s+type\s*\{[\s\S]*?\}\s*from\s*["']\.\/contracts\/logging\/Logger["']/,
-        );
+        expect(frameworkSource).toMatch(/export\s+type\s*\{[\s\S]*?\}\s*from\s*["']\.\/contracts\/logging\/Logger["']/);
     });
 
     test("supports debug, info, warn and error levels", () => {
@@ -101,12 +69,7 @@ describe("Logger contract", () => {
         logger.warn("warn message");
         logger.error("error message");
 
-        expect(records.map(({ level }) => level)).toEqual([
-            "debug",
-            "info",
-            "warn",
-            "error",
-        ]);
+        expect(records.map(({ level }) => level)).toEqual(["debug", "info", "warn", "error"]);
     });
 
     test("records the required structured fields", () => {
@@ -135,10 +98,7 @@ describe("Logger contract", () => {
 
     test("child inherits scope and context without changing its parent", () => {
         const parentContext: LogContext = { applicationState: "running" };
-        const { logger: parent, records } = createLoggerProbe(
-            "application",
-            parentContext,
-        );
+        const { logger: parent, records } = createLoggerProbe("application", parentContext);
         const child = parent.child("inventory", { moduleId: "inventory" });
 
         parent.info("parent record");

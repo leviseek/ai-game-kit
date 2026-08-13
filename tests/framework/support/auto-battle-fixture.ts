@@ -3,22 +3,13 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import type { GameFixture } from "../../../assets/game/fixture/GameFixture";
-import type {
-    PlatformStorage,
-    UiNavigator,
-} from "../../../assets/framework";
+import type { PlatformStorage, UiNavigator } from "../../../assets/framework";
 
 /** 项目根与 auto_battle 品类关键路径（契约/边界断言复用）。 */
 export const AUTO_BATTLE_PROJECT_ROOT = resolve(import.meta.dir, "../../..");
-export const AUTO_BATTLE_ASSEMBLY_FILE = resolve(
-    AUTO_BATTLE_PROJECT_ROOT,
-    "assets/samples/game_auto_battle/assembly.ts",
-);
+export const AUTO_BATTLE_ASSEMBLY_FILE = resolve(AUTO_BATTLE_PROJECT_ROOT, "assets/samples/game_auto_battle/assembly.ts");
 export const AUTO_BATTLE_ASSEMBLY_EXISTS = existsSync(AUTO_BATTLE_ASSEMBLY_FILE);
-export const AUTO_BATTLE_FRAMEWORK_ROOT = resolve(
-    AUTO_BATTLE_PROJECT_ROOT,
-    "assets/framework",
-);
+export const AUTO_BATTLE_FRAMEWORK_ROOT = resolve(AUTO_BATTLE_PROJECT_ROOT, "assets/framework");
 
 // ---- 自动战斗夹具目标契约（task 1.1 锁定，task 3.1 实现） ----
 
@@ -59,14 +50,7 @@ export interface AutoBattleUnitState extends AutoBattleUnit {
     readonly lockedTargetId: string | null;
 }
 
-export type AutoBattleEventType =
-    | "round-start"
-    | "attack"
-    | "skill-damage"
-    | "skill-heal"
-    | "unit-dead"
-    | "battle-over"
-    | "restart";
+export type AutoBattleEventType = "round-start" | "attack" | "skill-damage" | "skill-heal" | "unit-dead" | "battle-over" | "restart";
 
 /** 战斗事件：seq 保序，time 为事件发生时模拟时钟读数。 */
 export interface AutoBattleEvent {
@@ -189,9 +173,7 @@ export interface AutoBattleFixtureHooks {
 }
 
 export type AutoBattleFixture = GameFixture & AutoBattleFixtureHooks;
-export type CreateAutoBattleFixture = (
-    options?: AutoBattleFixtureOptions,
-) => AutoBattleFixture;
+export type CreateAutoBattleFixture = (options?: AutoBattleFixtureOptions) => AutoBattleFixture;
 
 export async function loadCreateAutoBattleFixture(): Promise<CreateAutoBattleFixture> {
     const mod = (await import(pathToFileURL(AUTO_BATTLE_ASSEMBLY_FILE).href)) as {
@@ -202,11 +184,7 @@ export async function loadCreateAutoBattleFixture(): Promise<CreateAutoBattleFix
 
 // ---- 测试配置构造：默认 1v1，行为测试注入定制单位/规则 ----
 
-export function unit(
-    id: string,
-    name: string,
-    overrides: Partial<Record<string, unknown>> = {},
-): Record<string, unknown> {
+export function unit(id: string, name: string, overrides: Partial<Record<string, unknown>> = {}): Record<string, unknown> {
     return {
         id,
         name,
@@ -226,12 +204,14 @@ export function unit(
     };
 }
 
-export function configContent(opts: {
-    ally?: readonly Record<string, unknown>[];
-    enemy?: readonly Record<string, unknown>[];
-    energyGainAttacker?: number;
-    energyGainTarget?: number;
-} = {}): Record<string, unknown> {
+export function configContent(
+    opts: {
+        ally?: readonly Record<string, unknown>[];
+        enemy?: readonly Record<string, unknown>[];
+        energyGainAttacker?: number;
+        energyGainTarget?: number;
+    } = {},
+): Record<string, unknown> {
     // 新格式：heroes 池 + lineups（英雄 id 序列）；既有测试经此统一走 lineup 实例化
     const ally = opts.ally ?? [unit("a", "Tank")];
     const enemy = opts.enemy ?? [unit("e", "Slime")];

@@ -26,9 +26,7 @@ interface CocosUiRootOptions {
     /** GRoot 获取接缝；缺省使用引擎 GRoot 单例，测试可注入 mock。 */
     readonly getRoot?: () => GRootLike;
     /** 窗口尺寸变化订阅接缝；缺省订阅真实 window resize，测试可注入受控触发源。 */
-    readonly subscribeResize?: (
-        callback: (width: number, height: number) => void,
-    ) => () => void;
+    readonly subscribeResize?: (callback: (width: number, height: number) => void) => () => void;
 }
 
 interface CocosUiRoot {
@@ -39,9 +37,7 @@ interface CocosUiRoot {
     /** 已初始化的 GRoot；未初始化时为 undefined。 */
     readonly root: GRootLike | undefined;
     /** 注册根尺寸同步监听（窗口 resize 且根尺寸已更新后回调），返回退订。 */
-    readonly onResize: (
-        callback: (width: number, height: number) => void,
-    ) => () => void;
+    readonly onResize: (callback: (width: number, height: number) => void) => () => void;
     /** 释放：退订窗口尺寸监听；幂等。 */
     readonly dispose: () => void;
 }
@@ -51,21 +47,15 @@ interface CocosUiRootFactory {
 }
 
 const projectRoot = resolve(import.meta.dir, "../../..");
-const adapterFile = resolve(
-    projectRoot,
-    "assets/framework/adapters/cocos/ui/CocosUiRoot.ts",
-);
+const adapterFile = resolve(projectRoot, "assets/framework/adapters/cocos/ui/CocosUiRoot.ts");
 
 async function loadFactory(): Promise<CocosUiRootFactory> {
-    const exports = (await import(
-        pathToFileURL(adapterFile).href
-    )) as Partial<CocosUiRootFactory>;
+    const exports = (await import(pathToFileURL(adapterFile).href)) as Partial<CocosUiRootFactory>;
 
     expect(typeof exports.createCocosUiRoot).toBe("function");
 
     return {
-        createCocosUiRoot:
-            exports.createCocosUiRoot as CocosUiRootFactory["createCocosUiRoot"],
+        createCocosUiRoot: exports.createCocosUiRoot as CocosUiRootFactory["createCocosUiRoot"],
     };
 }
 
@@ -76,9 +66,7 @@ interface GRootSeam {
     /** 捕获 subscribeResize 注册的回调；退订后置 undefined。 */
     resizeCallback: ((width: number, height: number) => void) | undefined;
     readonly setSizeCalls: Array<{ width: number; height: number }>;
-    readonly subscribeResize: (
-        callback: (width: number, height: number) => void,
-    ) => () => void;
+    readonly subscribeResize: (callback: (width: number, height: number) => void) => () => void;
 }
 
 function createGRootSeam(): GRootSeam {
@@ -102,7 +90,7 @@ function createGRootSeam(): GRootSeam {
         },
         addChild: () => undefined,
         removeChild: () => undefined,
-        removeChildren: () => { },
+        removeChildren: () => {},
         getChildAt: () => undefined,
         numChildren: 0,
     };

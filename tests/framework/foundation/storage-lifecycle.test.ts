@@ -8,8 +8,8 @@ mock.module("cc", () => ({
     sys: {
         localStorage: {
             getItem: () => null,
-            setItem: () => { },
-            removeItem: () => { },
+            setItem: () => {},
+            removeItem: () => {},
         },
     },
 }));
@@ -19,10 +19,7 @@ import { SaveCorruptionError, createVersionedStorage } from "../../../assets/fra
 import type { ApplicationVisibility } from "../../../assets/framework/contracts/platform/Platform";
 
 const projectRoot = resolve(import.meta.dir, "../../..");
-const adapterFile = resolve(
-    projectRoot,
-    "assets/framework/adapters/cocos/storage/CocosStorageAdapter.ts",
-);
+const adapterFile = resolve(projectRoot, "assets/framework/adapters/cocos/storage/CocosStorageAdapter.ts");
 
 interface LocalStorageLike {
     getItem(key: string): string | null;
@@ -30,18 +27,14 @@ interface LocalStorageLike {
     removeItem(key: string): void;
 }
 
-type CreateCocosStorageAdapter = (options?: {
-    readonly localStorage?: LocalStorageLike;
-}) => import("../../../assets/framework/contracts/platform/Platform").PlatformStorage;
+type CreateCocosStorageAdapter = (options?: { readonly localStorage?: LocalStorageLike }) => import("../../../assets/framework/contracts/platform/Platform").PlatformStorage;
 
 interface CocosStorageAdapterExports {
     readonly createCocosStorageAdapter: CreateCocosStorageAdapter;
 }
 
 async function loadCreateAdapter(): Promise<CreateCocosStorageAdapter> {
-    const exports = (await import(
-        pathToFileURL(adapterFile).href,
-    )) as CocosStorageAdapterExports;
+    const exports = (await import(pathToFileURL(adapterFile).href)) as CocosStorageAdapterExports;
 
     expect(typeof exports.createCocosStorageAdapter).toBe("function");
 
@@ -92,13 +85,8 @@ interface SaveCoordinatorExports {
 }
 
 async function loadCreateCoordinator(): Promise<SaveCoordinatorExports["createSaveCoordinator"]> {
-    const coordinatorFile = resolve(
-        projectRoot,
-        "assets/framework/core/storage/SaveCoordinator.ts",
-    );
-    const exports = (await import(
-        pathToFileURL(coordinatorFile).href,
-    )) as SaveCoordinatorExports;
+    const coordinatorFile = resolve(projectRoot, "assets/framework/core/storage/SaveCoordinator.ts");
+    const exports = (await import(pathToFileURL(coordinatorFile).href)) as SaveCoordinatorExports;
 
     expect(typeof exports.createSaveCoordinator).toBe("function");
 
@@ -245,9 +233,7 @@ describe("存档生命周期保存收敛（7.6）", () => {
         // 直接向平台后端写入损坏数据，模拟平台层记录损坏
         backend.setItem("save:player:save", "corrupted!{{");
 
-        await expect(storage.load("player", "save")).rejects.toThrow(
-            SaveCorruptionError,
-        );
+        await expect(storage.load("player", "save")).rejects.toThrow(SaveCorruptionError);
         // 其它命名空间存档不受影响
         expect(await storage.load("system", "settings")).toEqual({
             version: 1,

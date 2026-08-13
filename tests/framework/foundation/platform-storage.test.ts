@@ -8,8 +8,8 @@ mock.module("cc", () => ({
     sys: {
         localStorage: {
             getItem: () => null,
-            setItem: () => { },
-            removeItem: () => { },
+            setItem: () => {},
+            removeItem: () => {},
         },
     },
 }));
@@ -18,10 +18,7 @@ import { SaveCorruptionError } from "../../../assets/framework/core/storage/Vers
 import type { PlatformStorage } from "../../../assets/framework/contracts/platform/Platform";
 
 const projectRoot = resolve(import.meta.dir, "../../..");
-const adapterFile = resolve(
-    projectRoot,
-    "assets/framework/adapters/cocos/storage/CocosStorageAdapter.ts",
-);
+const adapterFile = resolve(projectRoot, "assets/framework/adapters/cocos/storage/CocosStorageAdapter.ts");
 
 // localStorage 形状的接缝：与 cc.sys.localStorage 同构，供注入与底层检查。
 interface LocalStorageLike {
@@ -40,18 +37,14 @@ interface CocosStorageAdapter extends PlatformStorage {
     restoreBackup(key: string): Promise<void>;
 }
 
-type CreateCocosStorageAdapter = (options?: {
-    readonly localStorage?: LocalStorageLike;
-}) => CocosStorageAdapter;
+type CreateCocosStorageAdapter = (options?: { readonly localStorage?: LocalStorageLike }) => CocosStorageAdapter;
 
 interface CocosStorageAdapterExports {
     readonly createCocosStorageAdapter: CreateCocosStorageAdapter;
 }
 
 async function loadCreateAdapter(): Promise<CreateCocosStorageAdapter> {
-    const exports = (await import(
-        pathToFileURL(adapterFile).href,
-    )) as CocosStorageAdapterExports;
+    const exports = (await import(pathToFileURL(adapterFile).href)) as CocosStorageAdapterExports;
 
     expect(typeof exports.createCocosStorageAdapter).toBe("function");
 
@@ -93,10 +86,7 @@ function createInspectableLocalStorage(): InspectableLocalStorage {
 }
 
 // 包装接缝：对满足条件的键在写入时抛错，模拟平台写入中断（非原子平台或配额失败）。
-function createFailingBackend(
-    backend: InspectableLocalStorage,
-    shouldFailOnWrite: (key: string) => boolean,
-): LocalStorageLike {
+function createFailingBackend(backend: InspectableLocalStorage, shouldFailOnWrite: (key: string) => boolean): LocalStorageLike {
     return {
         getItem: (key) => backend.getItem(key),
         setItem(key, value) {
@@ -172,15 +162,10 @@ describe("CocosStorageAdapter atomic replace and backup", () => {
 
         // 正式键写入时抛错，模拟替换瞬间中断；临时/备份键写入不受影响
         const failing = createAdapter({
-            localStorage: createFailingBackend(
-                backend,
-                (key) => key === "player.save",
-            ),
+            localStorage: createFailingBackend(backend, (key) => key === "player.save"),
         });
 
-        await expect(failing.set("player.save", "new-value")).rejects.toThrow(
-            "simulated write failure",
-        );
+        await expect(failing.set("player.save", "new-value")).rejects.toThrow("simulated write failure");
 
         // 中断后读取仍得到完整旧值，而不是半写入内容
         expect(await failing.get("player.save")).toBe("old-value");
@@ -194,14 +179,9 @@ describe("CocosStorageAdapter atomic replace and backup", () => {
         await adapter.set("player.save", "old-value");
 
         const failing = createAdapter({
-            localStorage: createFailingBackend(
-                backend,
-                (key) => key === "player.save",
-            ),
+            localStorage: createFailingBackend(backend, (key) => key === "player.save"),
         });
-        await expect(failing.set("player.save", "boom")).rejects.toThrow(
-            "simulated write failure",
-        );
+        await expect(failing.set("player.save", "boom")).rejects.toThrow("simulated write failure");
 
         const healthy = createAdapter({ localStorage: backend });
         await healthy.set("player.save", "new-value");
@@ -220,9 +200,7 @@ describe("CocosStorageAdapter atomic replace and backup", () => {
         expect(backend.entries()[backupKey("player.save")]).toBeDefined();
 
         backend.setItem("player.save", "corrupted!");
-        await expect(adapter.get("player.save")).rejects.toThrow(
-            SaveCorruptionError,
-        );
+        await expect(adapter.get("player.save")).rejects.toThrow(SaveCorruptionError);
         await adapter.restoreBackup("player.save");
         expect(await adapter.get("player.save")).toBe("v1");
     });
@@ -255,9 +233,7 @@ describe("CocosStorageAdapter corruption recovery", () => {
         // 平台后端被外部写入损坏数据（模拟非原子写入或篡改）
         backend.setItem("player.save", "not-an-envelope{{");
 
-        await expect(adapter.get("player.save")).rejects.toThrow(
-            SaveCorruptionError,
-        );
+        await expect(adapter.get("player.save")).rejects.toThrow(SaveCorruptionError);
     });
 
     test("restore default affects only the corrupted key", async () => {
@@ -269,9 +245,7 @@ describe("CocosStorageAdapter corruption recovery", () => {
         await adapter.set("inventory.save", "items");
 
         backend.setItem("player.save", "corrupted!");
-        await expect(adapter.get("player.save")).rejects.toThrow(
-            SaveCorruptionError,
-        );
+        await expect(adapter.get("player.save")).rejects.toThrow(SaveCorruptionError);
 
         await adapter.restoreDefault("player.save");
 
@@ -290,9 +264,7 @@ describe("CocosStorageAdapter corruption recovery", () => {
         await adapter.set("player.save", "v2");
         backend.setItem("player.save", "corrupted!");
 
-        await expect(adapter.get("player.save")).rejects.toThrow(
-            SaveCorruptionError,
-        );
+        await expect(adapter.get("player.save")).rejects.toThrow(SaveCorruptionError);
 
         await adapter.restoreBackup("player.save");
 
@@ -311,9 +283,7 @@ describe("CocosStorageAdapter corruption recovery", () => {
         await adapter.set("player.save", "only");
         backend.setItem("player.save", "corrupted!");
 
-        await expect(adapter.restoreBackup("player.save")).rejects.toThrow(
-            SaveCorruptionError,
-        );
+        await expect(adapter.restoreBackup("player.save")).rejects.toThrow(SaveCorruptionError);
     });
 
     test("keys ending with the temp/backup suffix do not collide with helper keys", async () => {
@@ -345,9 +315,7 @@ describe("CocosStorageAdapter corruption recovery", () => {
 
         // 损坏正式键后无备份可恢复，以可诊断错误呈现
         backend.setItem("player.save", "corrupted!");
-        await expect(adapter.restoreBackup("player.save")).rejects.toThrow(
-            SaveCorruptionError,
-        );
+        await expect(adapter.restoreBackup("player.save")).rejects.toThrow(SaveCorruptionError);
 
         // 跨值写入后备份才存在，损坏后可恢复
         await adapter.set("player.save", "v2");

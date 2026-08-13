@@ -4,8 +4,8 @@ import { describe, expect, test, mock } from "bun:test";
 
 mock.module("cc", () => ({
     game: {
-        on(_event: string, _callback: () => void, _target: unknown) { },
-        off(_event: string, _callback: () => void, _target: unknown) { },
+        on(_event: string, _callback: () => void, _target: unknown) {},
+        off(_event: string, _callback: () => void, _target: unknown) {},
     },
     Game: {
         EVENT_HIDE: "game_hide",
@@ -29,39 +29,32 @@ interface CocosAdapterInstance {
     unbind(): void;
 }
 
-type CocosAdapterConstructor = new (
-    app: ApplicationLike,
-    game?: CocosGameLike,
-) => CocosAdapterInstance;
+type CocosAdapterConstructor = new (app: ApplicationLike, game?: CocosGameLike) => CocosAdapterInstance;
 
 interface CocosAdapterExports {
     readonly CocosApplicationAdapter?: CocosAdapterConstructor;
 }
 
 const projectRoot = resolve(import.meta.dir, "../../..");
-const adapterFile = resolve(
-    projectRoot,
-    "assets/framework/adapters/cocos/application/CocosApplicationAdapter.ts",
-);
+const adapterFile = resolve(projectRoot, "assets/framework/adapters/cocos/application/CocosApplicationAdapter.ts");
 
 async function loadAdapter(): Promise<CocosAdapterConstructor> {
-    const exports = (await import(
-        pathToFileURL(adapterFile).href
-    )) as CocosAdapterExports;
+    const exports = (await import(pathToFileURL(adapterFile).href)) as CocosAdapterExports;
 
     expect(typeof exports.CocosApplicationAdapter).toBe("function");
 
     return exports.CocosApplicationAdapter as CocosAdapterConstructor;
 }
 
-function createMockApp(
-    pauseCalls: string[],
-    resumeCalls: string[],
-): ApplicationLike {
+function createMockApp(pauseCalls: string[], resumeCalls: string[]): ApplicationLike {
     return {
         state: "running",
-        pause: mock(async () => { pauseCalls.push("pause"); }),
-        resume: mock(async () => { resumeCalls.push("resume"); }),
+        pause: mock(async () => {
+            pauseCalls.push("pause");
+        }),
+        resume: mock(async () => {
+            resumeCalls.push("resume");
+        }),
     };
 }
 
@@ -117,7 +110,7 @@ describe("CocosApplicationAdapter", () => {
                 if (event === "game_hide") hideCallback = callback;
                 if (event === "game_show") _showCallback = callback;
             },
-            off() { },
+            off() {},
         };
 
         const pauseCalls: string[] = [];
@@ -148,7 +141,7 @@ describe("CocosApplicationAdapter", () => {
                 if (event === "game_hide") _hideCallback = callback;
                 if (event === "game_show") showCallback = callback;
             },
-            off() { },
+            off() {},
         };
 
         const pauseCalls: string[] = [];
@@ -211,13 +204,15 @@ describe("CocosApplicationAdapter", () => {
             on(event, callback) {
                 if (event === "game_hide") hideCallback = callback;
             },
-            off() { },
+            off() {},
         };
 
         const app: ApplicationLike = {
             state: "created",
-            pause: mock(async () => { throw rejectError; }),
-            resume: mock(async () => { }),
+            pause: mock(async () => {
+                throw rejectError;
+            }),
+            resume: mock(async () => {}),
         };
 
         const adapter = new CocosAdapter(app, mockGame);
@@ -241,13 +236,15 @@ describe("CocosApplicationAdapter", () => {
             on(event, callback) {
                 if (event === "game_show") showCallback = callback;
             },
-            off() { },
+            off() {},
         };
 
         const app: ApplicationLike = {
             state: "created",
-            pause: mock(async () => { }),
-            resume: mock(async () => { throw rejectError; }),
+            pause: mock(async () => {}),
+            resume: mock(async () => {
+                throw rejectError;
+            }),
         };
 
         const adapter = new CocosAdapter(app, mockGame);
@@ -270,7 +267,7 @@ describe("CocosApplicationAdapter", () => {
             on(event, callback, target) {
                 onCalls.push([event, callback, target]);
             },
-            off() { },
+            off() {},
         };
 
         const pauseCalls: string[] = [];
@@ -295,7 +292,7 @@ describe("CocosApplicationAdapter", () => {
             on(event, callback, target) {
                 onCalls.push([event, callback, target]);
             },
-            off() { },
+            off() {},
         };
 
         const pauseCalls: string[] = [];

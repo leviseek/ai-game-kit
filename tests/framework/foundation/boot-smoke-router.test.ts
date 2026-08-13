@@ -2,11 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, test } from "bun:test";
 
-import {
-    createSmokeRouter,
-    type SmokeRouter,
-    type SmokeRouterDeps,
-} from "../../../assets/boot/flow/SmokeRouter";
+import { createSmokeRouter, type SmokeRouter, type SmokeRouterDeps } from "../../../assets/boot/flow/SmokeRouter";
 
 const projectRoot = resolve(import.meta.dir, "../../..");
 const smokeRouterFile = resolve(projectRoot, "assets/boot/flow/SmokeRouter.ts");

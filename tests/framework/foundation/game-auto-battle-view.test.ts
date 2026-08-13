@@ -1,10 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import {
-    buildAutoBattleBindings,
-    gridToXY,
-    type AutoBattleUnitView,
-    type AutoBattleViewModel,
-} from "../../../assets/samples/game_auto_battle/view/view";
+import { buildAutoBattleBindings, gridToXY, type AutoBattleUnitView, type AutoBattleViewModel } from "../../../assets/samples/game_auto_battle/view/view";
 import { createViewModelRenderer, type ViewModelNode } from "../../../assets/framework";
 /** 记录型视图节点：记录 setter 调用，供断言绑定 diff 行为。 */
 interface RecordingNode {
@@ -50,12 +45,7 @@ function recordingView(): {
     };
 }
 /** 构造指定阵营单位（id/side/index/gridKey 齐全，供 VM 消费）。 */
-function unit(
-    id: string,
-    side: "ally" | "enemy",
-    index: number,
-    gridKey = "0:0",
-): AutoBattleUnitView {
+function unit(id: string, side: "ally" | "enemy", index: number, gridKey = "0:0"): AutoBattleUnitView {
     return {
         id,
         name: id,
@@ -122,10 +112,7 @@ describe("Auto-battle dynamic unit bindings", () => {
     }
 
     test("bindings are generated per surviving unit by id", () => {
-        const { view } = renderUnits([
-            unit("a", "ally", 0, "0:3"),
-            unit("e", "enemy", 0, "0:0"),
-        ]);
+        const { view } = renderUnits([unit("a", "ally", 0, "0:3"), unit("e", "enemy", 0, "0:0")]);
 
         expect(view.nodes.get("txt_unit_a_name")?.text).toBe("a");
         expect(view.nodes.get("txt_unit_e_name")?.text).toBe("e");
@@ -134,20 +121,14 @@ describe("Auto-battle dynamic unit bindings", () => {
     });
 
     test("position binding maps each unit to its grid coordinates", () => {
-        const { view } = renderUnits([
-            unit("a", "ally", 0, "0:3"),
-            unit("e", "enemy", 0, "0:0"),
-        ]);
+        const { view } = renderUnits([unit("a", "ally", 0, "0:3"), unit("e", "enemy", 0, "0:0")]);
 
         expect(view.nodes.get("unit_a")?.xy).toEqual(gridToXY("0:3"));
         expect(view.nodes.get("unit_e")?.xy).toEqual(gridToXY("0:0"));
     });
 
     test("progress and text bindings reflect hp and energy for each unit", () => {
-        const { view } = renderUnits([
-            unit("a", "ally", 0, "0:3"),
-            unit("e", "enemy", 0, "0:0"),
-        ]);
+        const { view } = renderUnits([unit("a", "ally", 0, "0:3"), unit("e", "enemy", 0, "0:0")]);
 
         expect(view.nodes.get("txt_unit_a_hp")?.text).toBe("HP 100/100");
         expect(view.nodes.get("bar_unit_a_hp")?.progress).toBe(1);
@@ -162,27 +143,17 @@ describe("Auto-battle dynamic unit bindings", () => {
             bindings: [],
         });
 
-        const first = vm([
-            unit("a", "ally", 0, "0:3"),
-            unit("e", "enemy", 0, "0:0"),
-        ]);
+        const first = vm([unit("a", "ally", 0, "0:3"), unit("e", "enemy", 0, "0:0")]);
         renderer.setBindings(buildAutoBattleBindings(commands, first));
         renderer.setViewModel(first);
         expect(view.nodes.get("txt_unit_a_hp")?.text).toBe("HP 100/100");
 
         // 单位 e 阵亡（hp 归零）：绑定集不再包含它的节点（存活单位实例随之回收）
-        const second = vm([
-            { ...unit("a", "ally", 0, "0:3") },
-            { ...unit("e", "enemy", 0, "0:0"), hp: 0 },
-        ]);
+        const second = vm([{ ...unit("a", "ally", 0, "0:3") }, { ...unit("e", "enemy", 0, "0:0"), hp: 0 }]);
         const secondBindings = buildAutoBattleBindings(commands, second);
-        expect(
-            secondBindings.some((b) => b.node.startsWith("unit_e")),
-        ).toBe(false);
+        expect(secondBindings.some((b) => b.node.startsWith("unit_e"))).toBe(false);
         // 存活单位仍正常绑定
-        expect(
-            secondBindings.some((b) => b.node === "txt_unit_a_name"),
-        ).toBe(true);
+        expect(secondBindings.some((b) => b.node === "txt_unit_a_name")).toBe(true);
 
         renderer.setBindings(secondBindings);
         renderer.setViewModel(second);

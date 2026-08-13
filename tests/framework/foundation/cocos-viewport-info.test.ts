@@ -6,9 +6,7 @@ import { createCcMock } from "./helpers/cc-mock";
 // cc mock 必须与其它测试文件一致（全局共享首个生效）。
 mock.module("cc", () => createCcMock());
 
-const { createCocosViewportInfo } = await import(
-    "../../../assets/framework/adapters/cocos/viewport/CocosViewportInfo"
-);
+const { createCocosViewportInfo } = await import("../../../assets/framework/adapters/cocos/viewport/CocosViewportInfo");
 
 describe("createCocosViewportInfo", () => {
     test("sample 返回物理像素与逻辑/CSS 像素（物理 ÷ DPR）", () => {

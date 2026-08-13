@@ -2,16 +2,8 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, test } from "bun:test";
 
-import {
-    aggregatePerfSamples,
-    runFixturePerf,
-    type PerfSample,
-    type PerfSummary,
-} from "../../../assets/game/fixture/perf";
-import {
-    createGameFixture,
-    type GameFixture,
-} from "../../../assets/game/fixture/GameFixture";
+import { aggregatePerfSamples, runFixturePerf, type PerfSample, type PerfSummary } from "../../../assets/game/fixture/perf";
+import { createGameFixture, type GameFixture } from "../../../assets/game/fixture/GameFixture";
 import type { GameFixtureRegistry } from "../../../assets/game/fixture/registry";
 
 const projectRoot = resolve(import.meta.dir, "../../..");
@@ -19,11 +11,7 @@ const projectRoot = resolve(import.meta.dir, "../../..");
 /** 即时睡眠：性能采样循环不真实等待。 */
 const immediateSleep = () => Promise.resolve();
 
-async function captureFixturePerf(
-    fixtureId: string,
-    sampler: () => PerfSample | null,
-    registry: GameFixtureRegistry,
-): Promise<string[]> {
+async function captureFixturePerf(fixtureId: string, sampler: () => PerfSample | null, registry: GameFixtureRegistry): Promise<string[]> {
     const logs: string[] = [];
     const originalLog = console.log;
     console.log = (message?: unknown) => logs.push(String(message));
@@ -55,11 +43,7 @@ function makeSample(overrides: Partial<PerfSample> = {}): PerfSample {
 
 describe("game fixture perf runner", () => {
     test("aggregatePerfSamples computes min/avg/max and sample count", () => {
-        const summary: PerfSummary = aggregatePerfSamples([
-            makeSample({ fps: 55, draws: 1 }),
-            makeSample({ fps: 60, draws: 3 }),
-            makeSample({ fps: 65, draws: 2 }),
-        ]);
+        const summary: PerfSummary = aggregatePerfSamples([makeSample({ fps: 55, draws: 1 }), makeSample({ fps: 60, draws: 3 }), makeSample({ fps: 65, draws: 2 })]);
 
         expect(summary.samples).toBe(3);
         expect(summary.fps).toEqual({ min: 55, avg: 60, max: 65 });
@@ -76,9 +60,7 @@ describe("game fixture perf runner", () => {
     test("reports an unknown fixture without throwing", async () => {
         const markers = await captureFixturePerf("rpg", () => null, {});
 
-        expect(markers.some((line) => line.includes("fixture-unknown: FAIL"))).toBe(
-            true,
-        );
+        expect(markers.some((line) => line.includes("fixture-unknown: FAIL"))).toBe(true);
     });
 
     test("reports a factory construction failure without throwing", async () => {
@@ -90,9 +72,7 @@ describe("game fixture perf runner", () => {
 
         const markers = await captureFixturePerf("boom", () => null, registry);
 
-        expect(markers.some((line) => line.includes("fixture-create: FAIL"))).toBe(
-            true,
-        );
+        expect(markers.some((line) => line.includes("fixture-create: FAIL"))).toBe(true);
         expect(markers.some((line) => line.includes("factory boom"))).toBe(true);
     });
 
@@ -111,14 +91,7 @@ describe("game fixture perf runner", () => {
             registry,
         );
 
-        const expectedSteps = [
-            "fixture-found",
-            "start",
-            "samples",
-            "pause",
-            "resume",
-            "dispose",
-        ];
+        const expectedSteps = ["fixture-found", "start", "samples", "pause", "resume", "dispose"];
 
         for (const step of expectedSteps) {
             expect(markers.some((line) => line.includes(`${step}: ok`))).toBe(true);
@@ -135,26 +108,14 @@ describe("game fixture perf runner", () => {
             rpg: () => createGameFixture({ id: "rpg", modules: [] }),
         };
 
-        const markers = await captureFixturePerf(
-            "rpg",
-            () => makeSample(),
-            registry,
-        );
+        const markers = await captureFixturePerf("rpg", () => makeSample(), registry);
 
         expect(markers.some((line) => line.includes("fps: avg=60"))).toBe(true);
-        expect(markers.some((line) => line.includes("frame-ms: avg=16.7"))).toBe(
-            true,
-        );
-        expect(markers.some((line) => line.includes("logic-ms: avg=0.5"))).toBe(
-            true,
-        );
+        expect(markers.some((line) => line.includes("frame-ms: avg=16.7"))).toBe(true);
+        expect(markers.some((line) => line.includes("logic-ms: avg=0.5"))).toBe(true);
         expect(markers.some((line) => line.includes("draws: avg=1"))).toBe(true);
-        expect(
-            markers.some((line) => line.includes("texture-memory-mb: avg=4.2")),
-        ).toBe(true);
-        expect(
-            markers.some((line) => line.includes("buffer-memory-mb: avg=0.8")),
-        ).toBe(true);
+        expect(markers.some((line) => line.includes("texture-memory-mb: avg=4.2"))).toBe(true);
+        expect(markers.some((line) => line.includes("buffer-memory-mb: avg=0.8"))).toBe(true);
     });
 
     test("skips null samples without breaking the lifecycle", async () => {
@@ -185,10 +146,10 @@ describe("game fixture perf runner", () => {
             start: async () => {
                 throw new Error("boom");
             },
-            pause: async () => { },
-            resume: async () => { },
-            failRollback: async () => { },
-            dispose: async () => { },
+            pause: async () => {},
+            resume: async () => {},
+            failRollback: async () => {},
+            dispose: async () => {},
         };
         const registry: GameFixtureRegistry = {
             broken: () => failingFixture,

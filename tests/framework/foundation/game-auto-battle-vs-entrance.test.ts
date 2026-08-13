@@ -1,8 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import {
-    createVsEntranceTemplate,
-    type VsEntranceConfig,
-} from "../../../assets/samples/game_auto_battle/view/VsEntrance";
+import { createVsEntranceTemplate, type VsEntranceConfig } from "../../../assets/samples/game_auto_battle/view/VsEntrance";
 import type { EffectNode } from "../../../assets/samples/game_auto_battle/view/EffectAnimator";
 
 /** 记录型节点：记录 setter 写入。 */
@@ -17,16 +14,27 @@ function recordNode(): RecordingNode {
         text: undefined,
         alpha: undefined,
         xy: undefined,
-        setText: (v) => { recording.text = v; },
-        setAlpha: (v) => { recording.alpha = v; },
-        setXY: (x, y) => { recording.xy = { x, y }; },
+        setText: (v) => {
+            recording.text = v;
+        },
+        setAlpha: (v) => {
+            recording.alpha = v;
+        },
+        setXY: (x, y) => {
+            recording.xy = { x, y };
+        },
     };
     return recording;
 }
 
 function makeTime() {
     let now = 0;
-    return { timeSource: () => now, advance: (ms: number) => { now += ms; } };
+    return {
+        timeSource: () => now,
+        advance: (ms: number) => {
+            now += ms;
+        },
+    };
 }
 
 const DEFAULT_CONFIG: VsEntranceConfig = {

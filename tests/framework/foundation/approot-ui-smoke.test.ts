@@ -15,11 +15,11 @@ mock.module("cc/env", () => ({ DEBUG: false }));
 // cc 接缝：AppRoot 依赖 director.addPersistRootNode，其余成员不在此路径触发。
 mock.module("cc", () => ({
     game: {
-        on() { },
-        off() { },
+        on() {},
+        off() {},
     },
     director: {
-        addPersistRootNode() { },
+        addPersistRootNode() {},
     },
     Game: {
         EVENT_HIDE: "game_hide",
@@ -27,17 +27,16 @@ mock.module("cc", () => ({
     },
     _decorator: {
         ccclass(_name: string) {
-            return <TFunction extends (...args: unknown[]) => unknown>(target: TFunction): TFunction =>
-                target;
+            return <TFunction extends (...args: unknown[]) => unknown>(target: TFunction): TFunction => target;
         },
     },
-    Component: class { },
+    Component: class {},
     Node: class {
         static EventType: Record<string, string> = {};
     },
-    EventTouch: class { },
-    Touch: class { },
-    Vec3: class { },
+    EventTouch: class {},
+    Touch: class {},
+    Vec3: class {},
     profiler: { stats: null },
     sys: { isNative: false },
 }));
@@ -54,12 +53,7 @@ interface SmokeProxyInstance {
     smokeUiInit(): boolean;
     smokeUiReady(): boolean;
     smokeUiLoadPackage(bundle: string, path: string): Promise<unknown>;
-    smokeUiOpenPage(
-        route: string,
-        layer: string,
-        packageName: string,
-        resName: string,
-    ): boolean;
+    smokeUiOpenPage(route: string, layer: string, packageName: string, resName: string): boolean;
     smokeUiClosePage(route: string): boolean;
     runUiSmoke(): Promise<void>;
     [key: string]: unknown;
@@ -105,9 +99,7 @@ describe("AppRoot FairyGUI UI smoke methods", () => {
         const instance = new AppRoot();
         instance.onLoad();
 
-        expect(
-            instance.smoke?.smokeUiOpenPage("demo", "normal", "Demo", "DemoView"),
-        ).toBe(false);
+        expect(instance.smoke?.smokeUiOpenPage("demo", "normal", "Demo", "DemoView")).toBe(false);
         expect(instance.smoke?.smokeUiClosePage("demo")).toBe(false);
     });
 

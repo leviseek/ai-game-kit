@@ -1,11 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import {
-    computeSafeAreaRect,
-    createSafeAreaOverlayController,
-    type SafeAreaOverlayController,
-    type SafeAreaRect,
-} from "../../../assets/boot/dev/SafeAreaOverlayController";
+import { computeSafeAreaRect, createSafeAreaOverlayController, type SafeAreaOverlayController, type SafeAreaRect } from "../../../assets/boot/dev/SafeAreaOverlayController";
 
 interface CallRecord {
     readonly rects: SafeAreaRect[];
@@ -36,26 +31,17 @@ function makeHarness(
 
 describe("computeSafeAreaRect", () => {
     test("inset 四边换算为框矩形", () => {
-        const rect = computeSafeAreaRect(
-            { left: 20, top: 44, right: 20, bottom: 34 },
-            { width: 1280, height: 720 },
-        );
+        const rect = computeSafeAreaRect({ left: 20, top: 44, right: 20, bottom: 34 }, { width: 1280, height: 720 });
         expect(rect).toEqual({ x: 20, y: 44, width: 1240, height: 642 });
     });
 
     test("inset 全 0 时框覆盖整个容器", () => {
-        const rect = computeSafeAreaRect(
-            { left: 0, top: 0, right: 0, bottom: 0 },
-            { width: 1280, height: 720 },
-        );
+        const rect = computeSafeAreaRect({ left: 0, top: 0, right: 0, bottom: 0 }, { width: 1280, height: 720 });
         expect(rect).toEqual({ x: 0, y: 0, width: 1280, height: 720 });
     });
 
     test("inset 超过容器尺寸时宽度/高度钳制为 0（不出现负值）", () => {
-        const rect = computeSafeAreaRect(
-            { left: 1000, top: 100, right: 1000, bottom: 100 },
-            { width: 1280, height: 720 },
-        );
+        const rect = computeSafeAreaRect({ left: 1000, top: 100, right: 1000, bottom: 100 }, { width: 1280, height: 720 });
         expect(rect.width).toBe(0);
         expect(rect.height).toBe(520);
     });
@@ -132,8 +118,8 @@ describe("createSafeAreaOverlayController", () => {
                 return { width: 1280, height: 720 };
             },
             timeSource: () => 0,
-            onRect: () => { },
-            onVisible: () => { },
+            onRect: () => {},
+            onVisible: () => {},
         });
         controller.show();
         const safeAreaAfterShow = safeAreaCalls;

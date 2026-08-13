@@ -5,15 +5,8 @@ import { describe, expect, mock, test } from "bun:test";
 import { createFairyGuiMock } from "./helpers/fairygui-mock";
 
 import type { ConfigTable } from "../../../assets/framework/contracts/config/Config";
-import {
-    configNumber,
-    configObject,
-    configString,
-} from "../../../assets/framework/core/config/ConfigTable";
-import {
-    ConfigLoadError,
-    ConfigParseError,
-} from "../../../assets/framework/core/config/ConfigErrors";
+import { configNumber, configObject, configString } from "../../../assets/framework/core/config/ConfigTable";
+import { ConfigLoadError, ConfigParseError } from "../../../assets/framework/core/config/ConfigErrors";
 import type { IResourceProvider } from "../../../assets/framework/contracts/resource/ResourceProvider";
 
 // Cocos 适配器值导入 cc（缺省读 cc.assetManager）与 fairygui-cc（UIPackage）；
@@ -28,10 +21,7 @@ interface CocosBundleLike {
 }
 
 interface CocosAssetManagerLike {
-    loadBundle(
-        name: string,
-        onComplete: (err: Error | null, bundle?: CocosBundleLike) => void,
-    ): void;
+    loadBundle(name: string, onComplete: (err: Error | null, bundle?: CocosBundleLike) => void): void;
     getBundle(name: string): CocosBundleLike | null;
     removeBundle(bundle: CocosBundleLike): void;
 }
@@ -43,21 +33,11 @@ interface CocosConfigLoaderFactory {
 }
 
 const projectRoot = resolve(import.meta.dir, "../../..");
-const loaderFile = resolve(
-    projectRoot,
-    "assets/framework/adapters/cocos/config/CocosConfigLoader.ts",
-);
-const resourceFile = resolve(
-    projectRoot,
-    "assets/framework/adapters/cocos/resource/CocosResourceProvider.ts",
-);
+const loaderFile = resolve(projectRoot, "assets/framework/adapters/cocos/config/CocosConfigLoader.ts");
+const resourceFile = resolve(projectRoot, "assets/framework/adapters/cocos/resource/CocosResourceProvider.ts");
 
-async function loadConfigLoader(): Promise<
-    CocosConfigLoaderFactory["createCocosConfigLoader"]
-> {
-    const exports = (await import(
-        pathToFileURL(loaderFile).href
-    )) as Partial<CocosConfigLoaderFactory>;
+async function loadConfigLoader(): Promise<CocosConfigLoaderFactory["createCocosConfigLoader"]> {
+    const exports = (await import(pathToFileURL(loaderFile).href)) as Partial<CocosConfigLoaderFactory>;
 
     expect(typeof exports.createCocosConfigLoader).toBe("function");
     return exports.createCocosConfigLoader as CocosConfigLoaderFactory["createCocosConfigLoader"];
@@ -72,12 +52,8 @@ interface CocosMock {
 }
 
 function createCocosMock(): CocosMock {
-    const pendingBundleCallbacks: Array<
-        (err: Error | null, bundle?: CocosBundleLike) => void
-    > = [];
-    const pendingAssetCallbacks: Array<
-        (err: Error | null, asset?: unknown) => void
-    > = [];
+    const pendingBundleCallbacks: Array<(err: Error | null, bundle?: CocosBundleLike) => void> = [];
+    const pendingAssetCallbacks: Array<(err: Error | null, asset?: unknown) => void> = [];
     const loadedBundles = new Map<string, CocosBundleLike>();
 
     const manager: CocosAssetManagerLike = {
@@ -100,7 +76,7 @@ function createCocosMock(): CocosMock {
                 load(_path, onComplete) {
                     pendingAssetCallbacks.push(onComplete);
                 },
-                releaseAll() { },
+                releaseAll() {},
             };
             loadedBundles.set(name, bundle);
             pendingBundleCallbacks.shift()?.(null, bundle);
@@ -122,15 +98,9 @@ function jsonAsset(content: unknown): { readonly json: unknown } {
     return { json: content };
 }
 
-async function loadCocosResourceProvider(
-    manager: CocosAssetManagerLike,
-): Promise<IResourceProvider> {
-    const exports = (await import(
-        pathToFileURL(resourceFile).href
-    )) as {
-        createCocosResourceProvider(options?: {
-            readonly assetManager?: CocosAssetManagerLike;
-        }): IResourceProvider;
+async function loadCocosResourceProvider(manager: CocosAssetManagerLike): Promise<IResourceProvider> {
+    const exports = (await import(pathToFileURL(resourceFile).href)) as {
+        createCocosResourceProvider(options?: { readonly assetManager?: CocosAssetManagerLike }): IResourceProvider;
     };
     return exports.createCocosResourceProvider({ assetManager: manager });
 }
@@ -144,9 +114,7 @@ describe("CocosConfigLoader bundle config loading", () => {
 
         const loading = loader.loadConfig("config", "start.json");
         cocos.resolveBundle("config");
-        cocos.resolveAsset(
-            jsonAsset({ level: 3, name: "levi", hero: { id: 1, name: "alice" } }),
-        );
+        cocos.resolveAsset(jsonAsset({ level: 3, name: "levi", hero: { id: 1, name: "alice" } }));
         const table = await loading;
 
         expect(table.read("level", configNumber)).toBe(3);

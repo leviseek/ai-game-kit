@@ -6,11 +6,11 @@ import { createFairyGuiMock } from "./helpers/fairygui-mock";
 
 mock.module("cc", () => ({
     game: {
-        on(_event: string, _callback: () => void, _target: unknown) { },
-        off(_event: string, _callback: () => void, _target: unknown) { },
+        on(_event: string, _callback: () => void, _target: unknown) {},
+        off(_event: string, _callback: () => void, _target: unknown) {},
     },
     director: {
-        addPersistRootNode(_node: unknown) { },
+        addPersistRootNode(_node: unknown) {},
     },
     Game: {
         EVENT_HIDE: "game_hide",
@@ -18,17 +18,16 @@ mock.module("cc", () => ({
     },
     _decorator: {
         ccclass(_name: string) {
-            return <TFunction extends (...args: unknown[]) => unknown>(target: TFunction): TFunction =>
-                target;
+            return <TFunction extends (...args: unknown[]) => unknown>(target: TFunction): TFunction => target;
         },
     },
-    Component: class { },
+    Component: class {},
     Node: class {
         static EventType: Record<string, string> = {};
     },
-    EventTouch: class { },
-    Touch: class { },
-    Vec3: class { },
+    EventTouch: class {},
+    Touch: class {},
+    Vec3: class {},
     profiler: { stats: null },
     sys: { isNative: false },
 }));
@@ -49,10 +48,7 @@ interface ApplicationLike {
     dispose(): Promise<void>;
 }
 
-type ApplicationConstructor = new (
-    modules: readonly unknown[],
-    context: { readonly logger: unknown; readonly state: string },
-) => ApplicationLike;
+type ApplicationConstructor = new (modules: readonly unknown[], context: { readonly logger: unknown; readonly state: string }) => ApplicationLike;
 
 interface AdapterLike {
     bind(): void;
@@ -70,14 +66,8 @@ type AdapterConstructor = new (
 const projectRoot = resolve(import.meta.dir, "../../..");
 
 const frameworkEntry = resolve(projectRoot, "assets/framework/index.ts");
-const contextImplFile = resolve(
-    projectRoot,
-    "assets/framework/application/ApplicationContext.ts",
-);
-const adapterFile = resolve(
-    projectRoot,
-    "assets/framework/adapters/cocos/application/CocosApplicationAdapter.ts",
-);
+const contextImplFile = resolve(projectRoot, "assets/framework/application/ApplicationContext.ts");
+const adapterFile = resolve(projectRoot, "assets/framework/adapters/cocos/application/CocosApplicationAdapter.ts");
 const appRootFile = resolve(projectRoot, "assets/boot/AppRoot.ts");
 
 async function loadTestAssembly(): Promise<{
@@ -90,33 +80,21 @@ async function loadTestAssembly(): Promise<{
         };
     };
 }> {
-    const framework = (await import(
-        pathToFileURL(frameworkEntry).href
-    )) as { Application?: ApplicationConstructor };
+    const framework = (await import(pathToFileURL(frameworkEntry).href)) as { Application?: ApplicationConstructor };
 
-    const contextModule = (await import(
-        pathToFileURL(contextImplFile).href
-    )) as {
-        createApplicationContext?: (
-            logger: { info(_msg: string, _ctx?: Record<string, unknown>): void },
-        ) => { readonly logger: unknown; readonly state: string };
+    const contextModule = (await import(pathToFileURL(contextImplFile).href)) as {
+        createApplicationContext?: (logger: { info(_msg: string, _ctx?: Record<string, unknown>): void }) => { readonly logger: unknown; readonly state: string };
     };
 
-    const adapterModule = (await import(
-        pathToFileURL(adapterFile).href
-    )) as { CocosApplicationAdapter?: AdapterConstructor };
+    const adapterModule = (await import(pathToFileURL(adapterFile).href)) as { CocosApplicationAdapter?: AdapterConstructor };
 
     expect(typeof framework.Application).toBe("function");
     expect(typeof contextModule.createApplicationContext).toBe("function");
     expect(typeof adapterModule.CocosApplicationAdapter).toBe("function");
 
     const Application = framework.Application as ApplicationConstructor;
-    const createApplicationContext =
-        contextModule.createApplicationContext as NonNullable<
-            typeof contextModule.createApplicationContext
-        >;
-    const CocosAdapter =
-        adapterModule.CocosApplicationAdapter as AdapterConstructor;
+    const createApplicationContext = contextModule.createApplicationContext as NonNullable<typeof contextModule.createApplicationContext>;
+    const CocosAdapter = adapterModule.CocosApplicationAdapter as AdapterConstructor;
 
     return {
         assembleSmokeApp: () => {
@@ -146,15 +124,13 @@ async function loadTestAssembly(): Promise<{
             };
 
             const logger = {
-                info(_msg: string, _ctx?: Record<string, unknown>) { },
+                info(_msg: string, _ctx?: Record<string, unknown>) {},
                 child(_scope: string) {
                     return this;
                 },
             };
 
-            const context = createApplicationContext(
-                logger as unknown as Parameters<typeof createApplicationContext>[0],
-            );
+            const context = createApplicationContext(logger as unknown as Parameters<typeof createApplicationContext>[0]);
             const app = new Application([], context);
             const adapter = new CocosAdapter(app, gameMock);
 
@@ -170,10 +146,7 @@ describe("Smoke: AppRoot lifecycle and adapter mapping", () => {
 
         adapter.bind();
         expect(gameMock.onCalls).toHaveLength(2);
-        expect(gameMock.onCalls.map(([event]) => event)).toEqual([
-            "game_hide",
-            "game_show",
-        ]);
+        expect(gameMock.onCalls.map(([event]) => event)).toEqual(["game_hide", "game_show"]);
 
         await app.start();
         expect(app.state).toBe("running");
@@ -237,9 +210,7 @@ describe("Smoke: AppRoot lifecycle and adapter mapping", () => {
     });
 
     test("AppRoot Component smoke: onLoad → start → onDestroy", async () => {
-        const appRootModule = (await import(
-            pathToFileURL(appRootFile).href
-        )) as {
+        const appRootModule = (await import(pathToFileURL(appRootFile).href)) as {
             assembleApp?: () => { app: ApplicationLike; adapter: AdapterLike };
             AppRoot?: new () => {
                 onLoad(): void;
@@ -250,9 +221,7 @@ describe("Smoke: AppRoot lifecycle and adapter mapping", () => {
 
         expect(typeof appRootModule.AppRoot).toBe("function");
 
-        const AppRoot = appRootModule.AppRoot as NonNullable<
-            typeof appRootModule.AppRoot
-        >;
+        const AppRoot = appRootModule.AppRoot as NonNullable<typeof appRootModule.AppRoot>;
 
         const instance = new AppRoot();
         instance.onLoad();

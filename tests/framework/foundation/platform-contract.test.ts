@@ -4,14 +4,8 @@ import { describe, expect, test } from "bun:test";
 
 const projectRoot = resolve(import.meta.dir, "../../..");
 const frameworkRoot = resolve(projectRoot, "assets/framework");
-const platformContractFile = resolve(
-    frameworkRoot,
-    "contracts/platform/Platform.ts",
-);
-const timeContractFile = resolve(
-    frameworkRoot,
-    "contracts/time/TimeSource.ts",
-);
+const platformContractFile = resolve(frameworkRoot, "contracts/platform/Platform.ts");
+const timeContractFile = resolve(frameworkRoot, "contracts/time/TimeSource.ts");
 
 function readContract(path: string): string {
     return existsSync(path) ? readFileSync(path, "utf8") : "";

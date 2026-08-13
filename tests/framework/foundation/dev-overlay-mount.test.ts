@@ -2,12 +2,7 @@ import { describe, expect, test, mock } from "bun:test";
 
 import { createCcMock } from "./helpers/cc-mock";
 import { createFairyGuiMock } from "./helpers/fairygui-mock";
-import type {
-    DevOverlayMountOptions,
-    DevOverlayRoot,
-    DevOverlaySafeAreaViewSeam,
-    DevOverlayViewSeam,
-} from "../../../assets/boot/dev/DevOverlay";
+import type { DevOverlayMountOptions, DevOverlayRoot, DevOverlaySafeAreaViewSeam, DevOverlayViewSeam } from "../../../assets/boot/dev/DevOverlay";
 import type { DevInfoSampler } from "../../../assets/boot/dev/DevInfo";
 
 // setupDevOverlay 经 CocosDeviceInfo/dev-profiler/DevOverlayViewHandle 间接依赖
@@ -16,9 +11,7 @@ import type { DevInfoSampler } from "../../../assets/boot/dev/DevInfo";
 mock.module("cc", () => createCcMock());
 mock.module("fairygui-cc", () => createFairyGuiMock());
 
-const { mountDevOverlay, setupDevOverlay } = await import(
-    "../../../assets/boot/dev/DevOverlay"
-);
+const { mountDevOverlay, setupDevOverlay } = await import("../../../assets/boot/dev/DevOverlay");
 
 const SAMPLER: DevInfoSampler = {
     sample: () => ({
@@ -40,8 +33,8 @@ function createFakeView(): DevOverlayViewSeam {
     return {
         ballSize: { width: 48, height: 48 },
         node: () => undefined,
-        bindInteraction() { },
-        dispose() { },
+        bindInteraction() {},
+        dispose() {},
     };
 }
 
@@ -122,10 +115,12 @@ interface SetupResult {
     readonly ticks: Array<() => void>;
 }
 
-function setup(overrides: {
-    readonly devEnabled?: boolean;
-    readonly view?: () => DevOverlayViewSeam | undefined;
-} = {}): SetupResult {
+function setup(
+    overrides: {
+        readonly devEnabled?: boolean;
+        readonly view?: () => DevOverlayViewSeam | undefined;
+    } = {},
+): SetupResult {
     let created = 0;
     let driverDisposed = 0;
     const ticks: Array<() => void> = [];
@@ -141,7 +136,11 @@ function setup(overrides: {
         },
         drive: (tick) => {
             ticks.push(tick);
-            return { dispose: () => { driverDisposed += 1; } };
+            return {
+                dispose: () => {
+                    driverDisposed += 1;
+                },
+            };
         },
     };
     return {
@@ -249,9 +248,9 @@ describe("mountDevOverlay safeArea 联动", () => {
     interface Captured {
         controller:
             | {
-                onHoverIn(): void;
-                onHoverOut(): void;
-            }
+                  onHoverIn(): void;
+                  onHoverOut(): void;
+              }
             | undefined;
     }
 
@@ -265,10 +264,12 @@ describe("mountDevOverlay safeArea 联动", () => {
         return view;
     }
 
-    function setupWithSafeArea(overrides: {
-        readonly inset?: { left: number; top: number; right: number; bottom: number };
-        readonly devEnabled?: boolean;
-    } = {}): {
+    function setupWithSafeArea(
+        overrides: {
+            readonly inset?: { left: number; top: number; right: number; bottom: number };
+            readonly devEnabled?: boolean;
+        } = {},
+    ): {
         readonly handle: ReturnType<typeof mountDevOverlay>;
         readonly seam: ReturnType<typeof createSafeAreaSeam>;
         readonly captured: Captured;
@@ -358,10 +359,7 @@ interface SetupHostResult {
     readonly loads: number;
 }
 
-function makeSetupHost(
-    rootProvider: () => DevOverlayRoot | undefined,
-    loadState: string,
-): SetupHostResult {
+function makeSetupHost(rootProvider: () => DevOverlayRoot | undefined, loadState: string): SetupHostResult {
     let loads = 0;
     return {
         host: {
@@ -393,22 +391,18 @@ function makeLogger(): {
             warn: (message) => {
                 warns.push(message);
             },
-            error: () => { },
+            error: () => {},
         },
     };
 }
 
-const noopDrive = (): { dispose(): void } => ({ dispose() { } });
+const noopDrive = (): { dispose(): void } => ({ dispose() {} });
 
 /**
  * 条件等待：轮询 predicate 直到为真或超过 deadlineMs。替代固定 setTimeout
  * 等待，避免批跑时事件循环繁忙导致定时器延迟造成的时序竞态。
  */
-async function waitFor(
-    predicate: () => boolean,
-    deadlineMs: number,
-    intervalMs = 20,
-): Promise<void> {
+async function waitFor(predicate: () => boolean, deadlineMs: number, intervalMs = 20): Promise<void> {
     const deadline = Date.now() + deadlineMs;
     while (!predicate()) {
         if (Date.now() >= deadline) {
@@ -515,7 +509,7 @@ describe("setupDevOverlay", () => {
             createSafeAreaView: () => seam,
             drive: (tick) => {
                 tick();
-                return { dispose() { } };
+                return { dispose() {} };
             },
         });
         await new Promise((resolve) => setTimeout(resolve, 20));

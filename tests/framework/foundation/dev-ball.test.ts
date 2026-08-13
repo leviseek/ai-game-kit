@@ -1,14 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import {
-    BADGE_FPS_NODE,
-    BALL_NODE,
-    INFO_UPTIME_NODE,
-    PANEL_NODE,
-    computeSnapTarget,
-    createDevBallController,
-    type DevBallController,
-} from "../../../assets/boot/dev/DevBall";
+import { BADGE_FPS_NODE, BALL_NODE, INFO_UPTIME_NODE, PANEL_NODE, computeSnapTarget, createDevBallController, type DevBallController } from "../../../assets/boot/dev/DevBall";
 import type { DevInfoSampler } from "../../../assets/boot/dev/DevInfo";
 import type { ViewModelNode } from "../../../assets/framework";
 
@@ -34,11 +26,11 @@ function createFakeNodes(): {
             setText(value: string) {
                 current.text = value;
             },
-            setProgress() { },
+            setProgress() {},
             setVisible(value: boolean) {
                 current.visible = value;
             },
-            onClick() { },
+            onClick() {},
             setXY(x: number, y: number) {
                 current.xy = { x, y };
             },

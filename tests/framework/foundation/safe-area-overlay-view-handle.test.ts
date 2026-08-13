@@ -7,9 +7,7 @@ mock.module("cc", () => createCcMock());
 mock.module("fairygui-cc", () => createFairyGuiMock());
 
 const { GComponent } = await import("fairygui-cc");
-const { createSafeAreaOverlayView } = await import(
-    "../../../assets/framework/adapters/cocos/ui/SafeAreaOverlayViewHandle"
-);
+const { createSafeAreaOverlayView } = await import("../../../assets/framework/adapters/cocos/ui/SafeAreaOverlayViewHandle");
 import type { GRootLike } from "../../../assets/framework/adapters/cocos/ui/CocosUiRoot";
 
 interface EdgeRecord {
@@ -19,9 +17,7 @@ interface EdgeRecord {
     visible: boolean;
 }
 
-function makeEdge(
-    name: string,
-): EdgeRecord & {
+function makeEdge(name: string): EdgeRecord & {
     setPosition(x: number, y: number): void;
     setSize(width: number, height: number): void;
 } {
@@ -45,7 +41,7 @@ function createRoot(): GRootLike {
         name: "GRoot",
         width: 1280,
         height: 720,
-        setSize() { },
+        setSize() {},
         addChild(child: unknown) {
             children.push(child);
             return child;
@@ -72,10 +68,13 @@ function createRoot(): GRootLike {
 interface Harness {
     readonly root: GRootLike;
     readonly component: InstanceType<typeof GComponent>;
-    readonly edges: Record<string, EdgeRecord & {
-        setPosition(x: number, y: number): void;
-        setSize(width: number, height: number): void;
-    }>;
+    readonly edges: Record<
+        string,
+        EdgeRecord & {
+            setPosition(x: number, y: number): void;
+            setSize(width: number, height: number): void;
+        }
+    >;
     view: ReturnType<typeof createSafeAreaOverlayView>;
 }
 

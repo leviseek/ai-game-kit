@@ -1,14 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
-import {
-    createLoadCoordinator,
-    type ResourceHandle,
-    type ResourceKey,
-} from "../../../assets/framework/core/resource/LoadCoordinator";
-import {
-    createResourceScopeRegistry,
-    type ResourceScopeRegistry,
-} from "../../../assets/framework/core/resource/ResourceScope";
+import { createLoadCoordinator, type ResourceHandle, type ResourceKey } from "../../../assets/framework/core/resource/LoadCoordinator";
+import { createResourceScopeRegistry, type ResourceScopeRegistry } from "../../../assets/framework/core/resource/ResourceScope";
 
 interface ControlledDeferred {
     readonly resolve: (value: unknown) => void;
@@ -54,11 +47,7 @@ function createRegistrySpy(): RegistrySpy {
     return { registry, unloaded };
 }
 
-async function settleReady<T>(
-    coordinator: ReturnType<typeof createLoadCoordinator>,
-    pending: readonly ControlledDeferred[],
-    key: ResourceKey,
-): Promise<ResourceHandle<T>> {
+async function settleReady<T>(coordinator: ReturnType<typeof createLoadCoordinator>, pending: readonly ControlledDeferred[], key: ResourceKey): Promise<ResourceHandle<T>> {
     const index = pending.length;
     const handle = coordinator.load<T>(key);
     pending[index].resolve({ id: "loaded" });
@@ -76,21 +65,9 @@ describe("ResourceScope reverse-order release across independent scopes", () => 
         const scene = registry.createScope();
         const app = registry.createScope();
 
-        const pageRes = await settleReady(
-            coordinator,
-            pending,
-            assetKey("ui/main.png", "ui"),
-        );
-        const sceneRes = await settleReady(
-            coordinator,
-            pending,
-            assetKey("config.json"),
-        );
-        const appRes = await settleReady(
-            coordinator,
-            pending,
-            assetKey("audio/bgm.mp3", "audio"),
-        );
+        const pageRes = await settleReady(coordinator, pending, assetKey("ui/main.png", "ui"));
+        const sceneRes = await settleReady(coordinator, pending, assetKey("config.json"));
+        const appRes = await settleReady(coordinator, pending, assetKey("audio/bgm.mp3", "audio"));
 
         page.retain(pageRes);
         scene.retain(sceneRes);
@@ -121,11 +98,7 @@ describe("ResourceScope shared ownership", () => {
 
         const scene = registry.createScope();
         const app = registry.createScope();
-        const handle = await settleReady(
-            coordinator,
-            pending,
-            assetKey("config/start.json"),
-        );
+        const handle = await settleReady(coordinator, pending, assetKey("config/start.json"));
 
         scene.retain(handle);
         app.retain(handle);
@@ -178,11 +151,7 @@ describe("ResourceScope unload judgment", () => {
 
         expect(registry.canUnload("common")).toBe(true);
 
-        const handle = await settleReady(
-            coordinator,
-            pending,
-            assetKey("config.json"),
-        );
+        const handle = await settleReady(coordinator, pending, assetKey("config.json"));
         scope.retain(handle);
 
         expect(registry.canUnload("common")).toBe(false);
@@ -199,11 +168,7 @@ describe("ResourceScope unload judgment", () => {
 
         const page = registry.createScope();
         const app = registry.createScope();
-        const handle = await settleReady(
-            coordinator,
-            pending,
-            assetKey("config.json"),
-        );
+        const handle = await settleReady(coordinator, pending, assetKey("config.json"));
 
         page.retain(handle);
         app.retain(handle);
@@ -245,11 +210,7 @@ describe("ResourceScope idempotent release", () => {
         const { registry, unloaded } = createRegistrySpy();
         const scope = registry.createScope();
 
-        const handle = await settleReady(
-            coordinator,
-            pending,
-            assetKey("config.json"),
-        );
+        const handle = await settleReady(coordinator, pending, assetKey("config.json"));
         scope.retain(handle);
 
         scope.release();
@@ -352,11 +313,7 @@ describe("ResourceScope ownership transfer", () => {
 
         const source = registry.createScope();
         const target = registry.createScope();
-        const handle = await settleReady(
-            coordinator,
-            pending,
-            assetKey("config.json"),
-        );
+        const handle = await settleReady(coordinator, pending, assetKey("config.json"));
 
         source.retain(handle);
 
@@ -391,16 +348,8 @@ describe("ResourceScope unload failure isolation", () => {
         });
         const scope = registry.createScope();
 
-        const uiHandle = await settleReady(
-            coordinator,
-            pending,
-            assetKey("ui/main.png", "ui"),
-        );
-        const audioHandle = await settleReady(
-            coordinator,
-            pending,
-            assetKey("audio/bgm.mp3", "audio"),
-        );
+        const uiHandle = await settleReady(coordinator, pending, assetKey("ui/main.png", "ui"));
+        const audioHandle = await settleReady(coordinator, pending, assetKey("audio/bgm.mp3", "audio"));
         scope.retain(uiHandle);
         scope.retain(audioHandle);
 
@@ -442,11 +391,7 @@ describe("ResourceScope failure isolation", () => {
         const { registry, unloaded } = createRegistrySpy();
         const scope = registry.createScope();
 
-        const handle = await settleReady(
-            coordinator,
-            pending,
-            assetKey("config.json"),
-        );
+        const handle = await settleReady(coordinator, pending, assetKey("config.json"));
 
         scope.retain(handle);
         scope.retain(handle);
@@ -462,11 +407,7 @@ describe("ResourceScope failure isolation", () => {
         const { registry, unloaded } = createRegistrySpy();
         const scope = registry.createScope();
 
-        const handle = await settleReady(
-            coordinator,
-            pending,
-            assetKey("config.json"),
-        );
+        const handle = await settleReady(coordinator, pending, assetKey("config.json"));
 
         scope.retain(handle);
         scope.release();

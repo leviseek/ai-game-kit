@@ -1,24 +1,9 @@
 import { describe, expect, test } from "bun:test";
 
 import { createMemoryResourceProvider } from "../../../assets/framework/adapters/memory/MemoryResourceProvider";
-import type {
-    ConfigTable,
-    ReadonlyConfigSnapshot,
-} from "../../../assets/framework/contracts/config/Config";
-import {
-    ConfigLoadError,
-    ConfigMissingError,
-    ConfigParseError,
-    ConfigTypeMismatchError,
-} from "../../../assets/framework/core/config/ConfigErrors";
-import {
-    configArray,
-    configBoolean,
-    configNumber,
-    configObject,
-    configString,
-    createConfigTable,
-} from "../../../assets/framework/core/config/ConfigTable";
+import type { ConfigTable, ReadonlyConfigSnapshot } from "../../../assets/framework/contracts/config/Config";
+import { ConfigLoadError, ConfigMissingError, ConfigParseError, ConfigTypeMismatchError } from "../../../assets/framework/core/config/ConfigErrors";
+import { configArray, configBoolean, configNumber, configObject, configString, createConfigTable } from "../../../assets/framework/core/config/ConfigTable";
 import { loadConfigTable } from "../../../assets/framework/core/config/ConfigLoader";
 
 interface HeroConfig {
@@ -73,17 +58,13 @@ describe("ConfigTable typed reads", () => {
     test("a declared object type rejects a non-object value with a typed error", () => {
         const table = createConfigTable({ hero: 7 });
 
-        expect(() => table.read("hero", configObject)).toThrow(
-            ConfigTypeMismatchError,
-        );
+        expect(() => table.read("hero", configObject)).toThrow(ConfigTypeMismatchError);
     });
 
     test("a declared array type rejects a non-array value with a typed error", () => {
         const table = createConfigTable({ badges: "newbie" });
 
-        expect(() => table.read("badges", configArray)).toThrow(
-            ConfigTypeMismatchError,
-        );
+        expect(() => table.read("badges", configArray)).toThrow(ConfigTypeMismatchError);
     });
 });
 
@@ -159,9 +140,7 @@ describe("ConfigTable default value strategy", () => {
         const table = createConfigTable({ startParams: "{oops" });
 
         // 默认值仅在缺失时生效：配置存在但解析失败仍必须报错，不得静默回退
-        expect(() =>
-            table.read("startParams", configObject, {}),
-        ).toThrow(ConfigParseError);
+        expect(() => table.read("startParams", configObject, {})).toThrow(ConfigParseError);
     });
 });
 
@@ -241,9 +220,7 @@ describe("ConfigTable content validation guards", () => {
     test("a leading-whitespace structured string is a parse failure, not a type mismatch", () => {
         const table = createConfigTable({ startParams: "  {oops" });
 
-        expect(() => table.read("startParams", configObject)).toThrow(
-            ConfigParseError,
-        );
+        expect(() => table.read("startParams", configObject)).toThrow(ConfigParseError);
     });
 
     test("the type mismatch error carries the expected shape for diagnostics", () => {
@@ -269,11 +246,7 @@ describe("ConfigTable save-storage separation boundary", () => {
         const provider = createMemoryResourceProvider({
             loader: async () => ({ level: 3, name: "levi" }),
         });
-        const table: ConfigTable = await loadConfigTable(
-            provider,
-            "config",
-            "start.json",
-        );
+        const table: ConfigTable = await loadConfigTable(provider, "config", "start.json");
 
         expect(table.read("level", configNumber)).toBe(3);
         expect(table.read("name", configString)).toBe("levi");
@@ -308,9 +281,7 @@ describe("ConfigTable save-storage separation boundary", () => {
         });
 
         // 装载失败整体失败：调用方拿不到部分配置表，也读不到任何条目
-        await expect(
-            loadConfigTable(provider, "config", "start.json"),
-        ).rejects.toBeInstanceOf(ConfigLoadError);
+        await expect(loadConfigTable(provider, "config", "start.json")).rejects.toBeInstanceOf(ConfigLoadError);
     });
 
     test("malformed config content is a typed error and never produces a table", () => {

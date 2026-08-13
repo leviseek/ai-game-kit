@@ -2,11 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import type { GameFixture } from "../../../assets/game/fixture/GameFixture";
 import type { GamePresenterFactory } from "../../../assets/game/lobby/presenter";
-import {
-    createGameLobby,
-    type EntryPageHandle,
-    type GameLobbyHost,
-} from "../../../assets/game/lobby/lobby";
+import { createGameLobby, type EntryPageHandle, type GameLobbyHost } from "../../../assets/game/lobby/lobby";
 import type { GameTypeInfo } from "../../../assets/game/lobby/catalog";
 
 // ---- 记录型替身：记录生命周期调用顺序，供编排顺序断言 ----
@@ -19,9 +15,9 @@ function createRecordingFixture(log: string[], id: string): GameFixture {
         start: async () => {
             log.push(`start:${id}`);
         },
-        pause: async () => { },
-        resume: async () => { },
-        failRollback: async () => { },
+        pause: async () => {},
+        resume: async () => {},
+        failRollback: async () => {},
         dispose: async () => {
             log.push(`dispose:${id}`);
         },
@@ -156,9 +152,7 @@ describe("game lobby orchestration", () => {
         await expect(lobby.enter("card")).rejects.toThrow(/already active/);
         // 重入拒绝不改变活动会话
         expect(lobby.active?.id).toBe("card");
-        expect(log.filter((entry) => entry.startsWith("start:"))).toEqual([
-            "start:card",
-        ]);
+        expect(log.filter((entry) => entry.startsWith("start:"))).toEqual(["start:card"]);
     });
 
     test("exit is idempotent", async () => {
@@ -256,13 +250,7 @@ describe("game lobby orchestration", () => {
         await new Promise((resolve) => setTimeout(resolve, 0));
 
         // 切换：释放编队呈现器 → 打开战场页 → 装配战场呈现器
-        expect(log).toEqual([
-            "start:card",
-            "open:card/battle",
-            "attach:lineup",
-            "dispose:lineup",
-            "switch:card/battle2",
-        ]);
+        expect(log).toEqual(["start:card", "open:card/battle", "attach:lineup", "dispose:lineup", "switch:card/battle2"]);
         expect(lobby.active?.id).toBe("card");
         // 新页 presenter 已装配（战场呈现器 dispose 路径可触发）
         await lobby.exit();

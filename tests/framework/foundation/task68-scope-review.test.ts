@@ -22,10 +22,7 @@ function collectTypeScriptFiles(dir: string): string[] {
 }
 
 /** 收集目录下（可排除子目录）的全部 .ts 文件源码。 */
-function collectSources(
-    dir: string,
-    excludeSubdir?: string,
-): Array<{ file: string; source: string }> {
+function collectSources(dir: string, excludeSubdir?: string): Array<{ file: string; source: string }> {
     return collectTypeScriptFiles(dir)
         .filter((file) => !excludeSubdir || !file.includes(`${sep}${excludeSubdir}${sep}`))
         .map((file) => ({ file, source: readFileSync(file, "utf8") }));
@@ -43,10 +40,7 @@ function assertTypeOnlyGameImports(source: string, file: string): void {
             importStart = line;
         }
         if (importStart !== "" && /from\s+["'][^"']*game[^"']*["']/.test(line)) {
-            expect(
-                importStart.startsWith("import type"),
-                `${file} 不允许运行时 import game bundle: ${line}`,
-            ).toBe(true);
+            expect(importStart.startsWith("import type"), `${file} 不允许运行时 import game bundle: ${line}`).toBe(true);
             importStart = "";
         }
         if (line.endsWith(";")) {
@@ -80,9 +74,7 @@ describe("6.8 scope review: startup.scene", () => {
         ];
 
         for (const component of forbiddenUI) {
-            expect(content).not.toMatch(
-                new RegExp(`"__type__"\\s*:\\s*"${component.replace(".", "\\.")}"`),
-            );
+            expect(content).not.toMatch(new RegExp(`"__type__"\\s*:\\s*"${component.replace(".", "\\.")}"`));
         }
     });
 
@@ -133,10 +125,7 @@ describe("6.8 scope review: startup.scene", () => {
             const type = entry.__type__;
             if (type === undefined) continue;
 
-            const isAllowed =
-                allowedTypes.includes(type) ||
-                type.startsWith("fa179") ||
-                type.startsWith("cc.") === false;
+            const isAllowed = allowedTypes.includes(type) || type.startsWith("fa179") || type.startsWith("cc.") === false;
 
             expect(isAllowed).toBe(true);
         }
@@ -185,10 +174,7 @@ describe("6.8 scope review: boot composition root", () => {
 
         // 组合根只允许导入框架与引擎模块；game bundle 与 fgui 不允许进入组合根
         // （game 经注册桥运行时读取，类型经 `import type` 在编译期擦除）
-        const forbiddenImports = [
-            "/boot/",
-            "fairygui",
-        ];
+        const forbiddenImports = ["/boot/", "fairygui"];
 
         for (const pattern of forbiddenImports) {
             const lines = source.split("\n");
@@ -231,9 +217,7 @@ describe("6.8 scope review: boot bundle boundary", () => {
         const samplesSources = collectSources(resolve(projectRoot, "assets/samples"));
 
         for (const { file, source } of [...gameSources, ...samplesSources]) {
-            const bootImportLines = source
-                .split("\n")
-                .filter((line) => /from\s+["'][^"']*\/boot\//.test(line));
+            const bootImportLines = source.split("\n").filter((line) => /from\s+["'][^"']*\/boot\//.test(line));
             expect(bootImportLines, `${file} 不允许静态 import boot 宿主`).toHaveLength(0);
         }
     });

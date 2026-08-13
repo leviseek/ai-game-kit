@@ -4,11 +4,7 @@ import { pathToFileURL } from "node:url";
 import { describe, expect, test } from "bun:test";
 
 import type { GameFixture } from "../../../assets/game/fixture/GameFixture";
-import type {
-    InputSample,
-    InputSource,
-    UiNavigator,
-} from "../../../assets/framework";
+import type { InputSample, InputSource, UiNavigator } from "../../../assets/framework";
 
 const projectRoot = resolve(import.meta.dir, "../../..");
 const assemblyFile = resolve(projectRoot, "assets/samples/game_card/assembly.ts");
@@ -100,9 +96,7 @@ type CardFixture = GameFixture & CardFixtureHooks;
 type CreateCardFixture = (options?: CardFixtureOptions) => CardFixture;
 
 async function loadCreateCardFixture(): Promise<CreateCardFixture> {
-    const mod = (await import(
-        pathToFileURL(assemblyFile).href
-    )) as { createCardFixture: CreateCardFixture };
+    const mod = (await import(pathToFileURL(assemblyFile).href)) as { createCardFixture: CreateCardFixture };
     return mod.createCardFixture;
 }
 
@@ -123,10 +117,7 @@ async function driveUniformLifecycle(fixture: GameFixture): Promise<string[]> {
 
 describe("Card fixture contract file", () => {
     test("declares createCardFixture without cc or fgui imports", () => {
-        expect(
-            existsSync(assemblyFile),
-            "assets/game_card/assembly.ts not implemented yet (task 3.2)",
-        ).toBe(true);
+        expect(existsSync(assemblyFile), "assets/game_card/assembly.ts not implemented yet (task 3.2)").toBe(true);
 
         if (!existsSync(assemblyFile)) {
             return;
@@ -141,513 +132,492 @@ describe("Card fixture contract file", () => {
     });
 });
 
-describe.skipIf(!assemblyExists)(
-    "Card fixture composition capabilities",
-    () => {
-        test("createCardFixture returns a GameFixture exposing the uniform lifecycle", async () => {
-            const createCardFixture = await loadCreateCardFixture();
-            const fixture = createCardFixture();
+describe.skipIf(!assemblyExists)("Card fixture composition capabilities", () => {
+    test("createCardFixture returns a GameFixture exposing the uniform lifecycle", async () => {
+        const createCardFixture = await loadCreateCardFixture();
+        const fixture = createCardFixture();
 
-            expect(fixture.id).toBe("card");
-            expect(Array.isArray(fixture.modules)).toBe(true);
+        expect(fixture.id).toBe("card");
+        expect(Array.isArray(fixture.modules)).toBe(true);
 
-            for (const seam of [
-                "start",
-                "pause",
-                "resume",
-                "failRollback",
-                "dispose",
-            ] as const) {
-                expect(typeof fixture[seam]).toBe("function");
-            }
+        for (const seam of ["start", "pause", "resume", "failRollback", "dispose"] as const) {
+            expect(typeof fixture[seam]).toBe("function");
+        }
 
-            await expect(driveUniformLifecycle(fixture)).resolves.toEqual([
-                "start",
-                "pause",
-                "resume",
-                "dispose",
-            ]);
-        });
+        await expect(driveUniformLifecycle(fixture)).resolves.toEqual(["start", "pause", "resume", "dispose"]);
+    });
 
-        test("the module list only contains declared capabilities and no audio module", async () => {
-            const createCardFixture = await loadCreateCardFixture();
-            const fixture = createCardFixture();
+    test("the module list only contains declared capabilities and no audio module", async () => {
+        const createCardFixture = await loadCreateCardFixture();
+        const fixture = createCardFixture();
 
-            // 精确断言装配清单：可控时间、配置、状态机回合流、输入、UI
-            // 五类能力模块；未声明能力（音频等）不参与装配
-            expect(fixture.modules.map((m) => m.id)).toEqual([
-                "card.clock",
-                "card.config",
-                "card.battle",
-                "card.input",
-                "card.ui",
-            ]);
-        });
+        // 精确断言装配清单：可控时间、配置、状态机回合流、输入、UI
+        // 五类能力模块；未声明能力（音频等）不参与装配
+        expect(fixture.modules.map((m) => m.id)).toEqual(["card.clock", "card.config", "card.battle", "card.input", "card.ui"]);
+    });
 
-        test("a controlled clock drives deterministic turns independent of the real clock", async () => {
-            const createCardFixture = await loadCreateCardFixture();
+    test("a controlled clock drives deterministic turns independent of the real clock", async () => {
+        const createCardFixture = await loadCreateCardFixture();
 
-            // 相同输入序列运行两次：仅用模拟时钟推进，结果必须完全一致
-            const runSequence = async (): Promise<CardBattleState> => {
-                const fixture = createCardFixture();
-                await fixture.start();
-
-                // 玩家回合：出牌 0（cost 1 / damage 2）与出牌 1（cost 2 / damage 4）
-                fixture.input.push("keyboard.1", true);
-                fixture.input.push("keyboard.1", false);
-                fixture.input.push("keyboard.2", true);
-                fixture.input.push("keyboard.2", false);
-
-                // 推进但未超过玩家回合时长：仍处于玩家回合
-                fixture.clock.advance(300);
-
-                // 结束玩家回合进入敌方回合
-                fixture.input.push("keyboard.enter", true);
-                expect(fixture.battle.state.phase).toBe("enemy");
-
-                // 敌方回合经时钟推进超时后回到玩家回合，回合数 +1
-                fixture.clock.advance(1500);
-                expect(fixture.battle.state.phase).toBe("player");
-                expect(fixture.battle.state.turn).toBe(2);
-
-                const state = fixture.battle.state;
-                await fixture.dispose();
-                return state;
-            };
-
-            const first = await runSequence();
-            const second = await runSequence();
-
-            // 确定性：两次独立运行结果逐字段一致
-            expect(first).toEqual(second);
-
-            // 回合流按输入序列结算：敌方受两卡伤害，回合数推进到 2
-            expect(first.turn).toBe(2);
-            expect(first.phase).toBe("player");
-            expect(first.enemyHp).toBe(2); // 初始 8 - 2 - 4
-            // 敌方阶段 1500ms 内按默认配置攻击 3 次（500ms 间隔 * 2 伤害）
-            expect(first.playerHp).toBe(4); // 初始 10 - 3 * 2
-        });
-
-        test("the state machine expresses the turn flow via phase transitions", async () => {
-            const createCardFixture = await loadCreateCardFixture();
+        // 相同输入序列运行两次：仅用模拟时钟推进，结果必须完全一致
+        const runSequence = async (): Promise<CardBattleState> => {
             const fixture = createCardFixture();
             await fixture.start();
 
-            expect(fixture.battle.state.phase).toBe("player");
-
-            // 主动结束回合：player → enemy
-            expect(fixture.battle.endTurn()).toBe(true);
-            expect(fixture.battle.state.phase).toBe("enemy");
-
-            // 敌方阶段经时钟推进超时：enemy → player，回合数 +1
-            fixture.clock.advance(1200);
-            expect(fixture.battle.state.phase).toBe("player");
-            expect(fixture.battle.state.turn).toBe(2);
-
-            // 非玩家阶段出牌被拒绝
-            fixture.battle.endTurn();
-            expect(fixture.battle.playCard(0)).toBe(false);
-
-            await fixture.dispose();
-        });
-
-        test("config drives card numbers and is read from an immutable table", async () => {
-            const createCardFixture = await loadCreateCardFixture();
-            const configContent = {
-                cards: [
-                    { id: "sword", name: "Sword", cost: 1, damage: 3 },
-                    { id: "flame", name: "Flame", cost: 2, damage: 7 },
-                ],
-                turnDurationMs: 900,
-                playerHp: 20,
-                enemyHp: 12,
-                startMana: 3,
-            };
-
-            const fixture = createCardFixture({ configContent });
-            await fixture.start();
-
-            // 配置驱动数值：卡片清单与回合时长来自不可变配置表
-            expect(fixture.config.cards).toEqual([
-                { id: "sword", name: "Sword", cost: 1, damage: 3 },
-                { id: "flame", name: "Flame", cost: 2, damage: 7 },
-            ]);
-            expect(fixture.config.turnDurationMs).toBe(900);
-            expect(fixture.battle.state.playerHp).toBe(20);
-            expect(fixture.battle.state.enemyHp).toBe(12);
-
-            // 出牌结算按配置数值扣除：damage 3 → enemyHp 9
-            expect(fixture.battle.playCard(0)).toBe(true);
-            expect(fixture.battle.state.enemyHp).toBe(9);
-
-            await fixture.dispose();
-        });
-
-        test("input routes typed actions and plays cards through the UI-linked flow", async () => {
-            const createCardFixture = await loadCreateCardFixture();
-            const fixture = createCardFixture();
-            await fixture.start();
-
-            expect(typeof fixture.input.activeContext).toBe("string");
-
-            const before = fixture.input.samples.length;
+            // 玩家回合：出牌 0（cost 1 / damage 2）与出牌 1（cost 2 / damage 4）
             fixture.input.push("keyboard.1", true);
             fixture.input.push("keyboard.1", false);
+            fixture.input.push("keyboard.2", true);
+            fixture.input.push("keyboard.2", false);
 
-            // 输入事件被映射为类型化 action 采样
-            expect(fixture.input.samples.length).toBe(before + 2);
-            const pressed = fixture.input.samples[fixture.input.samples.length - 2];
-            expect(pressed.action).toBe("play-card-0");
-            expect(pressed.pressed).toBe(true);
+            // 推进但未超过玩家回合时长：仍处于玩家回合
+            fixture.clock.advance(300);
 
-            // 输入联动出牌：按下 keyboard.1 后卡牌 0 结算生效
-            expect(fixture.battle.state.enemyHp).toBe(6); // 初始 8 - damage 2
-
-            // 激活上下文可切换，且切换不产生额外采样
-            const current = fixture.input.activeContext;
-            fixture.input.setActiveContext(current === "gameplay" ? "ui" : "gameplay");
-            expect(fixture.input.samples.length).toBe(before + 2);
-
-            await fixture.dispose();
-        });
-
-        test("UI navigation opens and closes the battle route through the navigator", async () => {
-            const createCardFixture = await loadCreateCardFixture();
-            const fixture = createCardFixture();
-            await fixture.start();
-
-            const opened = fixture.navigator.open("card/battle");
-            expect(opened.ok).toBe(true);
-            expect(fixture.navigator.top?.route).toBe("card/battle");
-
-            const closed = fixture.navigator.close();
-            expect(closed.ok).toBe(true);
-            expect(fixture.navigator.top).toBeUndefined();
-
-            await fixture.dispose();
-        });
-
-        test("failRollback does not disturb the fixture's own capabilities", async () => {
-            const createCardFixture = await loadCreateCardFixture();
-            const fixture = createCardFixture();
-            await fixture.start();
-
-            // 契约保证：探针驱动注定失败的启动并回滚，不改动夹具自身 app 状态
-            await fixture.failRollback();
-
-            // 探针后夹具自身能力保持可用
-            const opened = fixture.navigator.open("card/battle");
-            expect(opened.ok).toBe(true);
-
-            expect(fixture.battle.playCard(0)).toBe(true);
-
-            const before = fixture.input.samples.length;
-            fixture.input.push("keyboard.1", true);
-            expect(fixture.input.samples.length).toBe(before + 1);
-
-            await fixture.dispose();
-        });
-
-        test("dispose stops input sampling and releases shared capabilities", async () => {
-            const createCardFixture = await loadCreateCardFixture();
-            const fixture = createCardFixture();
-            await fixture.start();
-
-            const before = fixture.input.samples.length;
-            fixture.input.push("keyboard.1", true);
-            expect(fixture.input.samples.length).toBe(before + 1);
-
-            await fixture.dispose();
-
-            // 释放后：输入不再路由采样、导航拒绝新请求，重复释放幂等
-            fixture.input.push("keyboard.1", true);
-            expect(fixture.input.samples.length).toBe(before + 1);
-
-            expect(fixture.navigator.open("card/battle").ok).toBe(false);
-            expect(fixture.battle.playCard(0)).toBe(false);
-
-            await fixture.dispose();
-        });
-
-        test("playCard rejects when mana is insufficient and battle state is unchanged", async () => {
-            const createCardFixture = await loadCreateCardFixture();
-            const fixture = createCardFixture();
-            await fixture.start();
-
-            // 默认配置 startMana 3：card-0 cost 1 / card-1 cost 2
-            expect(fixture.battle.playCard(0)).toBe(true); // mana 3 -> 2
-            expect(fixture.battle.playCard(1)).toBe(true); // mana 2 -> 0
-
-            const before = fixture.battle.state;
-            // mana 已耗尽：出牌被拒绝且状态不变
-            expect(fixture.battle.playCard(1)).toBe(false);
-            expect(fixture.battle.state.mana).toBe(before.mana);
-            expect(fixture.battle.state.enemyHp).toBe(before.enemyHp);
-
-            await fixture.dispose();
-        });
-
-        test("a finishing blow ends the battle in the over phase and blocks further actions", async () => {
-            const createCardFixture = await loadCreateCardFixture();
-            // 敌方 hp 4，两卡各 cost 1 / damage 3：两击后敌 hp 归零进入终局
-            const fixture = createCardFixture({
-                configContent: {
-                    cards: [
-                        { id: "strike", name: "Strike", cost: 1, damage: 3 },
-                        { id: "swipe", name: "Swipe", cost: 1, damage: 3 },
-                    ],
-                    turnDurationMs: 1000,
-                    playerHp: 10,
-                    enemyHp: 4,
-                    startMana: 2,
-                },
-            });
-            await fixture.start();
-
-            expect(fixture.battle.playCard(0)).toBe(true); // enemyHp 4 -> 1
-            expect(fixture.battle.playCard(1)).toBe(true); // enemyHp 1 -> 0, finish
-            expect(fixture.battle.state.phase).toBe("over");
-            expect(fixture.battle.state.enemyHp).toBe(0);
-
-            // 终局后出牌与结束回合均被拒绝
-            expect(fixture.battle.playCard(0)).toBe(false);
-            expect(fixture.battle.endTurn()).toBe(false);
-
-            await fixture.dispose();
-        });
-
-        test("mana resets to the configured start mana when a new turn begins", async () => {
-            const createCardFixture = await loadCreateCardFixture();
-            const fixture = createCardFixture();
-            await fixture.start();
-
-            expect(fixture.battle.playCard(0)).toBe(true); // mana 3 -> 2
-            fixture.battle.endTurn(); // -> enemy
-            fixture.clock.advance(1500); // 超时回 player，turn 2
-
-            expect(fixture.battle.state.turn).toBe(2);
-            expect(fixture.battle.state.mana).toBe(3); // 重置为 startMana
-
-            await fixture.dispose();
-        });
-
-        test("clock advance rejects negative values", async () => {
-            const createCardFixture = await loadCreateCardFixture();
-            const fixture = createCardFixture();
-            await fixture.start();
-
-            // 时钟只应正向推进：负值推进会破坏超时判定与回合确定性
-            expect(() => fixture.clock.advance(-1)).toThrow();
-
-            await fixture.dispose();
-        });
-
-        test("config rejects malformed card numbers at construction time", async () => {
-            const createCardFixture = await loadCreateCardFixture();
-
-            const malformed = [
-                { id: "a", name: "A", cost: Number.NaN, damage: 1 },
-                { id: "a", name: "A", cost: 1, damage: Number.POSITIVE_INFINITY },
-                { id: "a", name: "A", cost: -1, damage: 1 },
-                { id: "a", name: "A", cost: 1, damage: -1 },
-            ];
-
-            for (const cards of malformed) {
-                expect(
-                    () =>
-                        createCardFixture({
-                            configContent: {
-                                cards: [cards],
-                                turnDurationMs: 1000,
-                                playerHp: 10,
-                                enemyHp: 8,
-                                startMana: 3,
-                            },
-                        }),
-                ).toThrow();
-            }
-        });
-
-        test("enemy phase times out exactly at the configured turn duration", async () => {
-            const createCardFixture = await loadCreateCardFixture();
-            const fixture = createCardFixture();
-            await fixture.start();
-
-            fixture.battle.endTurn(); // -> enemy，phaseEnteredAt = 0
-            fixture.clock.advance(1000); // 恰等于 turnDurationMs
-
-            // 边界语义：达到时长即超时（>=），返回 player 且回合数 +1
-            expect(fixture.battle.state.phase).toBe("player");
-            expect(fixture.battle.state.turn).toBe(2);
-
-            await fixture.dispose();
-        });
-
-        test("enemy phase attacks the player at the configured interval", async () => {
-            const createCardFixture = await loadCreateCardFixture();
-            // 默认配置：enemyDamage 2 / enemyAttackIntervalMs 500 / turnDurationMs 1000
-            const fixture = createCardFixture();
-            await fixture.start();
-
-            fixture.battle.endTurn(); // -> enemy，phaseEnteredAt = 0
-            fixture.clock.advance(600); // 跨过 1 个攻击间隔（500ms）
-
-            // 敌方已攻击一次：玩家 HP 10 -> 8
-            expect(fixture.battle.state.playerHp).toBe(8);
-
-            await fixture.dispose();
-        });
-
-        test("enemy attacks settle multiple hits at once when the clock jumps", async () => {
-            const createCardFixture = await loadCreateCardFixture();
-            const fixture = createCardFixture();
-            await fixture.start();
-
-            fixture.battle.endTurn(); // -> enemy
-            fixture.clock.advance(1600); // 跨过 3 个攻击间隔（3 * 500ms），仍超时前
-
-            // 跳帧一次性结算 3 次攻击：玩家 HP 10 - 3 * 2 = 4
-            expect(fixture.battle.state.playerHp).toBe(4);
-
-            await fixture.dispose();
-        });
-
-        test("player HP never goes below zero from enemy attacks", async () => {
-            const createCardFixture = await loadCreateCardFixture();
-            // 玩家 HP 4，敌人每击 3 伤害：一击后归零，过量不产生负值
-            const fixture = createCardFixture({
-                configContent: {
-                    cards: [{ id: "strike", name: "Strike", cost: 1, damage: 1 }],
-                    turnDurationMs: 5000,
-                    playerHp: 4,
-                    enemyHp: 8,
-                    startMana: 3,
-                    enemyDamage: 3,
-                    enemyAttackIntervalMs: 500,
-                },
-            });
-            await fixture.start();
-
-            fixture.battle.endTurn();
-            fixture.clock.advance(600); // 一击 3 伤害 -> 玩家 HP 1
-            expect(fixture.battle.state.playerHp).toBe(1);
-
-            fixture.clock.advance(600); // 第二击 -> 玩家 HP 0（clamp）
-            expect(fixture.battle.state.playerHp).toBe(0);
-
-            await fixture.dispose();
-        });
-
-        test("enemy attacks drive a losing end with result lose", async () => {
-            const createCardFixture = await loadCreateCardFixture();
-            const fixture = createCardFixture({
-                configContent: {
-                    cards: [{ id: "strike", name: "Strike", cost: 1, damage: 1 }],
-                    turnDurationMs: 5000,
-                    playerHp: 2,
-                    enemyHp: 8,
-                    startMana: 3,
-                    enemyDamage: 2,
-                    enemyAttackIntervalMs: 500,
-                },
-            });
-            await fixture.start();
-
-            fixture.battle.endTurn();
-            fixture.clock.advance(600); // 一击 2 伤害 -> 玩家 HP 0，战败终局
-
-            expect(fixture.battle.state.phase).toBe("over");
-            expect(fixture.battle.state.result).toBe("lose");
-            expect(fixture.battle.state.playerHp).toBe(0);
-
-            await fixture.dispose();
-        });
-
-        test("a finishing blow on the enemy ends with result win", async () => {
-            const createCardFixture = await loadCreateCardFixture();
-            const fixture = createCardFixture({
-                configContent: {
-                    cards: [{ id: "strike", name: "Strike", cost: 1, damage: 4 }],
-                    turnDurationMs: 1000,
-                    playerHp: 10,
-                    enemyHp: 4,
-                    startMana: 2,
-                    enemyDamage: 2,
-                    enemyAttackIntervalMs: 500,
-                },
-            });
-            await fixture.start();
-
-            expect(fixture.battle.playCard(0)).toBe(true); // enemyHp 4 -> 0
-            expect(fixture.battle.state.phase).toBe("over");
-            expect(fixture.battle.state.result).toBe("win");
-
-            await fixture.dispose();
-        });
-
-        test("restart resets the battle to its initial state", async () => {
-            const createCardFixture = await loadCreateCardFixture();
-            const fixture = createCardFixture();
-            await fixture.start();
-
-            // 打出一张牌改变状态
-            expect(fixture.battle.playCard(0)).toBe(true);
-            expect(fixture.battle.state.enemyHp).toBe(6);
-
-            // 重开：战斗回到初始状态（phase player / turn 1 / HP 满）
-            fixture.battle.restart();
-            expect(fixture.battle.state.phase).toBe("player");
-            expect(fixture.battle.state.turn).toBe(1);
-            expect(fixture.battle.state.playerHp).toBe(10);
-            expect(fixture.battle.state.enemyHp).toBe(8);
-
-            await fixture.dispose();
-        });
-
-        test("ViewModel render reflects the battle state on the view nodes", async () => {
-            const createCardFixture = await loadCreateCardFixture();
-            const fixture = createCardFixture();
-            await fixture.start();
-
-            fixture.viewModel.render();
-
-            // 初始战斗状态映射到页面节点：HP / mana / 进度（默认 playerHp 10 / enemyHp 8 / mana 3）
-            const playerHpNode = fixture.viewModel.node("txt_player_hp");
-            expect(playerHpNode.text).toBe("HP 10");
-            const enemyHpNode = fixture.viewModel.node("txt_enemy_hp");
-            expect(enemyHpNode.text).toBe("HP 8");
-            expect(fixture.viewModel.node("txt_mana").text).toBe("3");
-            expect(fixture.viewModel.node("bar_enemy_hp").progress).toBe(1);
-            // 胜负提示初始隐藏
-            expect(fixture.viewModel.node("txt_result").visible).toBe(false);
-
-            await fixture.dispose();
-        });
-
-        test("ViewModel command bindings drive battle actions", async () => {
-            const createCardFixture = await loadCreateCardFixture();
-            const fixture = createCardFixture();
-            await fixture.start();
-
-            fixture.viewModel.render();
-            // 触发绑定到出牌的点击回调：卡牌 0 结算伤害
-            fixture.viewModel.node("btn_card_0").clickHandler?.();
-            expect(fixture.battle.state.enemyHp).toBe(6); // 8 - damage 2
-
-            // 触发结束回合：进入敌方阶段
-            fixture.viewModel.node("btn_end_turn").clickHandler?.();
+            // 结束玩家回合进入敌方回合
+            fixture.input.push("keyboard.enter", true);
             expect(fixture.battle.state.phase).toBe("enemy");
 
-            // 触发重开：对局回到初始状态
-            fixture.viewModel.node("btn_restart").clickHandler?.();
+            // 敌方回合经时钟推进超时后回到玩家回合，回合数 +1
+            fixture.clock.advance(1500);
             expect(fixture.battle.state.phase).toBe("player");
-            expect(fixture.battle.state.enemyHp).toBe(8);
+            expect(fixture.battle.state.turn).toBe(2);
 
+            const state = fixture.battle.state;
             await fixture.dispose();
+            return state;
+        };
+
+        const first = await runSequence();
+        const second = await runSequence();
+
+        // 确定性：两次独立运行结果逐字段一致
+        expect(first).toEqual(second);
+
+        // 回合流按输入序列结算：敌方受两卡伤害，回合数推进到 2
+        expect(first.turn).toBe(2);
+        expect(first.phase).toBe("player");
+        expect(first.enemyHp).toBe(2); // 初始 8 - 2 - 4
+        // 敌方阶段 1500ms 内按默认配置攻击 3 次（500ms 间隔 * 2 伤害）
+        expect(first.playerHp).toBe(4); // 初始 10 - 3 * 2
+    });
+
+    test("the state machine expresses the turn flow via phase transitions", async () => {
+        const createCardFixture = await loadCreateCardFixture();
+        const fixture = createCardFixture();
+        await fixture.start();
+
+        expect(fixture.battle.state.phase).toBe("player");
+
+        // 主动结束回合：player → enemy
+        expect(fixture.battle.endTurn()).toBe(true);
+        expect(fixture.battle.state.phase).toBe("enemy");
+
+        // 敌方阶段经时钟推进超时：enemy → player，回合数 +1
+        fixture.clock.advance(1200);
+        expect(fixture.battle.state.phase).toBe("player");
+        expect(fixture.battle.state.turn).toBe(2);
+
+        // 非玩家阶段出牌被拒绝
+        fixture.battle.endTurn();
+        expect(fixture.battle.playCard(0)).toBe(false);
+
+        await fixture.dispose();
+    });
+
+    test("config drives card numbers and is read from an immutable table", async () => {
+        const createCardFixture = await loadCreateCardFixture();
+        const configContent = {
+            cards: [
+                { id: "sword", name: "Sword", cost: 1, damage: 3 },
+                { id: "flame", name: "Flame", cost: 2, damage: 7 },
+            ],
+            turnDurationMs: 900,
+            playerHp: 20,
+            enemyHp: 12,
+            startMana: 3,
+        };
+
+        const fixture = createCardFixture({ configContent });
+        await fixture.start();
+
+        // 配置驱动数值：卡片清单与回合时长来自不可变配置表
+        expect(fixture.config.cards).toEqual([
+            { id: "sword", name: "Sword", cost: 1, damage: 3 },
+            { id: "flame", name: "Flame", cost: 2, damage: 7 },
+        ]);
+        expect(fixture.config.turnDurationMs).toBe(900);
+        expect(fixture.battle.state.playerHp).toBe(20);
+        expect(fixture.battle.state.enemyHp).toBe(12);
+
+        // 出牌结算按配置数值扣除：damage 3 → enemyHp 9
+        expect(fixture.battle.playCard(0)).toBe(true);
+        expect(fixture.battle.state.enemyHp).toBe(9);
+
+        await fixture.dispose();
+    });
+
+    test("input routes typed actions and plays cards through the UI-linked flow", async () => {
+        const createCardFixture = await loadCreateCardFixture();
+        const fixture = createCardFixture();
+        await fixture.start();
+
+        expect(typeof fixture.input.activeContext).toBe("string");
+
+        const before = fixture.input.samples.length;
+        fixture.input.push("keyboard.1", true);
+        fixture.input.push("keyboard.1", false);
+
+        // 输入事件被映射为类型化 action 采样
+        expect(fixture.input.samples.length).toBe(before + 2);
+        const pressed = fixture.input.samples[fixture.input.samples.length - 2];
+        expect(pressed.action).toBe("play-card-0");
+        expect(pressed.pressed).toBe(true);
+
+        // 输入联动出牌：按下 keyboard.1 后卡牌 0 结算生效
+        expect(fixture.battle.state.enemyHp).toBe(6); // 初始 8 - damage 2
+
+        // 激活上下文可切换，且切换不产生额外采样
+        const current = fixture.input.activeContext;
+        fixture.input.setActiveContext(current === "gameplay" ? "ui" : "gameplay");
+        expect(fixture.input.samples.length).toBe(before + 2);
+
+        await fixture.dispose();
+    });
+
+    test("UI navigation opens and closes the battle route through the navigator", async () => {
+        const createCardFixture = await loadCreateCardFixture();
+        const fixture = createCardFixture();
+        await fixture.start();
+
+        const opened = fixture.navigator.open("card/battle");
+        expect(opened.ok).toBe(true);
+        expect(fixture.navigator.top?.route).toBe("card/battle");
+
+        const closed = fixture.navigator.close();
+        expect(closed.ok).toBe(true);
+        expect(fixture.navigator.top).toBeUndefined();
+
+        await fixture.dispose();
+    });
+
+    test("failRollback does not disturb the fixture's own capabilities", async () => {
+        const createCardFixture = await loadCreateCardFixture();
+        const fixture = createCardFixture();
+        await fixture.start();
+
+        // 契约保证：探针驱动注定失败的启动并回滚，不改动夹具自身 app 状态
+        await fixture.failRollback();
+
+        // 探针后夹具自身能力保持可用
+        const opened = fixture.navigator.open("card/battle");
+        expect(opened.ok).toBe(true);
+
+        expect(fixture.battle.playCard(0)).toBe(true);
+
+        const before = fixture.input.samples.length;
+        fixture.input.push("keyboard.1", true);
+        expect(fixture.input.samples.length).toBe(before + 1);
+
+        await fixture.dispose();
+    });
+
+    test("dispose stops input sampling and releases shared capabilities", async () => {
+        const createCardFixture = await loadCreateCardFixture();
+        const fixture = createCardFixture();
+        await fixture.start();
+
+        const before = fixture.input.samples.length;
+        fixture.input.push("keyboard.1", true);
+        expect(fixture.input.samples.length).toBe(before + 1);
+
+        await fixture.dispose();
+
+        // 释放后：输入不再路由采样、导航拒绝新请求，重复释放幂等
+        fixture.input.push("keyboard.1", true);
+        expect(fixture.input.samples.length).toBe(before + 1);
+
+        expect(fixture.navigator.open("card/battle").ok).toBe(false);
+        expect(fixture.battle.playCard(0)).toBe(false);
+
+        await fixture.dispose();
+    });
+
+    test("playCard rejects when mana is insufficient and battle state is unchanged", async () => {
+        const createCardFixture = await loadCreateCardFixture();
+        const fixture = createCardFixture();
+        await fixture.start();
+
+        // 默认配置 startMana 3：card-0 cost 1 / card-1 cost 2
+        expect(fixture.battle.playCard(0)).toBe(true); // mana 3 -> 2
+        expect(fixture.battle.playCard(1)).toBe(true); // mana 2 -> 0
+
+        const before = fixture.battle.state;
+        // mana 已耗尽：出牌被拒绝且状态不变
+        expect(fixture.battle.playCard(1)).toBe(false);
+        expect(fixture.battle.state.mana).toBe(before.mana);
+        expect(fixture.battle.state.enemyHp).toBe(before.enemyHp);
+
+        await fixture.dispose();
+    });
+
+    test("a finishing blow ends the battle in the over phase and blocks further actions", async () => {
+        const createCardFixture = await loadCreateCardFixture();
+        // 敌方 hp 4，两卡各 cost 1 / damage 3：两击后敌 hp 归零进入终局
+        const fixture = createCardFixture({
+            configContent: {
+                cards: [
+                    { id: "strike", name: "Strike", cost: 1, damage: 3 },
+                    { id: "swipe", name: "Swipe", cost: 1, damage: 3 },
+                ],
+                turnDurationMs: 1000,
+                playerHp: 10,
+                enemyHp: 4,
+                startMana: 2,
+            },
         });
-    },
-);
+        await fixture.start();
+
+        expect(fixture.battle.playCard(0)).toBe(true); // enemyHp 4 -> 1
+        expect(fixture.battle.playCard(1)).toBe(true); // enemyHp 1 -> 0, finish
+        expect(fixture.battle.state.phase).toBe("over");
+        expect(fixture.battle.state.enemyHp).toBe(0);
+
+        // 终局后出牌与结束回合均被拒绝
+        expect(fixture.battle.playCard(0)).toBe(false);
+        expect(fixture.battle.endTurn()).toBe(false);
+
+        await fixture.dispose();
+    });
+
+    test("mana resets to the configured start mana when a new turn begins", async () => {
+        const createCardFixture = await loadCreateCardFixture();
+        const fixture = createCardFixture();
+        await fixture.start();
+
+        expect(fixture.battle.playCard(0)).toBe(true); // mana 3 -> 2
+        fixture.battle.endTurn(); // -> enemy
+        fixture.clock.advance(1500); // 超时回 player，turn 2
+
+        expect(fixture.battle.state.turn).toBe(2);
+        expect(fixture.battle.state.mana).toBe(3); // 重置为 startMana
+
+        await fixture.dispose();
+    });
+
+    test("clock advance rejects negative values", async () => {
+        const createCardFixture = await loadCreateCardFixture();
+        const fixture = createCardFixture();
+        await fixture.start();
+
+        // 时钟只应正向推进：负值推进会破坏超时判定与回合确定性
+        expect(() => fixture.clock.advance(-1)).toThrow();
+
+        await fixture.dispose();
+    });
+
+    test("config rejects malformed card numbers at construction time", async () => {
+        const createCardFixture = await loadCreateCardFixture();
+
+        const malformed = [
+            { id: "a", name: "A", cost: Number.NaN, damage: 1 },
+            { id: "a", name: "A", cost: 1, damage: Number.POSITIVE_INFINITY },
+            { id: "a", name: "A", cost: -1, damage: 1 },
+            { id: "a", name: "A", cost: 1, damage: -1 },
+        ];
+
+        for (const cards of malformed) {
+            expect(() =>
+                createCardFixture({
+                    configContent: {
+                        cards: [cards],
+                        turnDurationMs: 1000,
+                        playerHp: 10,
+                        enemyHp: 8,
+                        startMana: 3,
+                    },
+                }),
+            ).toThrow();
+        }
+    });
+
+    test("enemy phase times out exactly at the configured turn duration", async () => {
+        const createCardFixture = await loadCreateCardFixture();
+        const fixture = createCardFixture();
+        await fixture.start();
+
+        fixture.battle.endTurn(); // -> enemy，phaseEnteredAt = 0
+        fixture.clock.advance(1000); // 恰等于 turnDurationMs
+
+        // 边界语义：达到时长即超时（>=），返回 player 且回合数 +1
+        expect(fixture.battle.state.phase).toBe("player");
+        expect(fixture.battle.state.turn).toBe(2);
+
+        await fixture.dispose();
+    });
+
+    test("enemy phase attacks the player at the configured interval", async () => {
+        const createCardFixture = await loadCreateCardFixture();
+        // 默认配置：enemyDamage 2 / enemyAttackIntervalMs 500 / turnDurationMs 1000
+        const fixture = createCardFixture();
+        await fixture.start();
+
+        fixture.battle.endTurn(); // -> enemy，phaseEnteredAt = 0
+        fixture.clock.advance(600); // 跨过 1 个攻击间隔（500ms）
+
+        // 敌方已攻击一次：玩家 HP 10 -> 8
+        expect(fixture.battle.state.playerHp).toBe(8);
+
+        await fixture.dispose();
+    });
+
+    test("enemy attacks settle multiple hits at once when the clock jumps", async () => {
+        const createCardFixture = await loadCreateCardFixture();
+        const fixture = createCardFixture();
+        await fixture.start();
+
+        fixture.battle.endTurn(); // -> enemy
+        fixture.clock.advance(1600); // 跨过 3 个攻击间隔（3 * 500ms），仍超时前
+
+        // 跳帧一次性结算 3 次攻击：玩家 HP 10 - 3 * 2 = 4
+        expect(fixture.battle.state.playerHp).toBe(4);
+
+        await fixture.dispose();
+    });
+
+    test("player HP never goes below zero from enemy attacks", async () => {
+        const createCardFixture = await loadCreateCardFixture();
+        // 玩家 HP 4，敌人每击 3 伤害：一击后归零，过量不产生负值
+        const fixture = createCardFixture({
+            configContent: {
+                cards: [{ id: "strike", name: "Strike", cost: 1, damage: 1 }],
+                turnDurationMs: 5000,
+                playerHp: 4,
+                enemyHp: 8,
+                startMana: 3,
+                enemyDamage: 3,
+                enemyAttackIntervalMs: 500,
+            },
+        });
+        await fixture.start();
+
+        fixture.battle.endTurn();
+        fixture.clock.advance(600); // 一击 3 伤害 -> 玩家 HP 1
+        expect(fixture.battle.state.playerHp).toBe(1);
+
+        fixture.clock.advance(600); // 第二击 -> 玩家 HP 0（clamp）
+        expect(fixture.battle.state.playerHp).toBe(0);
+
+        await fixture.dispose();
+    });
+
+    test("enemy attacks drive a losing end with result lose", async () => {
+        const createCardFixture = await loadCreateCardFixture();
+        const fixture = createCardFixture({
+            configContent: {
+                cards: [{ id: "strike", name: "Strike", cost: 1, damage: 1 }],
+                turnDurationMs: 5000,
+                playerHp: 2,
+                enemyHp: 8,
+                startMana: 3,
+                enemyDamage: 2,
+                enemyAttackIntervalMs: 500,
+            },
+        });
+        await fixture.start();
+
+        fixture.battle.endTurn();
+        fixture.clock.advance(600); // 一击 2 伤害 -> 玩家 HP 0，战败终局
+
+        expect(fixture.battle.state.phase).toBe("over");
+        expect(fixture.battle.state.result).toBe("lose");
+        expect(fixture.battle.state.playerHp).toBe(0);
+
+        await fixture.dispose();
+    });
+
+    test("a finishing blow on the enemy ends with result win", async () => {
+        const createCardFixture = await loadCreateCardFixture();
+        const fixture = createCardFixture({
+            configContent: {
+                cards: [{ id: "strike", name: "Strike", cost: 1, damage: 4 }],
+                turnDurationMs: 1000,
+                playerHp: 10,
+                enemyHp: 4,
+                startMana: 2,
+                enemyDamage: 2,
+                enemyAttackIntervalMs: 500,
+            },
+        });
+        await fixture.start();
+
+        expect(fixture.battle.playCard(0)).toBe(true); // enemyHp 4 -> 0
+        expect(fixture.battle.state.phase).toBe("over");
+        expect(fixture.battle.state.result).toBe("win");
+
+        await fixture.dispose();
+    });
+
+    test("restart resets the battle to its initial state", async () => {
+        const createCardFixture = await loadCreateCardFixture();
+        const fixture = createCardFixture();
+        await fixture.start();
+
+        // 打出一张牌改变状态
+        expect(fixture.battle.playCard(0)).toBe(true);
+        expect(fixture.battle.state.enemyHp).toBe(6);
+
+        // 重开：战斗回到初始状态（phase player / turn 1 / HP 满）
+        fixture.battle.restart();
+        expect(fixture.battle.state.phase).toBe("player");
+        expect(fixture.battle.state.turn).toBe(1);
+        expect(fixture.battle.state.playerHp).toBe(10);
+        expect(fixture.battle.state.enemyHp).toBe(8);
+
+        await fixture.dispose();
+    });
+
+    test("ViewModel render reflects the battle state on the view nodes", async () => {
+        const createCardFixture = await loadCreateCardFixture();
+        const fixture = createCardFixture();
+        await fixture.start();
+
+        fixture.viewModel.render();
+
+        // 初始战斗状态映射到页面节点：HP / mana / 进度（默认 playerHp 10 / enemyHp 8 / mana 3）
+        const playerHpNode = fixture.viewModel.node("txt_player_hp");
+        expect(playerHpNode.text).toBe("HP 10");
+        const enemyHpNode = fixture.viewModel.node("txt_enemy_hp");
+        expect(enemyHpNode.text).toBe("HP 8");
+        expect(fixture.viewModel.node("txt_mana").text).toBe("3");
+        expect(fixture.viewModel.node("bar_enemy_hp").progress).toBe(1);
+        // 胜负提示初始隐藏
+        expect(fixture.viewModel.node("txt_result").visible).toBe(false);
+
+        await fixture.dispose();
+    });
+
+    test("ViewModel command bindings drive battle actions", async () => {
+        const createCardFixture = await loadCreateCardFixture();
+        const fixture = createCardFixture();
+        await fixture.start();
+
+        fixture.viewModel.render();
+        // 触发绑定到出牌的点击回调：卡牌 0 结算伤害
+        fixture.viewModel.node("btn_card_0").clickHandler?.();
+        expect(fixture.battle.state.enemyHp).toBe(6); // 8 - damage 2
+
+        // 触发结束回合：进入敌方阶段
+        fixture.viewModel.node("btn_end_turn").clickHandler?.();
+        expect(fixture.battle.state.phase).toBe("enemy");
+
+        // 触发重开：对局回到初始状态
+        fixture.viewModel.node("btn_restart").clickHandler?.();
+        expect(fixture.battle.state.phase).toBe("player");
+        expect(fixture.battle.state.enemyHp).toBe(8);
+
+        await fixture.dispose();
+    });
+});
 
 describe("Card fixture framework boundary", () => {
     test("the framework layer declares no card deck or turn rule models", () => {
@@ -655,8 +625,7 @@ describe("Card fixture framework boundary", () => {
         // 对应类型声明（含裸名与 `Card` 前缀名，防止业务模型以品类前缀命名侵入框架）。
         // 词表排除 Hand/Play 等通用前缀（框架有 HandleState/PlayScopeState 等命名），
         // 只保留无歧义的卡牌业务词，避免把框架通用概念误判为业务模型
-        const modelPattern =
-            /\b(?:interface|class|type|enum)\s+(?:(?:Card|Deck|Turn|Mana|Cost|Effect|Round)\w*)\b/;
+        const modelPattern = /\b(?:interface|class|type|enum)\s+(?:(?:Card|Deck|Turn|Mana|Cost|Effect|Round)\w*)\b/;
 
         const offenders: string[] = [];
         const collect = (directory: string): void => {

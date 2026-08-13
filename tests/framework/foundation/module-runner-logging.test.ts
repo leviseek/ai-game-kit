@@ -2,11 +2,7 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, test } from "bun:test";
 
-import {
-    ModuleLifecycleError,
-    type ApplicationContext,
-    type Module,
-} from "../../../assets/framework";
+import { ModuleLifecycleError, type ApplicationContext, type Module } from "../../../assets/framework";
 import { MemoryLogger } from "../support/MemoryLogger";
 
 interface ModuleRunnerInstance {
@@ -18,10 +14,7 @@ interface ModuleRunnerInstance {
     dispose(): Promise<void>;
 }
 
-type ModuleRunnerConstructor = new (
-    modules: readonly Module[],
-    context: ApplicationContext,
-) => ModuleRunnerInstance;
+type ModuleRunnerConstructor = new (modules: readonly Module[], context: ApplicationContext) => ModuleRunnerInstance;
 
 interface ModuleRunnerExports {
     readonly ModuleRunner: ModuleRunnerConstructor;
@@ -30,15 +23,10 @@ interface ModuleRunnerExports {
 type ErrorWithCause = Error & { readonly cause?: unknown };
 
 const projectRoot = resolve(import.meta.dir, "../../..");
-const moduleRunnerFile = resolve(
-    projectRoot,
-    "assets/framework/application/ModuleRunner.ts",
-);
+const moduleRunnerFile = resolve(projectRoot, "assets/framework/application/ModuleRunner.ts");
 
 async function loadModuleRunner(): Promise<ModuleRunnerConstructor> {
-    const exports = (await import(
-        pathToFileURL(moduleRunnerFile).href
-    )) as ModuleRunnerExports;
+    const exports = (await import(pathToFileURL(moduleRunnerFile).href)) as ModuleRunnerExports;
 
     return exports.ModuleRunner;
 }
@@ -54,12 +42,12 @@ describe("ModuleRunner lifecycle logging", () => {
         const module: Module = {
             id: "inventory",
             dependencies: [],
-            initialize: async () => { },
-            start: async () => { },
-            pause: async () => { },
-            resume: async () => { },
-            stop: async () => { },
-            dispose: async () => { },
+            initialize: async () => {},
+            start: async () => {},
+            pause: async () => {},
+            resume: async () => {},
+            stop: async () => {},
+            dispose: async () => {},
         };
         const runner = new ModuleRunner([module], context);
 
@@ -138,17 +126,17 @@ describe("ModuleRunner lifecycle logging", () => {
         const module: Module = {
             id: "inventory",
             dependencies: [],
-            initialize: async () => { },
-            start: async () => { throw startFailure; },
+            initialize: async () => {},
+            start: async () => {
+                throw startFailure;
+            },
         };
         const runner = new ModuleRunner([module], context);
 
         await runner.initialize();
         await expect(runner.start()).rejects.toThrow();
 
-        const failureRecord = logger.records.find(
-            (record) => record.context.phase === "start",
-        );
+        const failureRecord = logger.records.find((record) => record.context.phase === "start");
 
         expect(failureRecord?.level).toBe("error");
         expect(failureRecord?.context).toEqual({

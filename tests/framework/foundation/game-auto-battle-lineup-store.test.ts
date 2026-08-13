@@ -4,19 +4,12 @@ import { MemoryPlatform } from "../../../assets/framework/adapters/memory/Memory
 import type { PlatformStorage } from "../../../assets/framework/contracts/platform/Platform";
 import { MAX_TEAM_SIZE } from "../../../assets/samples/game_auto_battle/logic/config";
 import { FORMATION_GRID_SIZE } from "../../../assets/samples/game_auto_battle/logic/grid";
-import {
-    LINEUP_STORAGE_KEY,
-    LINEUP_SAVE_VERSION,
-    createLineupStore,
-} from "../../../assets/samples/game_auto_battle/logic/LineupStore";
+import { LINEUP_STORAGE_KEY, LINEUP_SAVE_VERSION, createLineupStore } from "../../../assets/samples/game_auto_battle/logic/LineupStore";
 import type { AutoBattleLineup } from "../../../assets/samples/game_auto_battle/models";
 
 /** 构造合法编队：指定占用槽，其余为 null；定长为布阵区容量 FORMATION_GRID_SIZE。 */
 function lineup(occupied: Readonly<Record<number, string>> = {}): AutoBattleLineup {
-    const slots = Array.from<unknown, string | null>(
-        { length: FORMATION_GRID_SIZE },
-        () => null,
-    );
+    const slots = Array.from<unknown, string | null>({ length: FORMATION_GRID_SIZE }, () => null);
     for (const [slot, heroId] of Object.entries(occupied)) {
         slots[Number(slot)] = heroId;
     }
@@ -61,41 +54,26 @@ describe("Auto-battle lineup store corruption and version guards", () => {
     test("rejects a corrupted record with invalid JSON", async () => {
         const storage = new MemoryPlatform();
         await seed(storage, "not-json");
-        await expect(
-            createLineupStore({ storage }).load(),
-        ).rejects.toThrow(/corrupted/);
+        await expect(createLineupStore({ storage }).load()).rejects.toThrow(/corrupted/);
     });
 
     test("rejects a record whose data is not a valid lineup shape", async () => {
         const storage = new MemoryPlatform();
         // 当前版本存档直接过 isLineupRecord 形状校验；形状不符按损坏拒绝
-        await seed(
-            storage,
-            JSON.stringify({ version: LINEUP_SAVE_VERSION, data: { foo: "bar" } }),
-        );
-        await expect(
-            createLineupStore({ storage }).load(),
-        ).rejects.toThrow(/corrupted/);
+        await seed(storage, JSON.stringify({ version: LINEUP_SAVE_VERSION, data: { foo: "bar" } }));
+        await expect(createLineupStore({ storage }).load()).rejects.toThrow(/corrupted/);
     });
 
     test("rejects a record with a future save version", async () => {
         const storage = new MemoryPlatform();
-        await seed(
-            storage,
-            JSON.stringify({ version: 99, data: lineup({ 0: "a" }) }),
-        );
-        await expect(
-            createLineupStore({ storage }).load(),
-        ).rejects.toThrow(/newer/);
+        await seed(storage, JSON.stringify({ version: 99, data: lineup({ 0: "a" }) }));
+        await expect(createLineupStore({ storage }).load()).rejects.toThrow(/newer/);
     });
 
     test("rejects a record exceeding the deploy cap", async () => {
         const storage = new MemoryPlatform();
         // 手工构造超上限存档：7 个非空槽（MAX_TEAM_SIZE=6），绕过 reducer 上限
-        const tooMany = Array.from<unknown, string | null>(
-            { length: FORMATION_GRID_SIZE },
-            () => null,
-        );
+        const tooMany = Array.from<unknown, string | null>({ length: FORMATION_GRID_SIZE }, () => null);
         for (let slot = 0; slot < MAX_TEAM_SIZE + 1; slot += 1) {
             tooMany[slot] = `h${slot}`;
         }
@@ -106,9 +84,7 @@ describe("Auto-battle lineup store corruption and version guards", () => {
                 data: { slots: tooMany },
             }),
         );
-        await expect(
-            createLineupStore({ storage }).load(),
-        ).rejects.toThrow(/corrupted/);
+        await expect(createLineupStore({ storage }).load()).rejects.toThrow(/corrupted/);
     });
 });
 
@@ -116,15 +92,9 @@ describe("Auto-battle lineup store schema migration", () => {
     test("migrates an older record through the registered migrator chain", async () => {
         const storage = new MemoryPlatform();
         // 旧版本 v1 存档：slots 里 heroId 是旧前缀，迁移器负责加 "v2:" 前缀
-        const legacySlots = Array.from<unknown, string | null>(
-            { length: MAX_TEAM_SIZE },
-            () => null,
-        );
+        const legacySlots = Array.from<unknown, string | null>({ length: MAX_TEAM_SIZE }, () => null);
         legacySlots[0] = "a";
-        await seed(
-            storage,
-            JSON.stringify({ version: 1, data: { slots: legacySlots } }),
-        );
+        await seed(storage, JSON.stringify({ version: 1, data: { slots: legacySlots } }));
 
         const store = createLineupStore({
             storage,
@@ -133,13 +103,10 @@ describe("Auto-battle lineup store schema migration", () => {
                 1: (data) => {
                     const record = data as { slots: readonly (string | null)[] };
                     // 自定义迁移器：加 "v2:" 前缀并补齐到布阵区容量（新 schema 定长 9）
-                    const slots: (string | null)[] = Array.from(
-                        { length: FORMATION_GRID_SIZE },
-                        (_, index) => {
-                            const heroId = record.slots[index] ?? null;
-                            return heroId === null ? null : `v2:${heroId}`;
-                        },
-                    );
+                    const slots: (string | null)[] = Array.from({ length: FORMATION_GRID_SIZE }, (_, index) => {
+                        const heroId = record.slots[index] ?? null;
+                        return heroId === null ? null : `v2:${heroId}`;
+                    });
                     return { slots };
                 },
             },
@@ -154,15 +121,9 @@ describe("Auto-battle lineup store schema migration", () => {
     test("migrates a legacy v1 record (6-length slots) to v2 (9-length) by default", async () => {
         const storage = new MemoryPlatform();
         // 旧版本 v1 存档：slots 为 6 长度（MAX_TEAM_SIZE），这正是旧 schema 的定长
-        const legacySlots = Array.from<unknown, string | null>(
-            { length: MAX_TEAM_SIZE },
-            () => null,
-        );
+        const legacySlots = Array.from<unknown, string | null>({ length: MAX_TEAM_SIZE }, () => null);
         legacySlots[0] = "a";
-        await seed(
-            storage,
-            JSON.stringify({ version: 1, data: { slots: legacySlots } }),
-        );
+        await seed(storage, JSON.stringify({ version: 1, data: { slots: legacySlots } }));
 
         const store = createLineupStore({ storage });
 
@@ -188,15 +149,10 @@ describe("Auto-battle lineup store schema migration", () => {
 
     test("rejects an older record when no migrator is registered for its version", async () => {
         const storage = new MemoryPlatform();
-        await seed(
-            storage,
-            JSON.stringify({ version: 2, data: lineup({ 0: "a" }) }),
-        );
+        await seed(storage, JSON.stringify({ version: 2, data: lineup({ 0: "a" }) }));
 
         // 存储要求 v3，但显式置空迁移映射：v2→v3 迁移器缺失应拒绝
-        await expect(
-            createLineupStore({ storage, currentVersion: 3, migrators: {} }).load(),
-        ).rejects.toThrow(/migration/);
+        await expect(createLineupStore({ storage, currentVersion: 3, migrators: {} }).load()).rejects.toThrow(/migration/);
     });
 
     test("rejects a malformed legacy v1 record as corrupted (not a raw TypeError)", async () => {
@@ -204,9 +160,7 @@ describe("Auto-battle lineup store schema migration", () => {
         // 畸形 v1：缺 slots 字段——迁移器不应抛裸 TypeError，最终按损坏拒绝
         await seed(storage, JSON.stringify({ version: 1, data: { foo: "bar" } }));
 
-        await expect(
-            createLineupStore({ storage }).load(),
-        ).rejects.toThrow(/corrupted/);
+        await expect(createLineupStore({ storage }).load()).rejects.toThrow(/corrupted/);
     });
 
     test("save always writes at the current version", async () => {

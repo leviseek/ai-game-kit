@@ -1,22 +1,12 @@
 import { describe, expect, test } from "bun:test";
 
-import {
-    createAutoBattleFixture,
-    type AutoBattleFixture,
-} from "../../../assets/samples/game_auto_battle/assembly";
+import { createAutoBattleFixture, type AutoBattleFixture } from "../../../assets/samples/game_auto_battle/assembly";
 import type { AutoBattleEvent } from "../../../assets/samples/game_auto_battle/models";
 import { projectHitFeedbackEvents } from "../../../assets/samples/game_auto_battle/view/effects";
-import {
-    createEffectAnimator,
-    type EffectNode,
-} from "../../../assets/samples/game_auto_battle/view/EffectAnimator";
+import { createEffectAnimator, type EffectNode } from "../../../assets/samples/game_auto_battle/view/EffectAnimator";
 
 /** 构造战斗事件：seq 递增，targetId/value 按需。 */
-function event(
-    seq: number,
-    type: AutoBattleEvent["type"],
-    overrides: Partial<AutoBattleEvent> = {},
-): AutoBattleEvent {
+function event(seq: number, type: AutoBattleEvent["type"], overrides: Partial<AutoBattleEvent> = {}): AutoBattleEvent {
     return {
         seq,
         type,
@@ -53,10 +43,7 @@ function recordNode(): RecordingEffectNode {
 
 describe("Auto-battle hit feedback projection", () => {
     test("attack event projects damage float and hit flash", () => {
-        const { effects, cursor } = projectHitFeedbackEvents(
-            [event(0, "attack", { targetId: "e", value: 12 })],
-            -1,
-        );
+        const { effects, cursor } = projectHitFeedbackEvents([event(0, "attack", { targetId: "e", value: 12 })], -1);
         expect(cursor).toBe(0);
         expect(effects).toEqual([
             { kind: "damage-float", unitId: "e", value: 12, seq: 0 },
@@ -65,10 +52,7 @@ describe("Auto-battle hit feedback projection", () => {
     });
 
     test("skill-damage event projects damage float and hit flash", () => {
-        const { effects } = projectHitFeedbackEvents(
-            [event(1, "skill-damage", { targetId: "e", value: 40 })],
-            -1,
-        );
+        const { effects } = projectHitFeedbackEvents([event(1, "skill-damage", { targetId: "e", value: 40 })], -1);
         expect(effects).toEqual([
             { kind: "damage-float", unitId: "e", value: 40, seq: 1 },
             { kind: "hit-flash", unitId: "e", seq: 1 },
@@ -76,32 +60,17 @@ describe("Auto-battle hit feedback projection", () => {
     });
 
     test("skill-heal event projects heal float without flash", () => {
-        const { effects } = projectHitFeedbackEvents(
-            [event(2, "skill-heal", { targetId: "a", value: 30 })],
-            -1,
-        );
-        expect(effects).toEqual([
-            { kind: "heal-float", unitId: "a", value: 30, seq: 2 },
-        ]);
+        const { effects } = projectHitFeedbackEvents([event(2, "skill-heal", { targetId: "a", value: 30 })], -1);
+        expect(effects).toEqual([{ kind: "heal-float", unitId: "a", value: 30, seq: 2 }]);
     });
 
     test("unit-dead and other events are ignored", () => {
-        const { effects } = projectHitFeedbackEvents(
-            [
-                event(0, "round-start"),
-                event(1, "unit-dead", { targetId: "e" }),
-                event(2, "battle-over", { result: "win" }),
-            ],
-            -1,
-        );
+        const { effects } = projectHitFeedbackEvents([event(0, "round-start"), event(1, "unit-dead", { targetId: "e" }), event(2, "battle-over", { result: "win" })], -1);
         expect(effects).toEqual([]);
     });
 
     test("cursor makes projection incremental and idempotent", () => {
-        const events = [
-            event(0, "attack", { targetId: "e", value: 5 }),
-            event(1, "skill-heal", { targetId: "a", value: 8 }),
-        ];
+        const events = [event(0, "attack", { targetId: "e", value: 5 }), event(1, "skill-heal", { targetId: "a", value: 8 })];
         // 首次投影消费全部
         const first = projectHitFeedbackEvents(events, -1);
         expect(first.effects).toHaveLength(3);
@@ -115,11 +84,7 @@ describe("Auto-battle hit feedback projection", () => {
     });
 
     test("same event sequence projects identical effects (determinism)", () => {
-        const events = [
-            event(0, "attack", { targetId: "e", value: 5 }),
-            event(1, "skill-damage", { targetId: "e", value: 20 }),
-            event(2, "skill-heal", { targetId: "a", value: 8 }),
-        ];
+        const events = [event(0, "attack", { targetId: "e", value: 5 }), event(1, "skill-damage", { targetId: "e", value: 20 }), event(2, "skill-heal", { targetId: "a", value: 8 })];
         const first = projectHitFeedbackEvents(events, -1);
         const second = projectHitFeedbackEvents(events, -1);
         expect(first.effects).toEqual(second.effects);
@@ -146,8 +111,7 @@ describe("Auto-battle effect animator", () => {
             node: (name: string) => nodes.get(name),
             timeSource: time.timeSource,
             homeXYOf: () => ({ x: 840, y: 100 }),
-            gridXYOf: (gridKey: string) =>
-                gridKey === "0:0" ? { x: 100, y: 100 } : { x: 600, y: 100 },
+            gridXYOf: (gridKey: string) => (gridKey === "0:0" ? { x: 100, y: 100 } : { x: 600, y: 100 }),
         });
         const ensureNode = (name: string): RecordingEffectNode => {
             let node = nodes.get(name);
@@ -329,11 +293,7 @@ describe("Auto-battle fixture effects hook", () => {
         }
         const effects = fixture.effects.project(fixture.battle.events);
         expect(effects.length).toBeGreaterThan(0);
-        expect(
-            effects.some(
-                (effect) => effect.kind === "damage-float" || effect.kind === "heal-float",
-            ),
-        ).toBe(true);
+        expect(effects.some((effect) => effect.kind === "damage-float" || effect.kind === "heal-float")).toBe(true);
         fixture.dispose();
     });
 });

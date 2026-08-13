@@ -3,33 +3,19 @@ import { pathToFileURL } from "node:url";
 import { describe, expect, mock, test } from "bun:test";
 
 import { createFairyGuiMock } from "./helpers/fairygui-mock";
-import {
-    getFuiComponentRegistry,
-    type FuiComponentUrl,
-} from "../../../assets/framework/core/fui/FuiComponentRegistry";
-import {
-    FuiBindingError,
-    FuiViewBindingRegistrationError,
-    FuiViewCleanupError,
-    FuiViewCreationError,
-} from "../../../assets/framework/core/fui/FuiErrors";
-import {
-    createFuiViewBinderRegistry,
-    defineFuiViewBinding,
-} from "../../../assets/framework/core/fui/FuiViewBinderRegistry";
+import { getFuiComponentRegistry, type FuiComponentUrl } from "../../../assets/framework/core/fui/FuiComponentRegistry";
+import { FuiBindingError, FuiViewBindingRegistrationError, FuiViewCleanupError, FuiViewCreationError } from "../../../assets/framework/core/fui/FuiErrors";
+import { createFuiViewBinderRegistry, defineFuiViewBinding } from "../../../assets/framework/core/fui/FuiViewBinderRegistry";
 import { FuiView } from "../../../assets/framework/contracts/ui/FuiView";
 
 // 实现值 import fairygui-cc；统一使用共享 fixture，动态加载避免 mock 前解析。
 mock.module("fairygui-cc", () => createFairyGuiMock());
 
-const HOST_FILE = resolve(
-    import.meta.dir,
-    "../../../assets/framework/adapters/cocos/ui/FuiViewHost.ts",
-);
+const HOST_FILE = resolve(import.meta.dir, "../../../assets/framework/adapters/cocos/ui/FuiViewHost.ts");
 
 async function loadHost(): Promise<{
-    createBoundView: typeof import("../../../assets/framework/adapters/cocos/ui/FuiViewHost")["createBoundView"];
-    createFairyGuiBoundView: typeof import("../../../assets/framework/adapters/cocos/ui/FuiViewHost")["createFairyGuiBoundView"];
+    createBoundView: (typeof import("../../../assets/framework/adapters/cocos/ui/FuiViewHost"))["createBoundView"];
+    createFairyGuiBoundView: (typeof import("../../../assets/framework/adapters/cocos/ui/FuiViewHost"))["createFairyGuiBoundView"];
 }> {
     return (await import(pathToFileURL(HOST_FILE).href)) as never;
 }
@@ -121,7 +107,7 @@ class BoundLoginView extends FuiView<unknown, unknown> {
     protected onConstruct(): void {
         this._txt_title.setText("构造完成");
     }
-    protected onState(): void { }
+    protected onState(): void {}
 }
 
 /** 记录自身被 dispose 的视图：__own 的 owner 执行即证明 View 清理已触发。 */
@@ -134,8 +120,8 @@ class RecordingDisposeView extends FuiView<unknown, unknown> {
             },
         });
     }
-    protected onConstruct(): void { }
-    protected onState(): void { }
+    protected onConstruct(): void {}
+    protected onState(): void {}
 }
 
 /** __own 的 owner 抛错：dispose 时产生 FuiViewCleanupError（供级联聚合）。 */
@@ -148,8 +134,8 @@ class ThrowingOwnerView extends FuiView<unknown, unknown> {
             },
         });
     }
-    protected onConstruct(): void { }
-    protected onState(): void { }
+    protected onConstruct(): void {}
+    protected onState(): void {}
 }
 
 describe("createBoundView", () => {
@@ -177,13 +163,7 @@ describe("createBoundView", () => {
                 txt_title: { text: "" },
                 btn_login: { text: "登录" },
             });
-            const view = createBoundView(
-                "Login",
-                "LoginView",
-                registry,
-                undefined,
-                () => componentMock as never,
-            );
+            const view = createBoundView("Login", "LoginView", registry, undefined, () => componentMock as never);
 
             expect(view).not.toBeNull();
             // 字段注入写入了引擎节点（onConstruct 内 setText 生效）
@@ -229,9 +209,7 @@ describe("createBoundView", () => {
             }
             expect(thrown).toBeInstanceOf(FuiViewCreationError);
             // 原「was not found」信息保留在 cause 中
-            expect(
-                (thrown as Error & { cause?: unknown }).cause,
-            ).toBeInstanceOf(Error);
+            expect((thrown as Error & { cause?: unknown }).cause).toBeInstanceOf(Error);
         } finally {
             restore();
         }
@@ -249,8 +227,8 @@ describe("createBoundView", () => {
                         super();
                         throw boom;
                     }
-                    protected onConstruct(): void { }
-                    protected onState(): void { }
+                    protected onConstruct(): void {}
+                    protected onState(): void {}
                 },
                 fields: {},
                 clicks: [],
@@ -325,7 +303,7 @@ describe("createBoundView", () => {
                 clicks: [
                     {
                         nodeName: "btn_missing",
-                        methodRef: function () { },
+                        methodRef: function () {},
                     },
                 ],
                 runtimeBinding: "none",
@@ -483,7 +461,7 @@ describe("createBoundView", () => {
                 clicks: [
                     {
                         nodeName: "btn_login",
-                        methodRef: function () { },
+                        methodRef: function () {},
                     },
                 ],
                 runtimeBinding: "required",
@@ -496,20 +474,12 @@ describe("createBoundView", () => {
             });
             let thrown: unknown;
             try {
-                createBoundView(
-                    "Login",
-                    "LoginView",
-                    registry,
-                    binderRegistry,
-                    () => componentMock as never,
-                );
+                createBoundView("Login", "LoginView", registry, binderRegistry, () => componentMock as never);
             } catch (error) {
                 thrown = error;
             }
             expect(thrown).toBeInstanceOf(FuiViewCreationError);
-            expect(
-                (thrown as FuiViewCreationError).cause,
-            ).toBeInstanceOf(FuiViewBindingRegistrationError);
+            expect((thrown as FuiViewCreationError).cause).toBeInstanceOf(FuiViewBindingRegistrationError);
             // 已注册点击监听被清理（View dispose 退订 onClick）
             expect(componentMock.clickHandlers.size).toBe(0);
             expect(disposedSink).toEqual(["view"]);
@@ -548,13 +518,7 @@ describe("createBoundView", () => {
             const componentMock = makeComponentMock({ txt_title: { text: "" } });
             let thrown: unknown;
             try {
-                createBoundView(
-                    "Login",
-                    "LoginView",
-                    registry,
-                    binderRegistry,
-                    () => componentMock as never,
-                );
+                createBoundView("Login", "LoginView", registry, binderRegistry, () => componentMock as never);
             } catch (error) {
                 thrown = error;
             }
@@ -604,13 +568,7 @@ describe("createBoundView", () => {
             const componentMock = makeComponentMock({ txt_title: { text: "" } });
             let thrown: unknown;
             try {
-                createBoundView(
-                    "Login",
-                    "LoginView",
-                    registry,
-                    binderRegistry,
-                    () => componentMock as never,
-                );
+                createBoundView("Login", "LoginView", registry, binderRegistry, () => componentMock as never);
             } catch (error) {
                 thrown = error;
             }
@@ -656,13 +614,7 @@ describe("createBoundView", () => {
                 }),
             );
             const componentMock = makeComponentMock({ txt_title: { text: "" } });
-            const view = createBoundView(
-                "Login",
-                "LoginView",
-                registry,
-                binderRegistry,
-                () => componentMock as never,
-            );
+            const view = createBoundView("Login", "LoginView", registry, binderRegistry, () => componentMock as never);
             expect(view).not.toBeNull();
             // binder 已执行，但句柄未立即释放（所有权已转交视图）
             expect(handleDisposed).toEqual([]);
@@ -707,13 +659,7 @@ describe("createBoundView", () => {
                 }),
             );
             const componentMock = makeComponentMock({ txt_title: { text: "" } });
-            const view = createBoundView(
-                "Login",
-                "LoginView",
-                registry,
-                binderRegistry,
-                () => componentMock as never,
-            );
+            const view = createBoundView("Login", "LoginView", registry, binderRegistry, () => componentMock as never);
             expect(view).not.toBeNull();
 
             let thrown: unknown;

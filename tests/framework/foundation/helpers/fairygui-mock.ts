@@ -48,16 +48,16 @@ export function createFairyGuiMock(): {
         children: unknown[] = [];
         node = {
             activeInHierarchy: true,
-            on() { },
-            off() { },
-            emit() { },
+            on() {},
+            off() {},
+            emit() {},
         };
         setSize(width: number, height: number) {
             this.width = width;
             this.height = height;
         }
-        on(_type: string, _callback: () => void, _target?: unknown) { }
-        off(_type: string, _callback: () => void, _target?: unknown) { }
+        on(_type: string, _callback: () => void, _target?: unknown) {}
+        off(_type: string, _callback: () => void, _target?: unknown) {}
         addChild(child: unknown): unknown {
             this.children.push(child);
             return child;
@@ -71,9 +71,7 @@ export function createFairyGuiMock(): {
             this.children.length = 0;
         }
         getChild(name: string): unknown {
-            const byName = this.children.find(
-                (child) => (child as { name?: string } | undefined)?.name === name,
-            );
+            const byName = this.children.find((child) => (child as { name?: string } | undefined)?.name === name);
             if (byName !== undefined) {
                 return byName;
             }
@@ -84,8 +82,8 @@ export function createFairyGuiMock(): {
                 text: "",
                 value: undefined as number | undefined,
                 visible: true,
-                setPosition(_x: number, _y: number) { },
-                on() { },
+                setPosition(_x: number, _y: number) {},
+                on() {},
             };
             this.children.push(child);
             return child;
@@ -165,7 +163,7 @@ export function createFairyGuiMock(): {
             addPackage(path: string) {
                 return { name: path, path };
             },
-            removePackage(_name: string) { },
+            removePackage(_name: string) {},
             createObject(_pkg: string, _res: string) {
                 return null;
             },
@@ -179,7 +177,7 @@ export function createFairyGuiMock(): {
             name = "";
             width = 0;
             height = 0;
-            on(_type: string, _callback: () => void, _target?: unknown) { }
+            on(_type: string, _callback: () => void, _target?: unknown) {}
         },
         GGraph: class {
             name = "";
@@ -216,8 +214,8 @@ export function createFairyGuiMock(): {
             set numItems(value: number) {
                 this._numItems = value;
             }
-            on(_type: string, _callback: () => void, _target?: unknown) { }
-            off(_type: string, _callback: () => void, _target?: unknown) { }
+            on(_type: string, _callback: () => void, _target?: unknown) {}
+            off(_type: string, _callback: () => void, _target?: unknown) {}
             getChild(_name: string): unknown {
                 return null;
             }
@@ -285,11 +283,7 @@ export interface FairyGuiGGraphMock {
     lineColor?: FairyGuiColorMock;
     fillColor?: FairyGuiColorMock;
     setSize(width: number, height: number): void;
-    drawRect(
-        lineSize: number,
-        lineColor: FairyGuiColorMock,
-        fillColor: FairyGuiColorMock,
-    ): void;
+    drawRect(lineSize: number, lineColor: FairyGuiColorMock, fillColor: FairyGuiColorMock): void;
 }
 
 export interface FairyGuiGRootMock {
