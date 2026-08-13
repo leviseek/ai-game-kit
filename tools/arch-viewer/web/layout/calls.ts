@@ -11,7 +11,7 @@ export function layoutCalls(view: GraphView, viewport: Viewport): LayoutGraph {
     const width = Math.max(320, viewport.width);
     const gap = laneSpacing(values.length, viewport);
     const focusIndex = Math.max(0, values.indexOf("focus"));
-    const focusX = width / 2;
+    const focusX = finalFocusX(view, values, focusIndex, width, gap);
     const lanes: LayoutLane[] = values.map((role, index) => ({
         id: `role:${role}`,
         label: role,
@@ -26,7 +26,7 @@ export function layoutCalls(view: GraphView, viewport: Viewport): LayoutGraph {
         const laneNodes = view.nodes.filter((node) => roleOf(node) === role).sort((left, right) => left.id.localeCompare(right.id));
         laneNodes.forEach((node, row) => {
             const size = estimateNodeSize(node);
-            const centerX = role === "focus" ? width / 2 : lane.x + size.width / 2;
+            const centerX = role === "focus" ? focusX : lane.x + size.width / 2;
             nodes.push({
                 id: node.id,
                 label: node.label,
@@ -41,9 +41,25 @@ export function layoutCalls(view: GraphView, viewport: Viewport): LayoutGraph {
     }
 
     const graph = completeLayout(view, lanes, nodes, []);
-    return { ...graph, width: Math.max(graph.width, width) };
+    return { ...graph, width: Math.max(graph.width, focusX * 2) };
 }
 
 function roleOf(node: GraphNode): string {
     return metadataString(node, "role") ?? "unknown";
+}
+
+function finalFocusX(
+    view: GraphView,
+    values: readonly string[],
+    focusIndex: number,
+    minWidth: number,
+    gap: number,
+): number {
+    const maxRightFromFocus = Math.max(0, ...values.map((role, index) => {
+        const maxWidth = Math.max(0, ...view.nodes
+            .filter((node) => roleOf(node) === role)
+            .map((node) => estimateNodeSize(node).width));
+        return (index - focusIndex) * gap + maxWidth;
+    }));
+    return Math.max(minWidth / 2, maxRightFromFocus + 48);
 }

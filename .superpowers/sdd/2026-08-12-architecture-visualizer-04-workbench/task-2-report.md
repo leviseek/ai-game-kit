@@ -34,3 +34,36 @@ DONE
 ## Concerns
 
 - 当前布局只做基础直线/正交 polyline，不做避障搜索，符合本任务边界；后续 renderer 需要根据 `diagnosticIds` 和 lane 信息补可访问的视觉表达。
+
+## Review Fix 2026-08-13
+
+### 状态
+
+DONE
+
+### 改动
+
+- 修复 `layoutCalls`：先按完整 role/lane extents 计算最终 focus 中心，再用同一中心放置 focus 节点，保证右侧更多 role 或长 label 扩大画布后 focus 仍位于 `LayoutGraph.width / 2`。
+- 修复 `layoutStartup`：当 startup 同时存在配置 lane 与未配置 entry 节点时，显式加入 `entry` lane，避免节点被静默丢弃和相关边 points 为空。
+- 增加 `expectSameNodeIds` 测试 helper，并覆盖 startup 混合 entry、calls 多 role/unknown role 的节点完整性。
+
+### TDD / 验证命令和结果
+
+- RED: `bun test tools/arch-viewer/test/layouts.test.ts`
+  - 结果：FAIL，两个新增回归测试分别暴露 `entry` lane 缺失、calls focus 中心漂移。
+- GREEN: `bun test tools/arch-viewer/test/layouts.test.ts`
+  - 结果：PASS，`10 pass, 0 fail, 77 expect() calls`。
+- `bun x tsc --noEmit -p tools/arch-viewer/tsconfig.web.json`
+  - 结果：PASS，无输出。
+- `git diff --check`
+  - 结果：PASS，无输出。
+
+### 自审
+
+- 保持最小改动，仅修改 `calls.ts`、`startup.ts`、`layouts.test.ts` 与本报告。
+- 未引入依赖、未使用 `as any` 或 `@ts-ignore`。
+- 新增测试确认目标布局输出 node id 集合等于输入 view node id 集合。
+
+### Concerns
+
+- 无新增未解决 concerns；边避障仍按 Task 2 原边界留给后续 renderer/交互阶段。

@@ -51,6 +51,10 @@ function expectStable(graph: LayoutGraph, source: GraphView): void {
     expect(layoutView(source, viewport)).toEqual(graph);
 }
 
+function expectSameNodeIds(graph: LayoutGraph, source: GraphView): void {
+    expect(ids(graph.nodes)).toEqual(source.nodes.map((item) => item.id).sort((left, right) => left.localeCompare(right)));
+}
+
 describe("layoutView", () => {
     test("places hierarchy nodes from left to right by depth", () => {
         const source = view("hierarchy", [
@@ -80,6 +84,22 @@ describe("layoutView", () => {
         const graph = layoutView(source, viewport);
 
         expect(lanes(graph)).toEqual(["phase:assembly", "branch:application", "branch:presentation"]);
+        expectNoOverlap(graph);
+        expectStable(graph, source);
+    });
+
+    test("keeps startup entry nodes when configured lanes also exist", () => {
+        const source = view("startup", [
+            node("entry"),
+            node("assembly", { phase: "assembly" }),
+            node("application", { branch: "application" }),
+        ], [edge("edge:entry", "entry", "assembly")]);
+
+        const graph = layoutView(source, viewport);
+
+        expect(lanes(graph)).toEqual(["entry", "phase:assembly", "branch:application"]);
+        expectSameNodeIds(graph, source);
+        expect(graph.edges.find((item) => item.id === "edge:entry")?.points).not.toEqual([]);
         expectNoOverlap(graph);
         expectStable(graph, source);
     });
@@ -146,6 +166,26 @@ describe("layoutView", () => {
 
         expect(lanes(graph)).toEqual(["role:incoming", "role:focus", "role:outgoing"]);
         expect(focus.x + focus.width / 2).toBe(graph.width / 2);
+        expectNoOverlap(graph);
+        expectStable(graph, source);
+    });
+
+    test("keeps call focus centered with extra right-side roles and long labels", () => {
+        const source = view("calls", [
+            node("caller", { role: "incoming" }),
+            node("focus", { role: "focus" }),
+            node("callee", { role: "outgoing" }),
+            node("affected", { role: "affected" }),
+            node("test", { role: "test" }),
+            { ...node("unknown"), label: "unknown role with a deliberately long label" },
+        ]);
+
+        const graph = layoutView(source, viewport);
+        const focus = graph.nodes.find((item) => item.id === "focus")!;
+
+        expect(lanes(graph)).toEqual(["role:incoming", "role:focus", "role:outgoing", "role:affected", "role:test", "role:unknown"]);
+        expect(focus.x + focus.width / 2).toBe(graph.width / 2);
+        expectSameNodeIds(graph, source);
         expectNoOverlap(graph);
         expectStable(graph, source);
     });

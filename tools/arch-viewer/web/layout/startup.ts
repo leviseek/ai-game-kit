@@ -3,9 +3,10 @@ import { groupedLaneSpecs, layoutByLanes, metadataString } from "./shared";
 import type { LayoutGraph, Viewport } from "./types";
 
 export function layoutStartup(view: GraphView, viewport: Viewport): LayoutGraph {
+    const entries = view.nodes.some((node) => startupLaneValue(node) === "entry") ? ["entry"] : [];
     const phases = orderedStartupValues(view.nodes, "phase", "phase");
     const branches = orderedStartupValues(view.nodes, "branch", "branch");
-    const values = phases.length === 0 && branches.length === 0 ? ["entry"] : [...phases, ...branches];
+    const values = [...entries, ...phases, ...branches];
     return layoutByLanes(view, groupedLaneSpecs(view.nodes, values, "", startupLaneValue), viewport);
 }
 
