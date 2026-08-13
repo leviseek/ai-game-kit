@@ -1,6 +1,6 @@
 import type { Diagnostic, GraphView } from "../../lib/graph/types.js";
 import { layoutView } from "../layout/shared.js";
-import type { LayoutEdge, LayoutGraph } from "../layout/types.js";
+import type { LayoutEdge, LayoutGraph, LayoutLane, LayoutRegion } from "../layout/types.js";
 import type { WorkbenchState } from "../types.js";
 
 const ns = ["http", "://www.w3.org/2000/svg"].join("");
@@ -53,6 +53,7 @@ export function renderSvgCanvas(container: HTMLElement, options: SvgRendererOpti
 
     svg.append(content);
     renderLanes(content, layout);
+    renderRegions(content, layout);
     renderEdges(content, layout, options.state.currentView);
     renderNodes(content, layout, options);
     wirePanZoom(svg, options);
@@ -60,7 +61,7 @@ export function renderSvgCanvas(container: HTMLElement, options: SvgRendererOpti
     return layout;
 }
 
-export function fitTransform(container: HTMLElement, layout: LayoutGraph): CanvasTransform {
+export function fitTransform(container: Pick<HTMLElement, "clientWidth" | "clientHeight">, layout: LayoutGraph): CanvasTransform {
     const width = container.clientWidth || 960;
     const height = container.clientHeight || 640;
     const scale = Math.min(1.6, Math.max(0.25, Math.min(width / layout.width, height / layout.height) * 0.9));
@@ -69,6 +70,14 @@ export function fitTransform(container: HTMLElement, layout: LayoutGraph): Canva
 
 function renderLanes(parent: SVGElement, layout: LayoutGraph): void {
     for (const lane of layout.lanes) {
+        const band = hierarchyBandBounds(lane, layout.width);
+        if (band !== undefined) {
+            parent.append(
+                svgElement("rect", { ...band, rx: 14, class: "hierarchy-band" }),
+                svgText(lane.label, band.x + 16, band.y + 21, "hierarchy-band-label"),
+            );
+            continue;
+        }
         const line = svgElement("line", { x1: lane.x, y1: 20, x2: lane.x, y2: layout.height, class: "lane-line" });
         const label = svgText(lane.label, lane.x, 24, "lane-label");
         parent.append(line, label);
@@ -97,14 +106,14 @@ function renderNodes(parent: SVGElement, layout: LayoutGraph, options: SvgRender
         const group = svgElement("g", {
             role: "button",
             tabindex: "0",
-            class: selectedId === node.id ? "node selected" : "node",
+            class: nodeVisualClass(node, selectedId === node.id),
             "data-node-id": node.id,
             transform: `translate(${node.x} ${node.y})`,
         });
         group.append(
             svgElement("rect", { width: node.width, height: node.height, rx: 6 }),
             svgText(node.label, 14, 19, "node-label"),
-            svgText(node.kind, 14, 34, "node-kind"),
+            svgText(node.detail ?? node.kind, 14, 34, "node-kind"),
         );
         group.addEventListener("click", () => options.onSelect(node.id));
         group.addEventListener("keydown", (event) => {
@@ -115,6 +124,34 @@ function renderNodes(parent: SVGElement, layout: LayoutGraph, options: SvgRender
         });
         parent.append(group);
     }
+}
+
+export function nodeVisualClass(node: Pick<LayoutGraph["nodes"][number], "kind">, selected: boolean): string {
+    const classes = ["node"];
+    if (node.kind === "group") classes.push("node-group");
+    if (selected) classes.push("selected");
+    return classes.join(" ");
+}
+
+export function hierarchyBandBounds(
+    lane: LayoutLane,
+    layoutWidth: number,
+): Readonly<{ x: number; y: number; width: number; height: number }> | undefined {
+    if (lane.orientation !== "horizontal" || lane.y === undefined) return undefined;
+    return { x: 20, y: lane.y, width: Math.max(280, layoutWidth - 40), height: 108 };
+}
+
+function renderRegions(parent: SVGElement, layout: LayoutGraph): void {
+    for (const region of layout.regions ?? []) {
+        parent.append(
+            svgElement("rect", { ...region, rx: 14, class: "hierarchy-region" }),
+            svgText(region.label, region.x + 16, region.y + 22, "hierarchy-region-label"),
+        );
+    }
+}
+
+export function regionBounds(region: LayoutRegion): Readonly<{ x: number; y: number; width: number; height: number }> {
+    return { x: region.x, y: region.y, width: region.width, height: region.height };
 }
 
 function wirePanZoom(svg: SVGSVGElement, options: SvgRendererOptions): void {
