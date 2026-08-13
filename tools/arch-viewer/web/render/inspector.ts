@@ -55,18 +55,38 @@ function renderPanel(node: GraphNode | undefined, options: InspectorOptions): HT
 function renderSource(node: GraphNode, client: ArchApiClient): HTMLElement {
     const wrapper = document.createElement("div");
     if (node.location === undefined) return empty("No source location.");
-    const open = document.createElement("a");
-    open.href = createVsCodeUrl(node.location);
-    open.textContent = "Open in VS Code";
+    const open = sourceLink(undefined);
     const pre = document.createElement("pre");
     pre.textContent = "Loading source...";
     wrapper.append(open, pre);
     void fetchSource(client, node.location).then((source) => {
+        open.replaceWith(sourceLink(source));
         pre.textContent = source.lines.map((line) => `${String(line.number).padStart(4, " ")}  ${line.text}`).join("\n");
     }).catch((error) => {
+        open.replaceWith(sourceLink(undefined));
         pre.textContent = error instanceof Error ? error.message : String(error);
     });
     return wrapper;
+}
+
+export function createSourceVsCodeHref(source: SourceExcerpt | undefined): string | undefined {
+    return source === undefined ? undefined : createVsCodeUrl(source.location);
+}
+
+function sourceLink(source: SourceExcerpt | undefined): HTMLAnchorElement | HTMLSpanElement {
+    const href = createSourceVsCodeHref(source);
+    if (href === undefined) {
+        const disabled = document.createElement("span");
+        disabled.className = "source-link disabled";
+        disabled.setAttribute("aria-disabled", "true");
+        disabled.textContent = "Open in VS Code";
+        return disabled;
+    }
+    const open = document.createElement("a");
+    open.className = "source-link";
+    open.href = href;
+    open.textContent = "Open in VS Code";
+    return open;
 }
 
 function renderRelations(nodeId: string, view: GraphView): HTMLElement {

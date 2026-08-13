@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { createVsCodeUrl } from "../web/vscode";
+import { createSourceVsCodeHref } from "../web/render/inspector";
 import type { SourceLocation } from "../lib/graph/types";
 
 const webRoot = resolve(import.meta.dir, "../web");
@@ -18,6 +19,34 @@ describe("createVsCodeUrl", () => {
         expect(createVsCodeUrl(location)).toBe(
             "vscode://file/D%3A%5Cai-work%5Cai%20game%20kit%5Csrc%5C%E5%85%A5%E5%8F%A3.ts:42:7",
         );
+    });
+});
+
+describe("Inspector source VS Code href", () => {
+    test("/api/source 成功前不从 snapshot location 生成 href", () => {
+        const snapshotLocation: SourceLocation = {
+            filePath: "D:\\snapshot\\stale.ts",
+            line: 3,
+        };
+        const verifiedLocation: SourceLocation = {
+            filePath: "D:\\verified\\source.ts",
+            line: 9,
+            column: 2,
+        };
+
+        expect(createSourceVsCodeHref(undefined)).toBeUndefined();
+        expect(createSourceVsCodeHref({
+            location: verifiedLocation,
+            startLine: 9,
+            endLine: 9,
+            lines: [{ number: 9, text: "export const ok = true;" }],
+        })).toBe(createVsCodeUrl(verifiedLocation));
+        expect(createSourceVsCodeHref({
+            location: verifiedLocation,
+            startLine: 9,
+            endLine: 9,
+            lines: [],
+        })).not.toBe(createVsCodeUrl(snapshotLocation));
     });
 });
 

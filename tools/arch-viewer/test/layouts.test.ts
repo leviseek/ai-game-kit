@@ -190,6 +190,21 @@ describe("layoutView", () => {
         expectStable(graph, source);
     });
 
+    test("keeps calls nodes with unknown metadata roles", () => {
+        const source = view("calls", [
+            node("caller", { role: "incoming" }),
+            node("custom", { role: "callback-owner" }),
+            node("missing"),
+        ]);
+
+        const graph = layoutView(source, viewport);
+
+        expect(lanes(graph)).toEqual(["role:incoming", "role:unknown"]);
+        expectSameNodeIds(graph, source);
+        expectNoOverlap(graph);
+        expectStable(graph, source);
+    });
+
     test("places resource nodes by configured owner order", () => {
         const source = view("resources", [
             node("release", { owner: "global-ui-package", level: 1 }),

@@ -3,6 +3,8 @@ import { completeLayout, emptyLayout, estimateNodeSize, laneSpacing, metadataStr
 import type { LayoutGraph, LayoutLane, LayoutNode, Viewport } from "./types";
 
 const callOrder = ["incoming", "focus", "outgoing", "affected", "test", "unknown"] as const;
+type CallRole = (typeof callOrder)[number];
+const callRoles = new Set<string>(callOrder);
 
 export function layoutCalls(view: GraphView, viewport: Viewport): LayoutGraph {
     if (view.nodes.length === 0) return emptyLayout();
@@ -44,8 +46,9 @@ export function layoutCalls(view: GraphView, viewport: Viewport): LayoutGraph {
     return { ...graph, width: Math.max(graph.width, focusX * 2) };
 }
 
-function roleOf(node: GraphNode): string {
-    return metadataString(node, "role") ?? "unknown";
+function roleOf(node: GraphNode): CallRole {
+    const role = metadataString(node, "role");
+    return role !== undefined && callRoles.has(role) ? role as CallRole : "unknown";
 }
 
 function finalFocusX(
