@@ -2,3 +2,4 @@
 // 包: DevOverlay (id=ipgg4xdn)
 export const UiDevOverlayDevOverlayPanel = "ui://DevOverlay/DevOverlayPanel";
 export const UiDevOverlayDevOverlayBall = "ui://DevOverlay/DevOverlayBall";
+export const UiDevOverlaySafeAreaFrame = "ui://DevOverlay/SafeAreaFrame";

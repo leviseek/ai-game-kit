@@ -19,5 +19,6 @@
   "popup": "#2a2a2a",
   "white": "#ffffff",
   "text_light": "#cccccc",
-  "text_dark": "#888888"
+  "text_dark": "#888888",
+  "frame_dash": "#ffcc00"
 }

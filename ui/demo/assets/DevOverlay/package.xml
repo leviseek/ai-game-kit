@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <packageDescription id="ipgg4xdn">
   <resources>
+    <component id="dov02" name="SafeAreaFrame.xml" path="/" exported="true"/>
+    <image id="dash0" name="frame_dash.png" path="/img/" scale="tile" qualityOption="source" duplicatePadding="true"/>
     <component id="dov01" name="DevOverlayBall.xml" path="/" exported="true"/>
     <component id="dov00" name="DevOverlayPanel.xml" path="/" exported="true"/>
     <image id="ball0" name="ball_button.png" path="/img/" qualityOption="source" duplicatePadding="true"/>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<component size="240,150">
+<component size="240,194">
   <displayList>
-    <image id="n0_dovp" name="bg_panel" src="bg000" fileName="img/panel_bg.png" xy="0,0" size="240,150">
+    <image id="n0_dovp" name="bg_panel" src="bg000" fileName="img/panel_bg.png" xy="0,0" size="240,194">
       <relation target="" sidePair="width-width,height-height"/>
     </image>
     <text id="n1_dovp" name="info_uptime" xy="12,10" size="216,22" fontSize="14" color="#cccccc" align="left" vAlign="middle" autoSize="none" singleLine="true" text="">
@@ -17,6 +17,12 @@
       <relation target="" sidePair="width-width"/>
     </text>
     <text id="n5_dovp" name="info_memory" xy="12,118" size="216,22" fontSize="14" color="#cccccc" align="left" vAlign="middle" autoSize="none" singleLine="true" text="">
+      <relation target="" sidePair="width-width"/>
+    </text>
+    <text id="vp000" name="info_viewport" xy="12,145" size="216,22" fontSize="14" color="#cccccc" align="left" vAlign="middle" autoSize="none" singleLine="true" text="">
+      <relation target="" sidePair="width-width"/>
+    </text>
+    <text id="rs000" name="info_resolution" xy="12,172" size="216,22" fontSize="14" color="#cccccc" align="left" vAlign="middle" autoSize="none" singleLine="true" text="">
       <relation target="" sidePair="width-width"/>
     </text>
   </displayList>
