@@ -1,16 +1,24 @@
 import type { ViewModelNode } from "../../framework";
 import { WallClock } from "../../framework/core/time/WallClock";
 import { createCocosDeviceInfo } from "../../framework/adapters/cocos/device/CocosDeviceInfo";
+import { createCocosViewportInfo } from "../../framework/adapters/cocos/viewport/CocosViewportInfo";
 import { createDevOverlayView } from "../../framework/adapters/cocos/ui/DevOverlayViewHandle";
 import type { GRootLike } from "../../framework/adapters/cocos/ui/CocosUiRoot";
 import {
     createDevBallController,
     type DevBallController,
 } from "./DevBall";
+import {
+    createSafeAreaOverlayController,
+    type SafeAreaOverlayController,
+    type SafeAreaInset,
+    type SafeAreaRect,
+} from "./SafeAreaOverlayController";
 import { createDevPresentationClock } from "./DevClock";
 import {
     createDevInfoSampler,
     type DevInfoSampler,
+    type ViewportInfo,
 } from "./DevInfo";
 import { sampleProfilerStats } from "../profiler";
 import { BUNDLES, PACKAGE_PATHS } from "../constants";
@@ -32,6 +40,23 @@ export interface DevOverlayViewSeam {
     dispose(): void;
 }
 
+/** 安全区视图接缝：虚线框矩形更新与显隐，由 fgui 适配器在 Adapter 边界实现。 */
+export interface DevOverlaySafeAreaViewSeam {
+    setRect(rect: SafeAreaRect): void;
+    setVisible(visible: boolean): void;
+    dispose(): void;
+}
+
+/** 安全区框装配配置：实时读取安全区 inset 与容器尺寸，随面板展开/收起联动。 */
+export interface DevOverlaySafeAreaOptions {
+    /** 安全区 inset 读取器（GRoot 坐标系，每次实时调用，勿缓存快照）。 */
+    readonly readSafeArea: () => SafeAreaInset;
+    /** UI 根容器尺寸读取器（GRoot 尺寸，每次实时调用）。 */
+    readonly readBounds: () => { readonly width: number; readonly height: number };
+    /** 视图装配：创建虚线框视图；返回 undefined 表示创建失败不显示。 */
+    readonly createView: () => DevOverlaySafeAreaViewSeam | undefined;
+}
+
 /** UI 根容器（GRoot）：设计分辨率边界 + 挂载/移除能力（复用权威 GRootLike 形状）。 */
 export type DevOverlayRoot = GRootLike;
 
@@ -51,6 +76,8 @@ export interface DevOverlayMountOptions {
      * （组合根/AppRoot 注入）。缺省无操作。
      */
     readonly onTap?: () => void;
+    /** 安全区框装配：缺省不显示安全区框。 */
+    readonly safeArea?: DevOverlaySafeAreaOptions;
     /** 推进驱动：缺省 16ms 间隔循环调用控制器 step；测试可注入手动驱动。 */
     readonly drive?: (tick: () => void) => { dispose(): void };
 }
@@ -90,6 +117,23 @@ function createOverlayHandle(
         return { mounted: false, dispose(): void { } };
     }
 
+    // 安全区框：视图创建失败时退化为不显示（undefined），装配仍可挂载
+    let safeAreaController: SafeAreaOverlayController | undefined;
+    let safeAreaView: DevOverlaySafeAreaViewSeam | undefined;
+    if (options.safeArea !== undefined) {
+        const safeAreaOptions = options.safeArea;
+        safeAreaView = safeAreaOptions.createView();
+        if (safeAreaView !== undefined) {
+            safeAreaController = createSafeAreaOverlayController({
+                readSafeArea: safeAreaOptions.readSafeArea,
+                readBounds: safeAreaOptions.readBounds,
+                timeSource: options.timeSource,
+                onRect: (rect) => safeAreaView?.setRect(rect),
+                onVisible: (visible) => safeAreaView?.setVisible(visible),
+            });
+        }
+    }
+
     const controller: DevBallController = createDevBallController({
         node: view.node,
         ballSize: view.ballSize,
@@ -97,10 +141,21 @@ function createOverlayHandle(
         timeSource: options.timeSource,
         sampler: options.sampler,
         onTap: options.onTap,
+        // 面板展开/收起联动安全区框显隐：展开显示、收起隐藏
+        onExpandChange: (expanded) => {
+            if (expanded) {
+                safeAreaController?.show();
+            } else {
+                safeAreaController?.hide();
+            }
+        },
     });
     // 控制器方法形状即交互桥形状，直接绑定 fgui 事件
     view.bindInteraction(controller);
-    const driver = (options.drive ?? defaultDrive)(() => controller.step());
+    const driver = (options.drive ?? defaultDrive)(() => {
+        controller.step();
+        safeAreaController?.step();
+    });
 
     let disposed = false;
     return {
@@ -114,6 +169,8 @@ function createOverlayHandle(
             mountedByRoot.delete(key);
             driver.dispose();
             controller.dispose();
+            safeAreaController?.dispose();
+            safeAreaView?.dispose();
             view.dispose();
         },
     };
@@ -158,6 +215,20 @@ export interface DevOverlayHostSetupOptions {
     readonly isDevEnabled: () => boolean;
     /** 点击（轻点）预留回调（日后接入 GM 面板）。 */
     readonly onTap?: () => void;
+    /**
+     * 视口读取器（组合根注入 Adapter 封装）：实际分辨率采样 + 安全区 inset。
+     * 缺省时面板分辨率字段为 null、不显示安全区框。
+     */
+    readonly viewport?: {
+        /** 实际分辨率快照（物理 + 逻辑像素）。 */
+        readonly sample: () => ViewportInfo;
+        /** 安全区 inset（相对指定容器尺寸的 GRoot 坐标系）。 */
+        readonly readSafeAreaInset: (
+            bounds: { readonly width: number; readonly height: number },
+        ) => SafeAreaInset;
+    };
+    /** 安全区框视图工厂（组合根注入 Adapter 句柄）；缺省不显示安全区框。 */
+    readonly createSafeAreaView?: () => DevOverlaySafeAreaViewSeam | undefined;
     /** 推进驱动：缺省内部定时器（GameClock 推进 + step）。测试可注入。 */
     readonly drive?: (tick: () => void) => { dispose(): void };
 }
@@ -228,11 +299,19 @@ export function setupDevOverlay(options: DevOverlayHostSetupOptions): DevOverlay
                     return;
                 }
                 // 墙钟供运行时间采样；GameClock（表现时间）供悬浮球动画插值（ADR-029）
+                // viewport 缺省装配 Adapter 读取器（对齐 createCocosDeviceInfo 模式）
+                const viewportInfo =
+                    options.viewport ?? createCocosViewportInfo();
                 const sampler = createDevInfoSampler({
                     clock: new WallClock(),
                     device: createCocosDeviceInfo(),
                     navigator: typeof navigator === "undefined" ? undefined : navigator,
                     perf: sampleProfilerStats,
+                    readViewport: viewportInfo.sample,
+                    readUiSize: () => ({
+                        width: root.width,
+                        height: root.height,
+                    }),
                 });
                 const devClock = createDevPresentationClock();
                 handle = mountDevOverlay({
@@ -242,6 +321,21 @@ export function setupDevOverlay(options: DevOverlayHostSetupOptions): DevOverlay
                     timeSource: devClock.timeSource,
                     createView: () => createDevOverlayView({ root }),
                     onTap: options.onTap,
+                    safeArea:
+                        options.createSafeAreaView === undefined
+                            ? undefined
+                            : {
+                                readSafeArea: () =>
+                                    viewportInfo.readSafeAreaInset({
+                                        width: root.width,
+                                        height: root.height,
+                                    }),
+                                readBounds: () => ({
+                                    width: root.width,
+                                    height: root.height,
+                                }),
+                                createView: options.createSafeAreaView,
+                            },
                     drive:
                         options.drive ??
                         ((tick) => {

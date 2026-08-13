@@ -34,6 +34,8 @@ export const INFO_DEVICE_NODE = "info_device";
 export const INFO_NETWORK_NODE = "info_network";
 export const INFO_FPS_NODE = "info_fps";
 export const INFO_MEMORY_NODE = "info_memory";
+export const INFO_VIEWPORT_NODE = "info_viewport";
+export const INFO_RESOLUTION_NODE = "info_resolution";
 /** 贴边吸附动画时长（ms）。 */
 export const SNAP_DURATION_MS = 300;
 /** 面板淡入/淡出时长（ms）。 */
@@ -89,6 +91,11 @@ export interface DevBallOptions {
      * 接入 GM 面板（组合根/AppRoot 注入）。缺省无操作。
      */
     readonly onTap?: () => void;
+    /**
+     * 面板展开/收起状态回调：展开（淡入开始）为 true、收起（淡出开始）为 false。
+     * 供 dev overlay 装配层驱动安全区框显隐联动；缺省无操作。
+     */
+    readonly onExpandChange?: (expanded: boolean) => void;
 }
 
 export interface DevBallController {
@@ -187,6 +194,7 @@ export function createDevBallController(
             end: now() + FADE_DURATION_MS,
         };
         refreshExpandedInfo();
+        options.onExpandChange?.(true);
     }
 
     /** 收起：面板淡出后隐藏（从当前实际 alpha 起）。 */
@@ -201,6 +209,7 @@ export function createDevBallController(
             start: now(),
             end: now() + FADE_DURATION_MS,
         };
+        options.onExpandChange?.(false);
     }
 
     function refreshBadge(): void {
@@ -228,6 +237,20 @@ export function createDevBallController(
                 ? "--"
                 : `tex ${info.textureMemoryMB.toFixed(1)}MB / buf ${info.bufferMemoryMB.toFixed(1)}MB`;
         setText(INFO_MEMORY_NODE, memory);
+        // 实际分辨率：物理像素为主、逻辑/CSS 像素为辅；读取器缺省显示 --
+        const viewport = info.viewport;
+        setText(
+            INFO_VIEWPORT_NODE,
+            viewport === null
+                ? "--"
+                : `${viewport.physical.width}x${viewport.physical.height} (css ${viewport.logical.width}x${viewport.logical.height})`,
+        );
+        // 适配后分辨率：UI 根容器（GRoot）尺寸；读取器缺省显示 --
+        const uiSize = info.uiSize;
+        setText(
+            INFO_RESOLUTION_NODE,
+            uiSize === null ? "--" : `${uiSize.width}x${uiSize.height}`,
+        );
     }
 
     writeBallXY(position);

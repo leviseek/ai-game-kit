@@ -14,6 +14,7 @@ import {
     type SceneFlow,
 } from "../framework";
 import { CocosApplicationAdapter } from "../framework/adapters/cocos/application/CocosApplicationAdapter";
+import { createSafeAreaOverlayView } from "../framework/adapters/cocos/ui/SafeAreaOverlayViewHandle";
 import type { GameEntryInfo } from "../game/lobby/catalog";
 import type { EntryPageHandle } from "../game/lobby/host";
 import type { GameListFlow } from "../game/lobby/list";
@@ -217,6 +218,14 @@ export class AppRoot extends Component {
             },
             logger: appLogger,
             isDevEnabled: this.isDevEnabled,
+            createSafeAreaView: () => {
+                // 安全区框挂到 GRoot：root 就绪由 setupDevOverlay 重试保证，
+                // 此处回调在 attempt 内调用，未就绪返回 undefined（不显示）
+                const root = uiHost.root;
+                return root === undefined
+                    ? undefined
+                    : createSafeAreaOverlayView({ root });
+            },
         });
     }
 
