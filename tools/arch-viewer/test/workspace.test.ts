@@ -25,7 +25,7 @@ describe("arch-viewer workspace", () => {
         const lockfile = readFileSync(resolve(root, "bun.lock"), "utf8");
         expect(lockfile).toContain('"tools/arch-viewer": {');
         expect(lockfile).toContain('"@types/node": "^26.1.2"');
-        expect(lockfile).toContain('"typescript": "^5.9.0"');
+        expect(lockfile).toContain('"typescript": "npm:typescript@6.0.2"');
     });
 
     test("浏览器相对模块引用显式使用 .js 扩展名", () => {
