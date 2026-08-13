@@ -31,6 +31,10 @@ describe("architecture workbench integration", () => {
             const source = await jsonFetch<{ readonly location: { readonly filePath: string; readonly line: number } }>(
                 `${server.url}/api/source?file=src/entry.ts&line=1&radius=0`,
             );
+            const failedGeneration = store.begin();
+            expect(store.fail(failedGeneration, new Error("fixture analyzer failed"))).toBe(true);
+            const projectAfterFailure = await jsonFetch<{ readonly version: number }>(`${server.url}/api/project`);
+            const callsAfterFailure = await jsonFetch<GraphView>(`${server.url}/api/views/calls`);
             const events = await fetch(`${server.url}/api/events`, { signal: controller.signal });
             const reader = events.body?.getReader();
             expect(reader).toBeDefined();
@@ -38,10 +42,6 @@ describe("architecture workbench integration", () => {
             const generation = store.begin();
             expect(store.commit(generation, snapshot(2))).toBe(true);
             const eventText = await readUntil(reader!, 'data: {"type":"snapshot-ready","version":2');
-            const failedGeneration = store.begin();
-            expect(store.fail(failedGeneration, new Error("fixture analyzer failed"))).toBe(true);
-            const projectAfterFailure = await jsonFetch<{ readonly version: number }>(`${server.url}/api/project`);
-            const callsAfterFailure = await jsonFetch<GraphView>(`${server.url}/api/views/calls`);
 
             expect(index).toContain("Architecture Workbench");
             expect(app).toContain("fake analyzer app");
@@ -49,7 +49,7 @@ describe("architecture workbench integration", () => {
             expect(source.location).toEqual({ filePath: "src/entry.ts", line: 1 });
             expect(eventText).toContain("event: snapshot-ready");
             expect(eventText).toContain('"version":2');
-            expect(projectAfterFailure.version).toBe(2);
+            expect(projectAfterFailure.version).toBe(1);
             expect(callsAfterFailure.nodes).toEqual([expect.objectContaining({ qualifiedName: "createBootFlow::launch" })]);
             await reader!.cancel();
         } finally {
@@ -81,7 +81,7 @@ async function readUntil(reader: ReadableStreamDefaultReader<Uint8Array>, expect
         result += decoder.decode(chunk.value, { stream: true });
         if (result.includes(expected)) return result;
     }
-    return result;
+    throw new Error(`SSE event not received: expected ${expected}; received ${result}`);
 }
 
 function createFixture(): Readonly<{ projectRoot: string; webRoot: string; compiledRoot: string }> {

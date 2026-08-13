@@ -30,6 +30,6 @@
 
 ## 5. Completion Gates
 
-- [x] 5.1 运行架构工具测试、根级测试、两个 tsconfig 类型检查与 OpenSpec strict 校验
+- [ ] 5.1 运行架构工具测试、根级测试、两个 tsconfig 类型检查与 OpenSpec strict 校验（已运行；`typecheck`、`test:arch`、`test`、`arch --once --no-open` 受既有或 worktree CodeGraph mismatch 问题阻塞，completion gate 未达成）
 - [x] 5.2 审查新增文件行数、零新增 package、简体中文注释和文档一致性
 - [x] 5.3 检查本次 change 是否产生新的架构决策；CodeGraph + SourceScanner 双事实源和 SSE 单向实时通道已记录为 `doc/decisions/ADR-033-architecture-visualizer-fact-sources.md`
