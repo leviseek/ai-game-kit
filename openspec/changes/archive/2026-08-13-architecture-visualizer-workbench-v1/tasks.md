@@ -30,6 +30,6 @@
 
 ## 5. Completion Gates
 
-- [ ] 5.1 运行架构工具测试、根级测试、两个 tsconfig 类型检查与 OpenSpec strict 校验（已运行；`typecheck`、`test:arch`、`test`、`arch --once --no-open` 受既有或 worktree CodeGraph mismatch 问题阻塞，completion gate 未达成）
+- [x] 5.1 运行架构工具测试、根级测试、两个 tsconfig 类型检查与 OpenSpec strict 校验（`test:arch` 122 通过、`typecheck` 通过、`arch --once --no-open` views=6、`openspec validate --strict` 通过、根级 `test` 全绿；期间修复三个与本次 change 无关的既有测试稳定性问题：scheduler-reentrancy 的 console.error spy 缺 mockImplementation、dev-overlay-mount 的固定等待改条件等待、approot-composition 缺符号 cc mock 违反共享约定导致批跑挂载失败）
 - [x] 5.2 审查新增文件行数、零新增 package、简体中文注释和文档一致性
 - [x] 5.3 检查本次 change 是否产生新的架构决策；CodeGraph + SourceScanner 双事实源和 SSE 单向实时通道已记录为 `doc/decisions/ADR-033-architecture-visualizer-fact-sources.md`
