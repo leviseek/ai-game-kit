@@ -33,9 +33,7 @@ export interface FguiProjectInfo {
 export function locateProject(projectArg?: string): FguiProjectInfo {
     const projectDir = projectArg ? resolve(PROJECT_ROOT, projectArg) : join(PROJECT_ROOT, "ui", "demo");
     if (!existsSync(projectDir)) throw new FguiMcpError(`FGUI 工程目录不存在: ${projectDir}`);
-    const fairies = readdirSync(projectDir, { withFileTypes: true }).filter(
-        (entry) => entry.isFile() && entry.name.endsWith(".fairy"),
-    );
+    const fairies = readdirSync(projectDir, { withFileTypes: true }).filter((entry) => entry.isFile() && entry.name.endsWith(".fairy"));
     if (fairies.length === 0) throw new FguiMcpError(`FGUI 工程目录缺少 *.fairy: ${projectDir}`);
     const objsDir = join(projectDir, ".objs");
     const probeDir = join(objsDir, "fgui-mcp-probe");

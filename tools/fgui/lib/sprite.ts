@@ -46,21 +46,13 @@ function normalizePath(path: string): string {
  * 已存在则跳过，否则分配新 id 并追加 <image> 条目。
  * 用字符串操作插入，保留原文件格式。prefix 用于 id 前缀续编。
  */
-export function registerGeneratedImage(
-    pkg: FguiPackage,
-    fileName: string,
-    path: string,
-    scale9grid?: string,
-    prefix?: string,
-): string {
+export function registerGeneratedImage(pkg: FguiPackage, fileName: string, path: string, scale9grid?: string, prefix?: string): string {
     if (ensureResourceRegistered(pkg, fileName, path)) {
         const existing = pkg.resources.find((r) => r.name === fileName);
         if (existing) return existing.id;
     }
 
-    const scaleAttr = scale9grid
-        ? ` scale="9grid" scale9grid="${scale9grid}"`
-        : "";
+    const scaleAttr = scale9grid ? ` scale="9grid" scale9grid="${scale9grid}"` : "";
     const entry = `<image id="" name="${fileName}" path="${normalizePath(path)}"${scaleAttr} qualityOption="source" duplicatePadding="true"/>`;
     return appendResourceEntry(pkg, entry, prefix);
 }

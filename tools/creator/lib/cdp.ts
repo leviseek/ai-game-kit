@@ -37,10 +37,7 @@ async function findFreePort(): Promise<number> {
     return port;
 }
 
-async function waitForPageTarget(
-    port: number,
-    timeoutMs: number,
-): Promise<string> {
+async function waitForPageTarget(port: number, timeoutMs: number): Promise<string> {
     const deadline = Date.now() + timeoutMs;
     while (Date.now() < deadline) {
         try {
@@ -58,30 +55,16 @@ async function waitForPageTarget(
     throw new Error("Chrome CDP 目标超时");
 }
 
-export async function runCdpProbe(
-    url: string,
-    timeoutMs: number,
-    interact?: (session: CdpSession) => Promise<void>,
-): Promise<CdpResult> {
+export async function runCdpProbe(url: string, timeoutMs: number, interact?: (session: CdpSession) => Promise<void>): Promise<CdpResult> {
     const chromePath = findChrome();
     const profileDir = mkdtempSync(join(tmpdir(), "creator-cdp-"));
     const port = await findFreePort();
     const consoleLogs: string[] = [];
     const errors: string[] = [];
 
-    const chrome = spawn(
-        chromePath,
-        [
-            `--remote-debugging-port=${port}`,
-            `--user-data-dir=${profileDir}`,
-            "--headless=new",
-            "--no-sandbox",
-            "--disable-gpu",
-            "--window-size=1280,720",
-            url,
-        ],
-        { stdio: "ignore" },
-    );
+    const chrome = spawn(chromePath, [`--remote-debugging-port=${port}`, `--user-data-dir=${profileDir}`, "--headless=new", "--no-sandbox", "--disable-gpu", "--window-size=1280,720", url], {
+        stdio: "ignore",
+    });
 
     try {
         const wsUrl = await waitForPageTarget(port, 15000);
@@ -117,19 +100,13 @@ export async function runCdpProbe(
                 return;
             }
             if (msg.method === "Runtime.consoleAPICalled") {
-                const text = (msg.params?.args ?? [])
-                    .map((arg) => arg.value ?? arg.description ?? "")
-                    .join(" ");
+                const text = (msg.params?.args ?? []).map((arg) => arg.value ?? arg.description ?? "").join(" ");
                 consoleLogs.push(text);
             }
             if (msg.method === "Runtime.exceptionThrown") {
                 errors.push(JSON.stringify(msg.params?.exceptionDetails));
             }
-            if (
-                msg.method === "Log.entryAdded" &&
-                msg.params?.entry?.level === "error" &&
-                msg.params.entry.text !== undefined
-            ) {
+            if (msg.method === "Log.entryAdded" && msg.params?.entry?.level === "error" && msg.params.entry.text !== undefined) {
                 errors.push(msg.params.entry.text);
             }
         };
@@ -153,13 +130,9 @@ export async function runCdpProbe(
                             };
                         };
                         // 页面内求值异常必须上报，否则吞错会让交互断言建立在假阳性上
-                        if (
-                            response?.exceptionDetails !== undefined &&
-                            response?.exceptionDetails !== null
-                        ) {
+                        if (response?.exceptionDetails !== undefined && response?.exceptionDetails !== null) {
                             const detail = response.exceptionDetails;
-                            const message =
-                                detail.exception?.description ?? detail.text ?? "未知求值异常";
+                            const message = detail.exception?.description ?? detail.text ?? "未知求值异常";
                             throw new Error(`页面求值失败: ${message}`);
                         }
                         return response?.result?.value;

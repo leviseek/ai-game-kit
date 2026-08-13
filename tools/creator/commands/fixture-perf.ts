@@ -43,9 +43,9 @@ export async function run(argv: readonly string[]): Promise<number> {
         fixtureArg === "all"
             ? [...FIXTURE_IDS]
             : fixtureArg
-                .split(",")
-                .map((item) => item.trim())
-                .filter(Boolean);
+                  .split(",")
+                  .map((item) => item.trim())
+                  .filter(Boolean);
 
     try {
         console.log("[ccc:fixture-perf] 1/3 校验 importMap 配置...");
@@ -90,9 +90,7 @@ export async function run(argv: readonly string[]): Promise<number> {
                     continue;
                 }
 
-                const markers = result.consoleLogs.filter((line) =>
-                    line.startsWith("[fixture-perf]"),
-                );
+                const markers = result.consoleLogs.filter((line) => line.startsWith("[fixture-perf]"));
                 const required = [
                     "fixture-found: ok",
                     "start: ok",
@@ -108,9 +106,7 @@ export async function run(argv: readonly string[]): Promise<number> {
                     "dispose: ok",
                     "complete",
                 ];
-                const missing = required.filter(
-                    (needle) => !markers.some((line) => line.includes(needle)),
-                );
+                const missing = required.filter((needle) => !markers.some((line) => line.includes(needle)));
 
                 if (missing.length > 0) {
                     console.error(`[ccc:fixture-perf] [${fixtureId}] 性能标记不完整，缺少:`);

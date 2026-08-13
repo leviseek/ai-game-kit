@@ -11,21 +11,20 @@ function setupProject(): { dir: string; project: FguiProject } {
     writeFileSync(join(dir, "demo.fairy"), `<?xml version="1.0" encoding="utf-8"?>\n<projectDescription id="t" type="CocosCreator" version="5.0"/>`);
     const commonDir = join(dir, "assets", "Common");
     mkdirSync(commonDir, { recursive: true });
-    writeFileSync(join(commonDir, "package.xml"),
-        `<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="cmn00001"><resources><component id="com03" name="UnitSlot.xml" path="/" exported="true"/></resources></packageDescription>`);
+    writeFileSync(
+        join(commonDir, "package.xml"),
+        `<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="cmn00001"><resources><component id="com03" name="UnitSlot.xml" path="/" exported="true"/></resources></packageDescription>`,
+    );
     writeFileSync(join(commonDir, "UnitSlot.xml"), `<component size="1,1"><displayList/></component>`);
     const genDir = join(dir, "assets", "ui", "generated");
     mkdirSync(genDir, { recursive: true });
-    writeFileSync(join(genDir, "ui-common.ts"),
-        `// 由 \`bun run fgui gen-constants\` 生成\n` +
-        `export const UiCommonUnitSlot = "ui://Common/UnitSlot";\n`);
+    writeFileSync(join(genDir, "ui-common.ts"), `// 由 \`bun run fgui gen-constants\` 生成\n` + `export const UiCommonUnitSlot = "ui://Common/UnitSlot";\n`);
     const srcDir = join(dir, "assets", "samples");
     mkdirSync(srcDir, { recursive: true });
-    writeFileSync(join(srcDir, "usage.ts"),
-        `const a = "ui://Common/UnitSlot";\n` +
-        `const b = "ui://Common/Nope";\n` +
-        `const c = "ui://cmn00001com03";\n` +
-        `// 注释里的 ui://Common/UnitSlot 不扫\n`);
+    writeFileSync(
+        join(srcDir, "usage.ts"),
+        `const a = "ui://Common/UnitSlot";\n` + `const b = "ui://Common/Nope";\n` + `const c = "ui://cmn00001com03";\n` + `// 注释里的 ui://Common/UnitSlot 不扫\n`,
+    );
     return { dir, project: { root: dir, projectDir: dir, name: "demo", assetsDir: join(dir, "assets") } };
 }
 

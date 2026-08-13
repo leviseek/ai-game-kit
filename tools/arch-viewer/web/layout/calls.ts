@@ -48,21 +48,16 @@ export function layoutCalls(view: GraphView, viewport: Viewport): LayoutGraph {
 
 function roleOf(node: GraphNode): CallRole {
     const role = metadataString(node, "role");
-    return role !== undefined && callRoles.has(role) ? role as CallRole : "unknown";
+    return role !== undefined && callRoles.has(role) ? (role as CallRole) : "unknown";
 }
 
-function finalFocusX(
-    view: GraphView,
-    values: readonly string[],
-    focusIndex: number,
-    minWidth: number,
-    gap: number,
-): number {
-    const maxRightFromFocus = Math.max(0, ...values.map((role, index) => {
-        const maxWidth = Math.max(0, ...view.nodes
-            .filter((node) => roleOf(node) === role)
-            .map((node) => estimateNodeSize(node).width));
-        return (index - focusIndex) * gap + maxWidth;
-    }));
+function finalFocusX(view: GraphView, values: readonly string[], focusIndex: number, minWidth: number, gap: number): number {
+    const maxRightFromFocus = Math.max(
+        0,
+        ...values.map((role, index) => {
+            const maxWidth = Math.max(0, ...view.nodes.filter((node) => roleOf(node) === role).map((node) => estimateNodeSize(node).width));
+            return (index - focusIndex) * gap + maxWidth;
+        }),
+    );
     return Math.max(minWidth / 2, maxRightFromFocus + 48);
 }

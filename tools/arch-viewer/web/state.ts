@@ -22,27 +22,31 @@ export function createWorkbenchState(view: GraphView, snapshotVersion = 0): Work
 export function reduceWorkbench(state: WorkbenchState, action: WorkbenchAction): WorkbenchState {
     switch (action.type) {
         case "select-node":
-            return action.nodeId === undefined
-                ? withoutSelected(state)
-                : { ...state, selectedNodeId: action.nodeId };
+            return action.nodeId === undefined ? withoutSelected(state) : { ...state, selectedNodeId: action.nodeId };
         case "set-filters":
             return { ...state, filters: { ...state.filters, ...action.filters } };
         case "view-loading":
             return { ...state, viewType: action.viewType, status: { kind: "loading" } };
         case "view-loaded":
-            return reconcileSnapshot({
-                ...state,
-                viewType: action.view.type,
-                snapshotVersion: action.snapshotVersion ?? state.snapshotVersion,
-            }, action.view);
+            return reconcileSnapshot(
+                {
+                    ...state,
+                    viewType: action.view.type,
+                    snapshotVersion: action.snapshotVersion ?? state.snapshotVersion,
+                },
+                action.view,
+            );
         case "group-loaded":
-            return withSelection({
-                ...state,
-                currentView: action.view,
-                viewType: action.view.type,
-                breadcrumbs: navigateBreadcrumbs(state.breadcrumbs, state.currentView.groups, action.groupId),
-                status: { kind: "ready" },
-            }, action.groupId);
+            return withSelection(
+                {
+                    ...state,
+                    currentView: action.view,
+                    viewType: action.view.type,
+                    breadcrumbs: navigateBreadcrumbs(state.breadcrumbs, state.currentView.groups, action.groupId),
+                    status: { kind: "ready" },
+                },
+                action.groupId,
+            );
         case "snapshot-ready":
             return reconcileSnapshot({ ...state, snapshotVersion: action.version }, action.view);
         case "analysis-error":
@@ -50,11 +54,7 @@ export function reduceWorkbench(state: WorkbenchState, action: WorkbenchAction):
     }
 }
 
-function navigateBreadcrumbs(
-    breadcrumbs: readonly string[],
-    groups: GraphView["groups"],
-    groupId: string,
-): readonly string[] {
+function navigateBreadcrumbs(breadcrumbs: readonly string[], groups: GraphView["groups"], groupId: string): readonly string[] {
     const existingIndex = breadcrumbs.indexOf(groupId);
     if (existingIndex >= 0) return breadcrumbs.slice(0, existingIndex + 1);
 
@@ -73,13 +73,16 @@ function navigateBreadcrumbs(
 
 export function reconcileSnapshot(state: WorkbenchState, view: GraphView): WorkbenchState {
     const selectedNodeId = existingSelection(state.selectedNodeId, view) ?? nearestExistingBreadcrumb(state.breadcrumbs, view);
-    return withSelection({
-        ...state,
-        viewType: view.type,
-        currentView: view,
-        breadcrumbs: reconcileBreadcrumbs(state.breadcrumbs, view),
-        status: { kind: "ready" },
-    }, selectedNodeId);
+    return withSelection(
+        {
+            ...state,
+            viewType: view.type,
+            currentView: view,
+            breadcrumbs: reconcileBreadcrumbs(state.breadcrumbs, view),
+            status: { kind: "ready" },
+        },
+        selectedNodeId,
+    );
 }
 
 function existingSelection(selectedNodeId: string | undefined, view: GraphView): string | undefined {

@@ -29,10 +29,7 @@ function expectNoOverlap(graph: LayoutGraph): void {
         for (let rightIndex = leftIndex + 1; rightIndex < graph.nodes.length; rightIndex += 1) {
             const left = graph.nodes[leftIndex]!;
             const right = graph.nodes[rightIndex]!;
-            const separated = left.x + left.width <= right.x
-                || right.x + right.width <= left.x
-                || left.y + left.height <= right.y
-                || right.y + right.height <= left.y;
+            const separated = left.x + left.width <= right.x || right.x + right.width <= left.x || left.y + left.height <= right.y || right.y + right.height <= left.y;
 
             expect(separated).toBe(true);
         }
@@ -57,11 +54,7 @@ function expectSameNodeIds(graph: LayoutGraph, source: GraphView): void {
 
 describe("layoutView", () => {
     test("places startup nodes by configured phase and branch order", () => {
-        const source = view("startup", [
-            node("app", { branch: "application" }),
-            node("assembly", { phase: "assembly" }),
-            node("presentation", { branch: "presentation" }),
-        ]);
+        const source = view("startup", [node("app", { branch: "application" }), node("assembly", { phase: "assembly" }), node("presentation", { branch: "presentation" })]);
 
         const graph = layoutView(source, viewport);
 
@@ -71,11 +64,7 @@ describe("layoutView", () => {
     });
 
     test("keeps startup entry nodes when configured lanes also exist", () => {
-        const source = view("startup", [
-            node("entry"),
-            node("assembly", { phase: "assembly" }),
-            node("application", { branch: "application" }),
-        ], [edge("edge:entry", "entry", "assembly")]);
+        const source = view("startup", [node("entry"), node("assembly", { phase: "assembly" }), node("application", { branch: "application" })], [edge("edge:entry", "entry", "assembly")]);
 
         const graph = layoutView(source, viewport);
 
@@ -87,10 +76,7 @@ describe("layoutView", () => {
     });
 
     test("places dependency nodes in topological layers and keeps error edge diagnostics", () => {
-        const source = view("dependencies", [node("game"), node("framework"), node("ui")], [
-            edge("edge:ok", "game", "framework"),
-            edge("edge:error", "framework", "ui"),
-        ]);
+        const source = view("dependencies", [node("game"), node("framework"), node("ui")], [edge("edge:ok", "game", "framework"), edge("edge:error", "framework", "ui")]);
 
         const graph = layoutView(source, viewport);
         const byId = new Map(graph.nodes.map((item) => [item.id, item]));
@@ -104,11 +90,11 @@ describe("layoutView", () => {
     });
 
     test("puts dependency cycles in the final layer with layout.cycle diagnostics", () => {
-        const source = view("dependencies", [node("alpha"), node("beta"), node("root")], [
-            edge("edge:root", "root", "alpha"),
-            edge("edge:cycle-a", "alpha", "beta"),
-            edge("edge:cycle-b", "beta", "alpha"),
-        ]);
+        const source = view(
+            "dependencies",
+            [node("alpha"), node("beta"), node("root")],
+            [edge("edge:root", "root", "alpha"), edge("edge:cycle-a", "alpha", "beta"), edge("edge:cycle-b", "beta", "alpha")],
+        );
 
         const graph = layoutView(source, viewport);
         const byId = new Map(graph.nodes.map((item) => [item.id, item]));
@@ -123,11 +109,7 @@ describe("layoutView", () => {
     });
 
     test("places data-flow nodes by configured lane order", () => {
-        const source = view("data-flow", [
-            node("input", { lane: "view-input" }),
-            node("state", { lane: "state" }),
-            node("projection", { lane: "projection" }),
-        ]);
+        const source = view("data-flow", [node("input", { lane: "view-input" }), node("state", { lane: "state" }), node("projection", { lane: "projection" })]);
 
         const graph = layoutView(source, viewport);
 
@@ -137,11 +119,7 @@ describe("layoutView", () => {
     });
 
     test("keeps call focus nodes centered", () => {
-        const source = view("calls", [
-            node("caller", { role: "incoming" }),
-            node("focus", { role: "focus" }),
-            node("callee", { role: "outgoing" }),
-        ]);
+        const source = view("calls", [node("caller", { role: "incoming" }), node("focus", { role: "focus" }), node("callee", { role: "outgoing" })]);
 
         const graph = layoutView(source, viewport);
         const focus = graph.nodes.find((item) => item.id === "focus")!;
@@ -173,11 +151,7 @@ describe("layoutView", () => {
     });
 
     test("keeps calls nodes with unknown metadata roles", () => {
-        const source = view("calls", [
-            node("caller", { role: "incoming" }),
-            node("custom", { role: "callback-owner" }),
-            node("missing"),
-        ]);
+        const source = view("calls", [node("caller", { role: "incoming" }), node("custom", { role: "callback-owner" }), node("missing")]);
 
         const graph = layoutView(source, viewport);
 

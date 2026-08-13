@@ -23,7 +23,7 @@ function cliResult(args: readonly string[]): ToolResult {
     if (exitCode !== 0) {
         return {
             ok: false,
-            error: (stderr.trim() || stdout.trim() || `fgui CLI 退出码 ${exitCode}`),
+            error: stderr.trim() || stdout.trim() || `fgui CLI 退出码 ${exitCode}`,
         };
     }
     return { ok: true, data: stdout.trim() };
@@ -80,8 +80,7 @@ export const READ_TOOLS: Record<string, { description: string; run: (bridge: Mai
         run: (bridge, params) => bridgeResult(bridge, "get_active_context", params),
     },
     fgui_read_project_settings: {
-        description:
-            "读取工程设置快照（Adaptation/Common/I18n/PackageGroup）。参数: 可选 section（指定段，默认全部）。",
+        description: "读取工程设置快照（Adaptation/Common/I18n/PackageGroup）。参数: 可选 section（指定段，默认全部）。",
         run: (bridge, params) => bridgeResult(bridge, "read_project_settings", params),
     },
     fgui_full_search: {
@@ -89,38 +88,31 @@ export const READ_TOOLS: Record<string, { description: string; run: (bridge: Mai
         run: (bridge, params) => bridgeResult(bridge, "full_search", params),
     },
     fgui_read_document: {
-        description:
-            "读取已打开文档的结构快照（子对象/控制器/关系/过渡列表）。参数: package、component。",
+        description: "读取已打开文档的结构快照（子对象/控制器/关系/过渡列表）。参数: package、component。",
         run: (bridge, params) => bridgeResult(bridge, "read_document", params),
     },
     fgui_list_controllers: {
-        description:
-            "列出组件的控制器（名称/页面/选中页）。参数: package、component。",
+        description: "列出组件的控制器（名称/页面/选中页）。参数: package、component。",
         run: (bridge, params) => bridgeResult(bridge, "list_controllers", params),
     },
     fgui_get_selection: {
-        description:
-            "返回活动文档的选中对象列表（id/name/objectType）。参考 FairyGUI-MCP。",
+        description: "返回活动文档的选中对象列表（id/name/objectType）。参考 FairyGUI-MCP。",
         run: (bridge, params) => bridgeResult(bridge, "get_selection", params),
     },
     fgui_get_component_info: {
-        description:
-            "返回组件元信息（name/id/type/width/height/path/url/exported）。参数: package、component。",
+        description: "返回组件元信息（name/id/type/width/height/path/url/exported）。参数: package、component。",
         run: (bridge, params) => bridgeResult(bridge, "get_component_info", params),
     },
     fgui_get_logs: {
-        description:
-            "返回编辑器控制台日志尾部（Unity Application.consoleLogPath 最近 N 行）。参数: 可选 lines（默认 100）。",
+        description: "返回编辑器控制台日志尾部（Unity Application.consoleLogPath 最近 N 行）。参数: 可选 lines（默认 100）。",
         run: (bridge, params) => bridgeResult(bridge, "get_logs", params),
     },
     fgui_find_unused_resources: {
-        description:
-            "未使用资源检查（只读报告，不删除）。参数: 可选 package（默认全部包）。deferred：异步完成后返回。",
+        description: "未使用资源检查（只读报告，不删除）。参数: 可选 package（默认全部包）。deferred：异步完成后返回。",
         run: (bridge, params) => bridgeResult(bridge, "find_unused_resources", params),
     },
     fgui_find_duplicate_resources: {
-        description:
-            "重复资源检查（只读报告，不删除）。参数: 可选 package（默认全部包）。deferred：异步完成后返回。",
+        description: "重复资源检查（只读报告，不删除）。参数: 可选 package（默认全部包）。deferred：异步完成后返回。",
         run: (bridge, params) => bridgeResult(bridge, "find_duplicate_resources", params),
     },
     fgui_validate_package: {
@@ -130,13 +122,7 @@ export const READ_TOOLS: Record<string, { description: string; run: (bridge: Mai
             if (!pkg) return Promise.resolve({ ok: false, error: "缺少参数 package" });
             const strict = params["strict"] === true ? ["--strict"] : [];
             const component = params["component"] as string | undefined;
-            const args = [
-                "validate",
-                "--package",
-                pkg,
-                ...(component ? ["--component", component] : []),
-                ...strict,
-            ];
+            const args = ["validate", "--package", pkg, ...(component ? ["--component", component] : []), ...strict];
             return Promise.resolve(cliResult(args));
         },
     },
@@ -166,8 +152,7 @@ export const WRITE_TOOLS: Record<string, { description: string; run: (bridge: Ma
         run: (bridge, params) => bridgeResult(bridge, "switch_publish_settings", params),
     },
     fgui_restore_publish_settings: {
-        description:
-            "基于 switch 返回的 before 快照回滚发布设置。参数: snapshot（settings 字段快照），可选 projectType。副作用：包设置刷新，编辑区会闪烁。",
+        description: "基于 switch 返回的 before 快照回滚发布设置。参数: snapshot（settings 字段快照），可选 projectType。副作用：包设置刷新，编辑区会闪烁。",
         run: (bridge, params) => bridgeResult(bridge, "restore_publish_settings", params),
     },
     fgui_refresh_project: {
@@ -181,9 +166,7 @@ export const WRITE_TOOLS: Record<string, { description: string; run: (bridge: Ma
         run: (bridge, params) => bridgeResult(bridge, "reload_package", params),
     },
     fgui_save_documents: {
-        description:
-            "保存活动文档或全部未保存文档（写闭环：内存态修改落盘）。参数: mode（active 保存活动文档，默认 all 保存全部未保存）。" +
-            "发布流程会自动先保存，无需单独调用。",
+        description: "保存活动文档或全部未保存文档（写闭环：内存态修改落盘）。参数: mode（active 保存活动文档，默认 all 保存全部未保存）。" + "发布流程会自动先保存，无需单独调用。",
         run: (bridge, params) => bridgeResult(bridge, "save_documents", params),
     },
     fgui_import_resource: {
@@ -199,8 +182,7 @@ export const WRITE_TOOLS: Record<string, { description: string; run: (bridge: Ma
         run: (bridge, params) => bridgeResult(bridge, "add_child", params),
     },
     fgui_delete_child: {
-        description:
-            "删除文档中的对象。参数: package、doc、target（对象 id 或 name）。返回 childrenDelta 与引用警告（relation/gear 引用对象）。",
+        description: "删除文档中的对象。参数: package、doc、target（对象 id 或 name）。返回 childrenDelta 与引用警告（relation/gear 引用对象）。",
         run: (bridge, params) => bridgeResult(bridge, "delete_child", params),
     },
     fgui_set_object_property: {
@@ -210,24 +192,19 @@ export const WRITE_TOOLS: Record<string, { description: string; run: (bridge: Ma
         run: (bridge, params) => bridgeResult(bridge, "set_object_property", params),
     },
     fgui_add_controller: {
-        description:
-            "新增控制器。参数: package、doc、name、pages（页面名数组）、可选 selected（默认 0）。" +
-            "页面与 selected 合法性在 handler 层校验。内存态操作需 fgui_save_documents 持久化。",
+        description: "新增控制器。参数: package、doc、name、pages（页面名数组）、可选 selected（默认 0）。" + "页面与 selected 合法性在 handler 层校验。内存态操作需 fgui_save_documents 持久化。",
         run: (bridge, params) => bridgeResult(bridge, "add_controller", params),
     },
     fgui_update_controller: {
-        description:
-            "更新控制器（整体替换页面/选中页）。参数: package、doc、name、可选 pages、可选 selected。",
+        description: "更新控制器（整体替换页面/选中页）。参数: package、doc、name、可选 pages、可选 selected。",
         run: (bridge, params) => bridgeResult(bridge, "update_controller", params),
     },
     fgui_remove_controller: {
-        description:
-            "删除控制器。参数: package、doc、name。被 gearDisplay/gearXY 等引用的控制器返回引用警告，不静默破坏。",
+        description: "删除控制器。参数: package、doc、name。被 gearDisplay/gearXY 等引用的控制器返回引用警告，不静默破坏。",
         run: (bridge, params) => bridgeResult(bridge, "remove_controller", params),
     },
     fgui_switch_page: {
-        description:
-            "切换控制器页面。参数: package、doc、name、index（目标页索引）或 page（目标页名）。目标页不存在返回结构化错误。",
+        description: "切换控制器页面。参数: package、doc、name、index（目标页索引）或 page（目标页名）。目标页不存在返回结构化错误。",
         run: (bridge, params) => bridgeResult(bridge, "switch_page", params),
     },
     fgui_set_relation: {
@@ -237,8 +214,7 @@ export const WRITE_TOOLS: Record<string, { description: string; run: (bridge: Ma
         run: (bridge, params) => bridgeResult(bridge, "set_relation", params),
     },
     fgui_remove_relation: {
-        description:
-            "删除对象关系。参数: package、doc、target、targetRelation（目标对象 id/name 或空=父级）。",
+        description: "删除对象关系。参数: package、doc、target、targetRelation（目标对象 id/name 或空=父级）。",
         run: (bridge, params) => bridgeResult(bridge, "remove_relation", params),
     },
     fgui_create_package: {
@@ -246,8 +222,7 @@ export const WRITE_TOOLS: Record<string, { description: string; run: (bridge: Ma
         run: (bridge, params) => bridgeResult(bridge, "create_package", params),
     },
     fgui_delete_package: {
-        description:
-            "删除包（破坏性）：先返回影响范围，调用方传 confirm: true 二次确认后才执行。参数: package、可选 confirm。",
+        description: "删除包（破坏性）：先返回影响范围，调用方传 confirm: true 二次确认后才执行。参数: package、可选 confirm。",
         run: (bridge, params) => bridgeResult(bridge, "delete_package", params),
     },
     fgui_create_folder: {
@@ -263,18 +238,15 @@ export const WRITE_TOOLS: Record<string, { description: string; run: (bridge: Ma
         run: (bridge, params) => bridgeResult(bridge, "move_resource", params),
     },
     fgui_delete_resource: {
-        description:
-            "删除资源（破坏性）：被其他组件引用时返回清单并拒绝，调用方传 confirm: true 二次确认。参数: package、name、可选 confirm。",
+        description: "删除资源（破坏性）：被其他组件引用时返回清单并拒绝，调用方传 confirm: true 二次确认。参数: package、name、可选 confirm。",
         run: (bridge, params) => bridgeResult(bridge, "delete_resource", params),
     },
     fgui_create_component: {
-        description:
-            "创建空组件资源（编辑器 FPackage.CreateComponentItem，id 由编辑器分配）。参数: package、name、可选 width/height（默认 100x100）、可选 path。",
+        description: "创建空组件资源（编辑器 FPackage.CreateComponentItem，id 由编辑器分配）。参数: package、name、可选 width/height（默认 100x100）、可选 path。",
         run: (bridge, params) => bridgeResult(bridge, "create_component", params),
     },
     fgui_copy_items: {
-        description:
-            "跨包复制组件（带依赖，CopyHandler 语义）。参数: sourcePackage、name、targetPackage、可选 targetPath。返回 id 映射。",
+        description: "跨包复制组件（带依赖，CopyHandler 语义）。参数: sourcePackage、name、targetPackage、可选 targetPath。返回 id 映射。",
         run: (bridge, params) => bridgeResult(bridge, "copy_items", params),
     },
     fgui_list_branches: {
@@ -293,8 +265,7 @@ export const WRITE_TOOLS: Record<string, { description: string; run: (bridge: Ma
         run: (bridge, params) => bridgeResult(bridge, "capture_preview", normalizeCaptureParams(params)),
     },
     fgui_open_component: {
-        description:
-            "独立打开组件文档并激活。参数: package、component。参考 FairyGUI-MCP handleOpenComponent。",
+        description: "独立打开组件文档并激活。参数: package、component。参考 FairyGUI-MCP handleOpenComponent。",
         run: (bridge, params) => bridgeResult(bridge, "open_component", params),
     },
     fgui_show_preview: {
@@ -302,8 +273,7 @@ export const WRITE_TOOLS: Record<string, { description: string; run: (bridge: Ma
         run: (bridge, params) => bridgeResult(bridge, "show_preview", params),
     },
     fgui_select_element: {
-        description:
-            "选中文档中的元素。参数: package、doc、target（对象 id 或 name）。参考 FairyGUI-MCP handleSelectElement。",
+        description: "选中文档中的元素。参数: package、doc、target（对象 id 或 name）。参考 FairyGUI-MCP handleSelectElement。",
         run: (bridge, params) => bridgeResult(bridge, "select_element", params),
     },
     fgui_close_document: {
@@ -316,8 +286,7 @@ export const WRITE_TOOLS: Record<string, { description: string; run: (bridge: Ma
     },
     fgui_insert_component: {
         description:
-            "向目标文档插入组件。参数: package（包名）、component（要插入的组件名）、doc（目标文档组件名）。" +
-            "返回 inserted/isModified/childrenDelta/opDocIsActive；可见性需人工或截图确认。",
+            "向目标文档插入组件。参数: package（包名）、component（要插入的组件名）、doc（目标文档组件名）。" + "返回 inserted/isModified/childrenDelta/opDocIsActive；可见性需人工或截图确认。",
         run: (bridge, params) => bridgeResult(bridge, "insert_component", params),
     },
     fgui_trigger_publish: {

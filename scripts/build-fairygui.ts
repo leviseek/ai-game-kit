@@ -42,10 +42,7 @@ function normalizeLf(content: string): string {
 
 function main(): void {
     if (!existsSync(SOURCE_DIR)) {
-        console.error(
-            `[build:fairygui] 子模块产物目录不存在: ${SOURCE_DIR}\n` +
-            "请先初始化子模块：git submodule update --init third-party/fairygui",
-        );
+        console.error(`[build:fairygui] 子模块产物目录不存在: ${SOURCE_DIR}\n` + "请先初始化子模块：git submodule update --init third-party/fairygui");
         process.exit(1);
     }
 
@@ -65,9 +62,7 @@ function main(): void {
             copyFileSync(file.source, target);
         }
         copied += 1;
-        console.log(
-            `[build:fairygui] 同步 ${file.name}  (${sha256(target).slice(0, 12)})`,
-        );
+        console.log(`[build:fairygui] 同步 ${file.name}  (${sha256(target).slice(0, 12)})`);
     }
     console.log(`[build:fairygui] 完成：${copied}/${CONTENT_FILES.length} 个内容文件已同步到 ${TARGET_DIR}`);
     console.log("[build:fairygui] 注：.meta 文件不在此脚本职责内，由 Cocos 维持 GUID。");

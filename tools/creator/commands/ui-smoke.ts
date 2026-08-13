@@ -7,8 +7,7 @@ import { serveDir } from "../lib/http";
 import { acquireLock, releaseLock } from "../lib/lock";
 import { getProjectRoot } from "../lib/env";
 
-export const help =
-    "ui-smoke —— FairyGUI UI 冒烟：校验 → 构建 → headless Chrome 加载 ?smoke=fairygui-ui 验证 UI 根/页面/遮罩/资源释放闭环";
+export const help = "ui-smoke —— FairyGUI UI 冒烟：校验 → 构建 → headless Chrome 加载 ?smoke=fairygui-ui 验证 UI 根/页面/遮罩/资源释放闭环";
 
 /**
  * 4.2 冒烟验证：复用 6.2 的 headless Chrome + CDP 模式，加载带
@@ -68,9 +67,7 @@ export async function run(argv: readonly string[]): Promise<number> {
             }
 
             // 断言冒烟标记完整且关键步骤通过
-            const markers = result.consoleLogs.filter((line) =>
-                line.startsWith("[ui-smoke]"),
-            );
+            const markers = result.consoleLogs.filter((line) => line.startsWith("[ui-smoke]"));
             const required = [
                 "ui-root-init: ok",
                 "package-load: ok",
@@ -82,9 +79,7 @@ export async function run(argv: readonly string[]): Promise<number> {
                 "missing-package-noop: ok",
                 "complete",
             ];
-            const missing = required.filter(
-                (needle) => !markers.some((line) => line.includes(needle)),
-            );
+            const missing = required.filter((needle) => !markers.some((line) => line.includes(needle)));
 
             if (missing.length > 0) {
                 console.error("[ccc:ui-smoke] 冒烟标记不完整，缺少:");

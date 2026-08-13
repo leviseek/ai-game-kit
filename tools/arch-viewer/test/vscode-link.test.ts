@@ -16,9 +16,7 @@ describe("createVsCodeUrl", () => {
             column: 7,
         };
 
-        expect(createVsCodeUrl(location)).toBe(
-            "vscode://file/D%3A%5Cai-work%5Cai%20game%20kit%5Csrc%5C%E5%85%A5%E5%8F%A3.ts:42:7",
-        );
+        expect(createVsCodeUrl(location)).toBe("vscode://file/D%3A%5Cai-work%5Cai%20game%20kit%5Csrc%5C%E5%85%A5%E5%8F%A3.ts:42:7");
     });
 });
 
@@ -35,18 +33,22 @@ describe("Inspector source VS Code href", () => {
         };
 
         expect(createSourceVsCodeHref(undefined)).toBeUndefined();
-        expect(createSourceVsCodeHref({
-            location: verifiedLocation,
-            startLine: 9,
-            endLine: 9,
-            lines: [{ number: 9, text: "export const ok = true;" }],
-        })).toBe(createVsCodeUrl(verifiedLocation));
-        expect(createSourceVsCodeHref({
-            location: verifiedLocation,
-            startLine: 9,
-            endLine: 9,
-            lines: [],
-        })).not.toBe(createVsCodeUrl(snapshotLocation));
+        expect(
+            createSourceVsCodeHref({
+                location: verifiedLocation,
+                startLine: 9,
+                endLine: 9,
+                lines: [{ number: 9, text: "export const ok = true;" }],
+            }),
+        ).toBe(createVsCodeUrl(verifiedLocation));
+        expect(
+            createSourceVsCodeHref({
+                location: verifiedLocation,
+                startLine: 9,
+                endLine: 9,
+                lines: [],
+            }),
+        ).not.toBe(createVsCodeUrl(snapshotLocation));
     });
 });
 
@@ -54,18 +56,7 @@ describe("arch viewer HTML shell", () => {
     test("包含稳定挂载点且不引用外部 URL", () => {
         const html = readFileSync(resolve(webRoot, "index.html"), "utf8");
 
-        for (const id of [
-            "nav-hierarchy",
-            "nav-startup",
-            "nav-dependencies",
-            "nav-data-flow",
-            "nav-calls",
-            "nav-resources",
-            "search-input",
-            "graph-canvas",
-            "inspector",
-            "status",
-        ]) {
+        for (const id of ["nav-hierarchy", "nav-startup", "nav-dependencies", "nav-data-flow", "nav-calls", "nav-resources", "search-input", "graph-canvas", "inspector", "status"]) {
             expect(html).toContain(`id="${id}"`);
         }
         expect(html).not.toMatch(/https?:\/\//);

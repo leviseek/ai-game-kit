@@ -1,7 +1,4 @@
-import {
-    createCodeGraphGateway,
-    type CodeGraphGateway,
-} from "../../lib/codegraph/gateway";
+import { createCodeGraphGateway, type CodeGraphGateway } from "../../lib/codegraph/gateway";
 import type { CommandResult, CommandRunner } from "../../lib/codegraph/process";
 
 export const projectRoot = "D:/repo";
@@ -47,9 +44,7 @@ export function success(stdout: unknown): CommandResult {
     };
 }
 
-export function fakeRunner(
-    responses: Readonly<Record<string, CommandResult | Error>>,
-): CommandRunner {
+export function fakeRunner(responses: Readonly<Record<string, CommandResult | Error>>): CommandRunner {
     return async (args) => {
         const response = responses[args[0] ?? ""];
         if (response instanceof Error) throw response;
@@ -58,9 +53,7 @@ export function fakeRunner(
     };
 }
 
-export function gatewayWith(
-    responses: Readonly<Record<string, CommandResult | Error>>,
-): CodeGraphGateway {
+export function gatewayWith(responses: Readonly<Record<string, CommandResult | Error>>): CodeGraphGateway {
     return createCodeGraphGateway({ projectRoot, runner: fakeRunner(responses) });
 }
 

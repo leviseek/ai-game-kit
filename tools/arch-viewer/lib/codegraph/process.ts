@@ -12,10 +12,7 @@ export interface CommandResult {
     readonly stderr: string;
 }
 
-export type CommandRunner = (
-    args: readonly string[],
-    options: CommandOptions,
-) => Promise<CommandResult>;
+export type CommandRunner = (args: readonly string[], options: CommandOptions) => Promise<CommandResult>;
 
 interface ExecFileFailure extends Error {
     readonly code?: string | number | null;

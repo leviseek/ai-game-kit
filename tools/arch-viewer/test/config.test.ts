@@ -1,40 +1,21 @@
 import { describe, expect, test } from "bun:test";
 
 import architectureConfig from "../architecture.config";
-import {
-    allow,
-    branch,
-    defineArchitectureConfig,
-    flow,
-    group,
-    lifecycle,
-    phase,
-    symbol,
-} from "../lib/config/builders";
-import type {
-    ArchitectureConfig,
-    HierarchyGroupConfig,
-} from "../lib/config/types";
+import { allow, branch, defineArchitectureConfig, flow, group, lifecycle, phase, symbol } from "../lib/config/builders";
+import type { ArchitectureConfig, HierarchyGroupConfig } from "../lib/config/types";
 import { validateArchitectureConfig } from "../lib/config/validate";
 
 function collectPatterns(root: HierarchyGroupConfig): readonly string[] {
-    return root.children.flatMap((child) =>
-        typeof child === "string" ? [child] : collectPatterns(child),
-    );
+    return root.children.flatMap((child) => (typeof child === "string" ? [child] : collectPatterns(child)));
 }
 
 describe("architecture config", () => {
     test("拒绝重复 group、未知依赖 group 与无原因例外", () => {
         const config = defineArchitectureConfig({
             hierarchy: {
-                root: group("root", [
-                    group("a", ["assets/a/**"]),
-                    group("a", ["assets/b/**"]),
-                ]),
+                root: group("root", [group("a", ["assets/a/**"]), group("a", ["assets/b/**"])]),
             },
-            dependencyRules: [
-                allow("a", ["missing"], { exception: true, reason: "" }),
-            ],
+            dependencyRules: [allow("a", ["missing"], { exception: true, reason: "" })],
             startup: {
                 entry: symbol("AppRoot::onLoad", "assets/boot/AppRoot.ts"),
                 phases: [],
@@ -44,11 +25,7 @@ describe("architecture config", () => {
             resources: [],
         });
 
-        expect(validateArchitectureConfig(config).map((item) => item.rule)).toEqual([
-            "config.duplicate-group",
-            "config.unknown-group",
-            "config.exception-reason",
-        ]);
+        expect(validateArchitectureConfig(config).map((item) => item.rule)).toEqual(["config.duplicate-group", "config.unknown-group", "config.exception-reason"]);
     });
 
     test("拒绝未声明 reason 的依赖例外", () => {
@@ -64,9 +41,7 @@ describe("architecture config", () => {
             resources: [],
         });
 
-        expect(validateArchitectureConfig(config).map((item) => item.rule)).toEqual([
-            "config.exception-reason",
-        ]);
+        expect(validateArchitectureConfig(config).map((item) => item.rule)).toEqual(["config.exception-reason"]);
     });
 
     test("拒绝空 branch、重复 lane 与空锚点名", () => {
@@ -88,12 +63,7 @@ describe("architecture config", () => {
             resources: [lifecycle("ui", [symbol("UiHost::loadPackage"), symbol(" ")])],
         });
 
-        expect(validateArchitectureConfig(config).map((item) => item.rule)).toEqual([
-            "config.empty-branch",
-            "config.duplicate-lane",
-            "config.empty-anchor",
-            "config.empty-anchor",
-        ]);
+        expect(validateArchitectureConfig(config).map((item) => item.rule)).toEqual(["config.empty-branch", "config.duplicate-lane", "config.empty-anchor", "config.empty-anchor"]);
     });
 
     test("builder 深层冻结配置对象", () => {
@@ -103,11 +73,7 @@ describe("architecture config", () => {
             startup: {
                 entry: symbol("AppRoot::onLoad"),
                 phases: [phase("assembly", [symbol("assembleApp")])],
-                branches: [
-                    branch("application", symbol("AppRoot::start"), [
-                        symbol("Application::start"),
-                    ]),
-                ],
+                branches: [branch("application", symbol("AppRoot::start"), [symbol("Application::start")])],
             },
             dataFlows: [],
             resources: [],
@@ -192,9 +158,7 @@ describe("architecture config", () => {
         expect(config.startup.entry.name).toBe("AppRoot::onLoad");
         expect(config.startup.phases[0]?.anchors[0]?.name).toBe("assembleApp");
         expect(config.startup.branches[0]?.from.name).toBe("AppRoot::start");
-        expect(config.dataFlows[0]?.lanes[0]?.anchors[0]?.name).toBe(
-            "CloseDialog::bind",
-        );
+        expect(config.dataFlows[0]?.lanes[0]?.anchors[0]?.name).toBe("CloseDialog::bind");
         expect(config.resources[0]?.anchors[0]?.name).toBe("UiHost::loadPackage");
 
         const frozenValues = [
@@ -233,12 +197,8 @@ describe("architecture config", () => {
 
     test("真实配置覆盖仓库边界并保持真实启动分支", () => {
         const patterns = collectPatterns(architectureConfig.hierarchy.root);
-        const application = architectureConfig.startup.branches.find(
-            (item) => item.id === "application",
-        );
-        const presentation = architectureConfig.startup.branches.find(
-            (item) => item.id === "presentation",
-        );
+        const application = architectureConfig.startup.branches.find((item) => item.id === "application");
+        const presentation = architectureConfig.startup.branches.find((item) => item.id === "presentation");
 
         expect(validateArchitectureConfig(architectureConfig)).toEqual([]);
         expect(patterns).toEqual(
@@ -266,14 +226,8 @@ describe("architecture config", () => {
         );
         expect(architectureConfig.startup.entry.name).toBe("AppRoot::onLoad");
         expect(application?.from.name).toBe("AppRoot::start");
-        expect(application?.anchors.map((item) => item.name)).toContain(
-            "Application::start",
-        );
+        expect(application?.anchors.map((item) => item.name)).toContain("Application::start");
         expect(presentation?.from.name).toBe("AppRoot::start");
-        expect(presentation?.anchors.map((item) => item.name)).toEqual([
-            "createBootFlow::launch",
-            "createSceneFlow::switchTo",
-            "UiHost::init",
-        ]);
+        expect(presentation?.anchors.map((item) => item.name)).toEqual(["createBootFlow::launch", "createSceneFlow::switchTo", "UiHost::init"]);
     });
 });

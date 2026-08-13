@@ -36,10 +36,14 @@ describe("MailboxBridge 协议闭环", () => {
         const bridge = new MailboxBridge(mailboxDir, { pollMs: 10, timeoutMs: 2000 });
         const promise = bridge.call("list_packages", {});
         // 模拟编辑器侧立即响应
-        setTimeout(() => mockEditorSide((raw) => {
-            const req = JSON.parse(raw) as { id: string };
-            return JSON.stringify({ id: req.id, ok: true, result: [{ name: "Demo", id: "4q9x2uij", opened: true }] });
-        }), 20);
+        setTimeout(
+            () =>
+                mockEditorSide((raw) => {
+                    const req = JSON.parse(raw) as { id: string };
+                    return JSON.stringify({ id: req.id, ok: true, result: [{ name: "Demo", id: "4q9x2uij", opened: true }] });
+                }),
+            20,
+        );
 
         const result = await promise;
         expect(result.reached).toBe(true);
@@ -51,10 +55,14 @@ describe("MailboxBridge 协议闭环", () => {
     it("插件返回 error 时透传错误", async () => {
         const bridge = new MailboxBridge(mailboxDir, { pollMs: 10, timeoutMs: 2000 });
         const promise = bridge.call("list_resources", { package: "Demo" });
-        setTimeout(() => mockEditorSide((raw) => {
-            const req = JSON.parse(raw) as { id: string };
-            return JSON.stringify({ id: req.id, ok: false, error: "包不存在: Foo" });
-        }), 20);
+        setTimeout(
+            () =>
+                mockEditorSide((raw) => {
+                    const req = JSON.parse(raw) as { id: string };
+                    return JSON.stringify({ id: req.id, ok: false, error: "包不存在: Foo" });
+                }),
+            20,
+        );
 
         const result = await promise;
         expect(result.reached).toBe(true);
@@ -75,9 +83,13 @@ describe("MailboxBridge 协议闭环", () => {
     it("响应文件半写时解析失败返回结构化错误", async () => {
         const bridge = new MailboxBridge(mailboxDir, { pollMs: 10, timeoutMs: 2000 });
         const promise = bridge.call("list_packages", {});
-        setTimeout(() => mockEditorSide((_raw) => {
-            return "{ not valid json";
-        }), 20);
+        setTimeout(
+            () =>
+                mockEditorSide((_raw) => {
+                    return "{ not valid json";
+                }),
+            20,
+        );
 
         const result = await promise;
         expect(result.reached).toBe(true);
@@ -92,10 +104,14 @@ describe("MailboxBridge 协议闭环", () => {
         await new Promise((r) => setTimeout(r, 30));
         const reqFiles = readdirSync(join(mailboxDir, "requests")).filter((n) => n.endsWith(".json"));
         expect(reqFiles.length).toBe(1);
-        setTimeout(() => mockEditorSide((raw) => {
-            const req = JSON.parse(raw) as { id: string };
-            return JSON.stringify({ id: req.id, ok: true, result: [] });
-        }), 40);
+        setTimeout(
+            () =>
+                mockEditorSide((raw) => {
+                    const req = JSON.parse(raw) as { id: string };
+                    return JSON.stringify({ id: req.id, ok: true, result: [] });
+                }),
+            40,
+        );
 
         await promise;
         // 响应即读即删

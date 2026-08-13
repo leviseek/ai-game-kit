@@ -32,11 +32,7 @@ const MIME: Readonly<Record<string, string>> = Object.freeze({
     ".svg": "image/svg+xml",
 });
 
-export async function serveStaticAsset(
-    request: IncomingMessage,
-    response: ServerResponse,
-    options: StaticAssetOptions,
-): Promise<boolean> {
+export async function serveStaticAsset(request: IncomingMessage, response: ServerResponse, options: StaticAssetOptions): Promise<boolean> {
     if (request.method !== "GET" && request.method !== "HEAD") return false;
     const url = new URL(request.url ?? "/", "http://127.0.0.1");
     let pathname: string;
@@ -55,9 +51,7 @@ export async function serveStaticAsset(
     }
 
     const route = pathname === "/" ? "/index.html" : pathname;
-    const root = route.endsWith(".js") || route.endsWith(".mjs") || route.endsWith(".map")
-        ? resolve(options.compiledRoot)
-        : resolve(options.webRoot);
+    const root = route.endsWith(".js") || route.endsWith(".mjs") || route.endsWith(".map") ? resolve(options.compiledRoot) : resolve(options.webRoot);
     const filePath = resolve(root, route.replace(/^\/+/, ""));
     if (!isInsideStaticRoot(root, filePath)) {
         response.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
@@ -69,7 +63,7 @@ export async function serveStaticAsset(
         let target = filePath;
         const info = await stat(target);
         if (info.isDirectory()) target = join(target, "index.html");
-        if (!await isRealPathInsideStaticRoot(root, target)) {
+        if (!(await isRealPathInsideStaticRoot(root, target))) {
             response.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
             response.end("forbidden");
             return true;
@@ -90,11 +84,7 @@ export function isInsideStaticRoot(root: string, target: string, pathApi: Static
     return rel === "" || (!rel.startsWith("..") && !rel.includes(`..${pathApi.sep}`) && !pathApi.isAbsolute(rel));
 }
 
-export async function isRealPathInsideStaticRoot(
-    root: string,
-    target: string,
-    fileSystem: StaticAssetFileSystem = nodeStaticFileSystem,
-): Promise<boolean> {
+export async function isRealPathInsideStaticRoot(root: string, target: string, fileSystem: StaticAssetFileSystem = nodeStaticFileSystem): Promise<boolean> {
     const realRoot = await fileSystem.realpath(root);
     const realTarget = await fileSystem.realpath(target);
     return isInsideStaticRoot(realRoot, realTarget);

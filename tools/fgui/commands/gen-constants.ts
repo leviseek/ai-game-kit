@@ -29,9 +29,7 @@ export function generateConstants(project: FguiProject): GeneratedFile[] {
     for (const pkgName of listPackages(project).sort()) {
         if (OFFICIAL_PACKAGES.has(pkgName)) continue;
         const pkg = readPackage(project, pkgName);
-        const exported = pkg.resources
-            .filter((r) => r.kind === "component" && r.exported)
-            .sort((a, b) => a.id.localeCompare(b.id));
+        const exported = pkg.resources.filter((r) => r.kind === "component" && r.exported).sort((a, b) => a.id.localeCompare(b.id));
         if (exported.length === 0) continue;
         const lines: string[] = [];
         lines.push(`// 由 \`bun run fgui gen-constants\` 生成，禁止手改；源 XML 变更后重跑刷新。`);

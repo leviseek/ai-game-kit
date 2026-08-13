@@ -1,14 +1,4 @@
-import type {
-    Diagnostic,
-    Evidence,
-    GraphEdge,
-    GraphGroup,
-    GraphNode,
-    GraphSnapshot,
-    GraphView,
-    SourceLocation,
-    ViewType,
-} from "../graph/types";
+import type { Diagnostic, Evidence, GraphEdge, GraphGroup, GraphNode, GraphSnapshot, GraphView, SourceLocation, ViewType } from "../graph/types";
 
 export type ProjectSummary = Readonly<Record<string, unknown>>;
 
@@ -40,9 +30,7 @@ class SnapshotQueryService implements ArchitectureQueryService {
             const group = view.groups.find((item) => item.id === id);
             if (group === undefined) continue;
             const childGroupIds = new Set([id, ...collectChildGroupIds(view.groups, id)]);
-            const nodeIds = new Set(view.groups
-                .filter((item) => childGroupIds.has(item.id))
-                .flatMap((item) => item.nodeIds));
+            const nodeIds = new Set(view.groups.filter((item) => childGroupIds.has(item.id)).flatMap((item) => item.nodeIds));
             return copyView({
                 ...view,
                 rootGroupId: id,
@@ -64,9 +52,7 @@ class SnapshotQueryService implements ArchitectureQueryService {
     }
 
     public neighborhood(id: string): GraphView | undefined {
-        const sourceView = Object.values(this.snapshot.views).find((view) =>
-            view.nodes.some((node) => node.id === id) || view.groups.some((group) => group.id === id),
-        );
+        const sourceView = Object.values(this.snapshot.views).find((view) => view.nodes.some((node) => node.id === id) || view.groups.some((group) => group.id === id));
         if (sourceView === undefined) return undefined;
         const connectedIds = new Set([id]);
         const edges = sourceView.edges.filter((edge) => {
@@ -177,9 +163,11 @@ function allNodes(snapshot: GraphSnapshot): readonly GraphNode[] {
 }
 
 function nodeMatches(node: GraphNode, query: string): boolean {
-    return node.id.toLocaleLowerCase().includes(query)
-        || node.kind.toLocaleLowerCase().includes(query)
-        || node.label.toLocaleLowerCase().includes(query)
-        || node.qualifiedName?.toLocaleLowerCase().includes(query) === true
-        || node.location?.filePath.toLocaleLowerCase().includes(query) === true;
+    return (
+        node.id.toLocaleLowerCase().includes(query) ||
+        node.kind.toLocaleLowerCase().includes(query) ||
+        node.label.toLocaleLowerCase().includes(query) ||
+        node.qualifiedName?.toLocaleLowerCase().includes(query) === true ||
+        node.location?.filePath.toLocaleLowerCase().includes(query) === true
+    );
 }

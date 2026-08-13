@@ -17,20 +17,22 @@ const rowGap = 28;
 
 export function layoutView(view: GraphView, viewport: Viewport): LayoutGraph {
     switch (view.type) {
-        case "hierarchy": return layoutHierarchy(view, viewport);
-        case "startup": return layoutStartup(view, viewport);
-        case "dependencies": return layoutDependencies(view, viewport);
-        case "data-flow": return layoutDataFlow(view, viewport);
-        case "calls": return layoutCalls(view, viewport);
-        case "resources": return layoutResources(view, viewport);
+        case "hierarchy":
+            return layoutHierarchy(view, viewport);
+        case "startup":
+            return layoutStartup(view, viewport);
+        case "dependencies":
+            return layoutDependencies(view, viewport);
+        case "data-flow":
+            return layoutDataFlow(view, viewport);
+        case "calls":
+            return layoutCalls(view, viewport);
+        case "resources":
+            return layoutResources(view, viewport);
     }
 }
 
-export function layoutByLanes(
-    view: GraphView,
-    laneSpecs: readonly Readonly<{ id: string; label: string; nodeIds: readonly string[] }>[],
-    viewport: Viewport,
-): LayoutGraph {
+export function layoutByLanes(view: GraphView, laneSpecs: readonly Readonly<{ id: string; label: string; nodeIds: readonly string[] }>[], viewport: Viewport): LayoutGraph {
     if (view.nodes.length === 0) return emptyLayout();
 
     const laneGap = laneSpacing(laneSpecs.length, viewport);

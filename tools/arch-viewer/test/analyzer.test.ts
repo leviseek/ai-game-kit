@@ -5,16 +5,7 @@ import { dirname, join } from "node:path";
 
 import { ArchitectureAnalyzer } from "../lib/analysis/analyzer";
 import { createArchitectureQueryService } from "../lib/analysis/query-service";
-import {
-    allow,
-    branch,
-    defineArchitectureConfig,
-    flow,
-    group,
-    lifecycle,
-    phase,
-    symbol,
-} from "../lib/config/builders";
+import { allow, branch, defineArchitectureConfig, flow, group, lifecycle, phase, symbol } from "../lib/config/builders";
 import type { GraphSnapshot, ViewType } from "../lib/graph/types";
 import { codeGraphFixture, createFixtureGateway } from "./fixtures/codegraph-fixture";
 
@@ -36,24 +27,13 @@ function config() {
     return defineArchitectureConfig({
         hierarchy: {
             root: group("repository", [
-                group("source", [
-                    group("app", ["src/app.ts", "src/assembly.ts", "src/boot.ts", "src/scene.ts"]),
-                    group("ui", ["src/ui.ts"]),
-                    group("state", ["src/store.ts"]),
-                ]),
+                group("source", [group("app", ["src/app.ts", "src/assembly.ts", "src/boot.ts", "src/scene.ts"]), group("ui", ["src/ui.ts"]), group("state", ["src/store.ts"])]),
             ]),
         },
-        dependencyRules: [
-            allow("app", ["ui"]),
-            allow("ui", ["state"]),
-        ],
+        dependencyRules: [allow("app", ["ui"]), allow("ui", ["state"])],
         startup: {
             entry: symbol("AppRoot::onLoad", "src/app.ts"),
-            phases: [phase("assembly", [
-                symbol("assembleApp", "src/assembly.ts"),
-                symbol("createSceneFlow", "src/scene.ts"),
-                symbol("createBootFlow", "src/boot.ts"),
-            ])],
+            phases: [phase("assembly", [symbol("assembleApp", "src/assembly.ts"), symbol("createSceneFlow", "src/scene.ts"), symbol("createBootFlow", "src/boot.ts")])],
             branches: [
                 branch("presentation", symbol("AppRoot::start", "src/app.ts"), [
                     symbol("createBootFlow::launch", "src/boot.ts"),
@@ -62,22 +42,15 @@ function config() {
                 ]),
             ],
         },
-        dataFlows: [flow("close-dialog", [
-            { id: "view-input", anchors: [
-                symbol("CloseDialog::bind", "src/ui.ts"),
-                symbol("CloseDialog::_handleConfirm", "src/ui.ts"),
-            ] },
-            { id: "state", anchors: [symbol("closeDialogReducer", "src/store.ts")] },
-            { id: "projection", anchors: [
-                symbol("projectCloseDialog", "src/store.ts"),
-                symbol("CloseDialog::onState", "src/ui.ts"),
-            ] },
-        ])],
-        resources: [
-            lifecycle("global-ui-package", [
-                symbol("UiHost::loadPackage", "src/ui.ts"),
-                symbol("UiHost::release", "src/ui.ts"),
+        dataFlows: [
+            flow("close-dialog", [
+                { id: "view-input", anchors: [symbol("CloseDialog::bind", "src/ui.ts"), symbol("CloseDialog::_handleConfirm", "src/ui.ts")] },
+                { id: "state", anchors: [symbol("closeDialogReducer", "src/store.ts")] },
+                { id: "projection", anchors: [symbol("projectCloseDialog", "src/store.ts"), symbol("CloseDialog::onState", "src/ui.ts")] },
             ]),
+        ],
+        resources: [
+            lifecycle("global-ui-package", [symbol("UiHost::loadPackage", "src/ui.ts"), symbol("UiHost::release", "src/ui.ts")]),
             lifecycle("scene-flow", [
                 symbol("createSceneFlow::preload", "src/scene.ts"),
                 symbol("createSceneFlow::switchTo", "src/scene.ts"),
@@ -106,12 +79,13 @@ describe("ArchitectureAnalyzer", () => {
         expect(snapshot.generatedAt).toBe(7);
         expect(Object.keys(snapshot.views)).toEqual(viewTypes);
         expect(snapshot.diagnostics).toEqual(viewTypes.flatMap((type) => snapshot.views[type].diagnostics));
-        expect(snapshot.views.calls.nodes.find((item) => item.qualifiedName === "createBootFlow::launch")?.metadata)
-            .toEqual(expect.objectContaining({ role: "incoming" }));
-        expect(snapshot.diagnostics).toContainEqual(expect.objectContaining({
-            severity: "warning",
-            message: expect.stringContaining("No CodeGraph evidence"),
-        }));
+        expect(snapshot.views.calls.nodes.find((item) => item.qualifiedName === "createBootFlow::launch")?.metadata).toEqual(expect.objectContaining({ role: "incoming" }));
+        expect(snapshot.diagnostics).toContainEqual(
+            expect.objectContaining({
+                severity: "warning",
+                message: expect.stringContaining("No CodeGraph evidence"),
+            }),
+        );
         expect(isDeepFrozen(snapshot)).toBe(true);
         expect(stableSnapshot(snapshot)).toEqual(stableSnapshot(repeated));
     });
@@ -197,28 +171,34 @@ function stableSnapshot(snapshot: GraphSnapshot): string {
 function mutableSnapshot(): GraphSnapshot {
     const calls = {
         type: "calls" as const,
-        nodes: [{
-            id: "a",
-            kind: "function",
-            label: "launch",
-            qualifiedName: "createBootFlow::launch",
-            metadata: { role: "incoming" },
-            evidence: [{ source: "fixture", location: { filePath: "src/a.ts", line: 1 } }],
-        }],
-        edges: [{
-            id: "a:b:calls",
-            from: "a",
-            to: "b",
-            relation: "calls",
-            metadata: { weight: 1 },
-            evidence: [{ source: "fixture", location: { filePath: "src/a.ts", line: 1 } }],
-        }],
-        groups: [{
-            id: "entry",
-            label: "Entry",
-            nodeIds: ["a"],
-            metadata: { patterns: ["entry"] },
-        }],
+        nodes: [
+            {
+                id: "a",
+                kind: "function",
+                label: "launch",
+                qualifiedName: "createBootFlow::launch",
+                metadata: { role: "incoming" },
+                evidence: [{ source: "fixture", location: { filePath: "src/a.ts", line: 1 } }],
+            },
+        ],
+        edges: [
+            {
+                id: "a:b:calls",
+                from: "a",
+                to: "b",
+                relation: "calls",
+                metadata: { weight: 1 },
+                evidence: [{ source: "fixture", location: { filePath: "src/a.ts", line: 1 } }],
+            },
+        ],
+        groups: [
+            {
+                id: "entry",
+                label: "Entry",
+                nodeIds: ["a"],
+                metadata: { patterns: ["entry"] },
+            },
+        ],
         diagnostics: [],
     };
     const empty = (type: ViewType) => ({ type, nodes: [], edges: [], groups: [], diagnostics: [] });

@@ -12,7 +12,10 @@ export interface XmlElement {
 }
 
 export class XmlParseError extends Error {
-    constructor(message: string, readonly index: number) {
+    constructor(
+        message: string,
+        readonly index: number,
+    ) {
         super(`${message}（位置 ${index}）`);
         this.name = "XmlParseError";
     }
@@ -63,7 +66,7 @@ function parseAttrValue(source: string, i: number): { value: string; next: numbe
 
 function parseAttrs(source: string, i: number): { attrs: Record<string, string>; next: number } {
     const attrs: Record<string, string> = {};
-    for (; ;) {
+    for (;;) {
         i = skipWhitespace(source, i);
         if (i >= source.length) throw new XmlParseError(`标签未闭合`, i);
         const ch = source[i];
@@ -117,7 +120,7 @@ function parseElement(source: string, startIndex: number): { element: XmlElement
     }
 
     const children: XmlElement[] = [];
-    for (; ;) {
+    for (;;) {
         const textStart = i;
         while (i < source.length && source[i] !== "<") i++;
         const text = source.slice(textStart, i);
@@ -146,7 +149,7 @@ function parseElement(source: string, startIndex: number): { element: XmlElement
 
 /** 跳过开头的空白、XML 声明与注释，返回首个真实元素起始位置。 */
 function skipProlog(source: string, i: number): number {
-    for (; ;) {
+    for (;;) {
         i = skipWhitespace(source, i);
         if (source.startsWith("<!--", i)) {
             const end = source.indexOf("-->", i + 4);

@@ -13,17 +13,10 @@ export const help = "typecheck —— strict 类型检查（framework + fairygui
 function findTsc(): string {
     const candidates = [
         process.env.COCOS_TSC,
-        process.env.COCOS_CREATOR_HOME === undefined
-            ? undefined
-            : resolve(
-                process.env.COCOS_CREATOR_HOME,
-                "resources/app.asar.unpacked/node_modules/typescript/lib/tsc.js",
-            ),
+        process.env.COCOS_CREATOR_HOME === undefined ? undefined : resolve(process.env.COCOS_CREATOR_HOME, "resources/app.asar.unpacked/node_modules/typescript/lib/tsc.js"),
         resolve(findCreatorHome(), "resources/app.asar.unpacked/node_modules/typescript/lib/tsc.js"),
     ];
-    const hit = candidates.find(
-        (candidate) => candidate !== undefined && existsSync(candidate),
-    );
+    const hit = candidates.find((candidate) => candidate !== undefined && existsSync(candidate));
     if (hit === undefined) {
         throw new Error("无法定位 Creator 内置 tsc，请设置 COCOS_TSC");
     }
@@ -81,37 +74,13 @@ export async function run(argv: readonly string[]): Promise<number> {
         "utf8",
     );
 
-    const fairyguiDts = join(
-        projectRoot,
-        "assets",
-        "third-party",
-        "fairygui",
-        "fairygui.d.ts",
-    );
-    const files = [
-        ...collectTypeScriptFiles(frameworkRoot),
-        probeFile,
-        ...(existsSync(fairyguiDts) ? [fairyguiDts] : []),
-    ];
+    const fairyguiDts = join(projectRoot, "assets", "third-party", "fairygui", "fairygui.d.ts");
+    const files = [...collectTypeScriptFiles(frameworkRoot), probeFile, ...(existsSync(fairyguiDts) ? [fairyguiDts] : [])];
 
     try {
         const result = execFileSync(
             "node",
-            [
-                tsc,
-                "--noEmit",
-                "--strict",
-                "--target",
-                "ES2015",
-                "--module",
-                "ES2015",
-                "--moduleResolution",
-                "node",
-                "--skipLibCheck",
-                "--typeRoots",
-                declarations,
-                ...files,
-            ],
+            [tsc, "--noEmit", "--strict", "--target", "ES2015", "--module", "ES2015", "--moduleResolution", "node", "--skipLibCheck", "--typeRoots", declarations, ...files],
             { cwd: projectRoot, encoding: "utf8" },
         );
         console.log("[ccc:typecheck] 类型检查通过（0 diagnostics）");

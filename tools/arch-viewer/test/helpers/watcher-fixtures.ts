@@ -39,7 +39,9 @@ export async function flushAsync(): Promise<void> {
 
 export function deferred<T>(): { readonly promise: Promise<T>; resolve(value: T): void } {
     let resolve: (value: T) => void = () => {};
-    const promise = new Promise<T>((next) => { resolve = next; });
+    const promise = new Promise<T>((next) => {
+        resolve = next;
+    });
     return { promise, resolve };
 }
 

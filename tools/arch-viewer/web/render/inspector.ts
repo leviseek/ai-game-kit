@@ -45,10 +45,14 @@ export function renderInspector(container: HTMLElement, options: InspectorOption
 function renderPanel(node: GraphNode | undefined, options: InspectorOptions): HTMLElement {
     if (node === undefined) return empty("No selection.");
     switch (options.activeTab) {
-        case "Source": return renderSource(node, options.client);
-        case "Relations": return renderRelations(node.id, options.state.currentView);
-        case "Evidence": return renderEvidence(node.evidence ?? []);
-        case "Diagnostics": return renderDiagnostics(node.id, options.state.currentView);
+        case "Source":
+            return renderSource(node, options.client);
+        case "Relations":
+            return renderRelations(node.id, options.state.currentView);
+        case "Evidence":
+            return renderEvidence(node.evidence ?? []);
+        case "Diagnostics":
+            return renderDiagnostics(node.id, options.state.currentView);
     }
 }
 
@@ -59,13 +63,15 @@ function renderSource(node: GraphNode, client: ArchApiClient): HTMLElement {
     const pre = document.createElement("pre");
     pre.textContent = "Loading source...";
     wrapper.append(open, pre);
-    void fetchSource(client, node.location).then((source) => {
-        open.replaceWith(sourceLink(source));
-        pre.textContent = source.lines.map((line) => `${String(line.number).padStart(4, " ")}  ${line.text}`).join("\n");
-    }).catch((error) => {
-        open.replaceWith(sourceLink(undefined));
-        pre.textContent = error instanceof Error ? error.message : String(error);
-    });
+    void fetchSource(client, node.location)
+        .then((source) => {
+            open.replaceWith(sourceLink(source));
+            pre.textContent = source.lines.map((line) => `${String(line.number).padStart(4, " ")}  ${line.text}`).join("\n");
+        })
+        .catch((error) => {
+            open.replaceWith(sourceLink(undefined));
+            pre.textContent = error instanceof Error ? error.message : String(error);
+        });
     return wrapper;
 }
 

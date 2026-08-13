@@ -1,42 +1,42 @@
 <!doctype html>
 <html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Architecture Workbench</title>
-    <link rel="stylesheet" href="./styles.css">
-</head>
-<body>
-    <main id="app" class="workbench">
-        <aside id="sidebar" class="sidebar" aria-label="Architecture views">
-            <h1>Architecture</h1>
-            <nav class="view-nav" aria-label="Views">
-                <button id="nav-hierarchy" data-view="hierarchy" type="button">Hierarchy</button>
-                <button id="nav-startup" data-view="startup" type="button">Startup</button>
-                <button id="nav-dependencies" data-view="dependencies" type="button">Dependencies</button>
-                <button id="nav-data-flow" data-view="data-flow" type="button">Data Flow</button>
-                <button id="nav-calls" data-view="calls" type="button">Calls</button>
-                <button id="nav-resources" data-view="resources" type="button">Resources</button>
-            </nav>
-        </aside>
-        <section class="stage" aria-label="Graph workbench">
-            <header class="topbar">
-                <div id="breadcrumbs" class="breadcrumbs" aria-label="Breadcrumbs"></div>
-                <form id="search-form" class="search" role="search">
-                    <label for="search-input">Search</label>
-                    <input id="search-input" name="q" type="search" autocomplete="off" spellcheck="false">
-                    <div id="search-results" class="search-results" aria-live="polite"></div>
-                </form>
-                <div class="toolbar" aria-label="Canvas controls">
-                    <button id="fit-view" type="button">Fit</button>
-                    <button id="reset-view" type="button">Reset</button>
-                </div>
-            </header>
-            <section id="graph-canvas" class="canvas" aria-label="Architecture graph"></section>
-            <div id="status" class="status" role="status" aria-live="polite"></div>
-        </section>
-        <aside id="inspector" class="inspector" aria-label="Inspector"></aside>
-    </main>
-    <script type="module" src="./bootstrap.js"></script>
-</body>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Architecture Workbench</title>
+        <link rel="stylesheet" href="./styles.css" />
+    </head>
+    <body>
+        <main id="app" class="workbench">
+            <aside id="sidebar" class="sidebar" aria-label="Architecture views">
+                <h1>Architecture</h1>
+                <nav class="view-nav" aria-label="Views">
+                    <button id="nav-hierarchy" data-view="hierarchy" type="button">Hierarchy</button>
+                    <button id="nav-startup" data-view="startup" type="button">Startup</button>
+                    <button id="nav-dependencies" data-view="dependencies" type="button">Dependencies</button>
+                    <button id="nav-data-flow" data-view="data-flow" type="button">Data Flow</button>
+                    <button id="nav-calls" data-view="calls" type="button">Calls</button>
+                    <button id="nav-resources" data-view="resources" type="button">Resources</button>
+                </nav>
+            </aside>
+            <section class="stage" aria-label="Graph workbench">
+                <header class="topbar">
+                    <div id="breadcrumbs" class="breadcrumbs" aria-label="Breadcrumbs"></div>
+                    <form id="search-form" class="search" role="search">
+                        <label for="search-input">Search</label>
+                        <input id="search-input" name="q" type="search" autocomplete="off" spellcheck="false" />
+                        <div id="search-results" class="search-results" aria-live="polite"></div>
+                    </form>
+                    <div class="toolbar" aria-label="Canvas controls">
+                        <button id="fit-view" type="button">Fit</button>
+                        <button id="reset-view" type="button">Reset</button>
+                    </div>
+                </header>
+                <section id="graph-canvas" class="canvas" aria-label="Architecture graph"></section>
+                <div id="status" class="status" role="status" aria-live="polite"></div>
+            </section>
+            <aside id="inspector" class="inspector" aria-label="Inspector"></aside>
+        </main>
+        <script type="module" src="./bootstrap.js"></script>
+    </body>
 </html>

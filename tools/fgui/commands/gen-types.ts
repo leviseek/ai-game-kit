@@ -1,15 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { flagString, hasHelp, parseArgs } from "../lib/args";
-import {
-    collectDisplayElements,
-    listPackages,
-    locateProject,
-    readComponent,
-    readPackage,
-    type DisplayElementInfo,
-    type FguiProject,
-} from "../lib/fgui";
+import { collectDisplayElements, listPackages, locateProject, readComponent, readPackage, type DisplayElementInfo, type FguiProject } from "../lib/fgui";
 
 export const help = "gen-types —— 生成 FGUI exported 组件类型描述（字段描述/节点名联合/declaration merging interface）到 assets/ui/generated/";
 
@@ -17,9 +9,7 @@ export const help = "gen-types —— 生成 FGUI exported 组件类型描述（
 const OFFICIAL_PACKAGES = new Set(["Basic", "Builder"]);
 
 /** 能力 kind：FGUI 运行时对象类型 → 引擎无关能力接口的映射键。 */
-export type ElementKind =
-    | "button" | "input" | "progress" | "text" | "richText"
-    | "list" | "component" | "image" | "movieclip";
+export type ElementKind = "button" | "input" | "progress" | "text" | "richText" | "list" | "component" | "image" | "movieclip";
 
 /** 元件 XML 特征 → 能力 kind 映射（设计 D2）。 */
 export function elementKindOf(element: DisplayElementInfo): ElementKind | undefined {
@@ -65,9 +55,7 @@ interface GeneratedTypesFile {
 }
 
 /** 生成产物文件头：禁止手改标记 + 包信息（与 gen-constants 同族）。 */
-const HEADER = [
-    "// 由 `bun run fgui gen-types` 生成，禁止手改；源 XML 变更后重跑刷新。",
-];
+const HEADER = ["// 由 `bun run fgui gen-types` 生成，禁止手改；源 XML 变更后重跑刷新。"];
 
 /** 每包生成一份类型描述文件（确定性：包名/资源 id 排序，元件按 XML 顺序）。 */
 export function generateTypeFiles(project: FguiProject): GeneratedTypesFile[] {
@@ -75,9 +63,7 @@ export function generateTypeFiles(project: FguiProject): GeneratedTypesFile[] {
     for (const pkgName of listPackages(project).sort()) {
         if (OFFICIAL_PACKAGES.has(pkgName)) continue;
         const pkg = readPackage(project, pkgName);
-        const exported = pkg.resources
-            .filter((r) => r.kind === "component" && r.exported)
-            .sort((a, b) => a.id.localeCompare(b.id));
+        const exported = pkg.resources.filter((r) => r.kind === "component" && r.exported).sort((a, b) => a.id.localeCompare(b.id));
         if (exported.length === 0) continue;
 
         const lines: string[] = [...HEADER, `// 包: ${pkg.name} (id=${pkg.id})`, ""];

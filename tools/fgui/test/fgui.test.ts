@@ -227,7 +227,10 @@ describe("validateComponentSemantics", () => {
             writeFileSync(join(dir, "demo.fairy"), `<?xml version="1.0" encoding="utf-8"?>\n<projectDescription id="t" type="CocosCreator" version="5.0"/>`);
             const pkgDir = join(dir, "assets", "Demo");
             mkdirSync(pkgDir, { recursive: true });
-            writeFileSync(join(pkgDir, "package.xml"), `<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="testid"><resources><component id="aa11" name="A.xml" path="/" exported="true"/><image id="bb22" name="bg.png" path="/img/"/></resources></packageDescription>`);
+            writeFileSync(
+                join(pkgDir, "package.xml"),
+                `<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="testid"><resources><component id="aa11" name="A.xml" path="/" exported="true"/><image id="bb22" name="bg.png" path="/img/"/></resources></packageDescription>`,
+            );
             writeFileSync(join(pkgDir, "A.xml"), componentXml);
             const project = locateProject(dir);
             return { project, pkg: readPackage(project, "Demo"), comp: readComponent(project, "Demo", "A.xml") };
@@ -257,7 +260,9 @@ describe("validateComponentSemantics", () => {
     <image id="n1" name="bg" src="bb22"/>
   </displayList>
 </component>`);
-        const errors = validateComponentSemantics(project, pkg, comp).filter((i) => i.severity === "error").map((i) => i.message);
+        const errors = validateComponentSemantics(project, pkg, comp)
+            .filter((i) => i.severity === "error")
+            .map((i) => i.message);
         expect(errors.some((m) => m.includes("bar"))).toBe(true);
         expect(errors.some((m) => m.includes("grip"))).toBe(true);
         expect(errors.some((m) => m.includes("<Slider/>"))).toBe(true);
@@ -379,14 +384,23 @@ describe("validateComponentSemantics", () => {
             const commonDir = join(dir, "assets", "Common");
             mkdirSync(demoDir, { recursive: true });
             mkdirSync(commonDir, { recursive: true });
-            writeFileSync(join(demoDir, "package.xml"), `<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="testid"><resources><component id="aa11" name="A.xml" path="/" exported="true"/></resources></packageDescription>`);
-            writeFileSync(join(demoDir, "A.xml"), `<?xml version="1.0" encoding="utf-8"?>
+            writeFileSync(
+                join(demoDir, "package.xml"),
+                `<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="testid"><resources><component id="aa11" name="A.xml" path="/" exported="true"/></resources></packageDescription>`,
+            );
+            writeFileSync(
+                join(demoDir, "A.xml"),
+                `<?xml version="1.0" encoding="utf-8"?>
 <component size="200,300">
   <displayList>
     <list id="n1" name="list" defaultItem="ui://cmn00001com04" overflow="scroll" selectionMode="single"/>
   </displayList>
-</component>`);
-            writeFileSync(join(commonDir, "package.xml"), `<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="cmn00001"><resources><component id="com04" name="CandidateItem.xml" path="/" exported="true"/></resources></packageDescription>`);
+</component>`,
+            );
+            writeFileSync(
+                join(commonDir, "package.xml"),
+                `<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="cmn00001"><resources><component id="com04" name="CandidateItem.xml" path="/" exported="true"/></resources></packageDescription>`,
+            );
             writeFileSync(join(commonDir, "CandidateItem.xml"), `<?xml version="1.0" encoding="utf-8"?>\n<component size="280,54"><displayList/></component>`);
             const project = locateProject(dir);
             const pkg = readPackage(project, "Demo");
@@ -406,14 +420,23 @@ describe("validateComponentSemantics", () => {
             const battleDir = join(dir, "assets", "Battle");
             mkdirSync(demoDir, { recursive: true });
             mkdirSync(battleDir, { recursive: true });
-            writeFileSync(join(demoDir, "package.xml"), `<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="testid"><resources><component id="aa11" name="A.xml" path="/" exported="true"/></resources></packageDescription>`);
-            writeFileSync(join(demoDir, "A.xml"), `<?xml version="1.0" encoding="utf-8"?>
+            writeFileSync(
+                join(demoDir, "package.xml"),
+                `<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="testid"><resources><component id="aa11" name="A.xml" path="/" exported="true"/></resources></packageDescription>`,
+            );
+            writeFileSync(
+                join(demoDir, "A.xml"),
+                `<?xml version="1.0" encoding="utf-8"?>
 <component size="200,300">
   <displayList>
     <list id="n1" name="list" defaultItem="ui://btl00001com04" overflow="scroll" selectionMode="single"/>
   </displayList>
-</component>`);
-            writeFileSync(join(battleDir, "package.xml"), `<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="btl00001"><resources><component id="com04" name="CandidateItem.xml" path="/" exported="true"/></resources></packageDescription>`);
+</component>`,
+            );
+            writeFileSync(
+                join(battleDir, "package.xml"),
+                `<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="btl00001"><resources><component id="com04" name="CandidateItem.xml" path="/" exported="true"/></resources></packageDescription>`,
+            );
             writeFileSync(join(battleDir, "CandidateItem.xml"), `<?xml version="1.0" encoding="utf-8"?>\n<component size="280,54"><displayList/></component>`);
             const project = locateProject(dir);
             const pkg = readPackage(project, "Demo");
@@ -486,7 +509,9 @@ describe("validateComponentSemantics", () => {
     </image>
   </displayList>
 </component>`);
-        const errors = validateComponentSemantics(project, pkg, comp).filter((i) => i.severity === "error").map((i) => i.message);
+        const errors = validateComponentSemantics(project, pkg, comp)
+            .filter((i) => i.severity === "error")
+            .map((i) => i.message);
         expect(errors.some((m) => m.includes("foo"))).toBe(true);
     });
 
@@ -574,7 +599,9 @@ describe("validateComponentSemantics", () => {
     <image id="n1" name="bg" src="bb22"/>
   </displayList>
 </component>`);
-        const errors = validateComponentSemantics(project, pkg, comp).filter((i) => i.severity === "error").map((i) => i.message);
+        const errors = validateComponentSemantics(project, pkg, comp)
+            .filter((i) => i.severity === "error")
+            .map((i) => i.message);
         expect(errors.some((m) => m.includes("button controller") || m.includes("<Button/>"))).toBe(true);
     });
 
@@ -599,7 +626,10 @@ describe("validatePackageFileIntegrity", () => {
             const pkgDir = join(dir, "assets", "Demo");
             const imgDir = join(pkgDir, "img");
             mkdirSync(imgDir, { recursive: true });
-            writeFileSync(join(pkgDir, "package.xml"), `<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="t"><resources><component id="aa11" name="A.xml" path="/" exported="true"/><image id="bb22" name="bg.png" path="/img/"/></resources></packageDescription>`);
+            writeFileSync(
+                join(pkgDir, "package.xml"),
+                `<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="t"><resources><component id="aa11" name="A.xml" path="/" exported="true"/><image id="bb22" name="bg.png" path="/img/"/></resources></packageDescription>`,
+            );
             writeFileSync(join(pkgDir, "A.xml"), `<component size="1,1"><displayList/></component>`);
             writeFileSync(join(imgDir, "bg.png"), "fake");
 
@@ -618,7 +648,10 @@ describe("validatePackageFileIntegrity", () => {
             writeFileSync(join(dir, "demo.fairy"), `<?xml version="1.0" encoding="utf-8"?>\n<projectDescription id="t" type="CocosCreator" version="5.0"/>`);
             const pkgDir = join(dir, "assets", "Demo");
             mkdirSync(pkgDir, { recursive: true });
-            writeFileSync(join(pkgDir, "package.xml"), `<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="t"><resources><component id="aa11" name="Ghost.xml" path="/" exported="true"/></resources></packageDescription>`);
+            writeFileSync(
+                join(pkgDir, "package.xml"),
+                `<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="t"><resources><component id="aa11" name="Ghost.xml" path="/" exported="true"/></resources></packageDescription>`,
+            );
 
             const project = locateProject(dir);
             const pkg = readPackage(project, "Demo");
@@ -686,7 +719,10 @@ describe("validatePackageManifest", () => {
     });
 
     test("资源路径重复注册报 error", () => {
-        const { dir, project, pkg } = setupPkg(`<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="12345678"><resources><image id="aa11" name="bg.png" path="/img/"/><image id="bb22" name="bg.png" path="/img/"/></resources></packageDescription>`, [["img/bg.png", "x"]]);
+        const { dir, project, pkg } = setupPkg(
+            `<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="12345678"><resources><image id="aa11" name="bg.png" path="/img/"/><image id="bb22" name="bg.png" path="/img/"/></resources></packageDescription>`,
+            [["img/bg.png", "x"]],
+        );
         try {
             const errors = validatePackageManifest(project, pkg).filter((i) => i.severity === "error");
             expect(errors.some((i) => i.message.includes("重复"))).toBe(true);
@@ -696,7 +732,10 @@ describe("validatePackageManifest", () => {
     });
 
     test("component 指向非 xml 文件报 error", () => {
-        const { dir, project, pkg } = setupPkg(`<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="12345678"><resources><component id="aa11" name="A.png" path="/"/></resources></packageDescription>`, [["A.png", "x"]]);
+        const { dir, project, pkg } = setupPkg(
+            `<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="12345678"><resources><component id="aa11" name="A.png" path="/"/></resources></packageDescription>`,
+            [["A.png", "x"]],
+        );
         try {
             const errors = validatePackageManifest(project, pkg).filter((i) => i.severity === "error");
             expect(errors.some((i) => i.message.includes("xml"))).toBe(true);
@@ -723,9 +762,12 @@ describe("nextResourceId 前缀续编", () => {
             writeFileSync(join(dir, "demo.fairy"), `<?xml version="1.0" encoding="utf-8"?>\n<projectDescription id="t" type="CocosCreator" version="5.0"/>`);
             const pkgDir = join(dir, "assets", "Demo");
             mkdirSync(pkgDir, { recursive: true });
-            writeFileSync(join(pkgDir, "package.xml"), `<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="12345678"><resources><component id="dm000" name="A.xml" path="/" exported="true"/><component id="dm001" name="B.xml" path="/" exported="true"/></resources></packageDescription>`);
-            writeFileSync(join(pkgDir, "A.xml"), "<component size=\"1,1\"><displayList/></component>");
-            writeFileSync(join(pkgDir, "B.xml"), "<component size=\"1,1\"><displayList/></component>");
+            writeFileSync(
+                join(pkgDir, "package.xml"),
+                `<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="12345678"><resources><component id="dm000" name="A.xml" path="/" exported="true"/><component id="dm001" name="B.xml" path="/" exported="true"/></resources></packageDescription>`,
+            );
+            writeFileSync(join(pkgDir, "A.xml"), '<component size="1,1"><displayList/></component>');
+            writeFileSync(join(pkgDir, "B.xml"), '<component size="1,1"><displayList/></component>');
             const project = locateProject(dir);
             const pkg = readPackage(project, "Demo");
             expect(nextResourceId(pkg, "dm")).toBe("dm002");
@@ -740,7 +782,10 @@ describe("nextResourceId 前缀续编", () => {
             writeFileSync(join(dir, "demo.fairy"), `<?xml version="1.0" encoding="utf-8"?>\n<projectDescription id="t" type="CocosCreator" version="5.0"/>`);
             const pkgDir = join(dir, "assets", "Demo");
             mkdirSync(join(pkgDir, "img"), { recursive: true });
-            writeFileSync(join(pkgDir, "package.xml"), `<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="12345678"><resources><image id="abc12" name="bg.png" path="/img/"/></resources></packageDescription>`);
+            writeFileSync(
+                join(pkgDir, "package.xml"),
+                `<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="12345678"><resources><image id="abc12" name="bg.png" path="/img/"/></resources></packageDescription>`,
+            );
             writeFileSync(join(pkgDir, "img", "bg.png"), "x");
             const project = locateProject(dir);
             const pkg = readPackage(project, "Demo");

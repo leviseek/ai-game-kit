@@ -8,43 +8,30 @@ import { acquireLock, releaseLock } from "../lib/lock";
 import { getProjectRoot } from "../lib/env";
 import { sleep } from "../lib/log";
 
-export const help =
-    "ui-modal-click —— 模态遮罩命中验证：构建 → headless Chrome 加载 ?smoke=modal-click，应用内 fgui 触摸注入，断言模态期间遮罩拦截（下层不响应）、解除后下层恢复";
+export const help = "ui-modal-click —— 模态遮罩命中验证：构建 → headless Chrome 加载 ?smoke=modal-click，应用内 fgui 触摸注入，断言模态期间遮罩拦截（下层不响应）、解除后下层恢复";
 
 // tap/hitIsUnder 均取 GRoot 中心（rootSize 坐标系），坐标由 AppRoot 钩子内部
 // 计算，调用方不猜测屏幕/设计分辨率映射。
-async function waitForActive(
-    cdp: CdpSession,
-    expectActive: boolean,
-    timeoutMs: number,
-): Promise<void> {
+async function waitForActive(cdp: CdpSession, expectActive: boolean, timeoutMs: number): Promise<void> {
     const deadline = Date.now() + timeoutMs;
     while (Date.now() < deadline) {
-        const active = (await cdp.evaluate(
-            "window.__modalClick ? window.__modalClick.active() : false",
-        )) as boolean;
+        const active = (await cdp.evaluate("window.__modalClick ? window.__modalClick.active() : false")) as boolean;
         if (active === expectActive) {
             return;
         }
         await sleep(200);
     }
-    throw new Error(
-        `等待模态状态 ${expectActive ? "生效" : "解除"} 超时（${timeoutMs}ms）`,
-    );
+    throw new Error(`等待模态状态 ${expectActive ? "生效" : "解除"} 超时（${timeoutMs}ms）`);
 }
 
 async function hitIsUnder(cdp: CdpSession): Promise<boolean> {
-    const value = (await cdp.evaluate(
-        "window.__modalClick ? window.__modalClick.hitIsUnder() : null",
-    )) as boolean | null;
+    const value = (await cdp.evaluate("window.__modalClick ? window.__modalClick.hitIsUnder() : null")) as boolean | null;
     return value === true;
 }
 
 /** 应用内触摸注入并校验成功（tap 内部未就绪时返回 false）。 */
 async function injectTap(cdp: CdpSession): Promise<void> {
-    const ok = (await cdp.evaluate(
-        "window.__modalClick ? window.__modalClick.tap() : false",
-    )) as boolean | null;
+    const ok = (await cdp.evaluate("window.__modalClick ? window.__modalClick.tap() : false")) as boolean | null;
     if (ok !== true) {
         throw new Error("应用内触摸注入失败（tap 返回非 true）");
     }
@@ -130,8 +117,7 @@ export async function run(argv: readonly string[]): Promise<number> {
                     }
                     console.log("[ccc:ui-modal-click] 解除后点击命中下层页面（恢复）");
                 } catch (error) {
-                    interactError =
-                        error instanceof Error ? error.message : String(error);
+                    interactError = error instanceof Error ? error.message : String(error);
                     throw error;
                 }
             });
@@ -153,18 +139,9 @@ export async function run(argv: readonly string[]): Promise<number> {
                 return 1;
             }
 
-            const markers = result.consoleLogs.filter((line) =>
-                line.startsWith("[modal-click]"),
-            );
-            const required = [
-                "ui-root-init: ok",
-                "under-mounted: ok",
-                "modal-active: ok",
-                "ready",
-            ];
-            const missing = required.filter(
-                (needle) => !markers.some((line) => line.includes(needle)),
-            );
+            const markers = result.consoleLogs.filter((line) => line.startsWith("[modal-click]"));
+            const required = ["ui-root-init: ok", "under-mounted: ok", "modal-active: ok", "ready"];
+            const missing = required.filter((needle) => !markers.some((line) => line.includes(needle)));
             if (missing.length > 0) {
                 console.error("[ccc:ui-modal-click] 冒烟标记不完整，缺少:");
                 for (const item of missing) {

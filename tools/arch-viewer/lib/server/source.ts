@@ -17,7 +17,10 @@ export interface SourceExcerpt {
 }
 
 export class SourceReadError extends Error {
-    public constructor(public readonly code: "forbidden" | "not_found", message: string) {
+    public constructor(
+        public readonly code: "forbidden" | "not_found",
+        message: string,
+    ) {
         super(message);
     }
 }
@@ -35,13 +38,7 @@ const nodeSourceFileSystem: SourceFileSystem = {
     readFile: (path) => readFile(path, "utf8"),
 };
 
-export async function readSourceExcerpt(
-    root: string,
-    file: string,
-    line: number,
-    radius = DEFAULT_SOURCE_RADIUS,
-    fileSystem: SourceFileSystem = nodeSourceFileSystem,
-): Promise<SourceExcerpt> {
+export async function readSourceExcerpt(root: string, file: string, line: number, radius = DEFAULT_SOURCE_RADIUS, fileSystem: SourceFileSystem = nodeSourceFileSystem): Promise<SourceExcerpt> {
     const projectRoot = await safeRealpath(resolve(root), fileSystem);
     const absolute = resolve(projectRoot, file);
     toSafeRelativePath(projectRoot, absolute);

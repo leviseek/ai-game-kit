@@ -12,7 +12,9 @@ describe("createAnalysisScheduler", () => {
         const calls: string[] = [];
         const store = createGraphSnapshotStore();
         const scheduler = createAnalysisScheduler({
-            sync: async () => { calls.push("sync"); },
+            sync: async () => {
+                calls.push("sync");
+            },
             status: async () => readyStatus(),
             analyze: async (input) => snapshot(input.version),
             store,
@@ -68,7 +70,9 @@ describe("createAnalysisScheduler", () => {
         const store = createGraphSnapshotStore();
         let analyzeCount = 0;
         const scheduler = createAnalysisScheduler({
-            sync: async () => { throw new Error("sync failed"); },
+            sync: async () => {
+                throw new Error("sync failed");
+            },
             status: async () => readyStatus(),
             analyze: async (input) => {
                 analyzeCount += 1;
@@ -94,7 +98,9 @@ describe("createAnalysisScheduler", () => {
         const events: unknown[] = [];
         store.subscribe((event) => events.push(event));
         const scheduler = createAnalysisScheduler({
-            sync: async () => { throw new Error("sync failed"); },
+            sync: async () => {
+                throw new Error("sync failed");
+            },
             analyze: async (input) => {
                 analyzeCount += 1;
                 return snapshot(input.version);
@@ -119,7 +125,9 @@ describe("createAnalysisScheduler", () => {
         let analyzeCount = 0;
         const scheduler = createAnalysisScheduler({
             sync: async () => {},
-            status: async () => { throw new Error("status failed"); },
+            status: async () => {
+                throw new Error("status failed");
+            },
             analyze: async (input) => {
                 analyzeCount += 1;
                 return snapshot(input.version);
@@ -193,7 +201,9 @@ describe("createAnalysisScheduler", () => {
         const store = createGraphSnapshotStore();
         let syncCount = 0;
         const scheduler = createAnalysisScheduler({
-            sync: async () => { syncCount += 1; },
+            sync: async () => {
+                syncCount += 1;
+            },
             status: async () => readyStatus(),
             analyze: async (input) => snapshot(input.version),
             store,
@@ -228,12 +238,7 @@ describe("watchProject", () => {
         const changes: string[] = [];
         const watcher = watchProject(root, (path) => changes.push(path), { backend });
 
-        expect(watched).toEqual([
-            join(root, "assets"),
-            join(root, "tools"),
-            join(root, "doc", "architecture"),
-            join(root, "doc", "decisions"),
-        ]);
+        expect(watched).toEqual([join(root, "assets"), join(root, "tools"), join(root, "doc", "architecture"), join(root, "doc", "decisions")]);
 
         listeners[0]!("change", "main.ts");
         listeners[1]!("change", "temp/cache.ts");

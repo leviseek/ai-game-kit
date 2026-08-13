@@ -40,11 +40,7 @@ export function parseArgs(argv: readonly string[]): ParsedArgs {
     return { flags, positionals };
 }
 
-export function flagString(
-    parsed: ParsedArgs,
-    name: string,
-    fallback?: string,
-): string | undefined {
+export function flagString(parsed: ParsedArgs, name: string, fallback?: string): string | undefined {
     const value = parsed.flags.get(name);
     if (value === true || value === undefined) {
         return fallback;
@@ -60,11 +56,7 @@ export function flagBool(parsed: ParsedArgs, name: string, fallback: boolean): b
     return value !== "false";
 }
 
-export function flagNumber(
-    parsed: ParsedArgs,
-    name: string,
-    fallback: number,
-): number {
+export function flagNumber(parsed: ParsedArgs, name: string, fallback: number): number {
     const value = parsed.flags.get(name);
     if (value === true || value === undefined) {
         return fallback;

@@ -44,11 +44,7 @@ export function resolveSceneUuid(nameOrUuid: string): string {
     return meta.uuid;
 }
 
-export function buildParams(
-    platform: string,
-    debug: boolean,
-    scenes: readonly string[],
-): string {
+export function buildParams(platform: string, debug: boolean, scenes: readonly string[]): string {
     const parts = [`platform=${platform}`, `debug=${debug}`];
     if (scenes.length > 0) {
         parts.push(`scenes=${scenes.join(",")}`);

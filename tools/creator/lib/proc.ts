@@ -17,23 +17,13 @@ export function runPowershell(script: string): string {
 }
 
 export function isCreatorRunning(): boolean {
-    const count = runPowershell(
-        "(Get-Process -Name CocosCreator -ErrorAction SilentlyContinue).Count",
-    );
+    const count = runPowershell("(Get-Process -Name CocosCreator -ErrorAction SilentlyContinue).Count");
     return Number(count) > 0;
 }
 
 /** 编程系统产物最近更新过（ms 内），视为项目已完成一轮编译加载。 */
 function isProgrammingFresh(maxAgeMs: number): boolean {
-    const marker = join(
-        getProjectRoot(),
-        "temp",
-        "programming",
-        "packer-driver",
-        "targets",
-        "preview",
-        "import-map.json",
-    );
+    const marker = join(getProjectRoot(), "temp", "programming", "packer-driver", "targets", "preview", "import-map.json");
     try {
         return Date.now() - statSync(marker).mtimeMs < maxAgeMs;
     } catch {
@@ -43,15 +33,7 @@ function isProgrammingFresh(maxAgeMs: number): boolean {
 
 /** 编程系统产物在 sinceMs 之后更新过，证明"本次"实例完成过编译。 */
 function isProgrammingUpdatedSince(sinceMs: number): boolean {
-    const marker = join(
-        getProjectRoot(),
-        "temp",
-        "programming",
-        "packer-driver",
-        "targets",
-        "preview",
-        "import-map.json",
-    );
+    const marker = join(getProjectRoot(), "temp", "programming", "packer-driver", "targets", "preview", "import-map.json");
     try {
         return statSync(marker).mtimeMs > sinceMs;
     } catch {
@@ -68,17 +50,13 @@ export function isCreatorReady(projectName: string, sinceMs?: number): boolean {
     if (!isCreatorRunning()) {
         return false;
     }
-    return sinceMs === undefined
-        ? isProgrammingFresh(60000)
-        : isProgrammingUpdatedSince(sinceMs);
+    return sinceMs === undefined ? isProgrammingFresh(60000) : isProgrammingUpdatedSince(sinceMs);
 }
 
 /** 关闭全部 Creator 实例（当前单项目仓库的合理默认），幂等。 */
 export function closeCreator(): void {
     try {
-        runPowershell(
-            "Get-Process -Name CocosCreator -ErrorAction SilentlyContinue | Stop-Process -Force",
-        );
+        runPowershell("Get-Process -Name CocosCreator -ErrorAction SilentlyContinue | Stop-Process -Force");
     } catch {
         // 进程可能恰好已退出（Stop-Process 报非零退出码），关闭目标是"不再有实例"，此处可容忍
     }

@@ -40,7 +40,10 @@ export class ArchitectureAnalyzer {
         const statusPromise = this.gateway.status();
         const filesPromise = this.gateway.files();
         const sourcePromise = filesPromise.then((files) =>
-            scanSources(this.projectRoot, files.map((item) => item.path)),
+            scanSources(
+                this.projectRoot,
+                files.map((item) => item.path),
+            ),
         );
 
         const [status, files, source] = await Promise.all([statusPromise, filesPromise, sourcePromise]);
@@ -59,11 +62,7 @@ export class ArchitectureAnalyzer {
             calls,
             resources,
         } satisfies GraphSnapshot["views"];
-        const diagnostics = [
-            ...validateArchitectureConfig(this.config),
-            ...statusDiagnostics(status),
-            ...Object.values(views).flatMap((view) => view.diagnostics),
-        ];
+        const diagnostics = [...validateArchitectureConfig(this.config), ...statusDiagnostics(status), ...Object.values(views).flatMap((view) => view.diagnostics)];
 
         return freezeSnapshot({
             version: input.version,
@@ -116,16 +115,17 @@ function mergeViews(type: "data-flow", views: readonly GraphView[]): GraphView {
 }
 
 function dedupeById<T extends { readonly id: string }>(items: readonly T[]): readonly T[] {
-    return [...new Map(items.map((item) => [item.id, item])).values()]
-        .sort((left, right) => left.id.localeCompare(right.id));
+    return [...new Map(items.map((item) => [item.id, item])).values()].sort((left, right) => left.id.localeCompare(right.id));
 }
 
 function statusDiagnostics(status: Awaited<ReturnType<CodeGraphGateway["status"]>>): readonly Diagnostic[] {
     const mismatch = status.worktreeMismatch;
     if (mismatch === undefined || mismatch === null) return [];
-    return [{
-        severity: "warning",
-        source: "codegraph.worktree-mismatch",
-        message: `CodeGraph index root ${mismatch.indexRoot} differs from worktree root ${mismatch.worktreeRoot}`,
-    }];
+    return [
+        {
+            severity: "warning",
+            source: "codegraph.worktree-mismatch",
+            message: `CodeGraph index root ${mismatch.indexRoot} differs from worktree root ${mismatch.worktreeRoot}`,
+        },
+    ];
 }

@@ -28,9 +28,7 @@ describe("architecture workbench integration", () => {
             const index = await textFetch(`${server.url}/`);
             const app = await textFetch(`${server.url}/app.js`);
             const views = await Promise.all(viewTypes.map((viewType) => jsonFetch<GraphView>(`${server.url}/api/views/${viewType}`)));
-            const source = await jsonFetch<{ readonly location: { readonly filePath: string; readonly line: number } }>(
-                `${server.url}/api/source?file=src/entry.ts&line=1&radius=0`,
-            );
+            const source = await jsonFetch<{ readonly location: { readonly filePath: string; readonly line: number } }>(`${server.url}/api/source?file=src/entry.ts&line=1&radius=0`);
             const failedGeneration = store.begin();
             expect(store.fail(failedGeneration, new Error("fixture analyzer failed"))).toBe(true);
             const projectAfterFailure = await jsonFetch<{ readonly version: number }>(`${server.url}/api/project`);
@@ -91,7 +89,7 @@ function createFixture(): Readonly<{ projectRoot: string; webRoot: string; compi
     const webRoot = join(root, "web");
     const compiledRoot = join(root, "compiled");
     writeFile(projectRoot, "src/entry.ts", "export function launch() { return true; }\n");
-    writeFile(webRoot, "index.html", "<!doctype html><title>Architecture Workbench</title><script src=\"./app.js\"></script>");
+    writeFile(webRoot, "index.html", '<!doctype html><title>Architecture Workbench</title><script src="./app.js"></script>');
     writeFile(compiledRoot, "app.js", "export const marker = 'fake analyzer app';\n");
     return { projectRoot, webRoot, compiledRoot };
 }
@@ -116,13 +114,15 @@ function snapshot(version: number): GraphSnapshot {
 function view(type: ViewType): GraphView {
     return {
         type,
-        nodes: [{
-            id: `${type}:launch`,
-            kind: "function",
-            label: "launch",
-            qualifiedName: "createBootFlow::launch",
-            location: { filePath: "src/entry.ts", line: 1 },
-        }],
+        nodes: [
+            {
+                id: `${type}:launch`,
+                kind: "function",
+                label: "launch",
+                qualifiedName: "createBootFlow::launch",
+                location: { filePath: "src/entry.ts", line: 1 },
+            },
+        ],
         edges: [],
         groups: [{ id: `${type}:root`, label: type, nodeIds: [`${type}:launch`] }],
         diagnostics: [],

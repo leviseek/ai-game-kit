@@ -29,33 +29,36 @@ function createFixture(): string {
     writeFileSync(join(root, "node_modules", "pkg", "index.ts"), "export class Package {}\n");
     writeFileSync(join(root, "third-party", "vendor.ts"), "export class Vendor {}\n");
     writeFileSync(join(root, "assets", "framework", "libs", "fairygui", "runtime.ts"), "export class Generated {}\n");
-    writeFileSync(join(root, "src", "main.ts"), [
-        'import { value } from "./dep";',
-        'import { direct } from "./direct.mts";',
-        'import type { Shared } from "./types";',
-        'import { targetFile } from "./target";',
-        'import React from "react";',
-        'export { Model } from "./models";',
-        'export { View } from "./view";',
-        '',
-        'export interface Api { run(): void; }',
-        'export type Alias = Shared;',
-        'export class Service {',
-        '    run(): void {}',
-        '}',
-        '',
-        'export function outer(): void {',
-        '    function inner(): void {}',
-        '    inner();',
-        '}',
-        'const expression = function ignored(): void {};',
-        'void import("./dynamic");',
-        'require("./legacy");',
-        'void value;',
-        'void direct;',
-        'void expression;',
-        '',
-    ].join("\n"));
+    writeFileSync(
+        join(root, "src", "main.ts"),
+        [
+            'import { value } from "./dep";',
+            'import { direct } from "./direct.mts";',
+            'import type { Shared } from "./types";',
+            'import { targetFile } from "./target";',
+            'import React from "react";',
+            'export { Model } from "./models";',
+            'export { View } from "./view";',
+            "",
+            "export interface Api { run(): void; }",
+            "export type Alias = Shared;",
+            "export class Service {",
+            "    run(): void {}",
+            "}",
+            "",
+            "export function outer(): void {",
+            "    function inner(): void {}",
+            "    inner();",
+            "}",
+            "const expression = function ignored(): void {};",
+            'void import("./dynamic");',
+            'require("./legacy");',
+            "void value;",
+            "void direct;",
+            "void expression;",
+            "",
+        ].join("\n"),
+    );
     return root;
 }
 
@@ -94,25 +97,18 @@ describe("scanSources", () => {
 
         const result = scanSources(root, files);
 
-        expect(result.files).toEqual([
-            "src/dep.ts",
-            "src/direct.mts",
-            "src/main.ts",
-            "src/models/index.ts",
-            "src/target.tsx",
-            "src/target/index.ts",
-            "src/types.ts",
-            "src/view.tsx",
-        ]);
-        expect(result.declarations.map(({ name, qualifiedName, kind, filePath, startLine, endLine, exported }) => ({
-            name,
-            qualifiedName,
-            kind,
-            filePath,
-            startLine,
-            endLine,
-            exported,
-        }))).toEqual([
+        expect(result.files).toEqual(["src/dep.ts", "src/direct.mts", "src/main.ts", "src/models/index.ts", "src/target.tsx", "src/target/index.ts", "src/types.ts", "src/view.tsx"]);
+        expect(
+            result.declarations.map(({ name, qualifiedName, kind, filePath, startLine, endLine, exported }) => ({
+                name,
+                qualifiedName,
+                kind,
+                filePath,
+                startLine,
+                endLine,
+                exported,
+            })),
+        ).toEqual([
             { name: "direct", qualifiedName: "direct", kind: "function", filePath: "src/direct.mts", startLine: 1, endLine: 1, exported: true },
             { name: "Api", qualifiedName: "Api", kind: "interface", filePath: "src/main.ts", startLine: 9, endLine: 9, exported: true },
             { name: "run", qualifiedName: "Api::run", kind: "method", filePath: "src/main.ts", startLine: 9, endLine: 9, exported: false },
@@ -140,43 +136,32 @@ describe("scanSources", () => {
     });
 
     test("不穿透表达式子树但保留声明作用域", () => {
-        const { root } = createSourceFixture([
-            'const objectValue = { method() { function leakedObject() {} } };',
-            'const functionValue = function namedExpression() { function leakedFunction() {} };',
-            'const arrowValue = () => { function leakedArrow() {} };',
-            'const classValue = class Hidden { method() { function leakedClass() {} } };',
-            'function visible() {',
-            '    function nested() {}',
-            '    const nestedExpression = () => { function leakedNestedExpression() {} };',
-            '}',
-            'class Declared {',
-            '    method() { function methodNested() {} }',
-            '}',
-            '',
-        ].join("\n"));
+        const { root } = createSourceFixture(
+            [
+                "const objectValue = { method() { function leakedObject() {} } };",
+                "const functionValue = function namedExpression() { function leakedFunction() {} };",
+                "const arrowValue = () => { function leakedArrow() {} };",
+                "const classValue = class Hidden { method() { function leakedClass() {} } };",
+                "function visible() {",
+                "    function nested() {}",
+                "    const nestedExpression = () => { function leakedNestedExpression() {} };",
+                "}",
+                "class Declared {",
+                "    method() { function methodNested() {} }",
+                "}",
+                "",
+            ].join("\n"),
+        );
 
         const result = scanSources(root, ["src/main.ts"]);
 
-        expect(result.declarations.map((declaration) => declaration.qualifiedName)).toEqual([
-            "visible",
-            "visible::nested",
-            "Declared",
-            "Declared::method",
-            "Declared::method::methodNested",
-        ]);
+        expect(result.declarations.map((declaration) => declaration.qualifiedName)).toEqual(["visible", "visible::nested", "Declared", "Declared::method", "Declared::method::methodNested"]);
     });
 
     test("识别模块本地导出列表、alias 与 default export", () => {
-        const { root } = createSourceFixture([
-            'class Direct {}',
-            'class Aliased {}',
-            'class Defaulted {}',
-            'class Private {}',
-            'export { Direct };',
-            'export { Aliased as PublicAlias };',
-            'export default Defaulted;',
-            '',
-        ].join("\n"));
+        const { root } = createSourceFixture(
+            ["class Direct {}", "class Aliased {}", "class Defaulted {}", "class Private {}", "export { Direct };", "export { Aliased as PublicAlias };", "export default Defaulted;", ""].join("\n"),
+        );
 
         const result = scanSources(root, ["src/main.ts"]);
 
@@ -189,29 +174,33 @@ describe("scanSources", () => {
     });
 
     test("聚合 overload 与 declaration merging 为唯一声明", () => {
-        const { root } = createSourceFixture([
-            'export function parse(value: string): string;',
-            'function parse(value: number): number;',
-            'function parse(value: string | number): string | number { return value; }',
-            'class Parser {',
-            '    parse(value: string): string;',
-            '    parse(value: number): number;',
-            '    parse(value: string | number): string | number { return value; }',
-            '}',
-            'interface Config { first: string; }',
-            'export interface Config { second: number; }',
-            '',
-        ].join("\n"));
+        const { root } = createSourceFixture(
+            [
+                "export function parse(value: string): string;",
+                "function parse(value: number): number;",
+                "function parse(value: string | number): string | number { return value; }",
+                "class Parser {",
+                "    parse(value: string): string;",
+                "    parse(value: number): number;",
+                "    parse(value: string | number): string | number { return value; }",
+                "}",
+                "interface Config { first: string; }",
+                "export interface Config { second: number; }",
+                "",
+            ].join("\n"),
+        );
 
         const result = scanSources(root, ["src/main.ts"]);
 
-        expect(result.declarations.map(({ qualifiedName, kind, startLine, endLine, exported }) => ({
-            qualifiedName,
-            kind,
-            startLine,
-            endLine,
-            exported,
-        }))).toEqual([
+        expect(
+            result.declarations.map(({ qualifiedName, kind, startLine, endLine, exported }) => ({
+                qualifiedName,
+                kind,
+                startLine,
+                endLine,
+                exported,
+            })),
+        ).toEqual([
             { qualifiedName: "parse", kind: "function", startLine: 1, endLine: 3, exported: true },
             { qualifiedName: "Parser", kind: "class", startLine: 4, endLine: 8, exported: false },
             { qualifiedName: "Parser::parse", kind: "method", startLine: 5, endLine: 7, exported: false },

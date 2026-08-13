@@ -1,19 +1,10 @@
 import { describe, expect, test } from "bun:test";
 
 import type { SymbolRef } from "../lib/config/types";
-import {
-    createCodeGraphGateway,
-} from "../lib/codegraph/gateway";
+import { createCodeGraphGateway } from "../lib/codegraph/gateway";
 import { CodeGraphCommandError, CodeGraphJsonError, CodeGraphTimeoutError } from "../lib/codegraph/errors";
 import type { CommandRunner } from "../lib/codegraph/process";
-import {
-    duplicateLaunchResults,
-    errorDiagnostic,
-    gatewayWith,
-    launchNode,
-    projectRoot,
-    success,
-} from "./helpers/codegraph-gateway-fixtures";
+import { duplicateLaunchResults, errorDiagnostic, gatewayWith, launchNode, projectRoot, success } from "./helpers/codegraph-gateway-fixtures";
 
 describe("CodeGraphGateway", () => {
     test("resolveSymbol 用 file 消歧 qualifiedName", async () => {
@@ -137,14 +128,7 @@ describe("CodeGraphGateway", () => {
     });
 
     test("CodeGraph 1.5 节点可省略可选可见性与布尔元数据", async () => {
-        const {
-            visibility: _visibility,
-            isExported: _isExported,
-            isAsync: _isAsync,
-            isStatic: _isStatic,
-            isAbstract: _isAbstract,
-            ...node
-        } = launchNode;
+        const { visibility: _visibility, isExported: _isExported, isAsync: _isAsync, isStatic: _isStatic, isAbstract: _isAbstract, ...node } = launchNode;
         const gateway = gatewayWith({ query: success([{ node, score: 1 }]) });
         const [result] = await gateway.search("launch");
         expect(result?.qualifiedName).toBe("createBootFlow::launch");

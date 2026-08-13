@@ -31,10 +31,7 @@ export async function run(argv: readonly string[]): Promise<number> {
         };
         const importMap = settings.script?.importMap;
         if (importMap !== "project://import-map.json") {
-            failures.push(
-                `script.importMap 应为 "project://import-map.json"，当前为 ${JSON.stringify(importMap)}` +
-                "（绝对路径会静默降级导致裸包名解析失败）",
-            );
+            failures.push(`script.importMap 应为 "project://import-map.json"，当前为 ${JSON.stringify(importMap)}` + "（绝对路径会静默降级导致裸包名解析失败）");
         }
     }
 

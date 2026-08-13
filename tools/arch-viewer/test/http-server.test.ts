@@ -49,12 +49,14 @@ describe("startArchServer", () => {
 
             expect(await group.json()).toEqual(expect.objectContaining({ rootGroupId: "entry" }));
             expect(await neighborhood.json()).toEqual(expect.objectContaining({ nodes: [expect.objectContaining({ id: "symbol:launch" })] }));
-            expect(await source.json()).toEqual(expect.objectContaining({
-                location: { filePath: resolve(root, "src/large.ts"), line: 60 },
-                startLine: 20,
-                endLine: 99,
-                lines: expect.arrayContaining([expect.objectContaining({ number: 60, text: "export const line60 = 60;" })]),
-            }));
+            expect(await source.json()).toEqual(
+                expect.objectContaining({
+                    location: { filePath: resolve(root, "src/large.ts"), line: 60 },
+                    startLine: 20,
+                    endLine: 99,
+                    lines: expect.arrayContaining([expect.objectContaining({ number: 60, text: "export const line60 = 60;" })]),
+                }),
+            );
         } finally {
             await server.close();
         }
@@ -62,7 +64,7 @@ describe("startArchServer", () => {
 
     test("rejects repository-local files that are not snapshot node locations", async () => {
         const root = createFixtureRoot();
-        writeFixtureFile(root, "package.json", "{\"private\":true}\n");
+        writeFixtureFile(root, "package.json", '{"private":true}\n');
         const server = await startArchServer({ projectRoot: root, store: createGraphSnapshotStore(snapshot()) });
         try {
             const denied = await fetch(`${server.url}/api/source?file=package.json&line=1`);
@@ -70,10 +72,12 @@ describe("startArchServer", () => {
 
             expect(denied.status).toBe(403);
             expect(await denied.json()).toEqual({ error: "forbidden" });
-            expect(await allowed.json()).toEqual(expect.objectContaining({
-                location: { filePath: resolve(root, "src/entry.ts"), line: 1 },
-                lines: expect.arrayContaining([expect.objectContaining({ number: 1, text: "export function launch() { return true; }" })]),
-            }));
+            expect(await allowed.json()).toEqual(
+                expect.objectContaining({
+                    location: { filePath: resolve(root, "src/entry.ts"), line: 1 },
+                    lines: expect.arrayContaining([expect.objectContaining({ number: 1, text: "export function launch() { return true; }" })]),
+                }),
+            );
         } finally {
             await server.close();
         }
@@ -105,10 +109,12 @@ describe("startArchServer", () => {
         writeFileSync(externalFile, "export const outside = true;\n");
         const linkFile = join(root, "src", "outside-link.ts");
         if (!tryCreateSymlink(externalFile, linkFile)) {
-            await expect(readSourceExcerpt(root, "src/outside-link.ts", 1, 20, {
-                realpath: async (path) => path === linkFile ? externalFile : path,
-                readFile: async () => "export const outside = true;\n",
-            })).rejects.toEqual(new SourceReadError("forbidden", "forbidden"));
+            await expect(
+                readSourceExcerpt(root, "src/outside-link.ts", 1, 20, {
+                    realpath: async (path) => (path === linkFile ? externalFile : path),
+                    readFile: async () => "export const outside = true;\n",
+                }),
+            ).rejects.toEqual(new SourceReadError("forbidden", "forbidden"));
             return;
         }
         const server = await startArchServer({ projectRoot: root, store: createGraphSnapshotStore(snapshot()) });
@@ -218,7 +224,7 @@ describe("isInsideStaticRoot", () => {
 
     test("rejects targets whose realpath escapes the static root", async () => {
         const allowed = await isRealPathInsideStaticRoot("/repo/web", "/repo/web/app.css", {
-            realpath: async (path) => path === "/repo/web/app.css" ? "/external/app.css" : path,
+            realpath: async (path) => (path === "/repo/web/app.css" ? "/external/app.css" : path),
         });
 
         expect(allowed).toBe(false);

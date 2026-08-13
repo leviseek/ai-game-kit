@@ -136,11 +136,7 @@ export async function startWorkbench(root: Document = document): Promise<Workben
     return { dispose: disconnect };
 }
 
-export function createInitialCanvasTransform(
-    container: Pick<HTMLElement, "clientWidth" | "clientHeight">,
-    layout: LayoutGraph,
-    viewType: ViewType,
-): CanvasTransform {
+export function createInitialCanvasTransform(container: Pick<HTMLElement, "clientWidth" | "clientHeight">, layout: LayoutGraph, viewType: ViewType): CanvasTransform {
     return viewType === "hierarchy" ? fitTransform(container, layout) : { x: 0, y: 0, scale: 1 };
 }
 
@@ -173,9 +169,7 @@ function requireElement<T extends Element>(root: Document, id: string, type: new
 }
 
 function renderStatus(container: HTMLElement, state: WorkbenchState): void {
-    const text = state.status.kind === "error"
-        ? state.status.message
-        : `${state.viewType} · ${state.currentView.nodes.length} nodes · ${state.currentView.edges.length} edges`;
+    const text = state.status.kind === "error" ? state.status.message : `${state.viewType} · ${state.currentView.nodes.length} nodes · ${state.currentView.edges.length} edges`;
     container.textContent = text;
     container.dataset.kind = state.status.kind;
 }
@@ -185,14 +179,16 @@ function renderBreadcrumbs(container: HTMLElement, state: WorkbenchState, onNavi
         container.replaceChildren(text("root"));
         return;
     }
-    container.replaceChildren(...state.breadcrumbs.map((id, index) => {
-        if (index === state.breadcrumbs.length - 1) return text(id);
-        const button = document.createElement("button");
-        button.type = "button";
-        button.textContent = id;
-        button.addEventListener("click", () => onNavigate(id));
-        return button;
-    }));
+    container.replaceChildren(
+        ...state.breadcrumbs.map((id, index) => {
+            if (index === state.breadcrumbs.length - 1) return text(id);
+            const button = document.createElement("button");
+            button.type = "button";
+            button.textContent = id;
+            button.addEventListener("click", () => onNavigate(id));
+            return button;
+        }),
+    );
 }
 
 function text(value: string): HTMLSpanElement {

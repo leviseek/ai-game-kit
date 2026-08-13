@@ -6,8 +6,7 @@ import type { Diagnostic, Evidence, GraphEdge, GraphNode, GraphView } from "../g
 import { semanticNode } from "./semantic-path";
 
 function isTestFile(filePath: string): boolean {
-    return /(?:^|\/)(?:test|tests|__tests__)(?:\/|$)/.test(filePath)
-        || /\.(?:test|spec)\.[^/]+$/.test(filePath);
+    return /(?:^|\/)(?:test|tests|__tests__)(?:\/|$)/.test(filePath) || /\.(?:test|spec)\.[^/]+$/.test(filePath);
 }
 
 function nodeFromRelation(item: CodeGraphRelationNode, role: string): GraphNode {
@@ -39,10 +38,7 @@ async function resolveAnchor(gateway: CodeGraphGateway, ref: SymbolRef): Promise
     return gateway.resolveSymbol(ref);
 }
 
-export async function buildCallView(
-    gateway: CodeGraphGateway,
-    anchors: readonly SymbolRef[],
-): Promise<GraphView> {
+export async function buildCallView(gateway: CodeGraphGateway, anchors: readonly SymbolRef[]): Promise<GraphView> {
     const nodes = new Map<string, GraphNode>();
     const edges = new Map<string, GraphEdge>();
     const diagnostics: Diagnostic[] = [];
@@ -55,11 +51,7 @@ export async function buildCallView(
         }
         nodes.set(anchor.id, semanticNode(anchor, { role: "incoming" }));
 
-        const [callers, callees, affected] = await Promise.all([
-            gateway.callers(anchor.qualifiedName),
-            gateway.callees(anchor.qualifiedName),
-            gateway.impact(anchor.qualifiedName),
-        ]);
+        const [callers, callees, affected] = await Promise.all([gateway.callers(anchor.qualifiedName), gateway.callees(anchor.qualifiedName), gateway.impact(anchor.qualifiedName)]);
         for (const caller of callers) {
             const node = nodeFromRelation(caller, "incoming");
             nodes.set(node.id, node);
@@ -83,7 +75,6 @@ export async function buildCallView(
         nodes: [...nodes.values()].sort((left, right) => left.id.localeCompare(right.id)),
         edges: [...edges.values()].sort((left, right) => left.id.localeCompare(right.id)),
         groups: [],
-        diagnostics: diagnostics.sort((left, right) => (left.source ?? "").localeCompare(right.source ?? "")
-            || left.message.localeCompare(right.message)),
+        diagnostics: diagnostics.sort((left, right) => (left.source ?? "").localeCompare(right.source ?? "") || left.message.localeCompare(right.message)),
     };
 }

@@ -3,18 +3,10 @@ function joinId(parts: readonly string[]): string {
     return parts.map(encodeURIComponent).join(":");
 }
 
-export function createNodeId(
-    kind: string,
-    filePath: string,
-    qualifiedName: string,
-): string {
+export function createNodeId(kind: string, filePath: string, qualifiedName: string): string {
     return joinId([kind, filePath, qualifiedName]);
 }
 
-export function createEdgeId(
-    from: string,
-    to: string,
-    relation: string,
-): string {
+export function createEdgeId(from: string, to: string, relation: string): string {
     return joinId([from, to, relation]);
 }

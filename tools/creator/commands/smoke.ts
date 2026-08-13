@@ -7,8 +7,7 @@ import { serveDir } from "../lib/http";
 import { acquireLock, releaseLock } from "../lib/lock";
 import { getProjectRoot } from "../lib/env";
 
-export const help =
-    "smoke [--debug true] [--scene <uuid|路径>...] —— 端到端冒烟：校验配置 → 构建 → headless Chrome 运行验证";
+export const help = "smoke [--debug true] [--scene <uuid|路径>...] —— 端到端冒烟：校验配置 → 构建 → headless Chrome 运行验证";
 
 /**
  * 端到端冒烟编排（组合器，不重复实现原子逻辑）：

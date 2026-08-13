@@ -2,20 +2,9 @@ import { describe, expect, test } from "bun:test";
 
 import { createEdgeId, createNodeId } from "../lib/graph/ids";
 import { freezeSnapshot } from "../lib/graph/snapshot";
-import type {
-    GraphSnapshot,
-    GraphView,
-    ViewType,
-} from "../lib/graph/types";
+import type { GraphSnapshot, GraphView, ViewType } from "../lib/graph/types";
 
-const viewTypes = [
-    "hierarchy",
-    "startup",
-    "dependencies",
-    "data-flow",
-    "calls",
-    "resources",
-] as const satisfies readonly ViewType[];
+const viewTypes = ["hierarchy", "startup", "dependencies", "data-flow", "calls", "resources"] as const satisfies readonly ViewType[];
 
 function createView(type: ViewType): GraphView {
     return {
@@ -49,18 +38,12 @@ describe("graph ids", () => {
         const id = createNodeId("function", "assets/a.ts", "createA::run");
 
         expect(id).toBe("function:assets%2Fa.ts:createA%3A%3Arun");
-        expect(id).toBe(
-            createNodeId("function", "assets/a.ts", "createA::run"),
-        );
+        expect(id).toBe(createNodeId("function", "assets/a.ts", "createA::run"));
     });
 
     test("相同关系端点生成稳定且有方向的边 id", () => {
-        expect(createEdgeId("module:a", "module:b", "imports")).toBe(
-            "module%3Aa:module%3Ab:imports",
-        );
-        expect(createEdgeId("module:a", "module:b", "imports")).not.toBe(
-            createEdgeId("module:b", "module:a", "imports"),
-        );
+        expect(createEdgeId("module:a", "module:b", "imports")).toBe("module%3Aa:module%3Ab:imports");
+        expect(createEdgeId("module:a", "module:b", "imports")).not.toBe(createEdgeId("module:b", "module:a", "imports"));
     });
 });
 

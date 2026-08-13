@@ -11,17 +11,22 @@ function setupProject(): { dir: string; project: FguiProject } {
     const setupPkg = (pkgName: string, pkgId: string, comps: Array<[string, string, boolean]>) => {
         const pkgDir = join(dir, "assets", pkgName);
         mkdirSync(pkgDir, { recursive: true });
-        const resources = comps.map(([id, name, exported]) =>
-            `<component id="${id}" name="${name}" path="/" exported="${exported}"/>`).join("");
-        writeFileSync(join(pkgDir, "package.xml"),
-            `<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="${pkgId}"><resources>${resources}<image id="bg00" name="bg.png" path="/img/"/></resources></packageDescription>`);
+        const resources = comps.map(([id, name, exported]) => `<component id="${id}" name="${name}" path="/" exported="${exported}"/>`).join("");
+        writeFileSync(
+            join(pkgDir, "package.xml"),
+            `<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="${pkgId}"><resources>${resources}<image id="bg00" name="bg.png" path="/img/"/></resources></packageDescription>`,
+        );
         for (const [, name] of comps) {
             writeFileSync(join(pkgDir, name), `<component size="1,1"><displayList/></component>`);
         }
         mkdirSync(join(pkgDir, "img"), { recursive: true });
         writeFileSync(join(pkgDir, "img", "bg.png"), "x");
     };
-    setupPkg("Demo", "4q9x2uij", [["03gta", "LobbyView.xml", true], ["29kie", "SettingsPanel2.xml", true], ["hid00", "Hidden.xml", false]]);
+    setupPkg("Demo", "4q9x2uij", [
+        ["03gta", "LobbyView.xml", true],
+        ["29kie", "SettingsPanel2.xml", true],
+        ["hid00", "Hidden.xml", false],
+    ]);
     setupPkg("Common", "cmn00001", [["com03", "UnitSlot.xml", true]]);
     return { dir, project: { root: dir, projectDir: dir, name: "demo", assetsDir: join(dir, "assets") } };
 }

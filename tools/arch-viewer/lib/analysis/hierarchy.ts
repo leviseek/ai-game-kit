@@ -34,19 +34,14 @@ function dynamicId(kind: string, ...parts: readonly string[]): string {
 }
 
 function isTestFile(filePath: string): boolean {
-    return /(?:^|\/)(?:test|tests|__tests__)(?:\/|$)/.test(filePath)
-        || /\.(?:test|spec)\.[^/]+$/.test(filePath);
+    return /(?:^|\/)(?:test|tests|__tests__)(?:\/|$)/.test(filePath) || /\.(?:test|spec)\.[^/]+$/.test(filePath);
 }
 
 function patternsOf(group: HierarchyGroupConfig): readonly string[] {
     return group.children.filter((child): child is string => typeof child === "string");
 }
 
-export function buildHierarchyView(
-    config: ArchitectureConfig,
-    files: readonly string[],
-    symbols: readonly SourceDeclaration[],
-): GraphView {
+export function buildHierarchyView(config: ArchitectureConfig, files: readonly string[], symbols: readonly SourceDeclaration[]): GraphView {
     const groups: MutableGroup[] = [];
     const groupById = new Map<string, MutableGroup>();
     const owners: Owner[] = [];
@@ -57,11 +52,7 @@ export function buildHierarchyView(
         groupById.set(group.id, group);
         return group;
     };
-    const addConfiguredGroup = (
-        group: HierarchyGroupConfig,
-        parentId: string | undefined,
-        level: number,
-    ): void => {
+    const addConfiguredGroup = (group: HierarchyGroupConfig, parentId: string | undefined, level: number): void => {
         const patterns = patternsOf(group);
         addGroup({
             id: group.id,
@@ -110,9 +101,7 @@ export function buildHierarchyView(
     const fileGroups = new Map<string, MutableGroup>();
 
     for (const filePath of normalizedFiles) {
-        const matches = owners.filter((owner) =>
-            owner.patterns.some((pattern) => matchProjectGlob(filePath, pattern)),
-        );
+        const matches = owners.filter((owner) => owner.patterns.some((pattern) => matchProjectGlob(filePath, pattern)));
         const owner = matches.length === 1 ? matches[0] : undefined;
         let parent = owner === undefined ? getUnclassified() : groupById.get(owner.id)!;
         if (owner !== undefined && owner.level < 3) {
@@ -167,38 +156,40 @@ export function buildHierarchyView(
         fileGroups.set(filePath, fileGroup);
     }
 
-    const nodes: GraphNode[] = symbols.map((declaration) => {
-        const filePath = normalizePath(declaration.filePath);
-        return {
-            id: declaration.id,
-            kind: declaration.kind,
-            label: declaration.name,
-            qualifiedName: declaration.qualifiedName,
-            location: {
-                filePath,
-                line: declaration.startLine,
-                endLine: declaration.endLine,
-            },
-            evidence: declaration.occurrences.map((occurrence) => ({
-                source: filePath,
+    const nodes: GraphNode[] = symbols
+        .map((declaration) => {
+            const filePath = normalizePath(declaration.filePath);
+            return {
+                id: declaration.id,
+                kind: declaration.kind,
+                label: declaration.name,
+                qualifiedName: declaration.qualifiedName,
                 location: {
                     filePath,
-                    line: occurrence.startLine,
-                    endLine: occurrence.endLine,
+                    line: declaration.startLine,
+                    endLine: declaration.endLine,
                 },
-                detail: `${occurrence.scopeKind}:${occurrence.memberKind}${occurrence.static ? ":static" : ""}`,
-            })),
-            metadata: {
-                level: 5,
-                parentId: fileGroups.get(filePath)?.id,
-                exported: declaration.exported,
-                occurrenceCount: declaration.occurrences.length,
-            },
-        };
-    }).sort((left, right) =>
-        (left.location?.filePath ?? "").localeCompare(right.location?.filePath ?? "")
-        || (left.location?.line ?? 0) - (right.location?.line ?? 0)
-        || left.id.localeCompare(right.id));
+                evidence: declaration.occurrences.map((occurrence) => ({
+                    source: filePath,
+                    location: {
+                        filePath,
+                        line: occurrence.startLine,
+                        endLine: occurrence.endLine,
+                    },
+                    detail: `${occurrence.scopeKind}:${occurrence.memberKind}${occurrence.static ? ":static" : ""}`,
+                })),
+                metadata: {
+                    level: 5,
+                    parentId: fileGroups.get(filePath)?.id,
+                    exported: declaration.exported,
+                    occurrenceCount: declaration.occurrences.length,
+                },
+            };
+        })
+        .sort(
+            (left, right) =>
+                (left.location?.filePath ?? "").localeCompare(right.location?.filePath ?? "") || (left.location?.line ?? 0) - (right.location?.line ?? 0) || left.id.localeCompare(right.id),
+        );
 
     const stats = new Map<string, GroupStats>();
     const getStats = (id: string): GroupStats => {

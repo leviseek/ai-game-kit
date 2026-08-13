@@ -101,11 +101,7 @@ function listArtifacts(artifactsDir: string, pkg: string): string[] {
  * 检测单个包的产物与源一致性。
  * 返回 ok=false 时，mismatches 包含每项差异的可读描述。
  */
-export function checkPackageArtifacts(
-    artifactsDir: string,
-    sourcesDir: string,
-    pkg: string,
-): { ok: boolean; mismatches: string[] } {
+export function checkPackageArtifacts(artifactsDir: string, sourcesDir: string, pkg: string): { ok: boolean; mismatches: string[] } {
     const mismatches: string[] = [];
     const artifacts = listArtifacts(artifactsDir, pkg);
     if (artifacts.length === 0) {
@@ -165,11 +161,7 @@ export function checkPublish(project: FguiProjectInfo, options: { signalPath: st
 
     const artifactsDir = resolveArtifactsDir();
     const sourcesBase = join(project.projectDir, "assets");
-    const targetPkgs = options.packages && options.packages.length > 0
-        ? options.packages
-        : signal && signal.packages.length > 0
-            ? signal.packages
-            : listArtifactPackages(artifactsDir);
+    const targetPkgs = options.packages && options.packages.length > 0 ? options.packages : signal && signal.packages.length > 0 ? signal.packages : listArtifactPackages(artifactsDir);
 
     const artifactsMismatches: string[] = [];
     let artifactsPresent = false;
@@ -186,11 +178,7 @@ export function checkPublish(project: FguiProjectInfo, options: { signalPath: st
 
     const mismatches: string[] = [];
     if (!signal || !signalFresh || !signal.isSuccess) {
-        mismatches.push(
-            signalFresh
-                ? "发布信号缺失或无效：请先在编辑器执行发布（onPublishEnd 应写 publish-signal.json）"
-                : "发布信号过期：请重新在编辑器执行发布后重试",
-        );
+        mismatches.push(signalFresh ? "发布信号缺失或无效：请先在编辑器执行发布（onPublishEnd 应写 publish-signal.json）" : "发布信号过期：请重新在编辑器执行发布后重试");
     }
     if (artifactsMismatches.length > 0) mismatches.push(...artifactsMismatches);
     if (!validatePassed) {

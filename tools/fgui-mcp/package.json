@@ -1,20 +1,20 @@
 {
-  "name": "fgui-mcp",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "description": "FairyGUI 编辑器 MCP server：经文件邮箱桥接层驱动 FGUI 编辑器插件，向 AI 代理暴露包/资源/发布配置查询与发布检测确定性工具",
-  "bin": {
-    "fgui-mcp": "cli.ts"
-  },
-  "scripts": {
-    "test": "bun test ./test"
-  },
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.12.0",
-    "zod": "^4.0.0"
-  },
-  "devDependencies": {
-    "@types/node": "^26.1.2"
-  }
+    "name": "fgui-mcp",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "description": "FairyGUI 编辑器 MCP server：经文件邮箱桥接层驱动 FGUI 编辑器插件，向 AI 代理暴露包/资源/发布配置查询与发布检测确定性工具",
+    "bin": {
+        "fgui-mcp": "cli.ts"
+    },
+    "scripts": {
+        "test": "bun test ./test"
+    },
+    "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.12.0",
+        "zod": "^4.0.0"
+    },
+    "devDependencies": {
+        "@types/node": "^26.1.2"
+    }
 }

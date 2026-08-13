@@ -84,9 +84,7 @@ export function scanTsRawUrls(project: FguiProject): TsUrlIssue[] {
                         continue;
                     }
                     const constantName = known.get(url);
-                    const msg = constantName
-                        ? `建议改用生成常量 ${constantName}（裸 ui:// URL 应引用 ui/generated/ 产物）`
-                        : `未登记的 ui:// URL "${url}"（检查资源名或先重跑 gen-constants）`;
+                    const msg = constantName ? `建议改用生成常量 ${constantName}（裸 ui:// URL 应引用 ui/generated/ 产物）` : `未登记的 ui:// URL "${url}"（检查资源名或先重跑 gen-constants）`;
                     issues.push({ file: norm, line: i + 1, severity: constantName ? "warning" : "error", message: msg });
                 }
             }

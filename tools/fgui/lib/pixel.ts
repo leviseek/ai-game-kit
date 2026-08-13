@@ -48,15 +48,7 @@ export function fillRect(buf: PixelBuffer, x: number, y: number, w: number, h: n
  * 填充圆角矩形：四角为 1/4 圆（像素风用整数圆），
  * 边/中心走 fillRect，无抗锯齿。radius 为圆角半径像素。
  */
-export function fillRoundRect(
-    buf: PixelBuffer,
-    x: number,
-    y: number,
-    w: number,
-    h: number,
-    radius: number,
-    color: Rgba,
-): void {
+export function fillRoundRect(buf: PixelBuffer, x: number, y: number, w: number, h: number, radius: number, color: Rgba): void {
     const r = Math.max(0, Math.min(radius, Math.floor(Math.min(w, h) / 2)));
     const x0 = Math.max(0, x);
     const y0 = Math.max(0, y);
@@ -159,12 +151,7 @@ export function encodePng(width: number, height: number, rgba: Uint8ClampedArray
     }
     const idatData = deflateSync(raw, { level: 9 });
 
-    const parts: Uint8Array[] = [
-        signature,
-        pngChunk("IHDR", ihdr),
-        pngChunk("IDAT", idatData),
-        pngChunk("IEND", new Uint8Array(0)),
-    ];
+    const parts: Uint8Array[] = [signature, pngChunk("IHDR", ihdr), pngChunk("IDAT", idatData), pngChunk("IEND", new Uint8Array(0))];
     const total = parts.reduce((sum, p) => sum + p.length, 0);
     const out = new Uint8Array(total);
     let offset = 0;
@@ -212,10 +199,7 @@ function parseColor(value: string): Rgba | undefined {
  * 渲染 ASCII 画布：每行字符对应一行像素，字符映射调色板，
  * "." 或空格为透明。每行前导空白会被修剪（代码缩进容错）。
  */
-export function renderAscii(
-    art: readonly string[],
-    palette: Map<string, Rgba>,
-): { width: number; height: number; data: Uint8ClampedArray } {
+export function renderAscii(art: readonly string[], palette: Map<string, Rgba>): { width: number; height: number; data: Uint8ClampedArray } {
     const rows = art.map((line) => line.trimEnd().trimStart());
     const widths = new Set(rows.map((line) => line.length));
     if (widths.size > 1) {

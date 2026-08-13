@@ -5,9 +5,7 @@ export interface ArchCliOptions {
     readonly help: boolean;
 }
 
-export type ParseArchArgsResult =
-    | Readonly<{ ok: true; options: ArchCliOptions }>
-    | Readonly<{ ok: false; message: string }>;
+export type ParseArchArgsResult = Readonly<{ ok: true; options: ArchCliOptions }> | Readonly<{ ok: false; message: string }>;
 
 export function parseArchArgs(argv: readonly string[]): ParseArchArgsResult {
     let port: number | undefined;

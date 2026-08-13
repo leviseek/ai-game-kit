@@ -6,7 +6,7 @@ export function attachSse(response: ServerResponse, store: GraphSnapshotStore): 
     response.writeHead(200, {
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
-        "Connection": "keep-alive",
+        Connection: "keep-alive",
     });
     response.write(": keep-alive\n\n");
 

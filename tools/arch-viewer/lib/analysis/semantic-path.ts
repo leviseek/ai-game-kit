@@ -42,9 +42,7 @@ function relationKey(item: CodeGraphRelationNode): string {
 }
 
 function matchesRelation(node: CodeGraphNode, relation: CodeGraphRelationNode): boolean {
-    return node.filePath === relation.filePath
-        && node.startLine === relation.startLine
-        && (node.name === relation.name || node.qualifiedName === relation.name);
+    return node.filePath === relation.filePath && node.startLine === relation.startLine && (node.name === relation.name || node.qualifiedName === relation.name);
 }
 
 function evidenceOf(source: string, item: CodeGraphRelationNode, detail: string): Evidence {
@@ -55,15 +53,8 @@ function evidenceOf(source: string, item: CodeGraphRelationNode, detail: string)
     };
 }
 
-async function directEvidence(
-    gateway: CodeGraphGateway,
-    from: CodeGraphNode,
-    to: CodeGraphNode,
-): Promise<readonly Evidence[]> {
-    const [callees, callers] = await Promise.all([
-        gateway.callees(from.qualifiedName),
-        gateway.callers(to.qualifiedName),
-    ]);
+async function directEvidence(gateway: CodeGraphGateway, from: CodeGraphNode, to: CodeGraphNode): Promise<readonly Evidence[]> {
+    const [callees, callers] = await Promise.all([gateway.callees(from.qualifiedName), gateway.callers(to.qualifiedName)]);
     const callee = callees.find((item) => matchesRelation(to, item));
     if (callee !== undefined) {
         return [evidenceOf("codegraph.callees", callee, `${from.qualifiedName} -> ${to.qualifiedName}`)];
@@ -75,33 +66,19 @@ async function directEvidence(
     return [];
 }
 
-async function twoHopEvidence(
-    gateway: CodeGraphGateway,
-    from: CodeGraphNode,
-    to: CodeGraphNode,
-): Promise<readonly Evidence[]> {
-    const [fromCallees, toCallers] = await Promise.all([
-        gateway.callees(from.qualifiedName),
-        gateway.callers(to.qualifiedName),
-    ]);
+async function twoHopEvidence(gateway: CodeGraphGateway, from: CodeGraphNode, to: CodeGraphNode): Promise<readonly Evidence[]> {
+    const [fromCallees, toCallers] = await Promise.all([gateway.callees(from.qualifiedName), gateway.callers(to.qualifiedName)]);
     const callersByKey = new Map(toCallers.map((item) => [relationKey(item), item]));
     for (const callee of fromCallees) {
         const caller = callersByKey.get(relationKey(callee));
         if (caller === undefined) continue;
         const via = `${callee.name} (${callee.filePath}:${callee.startLine})`;
-        return [
-            evidenceOf("codegraph.callees", callee, `${from.qualifiedName} -> ${via}`),
-            evidenceOf("codegraph.callers", caller, `${via} -> ${to.qualifiedName}`),
-        ];
+        return [evidenceOf("codegraph.callees", callee, `${from.qualifiedName} -> ${via}`), evidenceOf("codegraph.callers", caller, `${via} -> ${to.qualifiedName}`)];
     }
     return [];
 }
 
-async function findDirectOrTwoHopPath(
-    gateway: CodeGraphGateway,
-    from: CodeGraphNode,
-    to: CodeGraphNode,
-): Promise<readonly Evidence[]> {
+async function findDirectOrTwoHopPath(gateway: CodeGraphGateway, from: CodeGraphNode, to: CodeGraphNode): Promise<readonly Evidence[]> {
     const direct = await directEvidence(gateway, from, to);
     return direct.length > 0 ? direct : twoHopEvidence(gateway, from, to);
 }
@@ -120,10 +97,7 @@ function semanticEdge(from: CodeGraphNode, to: CodeGraphNode, evidence: readonly
     };
 }
 
-async function resolveAnchors(
-    gateway: CodeGraphGateway,
-    anchors: readonly SymbolRef[],
-): Promise<{ readonly anchors: readonly ResolvedAnchor[]; readonly diagnostics: readonly Diagnostic[] }> {
+async function resolveAnchors(gateway: CodeGraphGateway, anchors: readonly SymbolRef[]): Promise<{ readonly anchors: readonly ResolvedAnchor[]; readonly diagnostics: readonly Diagnostic[] }> {
     const resolved: ResolvedAnchor[] = [];
     const diagnostics: Diagnostic[] = [];
     for (const ref of anchors) {
@@ -138,10 +112,7 @@ async function resolveAnchors(
     return { anchors: resolved, diagnostics };
 }
 
-export async function resolveConfiguredPath(
-    gateway: CodeGraphGateway,
-    anchors: readonly SymbolRef[],
-): Promise<ResolvedSemanticPath> {
+export async function resolveConfiguredPath(gateway: CodeGraphGateway, anchors: readonly SymbolRef[]): Promise<ResolvedSemanticPath> {
     const resolved = await resolveAnchors(gateway, anchors);
     const diagnostics = [...resolved.diagnostics];
     const nodes = resolved.anchors
@@ -169,7 +140,6 @@ export async function resolveConfiguredPath(
     return {
         nodes: [...nodes].sort((left, right) => left.id.localeCompare(right.id)),
         edges: edges.sort((left, right) => left.id.localeCompare(right.id)),
-        diagnostics: diagnostics.sort((left, right) => (left.source ?? "").localeCompare(right.source ?? "")
-            || left.message.localeCompare(right.message)),
+        diagnostics: diagnostics.sort((left, right) => (left.source ?? "").localeCompare(right.source ?? "") || left.message.localeCompare(right.message)),
     };
 }

@@ -10,9 +10,7 @@ function expandBraces(pattern: string): readonly string[] {
 
     const choices = pattern.slice(start + 1, end).split(",");
     if (choices.length < 2 || choices.some((choice) => choice === "")) return [pattern];
-    return choices.flatMap((choice) =>
-        expandBraces(`${pattern.slice(0, start)}${choice}${pattern.slice(end + 1)}`),
-    );
+    return choices.flatMap((choice) => expandBraces(`${pattern.slice(0, start)}${choice}${pattern.slice(end + 1)}`));
 }
 
 function escapeRegex(value: string): string {
@@ -41,7 +39,5 @@ function patternRegex(pattern: string): RegExp {
 
 export function matchProjectGlob(path: string, pattern: string): boolean {
     const normalizedPath = normalizePath(path);
-    return expandBraces(normalizePath(pattern)).some((item) =>
-        patternRegex(item).test(normalizedPath),
-    );
+    return expandBraces(normalizePath(pattern)).some((item) => patternRegex(item).test(normalizedPath));
 }

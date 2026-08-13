@@ -7,8 +7,7 @@ import { serveDir } from "../lib/http";
 import { acquireLock, releaseLock } from "../lib/lock";
 import { getProjectRoot } from "../lib/env";
 
-export const help =
-    "scene-smoke [--debug true] —— 场景流转冒烟：构建（含 startup+game 场景）→ headless Chrome 加载 ?smoke=scene-flow 验证预加载/成功切换/失败保留/重试/资源释放闭环";
+export const help = "scene-smoke [--debug true] —— 场景流转冒烟：构建（含 startup+game 场景）→ headless Chrome 加载 ?smoke=scene-flow 验证预加载/成功切换/失败保留/重试/资源释放闭环";
 
 /**
  * 9.4 场景路径冒烟：复用 ui-smoke 的构建 + headless Chrome + CDP 模式，加载带
@@ -39,15 +38,7 @@ export async function run(argv: readonly string[]): Promise<number> {
         }
 
         console.log("[ccc:scene-smoke] 2/3 构建 Web Desktop（startup + game 场景）...");
-        const buildArgs = [
-            ...argv.filter(
-                (arg) => arg !== `--debug=${debug}` && arg !== "--scene",
-            ),
-            "--debug",
-            String(debug),
-            "--scene",
-            "startup,game",
-        ];
+        const buildArgs = [...argv.filter((arg) => arg !== `--debug=${debug}` && arg !== "--scene"), "--debug", String(debug), "--scene", "startup,game"];
         const skipBuild = flagBool(parsed, "skip-build", true);
         const buildCode = skipBuild ? 0 : await runBuild(buildArgs);
         if (buildCode !== 0) {
@@ -71,9 +62,7 @@ export async function run(argv: readonly string[]): Promise<number> {
                 // "Failed to load resource"），与真实脚本异常（Runtime.exceptionThrown）
                 // 不同：前者是故意构造的失败信号，标记已断言保留场景；后者才是失败。
                 // 过滤预期 404，剩余错误仍判失败。
-                const realErrors = result.errors.filter(
-                    (error) => !error.includes("Failed to load resource"),
-                );
+                const realErrors = result.errors.filter((error) => !error.includes("Failed to load resource"));
                 if (realErrors.length > 0) {
                     console.error("[ccc:scene-smoke] === 页面错误 ===");
                     for (const error of realErrors) {
@@ -83,9 +72,7 @@ export async function run(argv: readonly string[]): Promise<number> {
                 }
             }
 
-            const markers = result.consoleLogs.filter((line) =>
-                line.startsWith("[scene-smoke]"),
-            );
+            const markers = result.consoleLogs.filter((line) => line.startsWith("[scene-smoke]"));
             const required = [
                 "entry: ok",
                 "initial-can-unload-game: ok",
@@ -100,9 +87,7 @@ export async function run(argv: readonly string[]): Promise<number> {
                 "missing-bundle-noop: ok",
                 "complete",
             ];
-            const missing = required.filter(
-                (needle) => !markers.some((line) => line.includes(needle)),
-            );
+            const missing = required.filter((needle) => !markers.some((line) => line.includes(needle)));
 
             if (missing.length > 0) {
                 console.error("[ccc:scene-smoke] 冒烟标记不完整，缺少:");

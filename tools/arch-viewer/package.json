@@ -1,10 +1,10 @@
 {
-  "name": "arch-viewer",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "devDependencies": {
-    "@types/node": "^26.1.2",
-    "typescript": "npm:typescript@6.0.2"
-  }
+    "name": "arch-viewer",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "devDependencies": {
+        "@types/node": "^26.1.2",
+        "typescript": "npm:typescript@6.0.2"
+    }
 }

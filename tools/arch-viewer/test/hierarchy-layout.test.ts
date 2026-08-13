@@ -104,6 +104,5 @@ function expectNoOverlap(graph: LayoutGraph): void {
 }
 
 function separated(left: LayoutNode, right: LayoutNode): boolean {
-    return left.x + left.width <= right.x || right.x + right.width <= left.x
-        || left.y + left.height <= right.y || right.y + right.height <= left.y;
+    return left.x + left.width <= right.x || right.x + right.width <= left.x || left.y + left.height <= right.y || right.y + right.height <= left.y;
 }

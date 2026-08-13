@@ -23,9 +23,7 @@ export async function run(argv: readonly string[]): Promise<number> {
     const project = getProjectRoot();
 
     // 经 Start-Process 启动，使 Creator 脱离当前进程树（避免随命令结束被清理）
-    runPowershell(
-        `Start-Process -FilePath '${exe}' -ArgumentList '--nologin','--project','${project}' -WorkingDirectory '${exe.replace(/CocosCreator\.exe$/, "")}'`,
-    );
+    runPowershell(`Start-Process -FilePath '${exe}' -ArgumentList '--nologin','--project','${project}' -WorkingDirectory '${exe.replace(/CocosCreator\.exe$/, "")}'`);
 
     console.log(`[ccc:open] 启动 Creator: ${exe}`);
     const t0 = Date.now();

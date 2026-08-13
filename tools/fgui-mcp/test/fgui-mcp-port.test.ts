@@ -22,14 +22,7 @@ describe("FairyGUI-MCP 移植工具注册表", () => {
     });
 
     it("注册写侧工具（open_component/show_preview/select_element/close_document/clear_logs/publish_all）", () => {
-        for (const name of [
-            "fgui_open_component",
-            "fgui_show_preview",
-            "fgui_select_element",
-            "fgui_close_document",
-            "fgui_clear_logs",
-            "fgui_publish_all",
-        ]) {
+        for (const name of ["fgui_open_component", "fgui_show_preview", "fgui_select_element", "fgui_close_document", "fgui_clear_logs", "fgui_publish_all"]) {
             expect(WRITE_TOOLS[name]).toBeDefined();
             expect(WRITE_TOOLS[name]!.description.length).toBeGreaterThan(0);
         }

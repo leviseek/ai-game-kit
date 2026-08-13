@@ -6,8 +6,7 @@ import { closeCreator } from "../lib/proc";
 import { sleep, waitForPattern } from "../lib/log";
 import { buildParams, resolveSceneUuid } from "../lib/scene";
 
-export const help =
-    "build [--platform web-desktop] [--debug true] [--scene <uuid|路径>...] [--timeout <秒>] —— 构建（自动先关闭实例）";
+export const help = "build [--platform web-desktop] [--debug true] [--scene <uuid|路径>...] [--timeout <秒>] —— 构建（自动先关闭实例）";
 
 const SUCCESS = /build Task \([^)]+\) Finished/;
 
@@ -29,9 +28,13 @@ export async function run(argv: readonly string[]): Promise<number> {
         const timeoutMs = flagNumber(parsed, "timeout", 240) * 1000;
 
         const sceneArgs = parsed.flags.get("scene");
-        const scenes = sceneArgs === true || sceneArgs === undefined
-            ? []
-            : sceneArgs.split(",").map((item) => item.trim()).filter(Boolean);
+        const scenes =
+            sceneArgs === true || sceneArgs === undefined
+                ? []
+                : sceneArgs
+                      .split(",")
+                      .map((item) => item.trim())
+                      .filter(Boolean);
         const sceneUuids = scenes.map((scene) => resolveSceneUuid(scene));
 
         console.log("[ccc:build] 关闭已有 Creator 实例（构建需独占）...");

@@ -7,11 +7,7 @@ export interface WorkbenchFilters {
     readonly zoom: number;
 }
 
-export type WorkbenchStatus =
-    | Readonly<{ kind: "idle" }>
-    | Readonly<{ kind: "loading" }>
-    | Readonly<{ kind: "ready" }>
-    | Readonly<{ kind: "error"; message: string }>;
+export type WorkbenchStatus = Readonly<{ kind: "idle" }> | Readonly<{ kind: "loading" }> | Readonly<{ kind: "ready" }> | Readonly<{ kind: "error"; message: string }>;
 
 export interface WorkbenchState {
     readonly viewType: ViewType;

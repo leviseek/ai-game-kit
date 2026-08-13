@@ -16,9 +16,7 @@ export function layoutHierarchy(view: GraphView, viewport: Viewport): LayoutGrap
     if (root === undefined) return { width: 320, height: 240, nodes: [], edges: [], lanes: [] };
     const groups = visibleGroups(view.groups, root);
     const groupIds = new Set(groups.map((group) => group.id));
-    const symbols = groups.length === 1
-        ? view.nodes.filter((node) => node.metadata?.parentId === root.id || root.nodeIds.includes(node.id))
-        : [];
+    const symbols = groups.length === 1 ? view.nodes.filter((node) => node.metadata?.parentId === root.id || root.nodeIds.includes(node.id)) : [];
     const depths = new Map<string, number>([[root.id, 0]]);
     for (const group of groups) depths.set(group.id, relativeDepth(group, groupIds, view.groups, root.id));
     for (const symbol of symbols) depths.set(symbol.id, 1);
@@ -60,9 +58,7 @@ function buildRegionPlans(items: readonly HierarchyItem[]): readonly RegionPlan[
     const itemById = new Map(items.map((item) => [item.id, item]));
     const plans: RegionPlan[] = [];
     for (const branch of items.filter((item) => item.depth === 1)) {
-        const descendants = items
-            .filter((item) => item.depth >= 2 && depthOneAncestor(item, itemById) === branch.id)
-            .sort(byOrder);
+        const descendants = items.filter((item) => item.depth >= 2 && depthOneAncestor(item, itemById) === branch.id).sort(byOrder);
         if (descendants.length === 0) continue;
         plans.push({ branch, descendants });
     }
@@ -108,9 +104,7 @@ function layoutOverview(
     let regionY = rootY + rootItem.height + regionBandGap;
 
     // 无子级的一级节点集中在 regions 上方的独立行
-    const standalone = items
-        .filter((item) => item.depth === 1 && !laid.some((item2) => item2.branch.id === item.id))
-        .sort(byOrder);
+    const standalone = items.filter((item) => item.depth === 1 && !laid.some((item2) => item2.branch.id === item.id)).sort(byOrder);
     if (standalone.length > 0) {
         let x = (width - rowWidth(standalone)) / 2;
         for (const card of standalone) {
@@ -199,14 +193,7 @@ function byOrder(left: HierarchyItem, right: HierarchyItem): number {
     return left.order.localeCompare(right.order) || left.id.localeCompare(right.id);
 }
 
-function layoutBands(
-    root: GraphGroup,
-    groups: readonly GraphGroup[],
-    symbols: readonly GraphNode[],
-    groupIds: ReadonlySet<string>,
-    items: readonly HierarchyItem[],
-    viewport: Viewport,
-): LayoutGraph {
+function layoutBands(root: GraphGroup, groups: readonly GraphGroup[], symbols: readonly GraphNode[], groupIds: ReadonlySet<string>, items: readonly HierarchyItem[], viewport: Viewport): LayoutGraph {
     const rows = [...new Set(items.map((item) => item.depth))].sort((left, right) => left - right);
     const rowWidths = new Map(rows.map((depth) => [depth, rowWidth(items.filter((item) => item.depth === depth))]));
     const width = Math.max(720, viewport.width, ...rowWidths.values()) + margin * 2;
@@ -282,13 +269,7 @@ function rowWidth(items: readonly HierarchyItem[]): number {
     return items.reduce((total, item) => total + item.width, 0) + Math.max(0, items.length - 1) * cardGap;
 }
 
-function hierarchyEdges(
-    groups: readonly GraphGroup[],
-    symbols: readonly GraphNode[],
-    visible: ReadonlySet<string>,
-    nodes: readonly LayoutNode[],
-    rootId: string,
-): readonly LayoutEdge[] {
+function hierarchyEdges(groups: readonly GraphGroup[], symbols: readonly GraphNode[], visible: ReadonlySet<string>, nodes: readonly LayoutNode[], rootId: string): readonly LayoutEdge[] {
     const sources: GraphEdge[] = groups
         .filter((group) => group.id !== rootId && group.parentId !== undefined && visible.has(group.parentId))
         .map((group) => ({ id: `contains:${group.parentId}:${group.id}`, from: group.parentId!, to: group.id, relation: "contains" }));
@@ -310,7 +291,7 @@ function depthLabel(depth: number, root: GraphGroup): string {
 }
 
 function centerRoot(nodes: readonly LayoutNode[], rootId: string, width: number): LayoutNode[] {
-    return nodes.map((node) => node.id === rootId ? { ...node, x: (width - node.width) / 2 } : node);
+    return nodes.map((node) => (node.id === rootId ? { ...node, x: (width - node.width) / 2 } : node));
 }
 
 function groupOrder(group: GraphGroup, groups: readonly GraphGroup[]): string {

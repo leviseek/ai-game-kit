@@ -3,7 +3,10 @@ import { layoutByLanes } from "./shared.js";
 import type { LayoutGraph, Viewport } from "./types.js";
 
 export function layoutDependencies(view: GraphView, viewport: Viewport): LayoutGraph {
-    const layers = topologicalLayers(view.nodes.map((node) => node.id), view.edges);
+    const layers = topologicalLayers(
+        view.nodes.map((node) => node.id),
+        view.edges,
+    );
     const laneSpecs = layers.layers.map((nodeIds, index) => ({
         id: `layer:${index}`,
         label: `Layer ${index}`,
@@ -15,16 +18,13 @@ export function layoutDependencies(view: GraphView, viewport: Viewport): LayoutG
     const cycleIds = new Set(layers.cycleEdgeIds);
     return {
         ...graph,
-        edges: graph.edges.map((edge) => cycleIds.has(edge.id)
-            ? { ...edge, diagnosticIds: [...new Set([...edge.diagnosticIds, "layout.cycle"])].sort((left, right) => left.localeCompare(right)) }
-            : edge),
+        edges: graph.edges.map((edge) =>
+            cycleIds.has(edge.id) ? { ...edge, diagnosticIds: [...new Set([...edge.diagnosticIds, "layout.cycle"])].sort((left, right) => left.localeCompare(right)) } : edge,
+        ),
     };
 }
 
-function topologicalLayers(
-    nodeIds: readonly string[],
-    edges: readonly GraphEdge[],
-): Readonly<{ layers: readonly (readonly string[])[]; cycleEdgeIds: readonly string[] }> {
+function topologicalLayers(nodeIds: readonly string[], edges: readonly GraphEdge[]): Readonly<{ layers: readonly (readonly string[])[]; cycleEdgeIds: readonly string[] }> {
     const remaining = new Set(nodeIds);
     const incoming = new Map(nodeIds.map((id) => [id, new Set<string>()]));
     const outgoing = new Map(nodeIds.map((id) => [id, new Set<string>()]));
@@ -38,9 +38,7 @@ function topologicalLayers(
 
     const layers: string[][] = [];
     while (remaining.size > 0) {
-        const ready = [...remaining]
-            .filter((id) => [...(incoming.get(id) ?? [])].every((source) => !remaining.has(source)))
-            .sort((left, right) => left.localeCompare(right));
+        const ready = [...remaining].filter((id) => [...(incoming.get(id) ?? [])].every((source) => !remaining.has(source))).sort((left, right) => left.localeCompare(right));
         if (ready.length === 0) break;
         layers.push(ready);
         for (const id of ready) remaining.delete(id);

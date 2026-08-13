@@ -13,10 +13,7 @@ function findNode(nodes: readonly GraphNode[], name: string): GraphNode | undefi
     return nodes.find((node) => node.qualifiedName === name || node.label === name);
 }
 
-export async function buildResourceView(
-    gateway: CodeGraphGateway,
-    resources: readonly ResourceLifecycleConfig[],
-): Promise<GraphView> {
+export async function buildResourceView(gateway: CodeGraphGateway, resources: readonly ResourceLifecycleConfig[]): Promise<GraphView> {
     const nodes = new Map<string, GraphNode>();
     const edges = new Map<string, GraphEdge>();
     const diagnostics: Diagnostic[] = [];
@@ -48,7 +45,6 @@ export async function buildResourceView(
         nodes: [...nodes.values()].sort((left, right) => left.id.localeCompare(right.id)),
         edges: [...edges.values()].sort((left, right) => left.id.localeCompare(right.id)),
         groups: [],
-        diagnostics: diagnostics.sort((left, right) => (left.source ?? "").localeCompare(right.source ?? "")
-            || left.message.localeCompare(right.message)),
+        diagnostics: diagnostics.sort((left, right) => (left.source ?? "").localeCompare(right.source ?? "") || left.message.localeCompare(right.message)),
     };
 }

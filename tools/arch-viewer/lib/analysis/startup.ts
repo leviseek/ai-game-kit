@@ -15,10 +15,7 @@ function mergeEdge(edges: Map<string, GraphEdge>, edge: GraphEdge, metadata: Rea
     edges.set(edge.id, { ...edge, metadata: { ...edge.metadata, ...metadata } });
 }
 
-export async function buildStartupView(
-    gateway: CodeGraphGateway,
-    config: StartupConfig,
-): Promise<GraphView> {
+export async function buildStartupView(gateway: CodeGraphGateway, config: StartupConfig): Promise<GraphView> {
     const nodes = new Map<string, GraphNode>();
     const edges = new Map<string, GraphEdge>();
     const diagnostics: Diagnostic[] = [];
@@ -42,7 +39,6 @@ export async function buildStartupView(
         nodes: [...nodes.values()].sort((left, right) => left.id.localeCompare(right.id)),
         edges: [...edges.values()].sort((left, right) => left.id.localeCompare(right.id)),
         groups: [],
-        diagnostics: diagnostics.sort((left, right) => (left.source ?? "").localeCompare(right.source ?? "")
-            || left.message.localeCompare(right.message)),
+        diagnostics: diagnostics.sort((left, right) => (left.source ?? "").localeCompare(right.source ?? "") || left.message.localeCompare(right.message)),
     };
 }

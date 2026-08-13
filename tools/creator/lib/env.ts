@@ -41,12 +41,7 @@ export function findCreatorHome(): string {
         const editor = readJson(editorJsonPath) as {
             editor?: { Creator3D?: Array<{ version?: string; file?: string }> };
         };
-        const match = editor.editor?.Creator3D?.find(
-            (entry) =>
-                entry.version === version &&
-                entry.file !== undefined &&
-                existsSync(entry.file),
-        );
+        const match = editor.editor?.Creator3D?.find((entry) => entry.version === version && entry.file !== undefined && existsSync(entry.file));
         if (match?.file !== undefined) {
             return dirname(match.file);
         }
@@ -57,9 +52,7 @@ export function findCreatorHome(): string {
         return fallback;
     }
 
-    throw new Error(
-        `无法定位 Cocos Creator ${version}，请设置 COCOS_CREATOR_HOME 指向安装目录`,
-    );
+    throw new Error(`无法定位 Cocos Creator ${version}，请设置 COCOS_CREATOR_HOME 指向安装目录`);
 }
 
 export function findCreatorExe(): string {
@@ -76,10 +69,7 @@ export function findChrome(): string {
     if (fromEnv !== undefined && existsSync(fromEnv)) {
         return fromEnv;
     }
-    const candidates = [
-        "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-        "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
-    ];
+    const candidates = ["C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe", "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe"];
     const hit = candidates.find((path) => existsSync(path));
     if (hit === undefined) {
         throw new Error("无法定位 Chrome，请设置 CHROME_PATH 指向 chrome.exe");

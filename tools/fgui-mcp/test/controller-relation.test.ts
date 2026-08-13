@@ -14,10 +14,7 @@ function joinTempDir(): string {
 }
 
 /** 与 handlers-write 的 isValidSidePair 同构（CLI 语义：仅末尾 % 合法，target side 带 % 非法）。 */
-const SIDE_PAIR_BASE = new Set([
-    "left", "right", "top", "bottom", "middle", "center", "width", "height",
-    "leftext", "rightext", "topext", "bottomext",
-]);
+const SIDE_PAIR_BASE = new Set(["left", "right", "top", "bottom", "middle", "center", "width", "height", "leftext", "rightext", "topext", "bottomext"]);
 
 function isValidSidePair(pair: string): boolean {
     const trimmed = pair.trim();
@@ -28,7 +25,10 @@ function isValidSidePair(pair: string): boolean {
 }
 
 function validateSidePair(sidePair: string): void {
-    const pairs = sidePair.split(",").map((s) => s.trim()).filter((s) => s.length > 0);
+    const pairs = sidePair
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
     if (pairs.length === 0) throw new Error("sidePair 不能为空");
     if (pairs.length > 2) throw new Error(`sidePair 最多 2 项，收到 ${pairs.length} 项: ${sidePair}`);
     for (const pair of pairs) {
@@ -38,15 +38,7 @@ function validateSidePair(sidePair: string): void {
 
 describe("控制器/关系工具注册表", () => {
     it("注册控制器读/写工具", () => {
-        for (const name of [
-            "fgui_list_controllers",
-            "fgui_add_controller",
-            "fgui_update_controller",
-            "fgui_remove_controller",
-            "fgui_switch_page",
-            "fgui_set_relation",
-            "fgui_remove_relation",
-        ]) {
+        for (const name of ["fgui_list_controllers", "fgui_add_controller", "fgui_update_controller", "fgui_remove_controller", "fgui_switch_page", "fgui_set_relation", "fgui_remove_relation"]) {
             const read = READ_TOOLS[name];
             const write = WRITE_TOOLS[name];
             const tool = read ?? write;

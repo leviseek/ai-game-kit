@@ -26,10 +26,7 @@ function findNode(nodes: readonly GraphNode[], name: string): GraphNode | undefi
     return nodes.find((node) => node.qualifiedName === name || node.label === name);
 }
 
-export async function buildDataFlowView(
-    gateway: CodeGraphGateway,
-    config: SemanticFlowConfig,
-): Promise<GraphView> {
+export async function buildDataFlowView(gateway: CodeGraphGateway, config: SemanticFlowConfig): Promise<GraphView> {
     const nodes = new Map<string, GraphNode>();
     const edges: GraphEdge[] = [];
     const diagnostics: Diagnostic[] = [];
@@ -68,7 +65,6 @@ export async function buildDataFlowView(
         nodes: [...nodes.values()].sort((left, right) => left.id.localeCompare(right.id)),
         edges: edges.sort((left, right) => left.id.localeCompare(right.id)),
         groups: [],
-        diagnostics: diagnostics.sort((left, right) => (left.source ?? "").localeCompare(right.source ?? "")
-            || left.message.localeCompare(right.message)),
+        diagnostics: diagnostics.sort((left, right) => (left.source ?? "").localeCompare(right.source ?? "") || left.message.localeCompare(right.message)),
     };
 }

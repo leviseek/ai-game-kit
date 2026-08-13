@@ -22,14 +22,7 @@ export async function run(argv: readonly string[]): Promise<number> {
 
     console.log(`包: ${pkg.name} (id=${pkg.id}) 资源数: ${pkg.resources.length}`);
     for (const r of pkg.resources) {
-        const fields = [
-            r.kind.padEnd(9),
-            r.id.padEnd(6),
-            r.name,
-            `@${r.path}`,
-            r.exported ? "export" : "",
-            r.scale9grid ? `scale9grid=${r.scale9grid}` : "",
-        ];
+        const fields = [r.kind.padEnd(9), r.id.padEnd(6), r.name, `@${r.path}`, r.exported ? "export" : "", r.scale9grid ? `scale9grid=${r.scale9grid}` : ""];
         console.log(fields.filter(Boolean).join("  "));
     }
     return 0;

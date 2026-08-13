@@ -1,13 +1,13 @@
 {
-  "name": "creator-tools",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "description": "Cocos Creator 3.8 命令行工具：打开/关闭/构建/类型检查/冒烟验证",
-  "bin": {
-    "ccc": "cli.ts"
-  },
-  "devDependencies": {
-    "@types/node": "^26.1.2"
-  }
+    "name": "creator-tools",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "description": "Cocos Creator 3.8 命令行工具：打开/关闭/构建/类型检查/冒烟验证",
+    "bin": {
+        "ccc": "cli.ts"
+    },
+    "devDependencies": {
+        "@types/node": "^26.1.2"
+    }
 }

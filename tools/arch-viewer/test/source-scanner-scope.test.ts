@@ -29,115 +29,109 @@ describe("scanSources lexical scopes", () => {
             "    static { function fromStaticBlock() {} }",
             "}",
         ]);
-        const constructorDeclaration = result.declarations.find(
-            (declaration) => declaration.qualifiedName === "Containers::constructor",
-        );
+        const constructorDeclaration = result.declarations.find((declaration) => declaration.qualifiedName === "Containers::constructor");
 
-        expect(constructorDeclaration && {
-            kind: constructorDeclaration.kind,
-            occurrences: constructorDeclaration.occurrences.map(({ memberKind, static: isStatic }) => ({
-                memberKind,
-                static: isStatic,
-            })),
-        }).toEqual({
+        expect(
+            constructorDeclaration && {
+                kind: constructorDeclaration.kind,
+                occurrences: constructorDeclaration.occurrences.map(({ memberKind, static: isStatic }) => ({
+                    memberKind,
+                    static: isStatic,
+                })),
+            },
+        ).toEqual({
             kind: "method",
             occurrences: [{ memberKind: "constructor", static: false }],
         });
-        const valueDeclaration = result.declarations.find(
-            (declaration) => declaration.qualifiedName === "Containers::value",
-        );
-        expect(result.declarations.filter((declaration) => declaration.qualifiedName === "Containers::value"))
-            .toHaveLength(1);
-        expect(valueDeclaration && {
-            kind: valueDeclaration.kind,
-            occurrences: valueDeclaration.occurrences.map(({ memberKind }) => ({ memberKind })),
-        }).toEqual({
+        const valueDeclaration = result.declarations.find((declaration) => declaration.qualifiedName === "Containers::value");
+        expect(result.declarations.filter((declaration) => declaration.qualifiedName === "Containers::value")).toHaveLength(1);
+        expect(
+            valueDeclaration && {
+                kind: valueDeclaration.kind,
+                occurrences: valueDeclaration.occurrences.map(({ memberKind }) => ({ memberKind })),
+            },
+        ).toEqual({
             kind: "method",
             occurrences: [{ memberKind: "get" }, { memberKind: "set" }],
         });
-        expect(result.declarations
-            .filter((declaration) => declaration.kind === "function")
-            .map(({ qualifiedName, startLine, endLine, occurrences }) => ({
-                qualifiedName,
-                startLine,
-                endLine,
-                occurrence: occurrences[0],
-            })))
-            .toEqual([
-                {
-                    qualifiedName: "Containers::constructor::fromConstructor",
+        expect(
+            result.declarations
+                .filter((declaration) => declaration.kind === "function")
+                .map(({ qualifiedName, startLine, endLine, occurrences }) => ({
+                    qualifiedName,
+                    startLine,
+                    endLine,
+                    occurrence: occurrences[0],
+                })),
+        ).toEqual([
+            {
+                qualifiedName: "Containers::constructor::fromConstructor",
+                startLine: 2,
+                endLine: 2,
+                occurrence: {
                     startLine: 2,
                     endLine: 2,
-                    occurrence: {
-                        startLine: 2,
-                        endLine: 2,
-                        scopeKey: "module/class:Containers/constructor#0",
-                        scopeKind: "constructor",
-                        memberKind: "function",
-                        static: false,
-                    },
+                    scopeKey: "module/class:Containers/constructor#0",
+                    scopeKind: "constructor",
+                    memberKind: "function",
+                    static: false,
                 },
-                {
-                    qualifiedName: "Containers::value::fromGetter",
+            },
+            {
+                qualifiedName: "Containers::value::fromGetter",
+                startLine: 3,
+                endLine: 3,
+                occurrence: {
                     startLine: 3,
                     endLine: 3,
-                    occurrence: {
-                        startLine: 3,
-                        endLine: 3,
-                        scopeKey: "module/class:Containers/member:instance:get:value#0",
-                        scopeKind: "get",
-                        memberKind: "function",
-                        static: false,
-                    },
+                    scopeKey: "module/class:Containers/member:instance:get:value#0",
+                    scopeKind: "get",
+                    memberKind: "function",
+                    static: false,
                 },
-                {
-                    qualifiedName: "Containers::value::fromSetter",
+            },
+            {
+                qualifiedName: "Containers::value::fromSetter",
+                startLine: 4,
+                endLine: 4,
+                occurrence: {
                     startLine: 4,
                     endLine: 4,
-                    occurrence: {
-                        startLine: 4,
-                        endLine: 4,
-                        scopeKey: "module/class:Containers/member:instance:set:value#0",
-                        scopeKind: "set",
-                        memberKind: "function",
-                        static: false,
-                    },
+                    scopeKey: "module/class:Containers/member:instance:set:value#0",
+                    scopeKind: "set",
+                    memberKind: "function",
+                    static: false,
                 },
-                {
-                    qualifiedName: "Containers::fromStaticBlock",
+            },
+            {
+                qualifiedName: "Containers::fromStaticBlock",
+                startLine: 5,
+                endLine: 5,
+                occurrence: {
                     startLine: 5,
                     endLine: 5,
-                    occurrence: {
-                        startLine: 5,
-                        endLine: 5,
-                        scopeKey: "module/class:Containers/static-block#0",
-                        scopeKind: "static-block",
-                        memberKind: "function",
-                        static: false,
-                    },
+                    scopeKey: "module/class:Containers/static-block#0",
+                    scopeKind: "static-block",
+                    memberKind: "function",
+                    static: false,
                 },
-            ]);
+            },
+        ]);
     });
 
     test("不同词法块的同名函数聚合为 canonical 节点与 occurrences", () => {
-        const result = scanSource([
-            "function outer(flag: boolean) {",
-            "    if (flag) {",
-            "        function run() {}",
-            "    } else {",
-            "        function run() {}",
-            "    }",
-            "}",
-        ]);
+        const result = scanSource(["function outer(flag: boolean) {", "    if (flag) {", "        function run() {}", "    } else {", "        function run() {}", "    }", "}"]);
         const runs = result.declarations.filter((declaration) => declaration.qualifiedName === "outer::run");
 
         expect(runs).toHaveLength(1);
         expect(runs[0]?.id).toBe("function:src%2Fmain.ts:outer%3A%3Arun");
-        expect(runs[0] && {
-            startLine: runs[0].startLine,
-            endLine: runs[0].endLine,
-            occurrences: runs[0].occurrences,
-        }).toEqual({
+        expect(
+            runs[0] && {
+                startLine: runs[0].startLine,
+                endLine: runs[0].endLine,
+                occurrences: runs[0].occurrences,
+            },
+        ).toEqual({
             startLine: 3,
             endLine: 5,
             occurrences: [
@@ -179,16 +173,18 @@ describe("scanSources lexical scopes", () => {
 
         expect(methods).toHaveLength(1);
         expect(methods[0]?.id).toBe("method:src%2Fmain.ts:Service%3A%3Arun");
-        expect(methods[0] && {
-            startLine: methods[0].startLine,
-            endLine: methods[0].endLine,
-            occurrences: methods[0].occurrences.map(({ startLine, endLine, memberKind, static: isStatic }) => ({
-                startLine,
-                endLine,
-                memberKind,
-                static: isStatic,
-            })),
-        }).toEqual({
+        expect(
+            methods[0] && {
+                startLine: methods[0].startLine,
+                endLine: methods[0].endLine,
+                occurrences: methods[0].occurrences.map(({ startLine, endLine, memberKind, static: isStatic }) => ({
+                    startLine,
+                    endLine,
+                    memberKind,
+                    static: isStatic,
+                })),
+            },
+        ).toEqual({
             startLine: 2,
             endLine: 7,
             occurrences: [
@@ -201,11 +197,13 @@ describe("scanSources lexical scopes", () => {
             ],
         });
         expect(configs).toHaveLength(1);
-        expect(configs[0] && {
-            startLine: configs[0].startLine,
-            endLine: configs[0].endLine,
-            occurrences: configs[0].occurrences.map(({ startLine, endLine }) => ({ startLine, endLine })),
-        }).toEqual({
+        expect(
+            configs[0] && {
+                startLine: configs[0].startLine,
+                endLine: configs[0].endLine,
+                occurrences: configs[0].occurrences.map(({ startLine, endLine }) => ({ startLine, endLine })),
+            },
+        ).toEqual({
             startLine: 9,
             endLine: 10,
             occurrences: [
@@ -216,19 +214,12 @@ describe("scanSources lexical scopes", () => {
     });
 
     test("前置 block 不改变语义节点 ID", () => {
-        const before = scanSource([
-            "function outer(flag: boolean) {",
-            "    if (flag) { function run() {} }",
-            "    else { function run() {} }",
-            "}",
-        ]).declarations.find((declaration) => declaration.qualifiedName === "outer::run");
-        const after = scanSource([
-            "function outer(flag: boolean) {",
-            "    { function other() {} }",
-            "    if (flag) { function run() {} }",
-            "    else { function run() {} }",
-            "}",
-        ]).declarations.find((declaration) => declaration.qualifiedName === "outer::run");
+        const before = scanSource(["function outer(flag: boolean) {", "    if (flag) { function run() {} }", "    else { function run() {} }", "}"]).declarations.find(
+            (declaration) => declaration.qualifiedName === "outer::run",
+        );
+        const after = scanSource(["function outer(flag: boolean) {", "    { function other() {} }", "    if (flag) { function run() {} }", "    else { function run() {} }", "}"]).declarations.find(
+            (declaration) => declaration.qualifiedName === "outer::run",
+        );
 
         expect(before?.id).toBe("function:src%2Fmain.ts:outer%3A%3Arun");
         expect(after?.id).toBe(before?.id);

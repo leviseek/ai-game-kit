@@ -87,9 +87,7 @@ describe("runValidateAggregated（逐包 validate 聚合，多包不 join）", (
 
     it("单个包失败 → 聚合明细含包名", () => {
         const cli = (args: string[]): { exitCode: number; stdout: string; stderr: string } =>
-            args.includes("Bad")
-                ? { exitCode: 1, stdout: "Bad 校验失败", stderr: "" }
-                : { exitCode: 0, stdout: "校验通过", stderr: "" };
+            args.includes("Bad") ? { exitCode: 1, stdout: "Bad 校验失败", stderr: "" } : { exitCode: 0, stdout: "校验通过", stderr: "" };
         const result = runValidateAggregated(["Demo", "Bad"], cli);
         expect(result.passed).toBe(false);
         expect(result.details).toContain("Bad");

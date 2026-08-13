@@ -75,9 +75,7 @@ export async function run(argv: readonly string[]): Promise<number> {
     if (scale9 !== undefined) {
         const grid = parseScale9grid(scale9);
         if (grid.right >= rendered.width || grid.bottom >= rendered.height) {
-            console.error(
-                `[fgui:sprite] scale9grid ${scale9} 超出画布 ${rendered.width}x${rendered.height}（坐标从 0 起）`,
-            );
+            console.error(`[fgui:sprite] scale9grid ${scale9} 超出画布 ${rendered.width}x${rendered.height}（坐标从 0 起）`);
             return 2;
         }
     }

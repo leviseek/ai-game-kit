@@ -1,14 +1,4 @@
-import {
-    allow,
-    branch,
-    defineArchitectureConfig,
-    deny,
-    flow,
-    group,
-    lifecycle,
-    phase,
-    symbol,
-} from "./lib/config/builders";
+import { allow, branch, defineArchitectureConfig, deny, flow, group, lifecycle, phase, symbol } from "./lib/config/builders";
 
 /**
  * 仓库级配置描述当前架构意图；未来增加 workspace 时扩展 hierarchy 与规则即可，
@@ -48,20 +38,8 @@ const architectureConfig = defineArchitectureConfig({
         allow("framework-core", ["framework-contracts"]),
         allow("framework-application", ["framework-contracts"]),
         allow("framework-adapters", ["framework-core", "framework-contracts"]),
-        allow("boot", [
-            "framework-application",
-            "framework-adapters",
-            "framework-core",
-            "framework-contracts",
-            "framework-diagnostics",
-        ]),
-        deny("framework-contracts", [
-            "boot",
-            "game",
-            "samples",
-            "framework-application",
-            "framework-adapters",
-        ]),
+        allow("boot", ["framework-application", "framework-adapters", "framework-core", "framework-contracts", "framework-diagnostics"]),
+        deny("framework-contracts", ["boot", "game", "samples", "framework-application", "framework-adapters"]),
     ],
     startup: {
         entry: symbol("AppRoot::onLoad", "assets/boot/AppRoot.ts"),
@@ -73,9 +51,7 @@ const architectureConfig = defineArchitectureConfig({
             ]),
         ],
         branches: [
-            branch("application", symbol("AppRoot::start", "assets/boot/AppRoot.ts"), [
-                symbol("Application::start", "assets/framework/application/Application.ts"),
-            ]),
+            branch("application", symbol("AppRoot::start", "assets/boot/AppRoot.ts"), [symbol("Application::start", "assets/framework/application/Application.ts")]),
             branch("presentation", symbol("AppRoot::start", "assets/boot/AppRoot.ts"), [
                 symbol("createBootFlow::launch", "assets/boot/flow/BootFlow.ts"),
                 symbol("createSceneFlow::switchTo", "assets/framework/core/scene/SceneFlow.ts"),
@@ -87,31 +63,20 @@ const architectureConfig = defineArchitectureConfig({
         flow("close-dialog", [
             {
                 id: "view-input",
-                anchors: [
-                    symbol("CloseDialog::bind", "assets/samples/game_fui_demo/view/CloseDialog.ts"),
-                    symbol("CloseDialog::_handleConfirm", "assets/samples/game_fui_demo/view/CloseDialog.ts"),
-                ],
+                anchors: [symbol("CloseDialog::bind", "assets/samples/game_fui_demo/view/CloseDialog.ts"), symbol("CloseDialog::_handleConfirm", "assets/samples/game_fui_demo/view/CloseDialog.ts")],
             },
             {
                 id: "state",
-                anchors: [
-                    symbol("closeDialogReducer", "assets/samples/game_fui_demo/store.ts"),
-                ],
+                anchors: [symbol("closeDialogReducer", "assets/samples/game_fui_demo/store.ts")],
             },
             {
                 id: "projection",
-                anchors: [
-                    symbol("projectCloseDialog", "assets/samples/game_fui_demo/store.ts"),
-                    symbol("CloseDialog::onState", "assets/samples/game_fui_demo/view/CloseDialog.ts"),
-                ],
+                anchors: [symbol("projectCloseDialog", "assets/samples/game_fui_demo/store.ts"), symbol("CloseDialog::onState", "assets/samples/game_fui_demo/view/CloseDialog.ts")],
             },
         ]),
     ],
     resources: [
-        lifecycle("global-ui-package", [
-            symbol("UiHost::loadPackage", "assets/boot/host/UiHost.ts"),
-            symbol("UiHost::release", "assets/boot/host/UiHost.ts"),
-        ]),
+        lifecycle("global-ui-package", [symbol("UiHost::loadPackage", "assets/boot/host/UiHost.ts"), symbol("UiHost::release", "assets/boot/host/UiHost.ts")]),
         lifecycle("scene-flow", [
             symbol("createSceneFlow::preload", "assets/framework/core/scene/SceneFlow.ts"),
             symbol("createSceneFlow::switchTo", "assets/framework/core/scene/SceneFlow.ts"),

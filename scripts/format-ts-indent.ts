@@ -111,8 +111,7 @@ function createFormattingHost(file: string, text: string): ts.LanguageServiceHos
         getDefaultLibFileName: (options) => ts.getDefaultLibFilePath(options),
         fileExists: (f) => existsSync(f),
         readFile: (f) => (f === file ? text : readFileSync(f, "utf8")),
-        readDirectory: (dir, ext, exclude, include, depth) =>
-            ts.sys.readDirectory(dir, ext, exclude, include, depth),
+        readDirectory: (dir, ext, exclude, include, depth) => ts.sys.readDirectory(dir, ext, exclude, include, depth),
         getDirectories: (dir) => ts.sys.getDirectories(dir),
         directoryExists: (dir) => ts.sys.directoryExists(dir),
         getLineAndCharacterOfPosition: (position) => ts.getLineAndCharacterOfPosition(getLineStarts(), position),

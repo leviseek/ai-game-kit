@@ -26,25 +26,9 @@ export const codeGraphFixture: CodeGraphFixture = {
             "export function assembleApp(): void { createSceneFlow(); createBootFlow(); }",
             "",
         ].join("\n"),
-        "src/boot.ts": [
-            'import { createSceneFlow } from "./scene";',
-            "export function createBootFlow() {",
-            "    return { launch(): void { createSceneFlow().switchTo(); } };",
-            "}",
-            "",
-        ].join("\n"),
-        "src/scene.ts": [
-            "export function createSceneFlow() {",
-            "    return { preload(): void {}, switchTo(): void {}, currentFlowScope(): void {} };",
-            "}",
-            "",
-        ].join("\n"),
-        "src/store.ts": [
-            "export function closeDialogReducer(): void {}",
-            "export function projectCloseDialog(): void { onState(); }",
-            "export function onState(): void {}",
-            "",
-        ].join("\n"),
+        "src/boot.ts": ['import { createSceneFlow } from "./scene";', "export function createBootFlow() {", "    return { launch(): void { createSceneFlow().switchTo(); } };", "}", ""].join("\n"),
+        "src/scene.ts": ["export function createSceneFlow() {", "    return { preload(): void {}, switchTo(): void {}, currentFlowScope(): void {} };", "}", ""].join("\n"),
+        "src/store.ts": ["export function closeDialogReducer(): void {}", "export function projectCloseDialog(): void { onState(); }", "export function onState(): void {}", ""].join("\n"),
         "src/ui.ts": [
             "export class CloseDialog {",
             "    bind(): void {}",
@@ -133,40 +117,39 @@ export function createFixtureGateway(fixture = codeGraphFixture): CodeGraphGatew
             lastIndexed: null,
         }),
         sync: async () => {},
-        files: async () => Object.keys(fixture.files).sort().map((path): CodeGraphFile => ({
-            path,
-            language: "typescript",
-            nodeCount: fixture.nodes.filter((item) => item.filePath === path).length,
-            size: fixture.files[path]?.length ?? 0,
-        })),
+        files: async () =>
+            Object.keys(fixture.files)
+                .sort()
+                .map((path): CodeGraphFile => ({
+                    path,
+                    language: "typescript",
+                    nodeCount: fixture.nodes.filter((item) => item.filePath === path).length,
+                    size: fixture.files[path]?.length ?? 0,
+                })),
         search: async (search) => nodes.filter((item) => item.qualifiedName.includes(search) || item.name === search),
         callers: async (symbolName) => related(symbolName, "callers"),
         callees: async (symbolName) => related(symbolName, "callees"),
-        impact: async (symbolName) => (fixture.impacts[symbolName] ?? [])
-            .map(resolveByName)
-            .filter((item): item is CodeGraphNode => item !== undefined)
-            .sort(compareNodes)
-            .map(relation),
+        impact: async (symbolName) =>
+            (fixture.impacts[symbolName] ?? [])
+                .map(resolveByName)
+                .filter((item): item is CodeGraphNode => item !== undefined)
+                .sort(compareNodes)
+                .map(relation),
         resolveSymbol: async (ref) => {
-            const matches = nodes.filter((item) =>
-                (item.qualifiedName === ref.name || item.name === ref.name)
-                && (ref.file === undefined || item.filePath === ref.file),
+            const matches = nodes.filter((item) => (item.qualifiedName === ref.name || item.name === ref.name) && (ref.file === undefined || item.filePath === ref.file));
+            return (
+                matches[0] ??
+                ({
+                    severity: "error",
+                    source: "codegraph",
+                    message: `Symbol "${ref.name}" was not found`,
+                } satisfies Diagnostic)
             );
-            return matches[0] ?? {
-                severity: "error",
-                source: "codegraph",
-                message: `Symbol "${ref.name}" was not found`,
-            } satisfies Diagnostic;
         },
     };
 }
 
-function node(
-    qualifiedName: string,
-    filePath: string,
-    startLine: number,
-    kind: CodeGraphNode["kind"],
-): CodeGraphNode {
+function node(qualifiedName: string, filePath: string, startLine: number, kind: CodeGraphNode["kind"]): CodeGraphNode {
     const name = qualifiedName.split("::").at(-1) ?? qualifiedName;
     return {
         id: `node:${qualifiedName}`,
@@ -184,7 +167,5 @@ function node(
 }
 
 function compareNodes(left: CodeGraphNode, right: CodeGraphNode): number {
-    return left.qualifiedName.localeCompare(right.qualifiedName)
-        || left.filePath.localeCompare(right.filePath)
-        || left.startLine - right.startLine;
+    return left.qualifiedName.localeCompare(right.qualifiedName) || left.filePath.localeCompare(right.filePath) || left.startLine - right.startLine;
 }

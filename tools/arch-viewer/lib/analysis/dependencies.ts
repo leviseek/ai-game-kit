@@ -1,13 +1,7 @@
 import type { ImportDependency } from "./source-scanner";
 import type { ArchitectureConfig, DependencyRuleConfig } from "../config/types";
 import { createEdgeId } from "../graph/ids";
-import type {
-    Diagnostic,
-    Evidence,
-    GraphEdge,
-    GraphNode,
-    GraphView,
-} from "../graph/types";
+import type { Diagnostic, Evidence, GraphEdge, GraphNode, GraphView } from "../graph/types";
 
 interface MutableEdge {
     readonly from: string;
@@ -29,21 +23,11 @@ function dependencyEvidence(dependency: ImportDependency): Evidence {
     };
 }
 
-function matchingRules(
-    config: ArchitectureConfig,
-    from: string,
-    to: string,
-): readonly DependencyRuleConfig[] {
-    return config.dependencyRules.filter((rule) =>
-        rule.from === from && rule.to.includes(to),
-    );
+function matchingRules(config: ArchitectureConfig, from: string, to: string): readonly DependencyRuleConfig[] {
+    return config.dependencyRules.filter((rule) => rule.from === from && rule.to.includes(to));
 }
 
-function evaluateEdge(
-    edge: MutableEdge,
-    config: ArchitectureConfig,
-    diagnostics: Diagnostic[],
-): GraphEdge {
+function evaluateEdge(edge: MutableEdge, config: ArchitectureConfig, diagnostics: Diagnostic[]): GraphEdge {
     const id = createEdgeId(edge.from, edge.to, edge.relation);
     const rules = matchingRules(config, edge.from, edge.to);
     const rule = rules[0];
@@ -75,18 +59,18 @@ function evaluateEdge(
     }
 
     if (status !== "allowed") {
-        const message = status === "exception"
-            ? `Dependency exception ${edge.from} -> ${edge.to}: ${reason}`
-            : status === "denied"
-                ? `Dependency rule denies ${edge.from} -> ${edge.to}`
-                : `Dependency has no matching rule: ${edge.from} -> ${edge.to}`;
+        const message =
+            status === "exception"
+                ? `Dependency exception ${edge.from} -> ${edge.to}: ${reason}`
+                : status === "denied"
+                  ? `Dependency rule denies ${edge.from} -> ${edge.to}`
+                  : `Dependency has no matching rule: ${edge.from} -> ${edge.to}`;
         diagnostics.push({ severity, message, source: id });
     }
 
-    const dependencies = [...edge.dependencies].sort((left, right) =>
-        left.fromFile.localeCompare(right.fromFile)
-        || (left.toFile ?? "").localeCompare(right.toFile ?? "")
-        || left.specifier.localeCompare(right.specifier));
+    const dependencies = [...edge.dependencies].sort(
+        (left, right) => left.fromFile.localeCompare(right.fromFile) || (left.toFile ?? "").localeCompare(right.toFile ?? "") || left.specifier.localeCompare(right.specifier),
+    );
     const containsTypeOnly = dependencies.some((item) => item.typeOnly);
 
     return {
@@ -108,11 +92,7 @@ function evaluateEdge(
     };
 }
 
-export function buildDependencyView(
-    config: ArchitectureConfig,
-    imports: readonly ImportDependency[],
-    hierarchy: GraphView,
-): GraphView {
+export function buildDependencyView(config: ArchitectureConfig, imports: readonly ImportDependency[], hierarchy: GraphView): GraphView {
     const ownership = new Map<string, string>();
     for (const group of hierarchy.groups) {
         const filePath = group.metadata?.filePath;
@@ -125,9 +105,7 @@ export function buildDependencyView(
     const edges = new Map<string, MutableEdge>();
     for (const dependency of imports) {
         const from = ownership.get(dependency.fromFile);
-        const to = dependency.toFile === undefined
-            ? undefined
-            : ownership.get(dependency.toFile);
+        const to = dependency.toFile === undefined ? undefined : ownership.get(dependency.toFile);
         if (from === undefined || to === undefined || from === to) continue;
         const relation = relationOf(dependency);
         const key = `${from}\0${to}\0${relation}`;
@@ -141,9 +119,7 @@ export function buildDependencyView(
 
     const diagnostics: Diagnostic[] = [];
     const outputEdges = [...edges.values()]
-        .sort((left, right) => left.from.localeCompare(right.from)
-            || left.to.localeCompare(right.to)
-            || left.relation.localeCompare(right.relation))
+        .sort((left, right) => left.from.localeCompare(right.from) || left.to.localeCompare(right.to) || left.relation.localeCompare(right.relation))
         .map((edge) => evaluateEdge(edge, config, diagnostics));
     const connectedIds = new Set(outputEdges.flatMap((edge) => [edge.from, edge.to]));
     const nodes: GraphNode[] = hierarchy.groups

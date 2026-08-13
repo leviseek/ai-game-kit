@@ -72,10 +72,7 @@ function renderLanes(parent: SVGElement, layout: LayoutGraph): void {
     for (const lane of layout.lanes) {
         const band = hierarchyBandBounds(lane, layout.width);
         if (band !== undefined) {
-            parent.append(
-                svgElement("rect", { ...band, rx: 14, class: "hierarchy-band" }),
-                svgText(lane.label, band.x + 16, band.y + 21, "hierarchy-band-label"),
-            );
+            parent.append(svgElement("rect", { ...band, rx: 14, class: "hierarchy-band" }), svgText(lane.label, band.x + 16, band.y + 21, "hierarchy-band-label"));
             continue;
         }
         const line = svgElement("line", { x1: lane.x, y1: 20, x2: lane.x, y2: layout.height, class: "lane-line" });
@@ -110,11 +107,7 @@ function renderNodes(parent: SVGElement, layout: LayoutGraph, options: SvgRender
             "data-node-id": node.id,
             transform: `translate(${node.x} ${node.y})`,
         });
-        group.append(
-            svgElement("rect", { width: node.width, height: node.height, rx: 6 }),
-            svgText(node.label, 14, 19, "node-label"),
-            svgText(node.detail ?? node.kind, 14, 34, "node-kind"),
-        );
+        group.append(svgElement("rect", { width: node.width, height: node.height, rx: 6 }), svgText(node.label, 14, 19, "node-label"), svgText(node.detail ?? node.kind, 14, 34, "node-kind"));
         group.addEventListener("click", () => options.onSelect(node.id));
         group.addEventListener("keydown", (event) => {
             if (event.key === "Enter" || event.key === " ") options.onSelect(node.id);
@@ -133,20 +126,14 @@ export function nodeVisualClass(node: Pick<LayoutGraph["nodes"][number], "kind">
     return classes.join(" ");
 }
 
-export function hierarchyBandBounds(
-    lane: LayoutLane,
-    layoutWidth: number,
-): Readonly<{ x: number; y: number; width: number; height: number }> | undefined {
+export function hierarchyBandBounds(lane: LayoutLane, layoutWidth: number): Readonly<{ x: number; y: number; width: number; height: number }> | undefined {
     if (lane.orientation !== "horizontal" || lane.y === undefined) return undefined;
     return { x: 20, y: lane.y, width: Math.max(280, layoutWidth - 40), height: 108 };
 }
 
 function renderRegions(parent: SVGElement, layout: LayoutGraph): void {
     for (const region of layout.regions ?? []) {
-        parent.append(
-            svgElement("rect", { ...region, rx: 14, class: "hierarchy-region" }),
-            svgText(region.label, region.x + 16, region.y + 22, "hierarchy-region-label"),
-        );
+        parent.append(svgElement("rect", { ...region, rx: 14, class: "hierarchy-region" }), svgText(region.label, region.x + 16, region.y + 22, "hierarchy-region-label"));
     }
 }
 
@@ -165,11 +152,17 @@ function wirePanZoom(svg: SVGSVGElement, options: SvgRendererOptions): void {
         if (dragStart === undefined) return;
         options.onTransform(dragCanvasTransform(dragStart.transform, dragStart, { x: event.clientX, y: event.clientY }));
     });
-    svg.addEventListener("pointerup", () => { dragStart = undefined; });
-    svg.addEventListener("wheel", (event) => {
-        event.preventDefault();
-        options.onTransform(wheelCanvasTransform(options.getTransform(), event.deltaY));
-    }, { passive: false });
+    svg.addEventListener("pointerup", () => {
+        dragStart = undefined;
+    });
+    svg.addEventListener(
+        "wheel",
+        (event) => {
+            event.preventDefault();
+            options.onTransform(wheelCanvasTransform(options.getTransform(), event.deltaY));
+        },
+        { passive: false },
+    );
 }
 
 function edgePath(edge: LayoutEdge): string {

@@ -3,24 +3,12 @@ import { describe, expect, test } from "bun:test";
 import { buildDependencyView } from "../lib/analysis/dependencies";
 import { buildHierarchyView } from "../lib/analysis/hierarchy";
 import type { ImportDependency } from "../lib/analysis/source-scanner";
-import {
-    allow,
-    defineArchitectureConfig,
-    deny,
-    group,
-    symbol,
-} from "../lib/config/builders";
+import { allow, defineArchitectureConfig, deny, group, symbol } from "../lib/config/builders";
 
 function config() {
     return defineArchitectureConfig({
         hierarchy: {
-            root: group("repository", [
-                group("domains", [
-                    group("framework", ["src/framework/**"]),
-                    group("game", ["src/game/**"]),
-                    group("legacy", ["src/legacy/**"]),
-                ]),
-            ]),
+            root: group("repository", [group("domains", [group("framework", ["src/framework/**"]), group("game", ["src/game/**"]), group("legacy", ["src/legacy/**"])])]),
         },
         dependencyRules: [
             deny("framework", ["game"]),
@@ -36,11 +24,7 @@ function config() {
     });
 }
 
-function dependency(
-    fromFile: string,
-    toFile: string,
-    typeOnly = false,
-): ImportDependency {
+function dependency(fromFile: string, toFile: string, typeOnly = false): ImportDependency {
     return {
         fromFile,
         toFile,
@@ -53,13 +37,7 @@ function dependency(
 
 describe("buildDependencyView", () => {
     test("aggregates cross-group evidence, marks type-only imports, and reports rules", () => {
-        const files = [
-            "src/framework/service.ts",
-            "src/framework/bridge.ts",
-            "src/game/model.ts",
-            "src/game/view.ts",
-            "src/legacy/api.ts",
-        ];
+        const files = ["src/framework/service.ts", "src/framework/bridge.ts", "src/game/model.ts", "src/game/view.ts", "src/legacy/api.ts"];
         const architectureConfig = config();
         const hierarchy = buildHierarchyView(architectureConfig, files, []);
         const imports = [
@@ -72,57 +50,54 @@ describe("buildDependencyView", () => {
         ];
 
         const view = buildDependencyView(architectureConfig, imports, hierarchy);
-        const frameworkToGame = view.edges.find((item) =>
-            item.from === "framework" && item.to === "game");
-        const gameToFramework = view.edges.find((item) =>
-            item.from === "game" && item.to === "framework");
-        const frameworkToLegacy = view.edges.find((item) =>
-            item.from === "framework" && item.to === "legacy");
+        const frameworkToGame = view.edges.find((item) => item.from === "framework" && item.to === "game");
+        const gameToFramework = view.edges.find((item) => item.from === "game" && item.to === "framework");
+        const frameworkToLegacy = view.edges.find((item) => item.from === "framework" && item.to === "legacy");
 
         expect(view.type).toBe("dependencies");
         expect(view.edges).toHaveLength(3);
-        expect(frameworkToGame?.evidence?.map((item) => item.source)).toEqual([
-            "src/framework/service.ts",
-            "src/framework/service.ts",
-        ]);
-        expect(frameworkToGame?.metadata).toEqual(expect.objectContaining({
-            status: "denied",
-            severity: "error",
-            color: "red",
-            typeOnly: false,
-            containsTypeOnly: true,
-        }));
-        expect(gameToFramework?.evidence?.map((item) => item.source)).toEqual([
-            "src/game/model.ts",
-            "src/game/view.ts",
-        ]);
-        expect(gameToFramework?.metadata).toEqual(expect.objectContaining({
-            status: "allowed",
-            typeOnly: false,
-            containsTypeOnly: true,
-        }));
-        expect(frameworkToLegacy?.metadata).toEqual(expect.objectContaining({
-            status: "exception",
-            severity: "info",
-        }));
-        expect(view.diagnostics).toContainEqual(expect.objectContaining({
-            severity: "error",
-            source: frameworkToGame?.id,
-        }));
-        expect(view.diagnostics).toContainEqual(expect.objectContaining({
-            severity: "info",
-            source: frameworkToLegacy?.id,
-            message: expect.stringContaining("Legacy bridge"),
-        }));
+        expect(frameworkToGame?.evidence?.map((item) => item.source)).toEqual(["src/framework/service.ts", "src/framework/service.ts"]);
+        expect(frameworkToGame?.metadata).toEqual(
+            expect.objectContaining({
+                status: "denied",
+                severity: "error",
+                color: "red",
+                typeOnly: false,
+                containsTypeOnly: true,
+            }),
+        );
+        expect(gameToFramework?.evidence?.map((item) => item.source)).toEqual(["src/game/model.ts", "src/game/view.ts"]);
+        expect(gameToFramework?.metadata).toEqual(
+            expect.objectContaining({
+                status: "allowed",
+                typeOnly: false,
+                containsTypeOnly: true,
+            }),
+        );
+        expect(frameworkToLegacy?.metadata).toEqual(
+            expect.objectContaining({
+                status: "exception",
+                severity: "info",
+            }),
+        );
+        expect(view.diagnostics).toContainEqual(
+            expect.objectContaining({
+                severity: "error",
+                source: frameworkToGame?.id,
+            }),
+        );
+        expect(view.diagnostics).toContainEqual(
+            expect.objectContaining({
+                severity: "info",
+                source: frameworkToLegacy?.id,
+                message: expect.stringContaining("Legacy bridge"),
+            }),
+        );
     });
 
     test("omits self edges, external dependencies, and dependencies without ownership", () => {
         const architectureConfig = config();
-        const hierarchy = buildHierarchyView(
-            architectureConfig,
-            ["src/game/a.ts", "src/game/b.ts", "misc/orphan.ts"],
-            [],
-        );
+        const hierarchy = buildHierarchyView(architectureConfig, ["src/game/a.ts", "src/game/b.ts", "misc/orphan.ts"], []);
         const imports: readonly ImportDependency[] = [
             dependency("src/game/a.ts", "src/game/b.ts"),
             dependency("misc/orphan.ts", "src/game/a.ts"),
@@ -141,9 +116,7 @@ describe("buildDependencyView", () => {
     test("keeps exception rules without reason denied", () => {
         const architectureConfig = defineArchitectureConfig({
             ...config(),
-            dependencyRules: [
-                deny("framework", ["legacy"], { exception: true }),
-            ],
+            dependencyRules: [deny("framework", ["legacy"], { exception: true })],
         });
         const files = ["src/framework/bridge.ts", "src/legacy/api.ts"];
         const hierarchy = buildHierarchyView(architectureConfig, files, []);
@@ -151,16 +124,20 @@ describe("buildDependencyView", () => {
         const view = buildDependencyView(architectureConfig, [dependency(files[0]!, files[1]!)], hierarchy);
         const edge = view.edges[0];
 
-        expect(edge?.metadata).toEqual(expect.objectContaining({
-            status: "denied",
-            severity: "error",
-            color: "red",
-        }));
+        expect(edge?.metadata).toEqual(
+            expect.objectContaining({
+                status: "denied",
+                severity: "error",
+                color: "red",
+            }),
+        );
         expect(edge?.metadata?.reason).toBeUndefined();
-        expect(view.diagnostics).toContainEqual(expect.objectContaining({
-            severity: "error",
-            message: "Dependency rule denies framework -> legacy",
-            source: edge?.id,
-        }));
+        expect(view.diagnostics).toContainEqual(
+            expect.objectContaining({
+                severity: "error",
+                message: "Dependency rule denies framework -> legacy",
+                source: edge?.id,
+            }),
+        );
     });
 });

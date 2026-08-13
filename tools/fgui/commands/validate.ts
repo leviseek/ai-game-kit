@@ -89,10 +89,7 @@ export async function run(argv: readonly string[]): Promise<number> {
     const targets = componentName ? [componentName] : collectComponentNames(pkg);
     for (const name of targets) {
         const component = readComponent(project, packageName, name);
-        const issues = [
-            ...validateComponent(project, pkg, component),
-            ...validateComponentSemantics(project, pkg, component),
-        ];
+        const issues = [...validateComponent(project, pkg, component), ...validateComponentSemantics(project, pkg, component)];
         console.log(`校验 ${packageName}/${name}: ${issues.length === 0 ? "通过" : `${issues.length} 个问题`}`);
         for (const issue of issues) {
             console.error(`[${issue.severity}] ${issue.message}`);
@@ -110,15 +107,11 @@ export async function run(argv: readonly string[]): Promise<number> {
 
 /** 从 package.xml 收集组件文件名（不含扩展名）。 */
 function collectComponentNames(pkg: ReturnType<typeof readPackage>): string[] {
-    return pkg.resources
-        .filter((r) => r.kind === "component")
-        .map((r) => r.name.replace(/\.xml$/, ""));
+    return pkg.resources.filter((r) => r.kind === "component").map((r) => r.name.replace(/\.xml$/, ""));
 }
 
 /** 校验 gen-types 产物与源 XML 一致：重算期望内容并逐字对比磁盘产物（设计 D3）。 */
-export function checkTypeFreshness(
-    project: ReturnType<typeof locateProject>,
-): ValidationIssue[] {
+export function checkTypeFreshness(project: ReturnType<typeof locateProject>): ValidationIssue[] {
     const issues: ValidationIssue[] = [];
     const expected = generateTypeFiles(project);
     const generatedDir = resolve(project.root, "assets", "ui", "generated");

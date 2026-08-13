@@ -43,9 +43,9 @@ export async function run(argv: readonly string[]): Promise<number> {
         fixtureArg === "all"
             ? [...FIXTURE_IDS]
             : fixtureArg
-                .split(",")
-                .map((item) => item.trim())
-                .filter(Boolean);
+                  .split(",")
+                  .map((item) => item.trim())
+                  .filter(Boolean);
 
     try {
         console.log("[ccc:fixture-smoke] 1/3 校验 importMap 配置...");
@@ -90,24 +90,13 @@ export async function run(argv: readonly string[]): Promise<number> {
                     continue;
                 }
 
-                const markers = result.consoleLogs.filter((line) =>
-                    line.startsWith("[fixture-smoke]"),
-                );
-                const required = [
-                    "fixture-found: ok",
-                    "start: ok",
-                    "pause: ok",
-                    "resume: ok",
-                    "failRollback: ok",
-                    "dispose: ok",
-                ];
+                const markers = result.consoleLogs.filter((line) => line.startsWith("[fixture-smoke]"));
+                const required = ["fixture-found: ok", "start: ok", "pause: ok", "resume: ok", "failRollback: ok", "dispose: ok"];
                 // 音频降级标记仅对暴露 audio 能力的夹具（fight）出现
                 if (fixtureId === "fight") {
                     required.push("audio-degraded: ok");
                 }
-                const missing = required.filter(
-                    (needle) => !markers.some((line) => line.includes(needle)),
-                );
+                const missing = required.filter((needle) => !markers.some((line) => line.includes(needle)));
 
                 if (missing.length > 0) {
                     console.error(`[ccc:fixture-smoke] [${fixtureId}] 冒烟标记不完整，缺少:`);

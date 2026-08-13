@@ -66,9 +66,7 @@ export class FguiError extends Error {
 
 /** 定位 FGUI 工程目录：默认 ui/demo；显式传入时以项目根为基准。 */
 export function locateProject(projectArg?: string): FguiProject {
-    const projectDir = projectArg
-        ? resolve(PROJECT_ROOT, projectArg)
-        : join(PROJECT_ROOT, "ui", "demo");
+    const projectDir = projectArg ? resolve(PROJECT_ROOT, projectArg) : join(PROJECT_ROOT, "ui", "demo");
 
     if (!existsSync(projectDir)) throw new FguiError(`FGUI 工程目录不存在: ${projectDir}`);
     const fairies = findFairyFiles(projectDir);
@@ -145,9 +143,7 @@ export function findResourceIdConflicts(pkg: FguiPackage): string[] {
  * 返回「组件名 → 所在包列表」的重名映射。运行时绑定按「包+组件名」复合键
  * 定位，同名组件会为未来按名全局生成绑定埋下冲突，故全工程强制唯一。
  */
-export function findExportedComponentNameConflicts(
-    project: FguiProject,
-): ReadonlyMap<string, string[]> {
+export function findExportedComponentNameConflicts(project: FguiProject): ReadonlyMap<string, string[]> {
     const owners = new Map<string, string[]>();
     for (const packageName of listPackages(project)) {
         const pkg = readPackage(project, packageName);
@@ -174,11 +170,7 @@ export function findExportedComponentNameConflicts(
  * componentName 可传文件名（Foo.xml）或不带扩展名（Foo）。
  * 组件文件可能位于包内子目录（package.xml 的 path 属性），按名称递归定位。
  */
-export function readComponent(
-    project: FguiProject,
-    packageName: string,
-    componentName: string,
-): ComponentInfo {
+export function readComponent(project: FguiProject, packageName: string, componentName: string): ComponentInfo {
     const pkgDir = join(project.assetsDir, packageName);
     const fileName = componentName.endsWith(".xml") ? componentName : `${componentName}.xml`;
     const file = resolveComponentFile(pkgDir, fileName);
@@ -251,9 +243,7 @@ export interface DisplayElementInfo {
     readonly isInput?: boolean;
 }
 
-const DISPLAY_TYPES = new Set([
-    "image", "graph", "text", "loader", "component", "list", "movieclip",
-]);
+const DISPLAY_TYPES = new Set(["image", "graph", "text", "loader", "component", "list", "movieclip"]);
 
 const EXTENSION_NODES = new Set(["Button", "ProgressBar", "Slider", "ComboBox"]);
 
@@ -286,11 +276,7 @@ export interface ValidationIssue {
     readonly message: string;
 }
 
-export function validateComponent(
-    project: FguiProject,
-    pkg: FguiPackage,
-    component: ComponentInfo,
-): ValidationIssue[] {
+export function validateComponent(project: FguiProject, pkg: FguiPackage, component: ComponentInfo): ValidationIssue[] {
     const issues: ValidationIssue[] = [];
     const pkgId = new Map(pkg.resources.map((r) => [r.id, r]));
 
@@ -378,10 +364,7 @@ function collectControllers(root: XmlElement): ControllerInfo[] {
     return out;
 }
 
-const VALID_RELATION_SIDES = new Set([
-    "left", "right", "top", "bottom", "middle", "center", "width", "height",
-    "leftext", "rightext", "topext", "bottomext",
-]);
+const VALID_RELATION_SIDES = new Set(["left", "right", "top", "bottom", "middle", "center", "width", "height", "leftext", "rightext", "topext", "bottomext"]);
 
 /** 校验单个 sidePair 项（如 "width-width%" / "leftext-right"），合法返回 undefined，否则返回问题描述。 */
 function validateSidePair(pair: string): string | undefined {
@@ -395,11 +378,7 @@ function validateSidePair(pair: string): string | undefined {
 }
 
 /** 校验组件语义（controller/gear/扩展节点/list/graph/relation），返回问题列表。 */
-export function validateComponentSemantics(
-    project: FguiProject,
-    pkg: FguiPackage,
-    component: ComponentInfo,
-): ValidationIssue[] {
+export function validateComponentSemantics(project: FguiProject, pkg: FguiPackage, component: ComponentInfo): ValidationIssue[] {
     const issues: ValidationIssue[] = [];
     const root = component.root;
     const pkgId = new Map(pkg.resources.map((r) => [r.id, r]));
@@ -541,18 +520,18 @@ export function validateComponentSemantics(
     const hasExtensionNode = (name: string) => root.children.some((c) => c.name === name);
 
     if (extention === "Slider") {
-        if (!nodeNames.has("bar")) issues.push({ severity: "error", message: "extention=Slider 缺少 name=\"bar\" 的进度条节点" });
-        if (!nodeNames.has("grip")) issues.push({ severity: "error", message: "extention=Slider 缺少 name=\"grip\" 的滑块节点" });
+        if (!nodeNames.has("bar")) issues.push({ severity: "error", message: 'extention=Slider 缺少 name="bar" 的进度条节点' });
+        if (!nodeNames.has("grip")) issues.push({ severity: "error", message: 'extention=Slider 缺少 name="grip" 的滑块节点' });
         if (!hasExtensionNode("Slider")) issues.push({ severity: "error", message: "extention=Slider 缺少 <Slider/> 扩展节点" });
     }
     if (extention === "ProgressBar") {
-        if (!nodeNames.has("bar")) issues.push({ severity: "error", message: "extention=ProgressBar 缺少 name=\"bar\" 的进度节点" });
+        if (!nodeNames.has("bar")) issues.push({ severity: "error", message: 'extention=ProgressBar 缺少 name="bar" 的进度节点' });
         if (!hasExtensionNode("ProgressBar")) issues.push({ severity: "error", message: "extention=ProgressBar 缺少 <ProgressBar/> 扩展节点" });
     }
     if (extention === "ComboBox") {
         const combo = root.children.find((c) => c.name === "ComboBox");
         if (!combo || !combo.attrs.dropdown) {
-            issues.push({ severity: "error", message: "extention=ComboBox 缺少 <ComboBox dropdown=\"ui://...\"/> 扩展节点" });
+            issues.push({ severity: "error", message: 'extention=ComboBox 缺少 <ComboBox dropdown="ui://..."/> 扩展节点' });
         }
     }
     if (extention === "Button") {
@@ -597,7 +576,7 @@ export function validateComponentSemantics(
         if (child.name === "transition") {
             issues.push({
                 severity: "error",
-                message: '组件含手写 <transition> 元素，项目禁止（动画由 TypeScript 推进 controller selectedIndex）',
+                message: "组件含手写 <transition> 元素，项目禁止（动画由 TypeScript 推进 controller selectedIndex）",
             });
             break;
         }
@@ -628,8 +607,7 @@ export function validateComponentSemantics(
                 }
                 // 跨包引用只允许指向 Common 系通用资源包；业务包互引或指向官方库
                 // Basic/Builder 均违规，直接报错避免继续做资源定位产生噪音
-                const isCommon =
-                    crossPkg.name === "Common" || crossPkg.name.startsWith("Common_");
+                const isCommon = crossPkg.name === "Common" || crossPkg.name.startsWith("Common_");
                 if (!isCommon) {
                     issues.push({
                         severity: "error",
@@ -707,10 +685,7 @@ function findFreeRandomId(used: Set<string>, length: number): string {
  * 用于拦截"package.xml 已登记但文件缺失"的脏状态——这正是 FGUI 编辑器
  * 在加载包时读文件越界/报错的常见根因。
  */
-export function validatePackageFileIntegrity(
-    project: FguiProject,
-    pkg: FguiPackage,
-): ValidationIssue[] {
+export function validatePackageFileIntegrity(project: FguiProject, pkg: FguiPackage): ValidationIssue[] {
     const issues: ValidationIssue[] = [];
     for (const resource of pkg.resources) {
         if (resource.kind === "component") {
@@ -735,16 +710,10 @@ export function validatePackageFileIntegrity(
     return issues;
 }
 
-const RESOURCE_FILE_EXTENSIONS = new Set([
-    ".xml", ".png", ".jpg", ".jpeg", ".webp", ".gif", ".mp3", ".wav",
-    ".ogg", ".ttf", ".otf", ".fnt", ".json", ".bytes", ".svg",
-]);
+const RESOURCE_FILE_EXTENSIONS = new Set([".xml", ".png", ".jpg", ".jpeg", ".webp", ".gif", ".mp3", ".wav", ".ogg", ".ttf", ".otf", ".fnt", ".json", ".bytes", ".svg"]);
 
 /** 校验包清单：package id 8 位、资源 id/name 非空、路径重复注册、类型-扩展名一致、未注册文件扫描。 */
-export function validatePackageManifest(
-    project: FguiProject,
-    pkg: FguiPackage,
-): ValidationIssue[] {
+export function validatePackageManifest(project: FguiProject, pkg: FguiPackage): ValidationIssue[] {
     const issues: ValidationIssue[] = [];
 
     if (!/^[A-Za-z0-9]{8}$/.test(pkg.id)) {
@@ -786,9 +755,7 @@ export function validatePackageManifest(
     }
 
     // 未注册文件扫描：包目录内存在但 package.xml 未登记的资源扩展名文件
-    const registeredPaths = new Set(
-        pkg.resources.map((r) => normalizeRelPath(`${r.path}/${r.name}`)),
-    );
+    const registeredPaths = new Set(pkg.resources.map((r) => normalizeRelPath(`${r.path}/${r.name}`)));
     for (const file of walkFiles(pkg.dir)) {
         if (file.name === "package.xml") continue;
         const ext = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();

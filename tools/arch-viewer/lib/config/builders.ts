@@ -28,11 +28,7 @@ function freezeGroup(item: HierarchyGroupConfig): HierarchyGroupConfig {
     return Object.freeze({
         id: item.id,
         label: item.label,
-        children: freezeArray(
-            item.children.map((child) =>
-                typeof child === "string" ? child : freezeGroup(child),
-            ),
-        ),
+        children: freezeArray(item.children.map((child) => (typeof child === "string" ? child : freezeGroup(child)))),
     });
 }
 
@@ -86,36 +82,19 @@ export function symbol(name: string, file?: string): SymbolRef {
     return Object.freeze(file === undefined ? { name } : { name, file });
 }
 
-export function group(
-    id: string,
-    children: readonly (HierarchyGroupConfig | string)[],
-    label = id,
-): HierarchyGroupConfig {
+export function group(id: string, children: readonly (HierarchyGroupConfig | string)[], label = id): HierarchyGroupConfig {
     return freezeGroup({ id, label, children });
 }
 
-function dependencyRule(
-    kind: DependencyRuleConfig["kind"],
-    from: string,
-    to: readonly string[],
-    options: DependencyRuleOptions = {},
-): DependencyRuleConfig {
+function dependencyRule(kind: DependencyRuleConfig["kind"], from: string, to: readonly string[], options: DependencyRuleOptions = {}): DependencyRuleConfig {
     return Object.freeze({ kind, from, to: freezeArray(to), ...options });
 }
 
-export function allow(
-    from: string,
-    to: readonly string[],
-    options?: DependencyRuleOptions,
-): DependencyRuleConfig {
+export function allow(from: string, to: readonly string[], options?: DependencyRuleOptions): DependencyRuleConfig {
     return dependencyRule("allow", from, to, options);
 }
 
-export function deny(
-    from: string,
-    to: readonly string[],
-    options?: DependencyRuleOptions,
-): DependencyRuleConfig {
+export function deny(from: string, to: readonly string[], options?: DependencyRuleOptions): DependencyRuleConfig {
     return dependencyRule("deny", from, to, options);
 }
 
@@ -123,25 +102,15 @@ export function phase(id: string, anchors: readonly SymbolRef[]): StartupPhaseCo
     return freezePhase({ id, anchors });
 }
 
-export function branch(
-    id: string,
-    from: SymbolRef,
-    anchors: readonly SymbolRef[],
-): StartupBranchConfig {
+export function branch(id: string, from: SymbolRef, anchors: readonly SymbolRef[]): StartupBranchConfig {
     return freezeBranch({ id, from, anchors });
 }
 
-export function flow(
-    id: string,
-    lanes: readonly SemanticFlowLaneConfig[],
-): SemanticFlowConfig {
+export function flow(id: string, lanes: readonly SemanticFlowLaneConfig[]): SemanticFlowConfig {
     return freezeFlow({ id, lanes });
 }
 
-export function lifecycle(
-    id: string,
-    anchors: readonly SymbolRef[],
-): ResourceLifecycleConfig {
+export function lifecycle(id: string, anchors: readonly SymbolRef[]): ResourceLifecycleConfig {
     return freezeLifecycle({ id, anchors });
 }
 

@@ -31,13 +31,7 @@ describe("arch CLI", () => {
         const code = await run(["--port", "4567"], deps(calls, [], snapshot()));
 
         expect(code).toBe(0);
-        expect(calls).toEqual([
-            "buildWeb",
-            "startServer:4567",
-            "startWatcher",
-            "openBrowser:http://127.0.0.1:4567",
-            "waitForShutdown:http://127.0.0.1:4567",
-        ]);
+        expect(calls).toEqual(["buildWeb", "startServer:4567", "startWatcher", "openBrowser:http://127.0.0.1:4567", "waitForShutdown:http://127.0.0.1:4567"]);
     });
 
     test("--no-open skips opening the browser", async () => {
@@ -45,12 +39,7 @@ describe("arch CLI", () => {
         const code = await run(["--no-open"], deps(calls, [], snapshot()));
 
         expect(code).toBe(0);
-        expect(calls).toEqual([
-            "buildWeb",
-            "startServer:0",
-            "startWatcher",
-            "waitForShutdown:http://127.0.0.1:1234",
-        ]);
+        expect(calls).toEqual(["buildWeb", "startServer:0", "startWatcher", "waitForShutdown:http://127.0.0.1:1234"]);
     });
 
     test("default mode disposes server when watcher startup fails", async () => {
@@ -135,7 +124,9 @@ describe("arch CLI", () => {
 
 function deps(calls: string[], out: string[], nextSnapshot = snapshot(), err: string[] = []): ArchRunDeps {
     return {
-        buildWeb: async () => { calls.push("buildWeb"); },
+        buildWeb: async () => {
+            calls.push("buildWeb");
+        },
         analyzeOnce: async () => {
             calls.push("analyzeOnce");
             return nextSnapshot;
@@ -145,14 +136,22 @@ function deps(calls: string[], out: string[], nextSnapshot = snapshot(), err: st
             const actualPort = port ?? 1234;
             return {
                 url: `http://127.0.0.1:${actualPort}`,
-                dispose: async () => { calls.push("server.dispose"); },
+                dispose: async () => {
+                    calls.push("server.dispose");
+                },
             };
         },
         startWatcher: () => {
             calls.push("startWatcher");
-            return { dispose: () => { calls.push("watcher.dispose"); } };
+            return {
+                dispose: () => {
+                    calls.push("watcher.dispose");
+                },
+            };
         },
-        openBrowser: async (url) => { calls.push(`openBrowser:${url}`); },
+        openBrowser: async (url) => {
+            calls.push(`openBrowser:${url}`);
+        },
         waitForShutdown: async (server) => {
             calls.push(`waitForShutdown:${server.url}`);
         },

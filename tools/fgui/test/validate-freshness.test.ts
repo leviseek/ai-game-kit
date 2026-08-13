@@ -11,15 +11,20 @@ function setupProject(): { dir: string; project: FguiProject } {
     writeFileSync(join(dir, "demo.fairy"), `<?xml version="1.0" encoding="utf-8"?>\n<projectDescription id="t" type="CocosCreator" version="5.0"/>`);
     const pkgDir = join(dir, "assets", "Demo");
     mkdirSync(pkgDir, { recursive: true });
-    writeFileSync(join(pkgDir, "package.xml"),
-        `<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="4q9x2uij"><resources><component id="03gta" name="LoginView.xml" path="/" exported="true"/></resources></packageDescription>`);
-    writeFileSync(join(pkgDir, "LoginView.xml"), `
+    writeFileSync(
+        join(pkgDir, "package.xml"),
+        `<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="4q9x2uij"><resources><component id="03gta" name="LoginView.xml" path="/" exported="true"/></resources></packageDescription>`,
+    );
+    writeFileSync(
+        join(pkgDir, "LoginView.xml"),
+        `
 <component size="1280,720">
   <displayList>
     <text id="t0" name="txt_title" xy="0,0" size="200,40" fontSize="24" text="标题"/>
     <component id="b0" name="btn_login" src="c000" fileName="CommonButton.xml" pkg="cmn00001" xy="0,0" size="120,48"><Button title="登录"/></component>
   </displayList>
-</component>`.trim());
+</component>`.trim(),
+    );
     return { dir, project: { root: dir, projectDir: dir, name: "demo", assetsDir: join(dir, "assets") } };
 }
 
@@ -64,8 +69,7 @@ describe("checkTypeFreshness", () => {
         try {
             writeGeneratedFiles(project);
             const xml = join(dir, "assets", "Demo", "LoginView.xml");
-            writeFileSync(xml, readFileText(xml).replace("</displayList>",
-                '<text id="t1" name="txt_new" xy="0,0" size="100,20" text="新"/>\n  </displayList>'));
+            writeFileSync(xml, readFileText(xml).replace("</displayList>", '<text id="t1" name="txt_new" xy="0,0" size="100,20" text="新"/>\n  </displayList>'));
             const issues = checkTypeFreshness(project);
             expect(issues.some((i) => i.severity === "error" && i.message.includes("过期"))).toBe(true);
         } finally {
@@ -79,10 +83,7 @@ describe("checkTypeFreshness", () => {
             writeGeneratedFiles(project);
             const xml = join(dir, "assets", "Demo", "LoginView.xml");
             // 给 txt_title 加 Button 扩展子节点 → kind 从 text 变 button
-            writeFileSync(xml, readFileText(xml).replace(
-                '<text id="t0" name="txt_title"',
-                '<component id="t0" name="txt_title"',
-            ));
+            writeFileSync(xml, readFileText(xml).replace('<text id="t0" name="txt_title"', '<component id="t0" name="txt_title"'));
             const issues = checkTypeFreshness(project);
             expect(issues.some((i) => i.severity === "error" && i.message.includes("过期"))).toBe(true);
         } finally {

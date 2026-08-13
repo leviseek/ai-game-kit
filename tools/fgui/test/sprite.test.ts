@@ -4,12 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { locateProject, readPackage } from "../lib/fgui";
-import {
-    ensureResourceRegistered,
-    parseScale9grid,
-    registerComponent,
-    registerGeneratedImage,
-} from "../lib/sprite";
+import { ensureResourceRegistered, parseScale9grid, registerComponent, registerGeneratedImage } from "../lib/sprite";
 
 describe("parseScale9grid", () => {
     test("解析四元组", () => {
@@ -162,7 +157,7 @@ describe("ensureResourceRegistered / registerGeneratedImage", () => {
   </resources>
 </packageDescription>`,
             );
-            writeFileSync(join(pkgDir, "A.xml"), "<component size=\"1,1\"><displayList/></component>");
+            writeFileSync(join(pkgDir, "A.xml"), '<component size="1,1"><displayList/></component>');
 
             const project = locateProject(dir);
             const pkg = readPackage(project, "Demo");

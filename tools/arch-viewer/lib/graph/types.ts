@@ -3,13 +3,7 @@
  * 扩展语义，而不把采集实现泄漏给服务端或 Web 层。
  */
 
-export type ViewType =
-    | "hierarchy"
-    | "startup"
-    | "dependencies"
-    | "data-flow"
-    | "calls"
-    | "resources";
+export type ViewType = "hierarchy" | "startup" | "dependencies" | "data-flow" | "calls" | "resources";
 
 export interface SourceLocation {
     readonly filePath: string;

@@ -13,20 +13,11 @@ export interface WatchProjectOptions {
     readonly backend?: WatchBackend;
 }
 
-const watchedRelativeDirs = [
-    "assets",
-    "tools",
-    join("doc", "architecture"),
-    join("doc", "decisions"),
-] as const;
+const watchedRelativeDirs = ["assets", "tools", join("doc", "architecture"), join("doc", "decisions")] as const;
 
 const ignoredSegments = new Set(["temp", ".codegraph", "node_modules", "third-party", ".superpowers"]);
 
-export function watchProject(
-    root: string,
-    onChange: (path: string) => void,
-    options?: WatchProjectOptions,
-): WatchHandle {
+export function watchProject(root: string, onChange: (path: string) => void, options?: WatchProjectOptions): WatchHandle {
     const backend = options?.backend ?? nodeWatchBackend;
     let disposed = false;
     const handles = watchedRelativeDirs.map((relativeDir) => {
