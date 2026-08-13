@@ -1,0 +1,232 @@
+import { afterEach, describe, expect, test } from "bun:test";
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+import { scanSources } from "../lib/analysis/source-scanner";
+
+const roots: string[] = [];
+
+function createFixture(): string {
+    const root = mkdtempSync(join(tmpdir(), "arch-source-scanner-"));
+    roots.push(root);
+    mkdirSync(join(root, "src", "models"), { recursive: true });
+    mkdirSync(join(root, "src", "target"), { recursive: true });
+    mkdirSync(join(root, "node_modules", "pkg"), { recursive: true });
+    mkdirSync(join(root, "third-party"), { recursive: true });
+    mkdirSync(join(root, "assets", "framework", "libs", "fairygui"), { recursive: true });
+
+    writeFileSync(join(root, "src", "dep.ts"), "export const value = 1;\n");
+    writeFileSync(join(root, "src", "direct.mts"), "export function direct() {}\n");
+    writeFileSync(join(root, "src", "models", "index.ts"), "export type Model = string;\n");
+    writeFileSync(join(root, "src", "view.tsx"), "export function View() { return null; }\n");
+    writeFileSync(join(root, "src", "types.ts"), "export interface Shared {}\n");
+    writeFileSync(join(root, "src", "target.tsx"), "export function targetFile() { return null; }\n");
+    writeFileSync(join(root, "src", "target", "index.ts"), "export function targetIndex() {}\n");
+    writeFileSync(join(root, "src", "main.ts.meta"), "ignored\n");
+    writeFileSync(join(root, "src", "ambient.d.ts"), "export declare function ambient(): void;\n");
+    writeFileSync(join(root, "src", "ambient.d.mts"), "export declare function ambientMts(): void;\n");
+    writeFileSync(join(root, "node_modules", "pkg", "index.ts"), "export class Package {}\n");
+    writeFileSync(join(root, "third-party", "vendor.ts"), "export class Vendor {}\n");
+    writeFileSync(join(root, "assets", "framework", "libs", "fairygui", "runtime.ts"), "export class Generated {}\n");
+    writeFileSync(join(root, "src", "main.ts"), [
+        'import { value } from "./dep";',
+        'import { direct } from "./direct.mts";',
+        'import type { Shared } from "./types";',
+        'import { targetFile } from "./target";',
+        'import React from "react";',
+        'export { Model } from "./models";',
+        'export { View } from "./view";',
+        '',
+        'export interface Api { run(): void; }',
+        'export type Alias = Shared;',
+        'export class Service {',
+        '    run(): void {}',
+        '}',
+        '',
+        'export function outer(): void {',
+        '    function inner(): void {}',
+        '    inner();',
+        '}',
+        'const expression = function ignored(): void {};',
+        'void import("./dynamic");',
+        'require("./legacy");',
+        'void value;',
+        'void direct;',
+        'void expression;',
+        '',
+    ].join("\n"));
+    return root;
+}
+
+function createSourceFixture(source: string): { readonly root: string; readonly file: string } {
+    const root = mkdtempSync(join(tmpdir(), "arch-source-scanner-"));
+    roots.push(root);
+    mkdirSync(join(root, "src"), { recursive: true });
+    const file = join(root, "src", "main.ts");
+    writeFileSync(file, source);
+    return { root, file };
+}
+
+afterEach(() => {
+    for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
+});
+
+describe("scanSources", () => {
+    test("扫描声明、静态依赖并忽略排除路径", () => {
+        const root = createFixture();
+        const files = [
+            "src/main.ts",
+            "src/dep.ts",
+            "src/direct.mts",
+            "src/models/index.ts",
+            "src/view.tsx",
+            "src/types.ts",
+            "src/target.tsx",
+            "src/target/index.ts",
+            "src/main.ts.meta",
+            "src/ambient.d.ts",
+            "src/ambient.d.mts",
+            "node_modules/pkg/index.ts",
+            "third-party/vendor.ts",
+            "assets/framework/libs/fairygui/runtime.ts",
+        ];
+
+        const result = scanSources(root, files);
+
+        expect(result.files).toEqual([
+            "src/dep.ts",
+            "src/direct.mts",
+            "src/main.ts",
+            "src/models/index.ts",
+            "src/target.tsx",
+            "src/target/index.ts",
+            "src/types.ts",
+            "src/view.tsx",
+        ]);
+        expect(result.declarations.map(({ name, qualifiedName, kind, filePath, startLine, endLine, exported }) => ({
+            name,
+            qualifiedName,
+            kind,
+            filePath,
+            startLine,
+            endLine,
+            exported,
+        }))).toEqual([
+            { name: "direct", qualifiedName: "direct", kind: "function", filePath: "src/direct.mts", startLine: 1, endLine: 1, exported: true },
+            { name: "Api", qualifiedName: "Api", kind: "interface", filePath: "src/main.ts", startLine: 9, endLine: 9, exported: true },
+            { name: "run", qualifiedName: "Api::run", kind: "method", filePath: "src/main.ts", startLine: 9, endLine: 9, exported: false },
+            { name: "Alias", qualifiedName: "Alias", kind: "type", filePath: "src/main.ts", startLine: 10, endLine: 10, exported: true },
+            { name: "Service", qualifiedName: "Service", kind: "class", filePath: "src/main.ts", startLine: 11, endLine: 13, exported: true },
+            { name: "run", qualifiedName: "Service::run", kind: "method", filePath: "src/main.ts", startLine: 12, endLine: 12, exported: false },
+            { name: "outer", qualifiedName: "outer", kind: "function", filePath: "src/main.ts", startLine: 15, endLine: 18, exported: true },
+            { name: "inner", qualifiedName: "outer::inner", kind: "function", filePath: "src/main.ts", startLine: 16, endLine: 16, exported: false },
+            { name: "Model", qualifiedName: "Model", kind: "type", filePath: "src/models/index.ts", startLine: 1, endLine: 1, exported: true },
+            { name: "targetFile", qualifiedName: "targetFile", kind: "function", filePath: "src/target.tsx", startLine: 1, endLine: 1, exported: true },
+            { name: "targetIndex", qualifiedName: "targetIndex", kind: "function", filePath: "src/target/index.ts", startLine: 1, endLine: 1, exported: true },
+            { name: "Shared", qualifiedName: "Shared", kind: "interface", filePath: "src/types.ts", startLine: 1, endLine: 1, exported: true },
+            { name: "View", qualifiedName: "View", kind: "function", filePath: "src/view.tsx", startLine: 1, endLine: 1, exported: true },
+        ]);
+        expect(new Set(result.declarations.map((declaration) => declaration.id)).size).toBe(result.declarations.length);
+        expect(result.imports).toEqual([
+            { fromFile: "src/main.ts", specifier: "react", kind: "import", typeOnly: false, external: true },
+            { fromFile: "src/main.ts", toFile: "src/dep.ts", specifier: "./dep", kind: "import", typeOnly: false, external: false },
+            { fromFile: "src/main.ts", toFile: "src/direct.mts", specifier: "./direct.mts", kind: "import", typeOnly: false, external: false },
+            { fromFile: "src/main.ts", toFile: "src/models/index.ts", specifier: "./models", kind: "export", typeOnly: false, external: false },
+            { fromFile: "src/main.ts", toFile: "src/target.tsx", specifier: "./target", kind: "import", typeOnly: false, external: false },
+            { fromFile: "src/main.ts", toFile: "src/types.ts", specifier: "./types", kind: "import", typeOnly: true, external: false },
+            { fromFile: "src/main.ts", toFile: "src/view.tsx", specifier: "./view", kind: "export", typeOnly: false, external: false },
+        ]);
+    });
+
+    test("不穿透表达式子树但保留声明作用域", () => {
+        const { root } = createSourceFixture([
+            'const objectValue = { method() { function leakedObject() {} } };',
+            'const functionValue = function namedExpression() { function leakedFunction() {} };',
+            'const arrowValue = () => { function leakedArrow() {} };',
+            'const classValue = class Hidden { method() { function leakedClass() {} } };',
+            'function visible() {',
+            '    function nested() {}',
+            '    const nestedExpression = () => { function leakedNestedExpression() {} };',
+            '}',
+            'class Declared {',
+            '    method() { function methodNested() {} }',
+            '}',
+            '',
+        ].join("\n"));
+
+        const result = scanSources(root, ["src/main.ts"]);
+
+        expect(result.declarations.map((declaration) => declaration.qualifiedName)).toEqual([
+            "visible",
+            "visible::nested",
+            "Declared",
+            "Declared::method",
+            "Declared::method::methodNested",
+        ]);
+    });
+
+    test("识别模块本地导出列表、alias 与 default export", () => {
+        const { root } = createSourceFixture([
+            'class Direct {}',
+            'class Aliased {}',
+            'class Defaulted {}',
+            'class Private {}',
+            'export { Direct };',
+            'export { Aliased as PublicAlias };',
+            'export default Defaulted;',
+            '',
+        ].join("\n"));
+
+        const result = scanSources(root, ["src/main.ts"]);
+
+        expect(result.declarations.map(({ name, exported }) => ({ name, exported }))).toEqual([
+            { name: "Direct", exported: true },
+            { name: "Aliased", exported: true },
+            { name: "Defaulted", exported: true },
+            { name: "Private", exported: false },
+        ]);
+    });
+
+    test("聚合 overload 与 declaration merging 为唯一声明", () => {
+        const { root } = createSourceFixture([
+            'export function parse(value: string): string;',
+            'function parse(value: number): number;',
+            'function parse(value: string | number): string | number { return value; }',
+            'class Parser {',
+            '    parse(value: string): string;',
+            '    parse(value: number): number;',
+            '    parse(value: string | number): string | number { return value; }',
+            '}',
+            'interface Config { first: string; }',
+            'export interface Config { second: number; }',
+            '',
+        ].join("\n"));
+
+        const result = scanSources(root, ["src/main.ts"]);
+
+        expect(result.declarations.map(({ qualifiedName, kind, startLine, endLine, exported }) => ({
+            qualifiedName,
+            kind,
+            startLine,
+            endLine,
+            exported,
+        }))).toEqual([
+            { qualifiedName: "parse", kind: "function", startLine: 1, endLine: 3, exported: true },
+            { qualifiedName: "Parser", kind: "class", startLine: 4, endLine: 8, exported: false },
+            { qualifiedName: "Parser::parse", kind: "method", startLine: 5, endLine: 7, exported: false },
+            { qualifiedName: "Config", kind: "interface", startLine: 9, endLine: 10, exported: true },
+        ]);
+        expect(new Set(result.declarations.map((declaration) => declaration.id)).size).toBe(4);
+    });
+
+    test("规范化并去重重复输入文件", () => {
+        const { root, file } = createSourceFixture('import React from "react";\nexport class Service {}\n');
+
+        const result = scanSources(root, ["src/main.ts", "./src/main.ts", file]);
+
+        expect(result.files).toEqual(["src/main.ts"]);
+        expect(result.declarations).toHaveLength(1);
+        expect(result.imports).toHaveLength(1);
+    });
+});
