@@ -13,9 +13,11 @@
 ## Capabilities
 
 ### New Capabilities
+
 - `dev-safe-area-overlay`: 开发环境安全区虚线框的可视化显示，含实时跟随屏幕缩放/拉伸与生命周期控制。
 
 ### Modified Capabilities
+
 - `dev-overlay`: 信息采样与面板展示新增分辨率信息（物理像素、逻辑像素、GRoot 适配尺寸）。
 
 ## Impact

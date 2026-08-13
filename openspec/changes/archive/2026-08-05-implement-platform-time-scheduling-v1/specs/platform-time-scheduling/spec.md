@@ -9,10 +9,12 @@
 平台能力 MUST 通过窄契约暴露应用前后台状态、最小存储访问、设备信息和时间来源。契约 MUST 可由内存测试适配器替换；本能力 MUST NOT 要求业务代码依赖 Cocos 或平台全局 API。
 
 #### Scenario: In-memory platform adapter replaces runtime platform
+
 - **WHEN** 测试使用内存平台适配器提供前后台状态、存储、设备信息和时间来源
 - **THEN** 使用方可以在不启动 Cocos 的情况下执行相同的契约操作
 
 #### Scenario: Platform contract does not predefine unrelated services
+
 - **WHEN** 调用方使用平台契约
 - **THEN** 契约不要求支付、广告、账号、分享或其他未确认的平台 SDK 能力
 
@@ -21,14 +23,17 @@
 时间系统 MUST 区分 wall clock、monotonic clock 和 simulation clock。Wall clock MUST 表达可用于时间戳的系统时间；monotonic clock MUST 在同一进程内保持单调不减；simulation clock MUST 提供独立于系统时间的可控模拟时间。
 
 #### Scenario: Wall clock provides timestamp semantics
+
 - **WHEN** 调用方读取 wall clock
 - **THEN** 返回值表达当前系统时间戳，且不被当作耗时或模拟推进时间使用
 
 #### Scenario: Monotonic clock remains monotonic
+
 - **WHEN** 系统 wall clock 发生回拨或调用方连续读取 monotonic clock
 - **THEN** monotonic clock 的读数不会倒退
 
 #### Scenario: Simulation clock is independently controllable
+
 - **WHEN** 调用方读取 simulation clock 并手动推进时间
 - **THEN** 读数只按明确的推进、暂停和倍率规则变化，不直接跟随系统 wall clock
 
@@ -37,14 +42,17 @@
 simulation clock MUST 支持暂停、恢复、正倍率和显式推进。暂停期间时间 MUST 不推进；倍率 MUST 按规则缩放推进量；无效倍率 MUST 被拒绝，而不是静默转换为默认值。
 
 #### Scenario: Paused simulation does not advance
+
 - **WHEN** simulation clock 已暂停且调用方推进 1000 毫秒
 - **THEN** simulation clock 的读数保持不变
 
 #### Scenario: Simulation rate scales elapsed time
+
 - **WHEN** simulation clock 以 2 倍倍率推进 500 毫秒
 - **THEN** simulation clock 增加 1000 毫秒
 
 #### Scenario: Invalid simulation rate is rejected
+
 - **WHEN** 调用方设置零或负的 simulation rate
 - **THEN** 操作失败并保留原有有效倍率
 
@@ -53,14 +61,17 @@ simulation clock MUST 支持暂停、恢复、正倍率和显式推进。暂停�
 任务调度 MUST 显式绑定一个时间来源，并由调用方通过推进或 tick 驱动。调度系统 MUST NOT 隐式创建全局时钟、依赖 Cocos `schedule` 或使用 ApplicationContext 作为时钟服务定位入口。
 
 #### Scenario: Task waits for its bound clock
+
 - **WHEN** 调度器绑定 simulation clock，任务延迟为 500 毫秒，且绑定时钟尚未推进 500 毫秒
 - **THEN** 任务不执行
 
 #### Scenario: Task runs after clock reaches due time
+
 - **WHEN** 绑定时钟推进到任务到期时间并驱动调度器
 - **THEN** 任务执行一次，并按任务类型决定是否移除或安排下一次执行
 
 #### Scenario: Paused bound clock blocks task execution
+
 - **WHEN** 调度器绑定的 simulation clock 处于暂停状态
 - **THEN** 调度器驱动不会使依赖该时钟的任务执行
 
@@ -69,13 +80,16 @@ simulation clock MUST 支持暂停、恢复、正倍率和显式推进。暂停�
 每个调度任务 MUST 返回同步、幂等的释放句柄。任务被释放、调度器被释放或其所有者释放后，任务 MUST NOT 再执行，包括已经到期但尚未被驱动的任务。一个任务回调失败 MUST 不阻断其他到期任务的处理，并 MUST 通过既有诊断边界保留错误信息。
 
 #### Scenario: Disposed task does not execute
+
 - **WHEN** 调用方释放任务句柄后再推进时钟并驱动调度器
 - **THEN** 该任务不执行
 
 #### Scenario: Disposed scheduler cancels pending work
+
 - **WHEN** 调度器被释放后再推进绑定时钟并驱动调度器
 - **THEN** 所有尚未执行的任务都不执行，重复释放不会产生额外副作用
 
 #### Scenario: Failing task does not block other tasks
+
 - **WHEN** 同一批到期任务中一个回调抛出错误
 - **THEN** 其他到期任务仍按调度规则处理，且失败信息可被诊断边界观察

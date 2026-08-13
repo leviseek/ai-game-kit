@@ -35,14 +35,14 @@ assets/
 
 ```ts
 export interface Module {
-  readonly id: string;
-  readonly dependencies: readonly string[];
-  initialize?(ctx: ApplicationContext): void | Promise<void>;
-  start?(ctx: ApplicationContext): void | Promise<void>;
-  pause?(ctx: ApplicationContext): void | Promise<void>;
-  resume?(ctx: ApplicationContext): void | Promise<void>;
-  stop?(ctx: ApplicationContext): void | Promise<void>;
-  dispose?(ctx: ApplicationContext): void | Promise<void>;
+    readonly id: string;
+    readonly dependencies: readonly string[];
+    initialize?(ctx: ApplicationContext): void | Promise<void>;
+    start?(ctx: ApplicationContext): void | Promise<void>;
+    pause?(ctx: ApplicationContext): void | Promise<void>;
+    resume?(ctx: ApplicationContext): void | Promise<void>;
+    stop?(ctx: ApplicationContext): void | Promise<void>;
+    dispose?(ctx: ApplicationContext): void | Promise<void>;
 }
 ```
 

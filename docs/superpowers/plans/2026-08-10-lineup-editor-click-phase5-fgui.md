@@ -22,11 +22,13 @@
 ### Task 1: 战场空容器与静态 HUD
 
 **Files:**
+
 - Create: `ui/demo/assets/AutoBattle/BattlefieldUnitsCom.xml`
 - Modify: `ui/demo/assets/AutoBattle/package.xml`（仅通过 `fgui register-component`）
 - Modify: `ui/demo/assets/AutoBattle/AutoBattleView.xml`
 
 **Interfaces:**
+
 - Consumes: `gridToXY()` 输出的页面坐标，以及 Common `UnitSlot`（`com03`）。
 - Produces: 页面根级 `container_units` GComponent，原点 `(0,0)`、尺寸 `1280×500`。
 
@@ -38,11 +40,13 @@
 ### Task 2: 编队页预置候选位与前六格绑定节点
 
 **Files:**
+
 - Modify: `ui/demo/assets/AutoBattle/LineupEditorView.xml`
 - Create: `ui/demo/assets/AutoBattle/img/slot_selected.png`（仅在现有资源不能清晰表达选中态时）
 - Modify: `ui/demo/assets/AutoBattle/package.xml`（图片仅通过 `fgui sprite` 登记）
 
 **Interfaces:**
+
 - Consumes: `createLineupEditorBindings()` 的页面根级节点名。
 - Produces: 六个候选 Button、六个布阵 Button、六个名称文本、六个默认隐藏选中态图片；后三格只展示。
 
@@ -55,9 +59,11 @@
 ### Task 3: 校验、OpenSpec 状态与编辑器发布
 
 **Files:**
+
 - Modify: `openspec/changes/lineup-editor-click/tasks.md`
 
 **Interfaces:**
+
 - Consumes: 两个已更新组件与 Common 现有组件。
 - Produces: strict validate 证据、编辑器发布结果和节点差异清单。
 

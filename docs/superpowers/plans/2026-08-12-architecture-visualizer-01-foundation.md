@@ -19,6 +19,7 @@
 ### Task 1: 创建 OpenSpec change 与 workspace 门禁
 
 **Files:**
+
 - Create: `openspec/changes/architecture-visualizer-workbench-v1/proposal.md`
 - Create: `openspec/changes/architecture-visualizer-workbench-v1/design.md`
 - Create: `openspec/changes/architecture-visualizer-workbench-v1/tasks.md`
@@ -32,6 +33,7 @@
 - Test: `tools/arch-viewer/test/workspace.test.ts`
 
 **Interfaces:**
+
 - Produces: workspace scripts `arch`, `test:arch`, `build:arch-web`。
 - Produces: 最小 CLI `run(argv: readonly string[]): Promise<number>`：`--help` 返回 0；服务模式在 Phase 3 接线前返回明确错误和退出码 1。
 
@@ -79,11 +81,11 @@ Expected: FAIL，workspace 或脚本不存在。
 
 ```json
 {
-  "scripts": {
-    "arch": "bun ./tools/arch-viewer/cli.ts",
-    "build:arch-web": "tsc -p tools/arch-viewer/tsconfig.web.json",
-    "test:arch": "bun test ./tools/arch-viewer/test"
-  }
+    "scripts": {
+        "arch": "bun ./tools/arch-viewer/cli.ts",
+        "build:arch-web": "tsc -p tools/arch-viewer/tsconfig.web.json",
+        "test:arch": "bun test ./tools/arch-viewer/test"
+    }
 }
 ```
 
@@ -121,12 +123,14 @@ Expected: PASS；CLI `bun run arch --help` 退出码 0。
 ### Task 2: 定义统一图模型
 
 **Files:**
+
 - Create: `tools/arch-viewer/lib/graph/types.ts`
 - Create: `tools/arch-viewer/lib/graph/ids.ts`
 - Create: `tools/arch-viewer/lib/graph/snapshot.ts`
 - Test: `tools/arch-viewer/test/graph-model.test.ts`
 
 **Interfaces:**
+
 - Produces: `ViewType = "hierarchy" | "startup" | "dependencies" | "data-flow" | "calls" | "resources"`。
 - Produces: `SourceLocation`、`Evidence`、`GraphNode`、`GraphEdge`、`GraphGroup`、`Diagnostic`、`GraphView`、`GraphSnapshot`。
 - Produces: `createNodeId(kind, filePath, qualifiedName): string`、`createEdgeId(from, to, relation): string`、`freezeSnapshot(input): GraphSnapshot`。
@@ -190,6 +194,7 @@ Expected: PASS。
 ### Task 3: 定义并校验架构配置
 
 **Files:**
+
 - Create: `tools/arch-viewer/lib/config/types.ts`
 - Create: `tools/arch-viewer/lib/config/builders.ts`
 - Create: `tools/arch-viewer/lib/config/validate.ts`
@@ -197,6 +202,7 @@ Expected: PASS。
 - Test: `tools/arch-viewer/test/config.test.ts`
 
 **Interfaces:**
+
 - Produces: `SymbolRef { readonly name: string; readonly file?: string }`。
 - Produces: `HierarchyGroupConfig`、`DependencyRuleConfig`、`StartupConfig`、`StartupBranchConfig`、`SemanticFlowConfig`、`ResourceLifecycleConfig`、`ArchitectureConfig`。
 - Produces builders: `symbol`、`group`、`allow`、`deny`、`phase`、`branch`、`flow`、`lifecycle`、`defineArchitectureConfig`。
@@ -213,11 +219,7 @@ test("拒绝重复 group、未知依赖 group 与无原因例外", () => {
         dataFlows: [],
         resources: [],
     });
-    expect(validateArchitectureConfig(config).map((item) => item.rule)).toEqual([
-        "config.duplicate-group",
-        "config.unknown-group",
-        "config.exception-reason",
-    ]);
+    expect(validateArchitectureConfig(config).map((item) => item.rule)).toEqual(["config.duplicate-group", "config.unknown-group", "config.exception-reason"]);
 });
 ```
 

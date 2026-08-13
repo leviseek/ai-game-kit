@@ -19,6 +19,7 @@
 ### Task 1: CloseDialog Application facade 与 Feature assembly
 
 **Files:**
+
 - Create: `assets/samples/game_fui_demo/assembly.ts`
 - Modify: `assets/samples/game_fui_demo/view/CloseDialog.ts`
 - Modify: `assets/samples/game_fui_demo/store.ts`
@@ -28,6 +29,7 @@
 - Modify: `tests/framework/foundation/bundle-module-registry.test.ts`
 
 **Interfaces:**
+
 - Produces: `CloseDialogApplication { confirm(): void; cancel(): void }`。
 - Produces: `createCloseDialogFeature(registrar, effects)`，返回 Feature 级 Store handle、registration 与 `dispose()`。
 
@@ -79,10 +81,12 @@ defineFuiViewBinding(UiDemoCloseDialog, CloseDialog, (view, scope) => {
 ### Task 2: 生产链集成验收与删除 `getBoundView`
 
 **Files:**
+
 - Modify: `tests/framework/foundation/fui-demo-integration.test.ts`
 - Modify: `assets/framework/adapters/cocos/ui/FuiViewHost.ts`
 
 **Interfaces:**
+
 - Produces: AppAssembly registrar 与 UiHost resolver 同源的全链路证据。
 
 - [ ] **Step 1: 完成生产链测试**
@@ -114,12 +118,14 @@ Expected: PASS，证明 ESM 缓存与 bundle registry 顺序不污染集成测�
 ### Task 3: 文档、OpenSpec 与最终门禁
 
 **Files:**
+
 - Modify: `doc/decisions/ADR-032-store-data-flow-fuiview-binding.md`
 - Modify: `doc/architecture/ui-store-mvvm-architecture.md`
 - Modify: `doc/architecture/fgui-mvvm-binding-governance.md`
 - Modify: `openspec/changes/fui-runtime-binding-boundary-v1/tasks.md`
 
 **Interfaces:**
+
 - Produces: 方案 B 门禁标记为已实现，保留 Store 非重入与 gen-constants freshness 残余约束。
 
 - [ ] **Step 1: 同步 ADR 与架构文档**

@@ -52,9 +52,9 @@ AI 编码过程中代码里出现大量裸字符串字面量（事件名、FGUI 
 ### D4 自动化强制：规则 + review + validate 提示（不搞 eslint 硬拦截）
 
 - `fgui validate` 新增 TS 裸 URL 扫描（扫 `assets/` 与 `tests/` 下所有 `.ts`）：
-  - 名字格式匹配到已生成常量 → `warning`（建议改用常量）
-  - 名字格式对应不到任何常量 → `error`（未登记 URL，检查资源名或先重跑 gen-constants）
-  - 短 id 格式裸写 → `warning`（原则禁用，改用名字格式常量）
+    - 名字格式匹配到已生成常量 → `warning`（建议改用常量）
+    - 名字格式对应不到任何常量 → `error`（未登记 URL，检查资源名或先重跑 gen-constants）
+    - 短 id 格式裸写 → `warning`（原则禁用，改用名字格式常量）
 - 不引入 eslint 自定义规则（成本高、易误报）。
 - FGUI 源 XML（src/defaultItem/跨包引用）内仍是短 id——引擎/编辑器规范，不在禁用范围。
 
@@ -68,6 +68,7 @@ AI 编码过程中代码里出现大量裸字符串字面量（事件名、FGUI 
 **AGENTS.md 追加文案**：
 
 > **字符串归口**：新增事件名、状态名、FGUI 资源 URL / 节点名 / 动画名、bundle 名等字符串前，必须先搜索已有常量表与类型联合（`ui/generated/`、模块内 `constants.ts`、既有 `EventMap`/状态联合类型）。命中「三问」任一必须进常量表，否则禁止裸写：
+>
 > - 跨模块共享（存在第二个消费方）
 > - 耦合外部契约（FGUI 资源 URL、组件名、节点名、bundle 名、存储 key）
 > - 拼错会静默断裂（事件名、状态名、资源 id）

@@ -1,6 +1,7 @@
 ## Context
 
 现状（见 proposal.md - Why 与 specs）：
+
 - FGUI 源在 `ui/demo/assets/<包>/`，`tools/fgui` CLI 已提供 `gen-constants`（URL 常量）与 `validate --strict`（含 `scan-ts` 裸 URL 扫描）。
 - 页面创建链路：`GameLobbyHostImpl.openEntryPage → adapter.createPage(packageName, resName) → options.createView → createFairyGuiView → UIPackage.createObject(pkg, res)`，未传 userClass；页面节点解析走 `createFairyGuiViewHandle`（按名 `getChild`）。
 - 现有 `ViewModelRenderer` / `createFairyGuiViewHandle` 服务动态实例页（auto_battle 战场）与存量页，须保留。
@@ -9,12 +10,14 @@
 ## Goals / Non-Goals
 
 **Goals:**
+
 - 静态页面（LobbyView/SettingsPanel 等单实例页）获得声明式绑定：`@FUIBind` + 零手写字段（类型来自生成接口）+ `@FClick`。
 - Store 单向数据流成为静态页的状态呈现标准路径：State → 投影 → 视图字段。
 - gen-types 产物由 validate freshness 保护，与源 XML 一致。
 - 动态实例页与存量页行为不变（双轨共存）。
 
 **Non-Goals:**
+
 - 不引入 sendNotification / 全局事件总线、双向绑定、任何运行时依赖。
 - 不生成 DDD/Store/MVVM 层代码（Store/投影/视图全部手写业务）。
 - 不迁移存量页（tycoon/rpg/auto_battle）到新范式；新范式只用于新静态页。
@@ -30,6 +33,7 @@
 ### D2: gen-types 三类产物，独立文件独立治理
 
 每包生成一个 `ui-<包>-types.ts`（独立于 `ui-<包>.ts` URL 常量），内含：
+
 1. `interface <组件名> { readonly _<元件名>: <能力接口>; ... }`（declaration merging，供业务类同名合并）
 2. `type <组件名>Nodes = "<元件名>" | ...`（供 `@FClick`/`@FClick` 参数类型约束）
 3. 内部字段描述 `const`（组件名 → 元件名 → kind，供运行时注入用）
@@ -49,6 +53,7 @@
 ### D5: FuiView 基类 + 装饰器只收集元数据（包装器模式）
 
 `contracts/ui/FuiView.ts`（引擎无关）定义抽象基类，业务类 `extends FuiView<S, VM>`：
+
 - 持有引擎无关的视图接缝 `FuiViewSeam`（`child(name)` 返回能力节点、`onClick(name, handler)` 注册点击），接缝实现由 Adapter 提供。
 - 生命周期钩子：`onConstruct()`（注入完成后，子类可读 `_` 字段）、`onState(vm)`（Store 投影回调，子类写字段）、`onOpen`/`onClose`（可选）、`dispose()`（退订 Store + 移除监听 + onClose，幂等）。
 - 字段注入与 @FClick 注册由框架 `__attach(seam, fields, clicks)` 执行：按生成字段描述 `seam.child(name)` 注入 `_` 字段（绑定缺失抛错 fail-fast）、把 @FClick 收集的「节点名 → 原型方法引用」逐一 `bind(instance)` 注册。
@@ -88,7 +93,7 @@
 4. `GameLobbyHostImpl`/`FairyGuiPageAdapter` 接缝扩展（一处组合闭包，未命中行为不变）。
 5. 一个示范静态页（如 LobbyView）全链路集成验证（dispatch → 投影 → 字段更新）。
 6. 写 ADR。
-回滚：任一步未合入即可单独回退；接缝闭包默认未命中回退既有路径，存量页零风险。
+   回滚：任一步未合入即可单独回退；接缝闭包默认未命中回退既有路径，存量页零风险。
 
 ## Open Questions
 

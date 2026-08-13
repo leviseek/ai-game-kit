@@ -2,7 +2,7 @@
 
 ## 1. URL 契约贯穿绑定链
 
-- [x] 1.1 定义 `FuiComponentUrl = \`ui://${string}/${string}\`` 与 `FuiBindOptions`（`runtimeBinding: "required" | "none"` 必填），internal `createFuiComponentUrl(packageName, componentName)` 工厂不导出
+- [x] 1.1 定义 `FuiComponentUrl = \`ui://${string}/${string}\``与`FuiBindOptions`（`runtimeBinding: "required" | "none"`必填），internal`createFuiComponentUrl(packageName, componentName)` 工厂不导出
 - [x] 1.2 修改 `FUIBind(url, fields, options)`：首参数改为 `FuiComponentUrl`，直接消费 `ui/generated` 常量，无旧三参数兼容重载
 - [x] 1.3 `FuiComponentRegistry.register/lookup` 参数改为 `FuiComponentUrl`
 - [x] 1.4 `FuiViewHost` 内部单点调用 `createFuiComponentUrl`，Registry 查询、错误与 binder 复用同一 URL，无散落类型断言

@@ -5,10 +5,12 @@
 ## Goals / Non-Goals
 
 **Goals:**
+
 - 五类统一为 `models/`、`logic/`、`view/` 子目录形态，`assembly.ts` 留根。
 - 纯重构：保持全部行为与公开 API 不变，`test:foundation` 全绿即验证。
 
 **Non-Goals:**
+
 - 不新增任何 VM 派生/绑定能力（属 C2/C3）。
 - 不改变顶层目录（`game_*` 即 Bundle 边界，ADR-018 决策 1 不变）。
 - 不把能力实现进一步拆分（每能力文件 ≤300 行约束下无需）。

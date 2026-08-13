@@ -4,13 +4,11 @@
 
 Accepted
 
-
 ## 背景
 
 Foundation 已有结构化日志契约（`contracts/logging/Logger.ts`）、`ScopedLogger` 和两个应用层错误类（`ApplicationStateError`、`ModuleLifecycleError`，均支持构造 cause）。第 5/6/7 章的资源协调器、SceneFlow、UI、存档全部依赖"带 cause 的错误分类"和"类型化发布/订阅/取消"，因此第 3 章诊断与事件是后续能力的公共前置。同时第 4 章已归档的平台、时间、释放契约尚未从根入口导出。
 
 本 ADR 记录 change `implement-diagnostics-and-events-v1` 产生的三个长期架构决策：统一类型化错误体系、作用域事件通道，以及根入口导出中 "Platform" 一词的指代澄清。
-
 
 ## 决策
 
@@ -42,7 +40,6 @@ Foundation 已有结构化日志契约（`contracts/logging/Logger.ts`）、`Sco
 
 `expectedRootExports` 白名单随之扩展为 26 项，作为根入口公开 API 面的精确断言。
 
-
 ## 理由
 
 - 统一错误基类消除现有两个错误类各自的 cause/上下文处理重复，为资源、存档等后续错误提供一致入口，同时构造兼容避免破坏性迁移。
@@ -50,7 +47,6 @@ Foundation 已有结构化日志契约（`contracts/logging/Logger.ts`）、`Sco
 - 过滤收敛在单一写入点，避免每个业务调用方重复处理，且与既有 `ScopedLogger` 的 sink 注入风格一致。
 - 作用域事件通道满足"类型化发布/订阅/取消"的公共需求，无全局状态、无字符串事件分发，契合边界测试对实例隔离的要求。
 - 平铺导出保持公开面精确可控，白名单每项都是永久公开契约（破坏性移除需独立 change），聚合仅省 3 个顶层项但引入新先例并违背父级设计。
-
 
 ## 影响
 

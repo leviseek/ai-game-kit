@@ -4,13 +4,11 @@
 
 Accepted
 
-
 ## 背景
 
 父级 `create-game-framework-v1` 第 5/8 章需要两组无业务含义的纯逻辑工具：SceneFlow 的预加载/成功/失败保留/重试本质是状态机，回合制卡牌与横板格斗组合验证会复用状态机与对象池。Framework 的 `core` 下此前没有状态机或对象池；根入口以白名单方式导出稳定契约与工厂。
 
 本 ADR 记录 change `implement-fsm-and-object-pool-v1` 产生的三个长期架构决策：声明式状态机与钩子失败回滚策略、显式所有者对象池及其容量语义、对象池 reset 失败与溢出事件的可观察报告。
-
 
 ## 决策
 
@@ -40,14 +38,12 @@ reset 钩子抛错时该对象不进入空闲列表（计数回退），失败�
 
 FSM 与对象池的稳定契约与工厂（`StateMachine`/`StateMachineOptions`/`StateMachineHooks`/`StateTransitionTable`/`StateHook`/`createStateMachine`、`ObjectPool`/`ObjectPoolOptions`/`createObjectPool`）平铺加入根入口，`expectedRootExports` 白名单同步为 35 项；内部运行器、空闲列表与错误细节不导出。
 
-
 ## 理由
 
 - 状态机"钩子失败回滚 + 错误回调隔离"与对象池"失败对象不入池 + 计数回退"复用同一套已验证的隔离模式，失败后结构始终一致、可测试、可断言。
 - 容量语义选择"受管对象总数"而非"空闲列表上限"：两者在正常借还下观察结果相同，但前者让"借出直到上限、超限可观察"成为可断言契约，且临时对象用完即弃避免空闲列表越过上限的歧义状态。
 - 显式所有权 + 身份集合以 O(1) 判定重复归还；不自动池化 Cocos Node/Component、不做弱引用回收与引用计数，避免 GC 依赖与隐式生命周期接管。
 - 白名单收口保证后续模块从根入口导入，不出现深层路径依赖。
-
 
 ## 影响
 

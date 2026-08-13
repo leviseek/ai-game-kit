@@ -5,10 +5,12 @@ C1 已完成目录分级（五类 `game_*` 子目录形态）。`FairyGuiPageAda
 ## Goals / Non-Goals
 
 **Goals:**
+
 - 新增通用自动 diff 渲染管线：游戏层定义可观察 ViewModel + 绑定声明 → 渲染器 diff 驱动视图。
 - fgui/cc 类型隔离在 adapter 边界；core 渲染器纯 TS 可测。
 
 **Non-Goals:**
+
 - 不实现双向绑定、列表渲染、动画驱动（扩展方向，非本 change）。
 - 不修改既有 `UiNavigator`/`FairyGuiPageAdapter`/`PassiveScheduler` 行为。
 - 不做 C3 玩法绑定（本 change 只交付管线本身 + 单元测试）。
@@ -18,6 +20,7 @@ C1 已完成目录分级（五类 `game_*` 子目录形态）。`FairyGuiPageAda
 ### 1. 契约文件 `contracts/ui/ViewModel.ts`（新增，零改既有）
 
 定义：
+
 - `Bindable<T>`：`get(): T`、`set(value: T): void`、`subscribe(fn): DisposeHandle`；相同值 set 不触发。
 - `ViewModel`：绑定声明载体（`bindings: readonly Binding<unknown>[]`）。
 - `ViewModelNode` 接缝接口：`setText`/`setProgress`/`setVisible`/`onClick`；实际读写由 adapter 实现。

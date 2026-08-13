@@ -5,12 +5,14 @@
 ## Goals / Non-Goals
 
 **Goals:**
+
 - 建立 HeroPool（静态英雄配置）+ Lineup（可变编队）数据模型，versioned-storage 持久化。
 - 引入平铺网格（MapGrid + 占用表）与布阵区（己方边缘 3×3=9），`MAX_TEAM_SIZE` 语义拆分为"上阵上限 6 / 布阵区容量 9"。
 - 编队页面点击选择填充/替换/卸下，开战由 lineup 实例化单位到布阵区对应格，战斗实例化后与 lineup 解耦。
 - UnitSlot 可复用组件（Common 跨包）+ 战场页运行时动态实例化。
 
 **Non-Goals:**
+
 - 不做距离移动、逻辑层动态坐标消费（change 08）。
 - 不做拖拽（D3）、英雄成长/解锁、战力预估。
 - 不回溯 `battle-scale-config` 已归档语义（`MAX_TEAM_SIZE=6` 保留为上阵上限）。

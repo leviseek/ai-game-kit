@@ -78,16 +78,16 @@ assets/samples/game_xxx/
 
 ## 7. 测试矩阵
 
-| 对象 | 必须验证 |
-| --- | --- |
-| Domain | 业务不变量、边界值、确定性、无 IO |
-| Use Case | 调用顺序、成功/失败映射、取消、过期响应、端口 mock |
+| 对象            | 必须验证                                                                             |
+| --------------- | ------------------------------------------------------------------------------------ |
+| Domain          | 业务不变量、边界值、确定性、无 IO                                                    |
+| Use Case        | 调用顺序、成功/失败映射、取消、过期响应、端口 mock                                   |
 | Reducer / Store | 不可变更新、Action 穷尽、dispose 后行为，并禁止 listener/onState 抛错或重入 dispatch |
-| ViewModel 投影 | State 到 UI 数据的纯函数结果 |
-| FuiView | 输入上行、首次投影、字段写入、dispose 后不再响应 |
-| Binding Adapter | 缺失节点 fail-fast、能力 kind、点击注册、销毁级联 |
-| FGUI 工具链 | 生成确定性、gen-types freshness、URL 常量显式重生成、引用完整性、`validate --strict` |
-| 集成链路 | 点击到 Use Case、dispatch、投影、节点更新及异步失败路径 |
+| ViewModel 投影  | State 到 UI 数据的纯函数结果                                                         |
+| FuiView         | 输入上行、首次投影、字段写入、dispose 后不再响应                                     |
+| Binding Adapter | 缺失节点 fail-fast、能力 kind、点击注册、销毁级联                                    |
+| FGUI 工具链     | 生成确定性、gen-types freshness、URL 常量显式重生成、引用完整性、`validate --strict` |
+| 集成链路        | 点击到 Use Case、dispatch、投影、节点更新及异步失败路径                              |
 
 新增系统必须有测试。优先执行最相关的最小测试，再扩展到类型检查、public-boundary、FGUI validate 和集成测试。
 

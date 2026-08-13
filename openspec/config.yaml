@@ -2,27 +2,27 @@ schema: spec-driven
 
 # 在创建与实现 artifact 时展示给 AI 的项目约定
 context: |
-  技术栈：TypeScript（strict）、Bun、Cocos Creator 3.8.8。
-  注释使用简体中文，只解释意图/限制/权衡，不重复代码表面行为；
-  标识符与 API 名保持英文；修改逻辑时同步更新注释；
-  关键术语首次出现保留英文原文。
+    技术栈：TypeScript（strict）、Bun、Cocos Creator 3.8.8。
+    注释使用简体中文，只解释意图/限制/权衡，不重复代码表面行为；
+    标识符与 API 名保持英文；修改逻辑时同步更新注释；
+    关键术语首次出现保留英文原文。
 
 rules:
-  tasks:
-    - >-
-      在每个 change 的 tasks.md 末尾加入 ADR 检查任务：change 完成前检查本次工作是否产生新的架构决策；
-      如有，按 doc/decisions/ADR-NNN-<slug>.md 约定创建 ADR；如无，明确记录无需 ADR。
+    tasks:
+        - >-
+            在每个 change 的 tasks.md 末尾加入 ADR 检查任务：change 完成前检查本次工作是否产生新的架构决策；
+            如有，按 doc/decisions/ADR-NNN-<slug>.md 约定创建 ADR；如无，明确记录无需 ADR。
 
 operations:
-  apply:
-    guidance:
-      - >-
-        实现时遵守根目录 AGENTS.md 的注释语言约定：新增与修改的注释一律使用简体中文，
-        只解释意图/限制/权衡；提交前检查是否有英文注释遗留或注释与代码不同步。
-      - >-
-        在将 OpenSpec change 标记为完成前，审查 proposal、design、实现结果和 review 结论是否产生新的架构决策；
-        如有，先在 doc/decisions 下创建 ADR，再完成 change。
-  archive:
-    guidance:
-      - >-
-        归档前确认 ADR 检查已经执行；存在新架构决策但缺少 ADR 时不得归档。
+    apply:
+        guidance:
+            - >-
+                实现时遵守根目录 AGENTS.md 的注释语言约定：新增与修改的注释一律使用简体中文，
+                只解释意图/限制/权衡；提交前检查是否有英文注释遗留或注释与代码不同步。
+            - >-
+                在将 OpenSpec change 标记为完成前，审查 proposal、design、实现结果和 review 结论是否产生新的架构决策；
+                如有，先在 doc/decisions 下创建 ADR，再完成 change。
+    archive:
+        guidance:
+            - >-
+                归档前确认 ADR 检查已经执行；存在新架构决策但缺少 ADR 时不得归档。

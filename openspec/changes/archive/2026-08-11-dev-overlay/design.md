@@ -7,12 +7,14 @@
 ## Goals / Non-Goals
 
 **Goals:**
+
 - debug 构建启用、release 关闭且无残留（可注入 `isDevEnabled` + URL 覆盖）。
 - 悬浮球（收缩 + 展开面板）展示运行时间/平台型号/网络/FPS/内存；拖拽 + 贴边吸附；鼠标悬停展开 + 触摸点击切换。
 - 挂载到全局 UI 最上层、跨会话常驻、重复挂载幂等。
 - 分层正确：不进 framework 白名单、不进 samples 品类，独立 dev 模块经 AppRoot 装配。
 
 **Non-Goals:**
+
 - 不做存储目录、进程内存、完整性能统计面板（MVP 见 proposal）。
 - 不做原生平台支持（用户确认仅 Web）。
 - 不新增 framework 公开 API、不改 `DeviceInfo` 契约形状。

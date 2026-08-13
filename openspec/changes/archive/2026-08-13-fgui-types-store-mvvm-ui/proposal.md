@@ -5,9 +5,9 @@ FGUI 页面目前每次都要手写节点名常量与按名 `getChild` 的样板
 ## What Changes
 
 - 新增 `tools/fgui gen-types` 命令：解析每包每个 exported 组件的 XML `displayList`，生成三类确定性产物到 `assets/ui/generated/`：
-  - 字段描述（组件名 → 字段名 → 能力 kind，text/progress/button/input/image/component）
-  - 节点名字面量联合（供 `@FClick` 等参数类型约束，编译期拦截拼错）
-  - declaration merging interface（`interface LoginView { _txt_status: TypedTextNode; ... }`，与手写组件类同名合并，`this._txt_*` 类型自动获得）
+    - 字段描述（组件名 → 字段名 → 能力 kind，text/progress/button/input/image/component）
+    - 节点名字面量联合（供 `@FClick` 等参数类型约束，编译期拦截拼错）
+    - declaration merging interface（`interface LoginView { _txt_status: TypedTextNode; ... }`，与手写组件类同名合并，`this._txt_*` 类型自动获得）
 - 扩展 `tools/fgui validate`：新增 freshness 校验，生成产物与 XML `displayList` 不一致即失败（改名/删元件必须重跑 gen-types）。
 - 新增轻量 Store 原语（core 层自研）：不可变 State + 纯 reducer/action + 订阅，经组合根 `createServiceToken` 注入，不引入运行时依赖。
 - 新增 FUIView 基类（`FuiView`）与装饰器 `@FUIBind`（登记 URL→类注册表）、`@FClick`（收集节点名→原型方法元数据）：字段在 `onConstruct` 时机注入、点击在实例化后 bind 注册，dispose 幂等并挂现有页面销毁路径。

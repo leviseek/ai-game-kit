@@ -25,11 +25,13 @@
 ### Task 1: fairygui 迁移到 `assets/framework/libs/`
 
 **Files:**
+
 - Move: `assets/third-party/fairygui/*`（含全部 `.meta`）→ `assets/framework/libs/fairygui/`
 - Delete: `assets/third-party/`、`assets/third-party.meta`
 - Modify: `import-map.json`、`doc/decisions/ADR-011-fairygui-runtime-introduction.md`
 
 **Interfaces:**
+
 - Consumes: 无（纯文件移动 + 映射路径变更）。
 - Produces: `fairygui-cc` 裸包名仍解析到 `fairygui.mjs`，框架代码 `import { ... } from "fairygui-cc"` 无需改动。
 
@@ -51,6 +53,7 @@ Remove-Item -LiteralPath "assets/third-party" -Force
 - [ ] **Step 2: 更新 import-map.json**
 
 将 `import-map.json` 的映射改为：
+
 ```json
 { "imports": { "fairygui-cc": "./assets/framework/libs/fairygui/fairygui.mjs" } }
 ```
@@ -89,13 +92,16 @@ git commit -m "refactor: fairygui 迁移到 framework/libs，删除 third-party 
 ### Task 2: BundleModuleRegistry 全局注册桥 + 单元测试
 
 **Files:**
+
 - Create: `assets/framework/core/module/BundleModuleRegistry.ts`
 - Modify: `assets/framework/index.ts`、`tests/framework/foundation/public-boundary.test.ts`
 - Test: `tests/framework/foundation/bundle-module-registry.test.ts`
 
 **Interfaces:**
+
 - Consumes: 无。
 - Produces:
+
 ```ts
 // assets/framework/core/module/BundleModuleRegistry.ts
 export interface BundleModuleRegistry {
@@ -111,6 +117,7 @@ export function lookupBundle(name: string): Readonly<Record<string, unknown>> | 
 - [ ] **Step 1: 写失败测试**
 
 `tests/framework/foundation/bundle-module-registry.test.ts`：
+
 ```ts
 import { describe, expect, it } from "bun:test";
 import { getBundleModuleRegistry } from "../../../assets/framework/core/module/BundleModuleRegistry";
@@ -174,16 +181,11 @@ export function getBundleModuleRegistry(): BundleModuleRegistry {
     return registry;
 }
 
-export function registerBundle(
-    name: string,
-    exports: Readonly<Record<string, unknown>>,
-): void {
+export function registerBundle(name: string, exports: Readonly<Record<string, unknown>>): void {
     getBundleModuleRegistry().registerBundle(name, exports);
 }
 
-export function lookupBundle(
-    name: string,
-): Readonly<Record<string, unknown>> | undefined {
+export function lookupBundle(name: string): Readonly<Record<string, unknown>> | undefined {
     return getBundleModuleRegistry().lookupBundle(name);
 }
 ```
@@ -191,10 +193,12 @@ export function lookupBundle(
 - [ ] **Step 4: 根入口导出 + 白名单同步**
 
 在 `assets/framework/index.ts` 追加：
+
 ```ts
 export type { BundleModuleRegistry } from "./core/module/BundleModuleRegistry";
 export { getBundleModuleRegistry, registerBundle, lookupBundle } from "./core/module/BundleModuleRegistry";
 ```
+
 同步 `tests/framework/foundation/public-boundary.test.ts` 的 `expectedRootExports` 数组，加入 `BundleModuleRegistry`、`getBundleModuleRegistry`、`registerBundle`、`lookupBundle` 四个符号（该数组在文件约 470 行处，格式为字符串列表）。
 
 - [ ] **Step 5: 运行验证**
@@ -218,10 +222,12 @@ git commit -m "feat: 全局 BundleModuleRegistry 注册桥与单元测试"
 ### Task 3: 跨 bundle→main 脚本引用行为 spike（决定性事实）
 
 **Files:**
+
 - Create: `assets/_spike_bundle/`（临时，验证后删除）
 - Delete: `assets/_spike_bundle/`（任务末尾）
 
 **Interfaces:**
+
 - Consumes: Task 2 的 `getBundleModuleRegistry`。
 - Produces: 决策事实——bundle 脚本静态 import main（framework）时，Cocos 3.8 构建是"重复打进该 bundle chunk"还是"共享 main"。此结论决定 samples/game bundle 内 fixture 代码可不可以静态 import framework。
 
@@ -232,22 +238,26 @@ New-Item -ItemType Directory -Force -Path "assets/_spike_bundle" | Out-Null
 ```
 
 创建 `assets/_spike_bundle/spike.ts`：
+
 ```ts
 import { createStateMachine } from "../framework";
 export const spike = (): string => createStateMachine({ initial: "a", transitions: { a: {} } }).state;
 ```
+
 创建 `assets/_spike_bundle.meta`（`isBundle: true`）：
+
 ```json
 {
-  "ver": "1.2.0",
-  "importer": "directory",
-  "imported": true,
-  "uuid": "e0000000-0000-0000-0000-0000000000a1",
-  "files": [],
-  "subMetas": {},
-  "userData": { "isBundle": true }
+    "ver": "1.2.0",
+    "importer": "directory",
+    "imported": true,
+    "uuid": "e0000000-0000-0000-0000-0000000000a1",
+    "files": [],
+    "subMetas": {},
+    "userData": { "isBundle": true }
 }
 ```
+
 （注：若 `spike.ts` 的 `.meta` 由编辑器生成，请用编辑器重新导入后再构建；若 CLI 构建自动生成 meta，则无需手工写。）
 
 - [ ] **Step 2: 构建并检查产物**
@@ -255,12 +265,14 @@ export const spike = (): string => createStateMachine({ initial: "a", transition
 Run: `bun run ccc build --platform web-desktop`
 
 检查构建产物：
+
 ```powershell
 # 查看 spike bundle 的 index.js 是否包含 createStateMachine 的重复实现
 $spike = Get-Content "build/web-desktop/assets/_spike_bundle/index.js" -Raw
 "spike bundle size: $($spike.Length)"
 $spike.Contains("createStateMachine")   # 关键：bundle 是否重复打进 framework 实现
 ```
+
 Expected: 记录两项事实：(a) spike bundle 的 index.js 是否含 `createStateMachine`；(b) main/index.js 是否仍含它（对比 Task 1 后的基线）。同时观察构建日志是否有跨 bundle 脚本警告/报错。
 
 - [ ] **Step 3: 记录结论并清理**
@@ -274,6 +286,7 @@ Remove-Item -Recurse -Force "assets/_spike_bundle", "assets/_spike_bundle.meta"
 - [ ] **Step 4: Commit（记录 spike 结论）**
 
 在 `docs/superpowers/specs/2026-08-09-bundle-split-and-fairygui-relocation-design.md` 的"风险与回退"追加实测结论，然后：
+
 ```bash
 git add -A
 git commit -m "docs: 记录跨 bundle 脚本引用构建行为 spike 结论"
@@ -286,6 +299,7 @@ git commit -m "docs: 记录跨 bundle 脚本引用构建行为 spike 结论"
 ### Task 4: 五类 game_* 目录合并为 samples bundle
 
 **Files:**
+
 - Move: `assets/game_card/`、`assets/game_fight/`、`assets/game_idle/`、`assets/game_rpg/`、`assets/game_tycoon/`（含全部内容与 `.meta`）→ `assets/samples/`
 - Create: `assets/samples.meta`（`isBundle: true`）、`assets/samples/placeholder.json`
 - Modify: 上述目录内全部 `.ts` 的相对 import（`../../framework` → `../../../framework`；`../game/fixture/GameFixture` → `../../game/fixture/GameFixture`）
@@ -294,6 +308,7 @@ git commit -m "docs: 记录跨 bundle 脚本引用构建行为 spike 结论"
 - Test: 上述 5 个 fixture 测试
 
 **Interfaces:**
+
 - Consumes: 无。
 - Produces: `assets/samples/` 目录结构就位，bundle 名 `samples`，品类代码路径更新完毕。
 
@@ -310,22 +325,25 @@ foreach ($name in @("game_card","game_fight","game_idle","game_rpg","game_tycoon
 - [ ] **Step 2: 创建 samples bundle 元数据与哨兵资源**
 
 `assets/samples.meta`：
+
 ```json
 {
-  "ver": "1.2.0",
-  "importer": "directory",
-  "imported": true,
-  "uuid": "e0000000-0000-0000-0000-0000000000b1",
-  "files": [],
-  "subMetas": {},
-  "userData": { "isBundle": true }
+    "ver": "1.2.0",
+    "importer": "directory",
+    "imported": true,
+    "uuid": "e0000000-0000-0000-0000-0000000000b1",
+    "files": [],
+    "subMetas": {},
+    "userData": { "isBundle": true }
 }
 ```
+
 `assets/samples/placeholder.json`：`{}`（对齐 common/ui/game-content 的占位模式，作为 `provider.load("samples","placeholder")` 的加载哨兵）。
 
 - [ ] **Step 3: 批量修复相对 import**
 
 对 `assets/samples/**/*.ts`：
+
 - `"../../framework"` → `"../../../framework"`
 - `"../game/fixture/GameFixture"` → `"../../game/fixture/GameFixture"`
 - 其它深度变化按实际目录深度逐一修正（每个文件的 import 深度 +1）。
@@ -362,6 +380,7 @@ git commit -m "refactor: game_* 品类合并为 samples bundle（含占位哨兵
 ### Task 5: game bundle 自注册机制（不设 isBundle）
 
 **Files:**
+
 - Modify: `assets/game/fixture/registry.ts`（静态 import → 运行时视图）
 - Modify: `assets/game/lobby/catalog.ts`（去 `game_card/models` 静态 import）
 - Modify: `assets/game/lobby/presenter.ts`（card 呈现器迁出至 samples；保留类型）
@@ -372,8 +391,10 @@ git commit -m "refactor: game_* 品类合并为 samples bundle（含占位哨兵
 - Test: `game-lobby.test.ts`、`game-lobby-catalog.test.ts`、新增 samples 自注册测试、`game-fixture-unified-lifecycle.test.ts`
 
 **Interfaces:**
+
 - Consumes: Task 2 `getBundleModuleRegistry`/`registerBundle`/`lookupBundle`；Task 4 samples 目录。
 - Produces:
+
 ```ts
 // assets/samples/entry.ts（samples bundle 顶层副作用，单点合并登记，避免多文件各自 register 互相覆盖）
 registerBundle("samples", {
@@ -396,6 +417,7 @@ registerBundle("game", {
 - [ ] **Step 2: GameLobbyHost/EntryPageHandle 类型迁到 host.ts + 增可选 loadBundle**
 
 `assets/game/lobby/host.ts`（新文件，承载 GameLobbyHost/EntryPageHandle 类型，供 boot 与 game 共享——boot 仅 `import type`）：
+
 ```ts
 import type { ViewModelNode } from "../../framework";
 import type { GameEntryInfo } from "./catalog";
@@ -415,11 +437,13 @@ export interface EntryPageHandle {
     onClose(callback: () => void): void;
 }
 ```
+
 `lobby.ts` 删除本地 `GameLobbyHost`/`EntryPageHandle` 定义，改从 `./host` `import type`；`entry.ts` 入口处若需重导出请同步。
 
 - [ ] **Step 3: registry 改运行时 + samples/entry 单点自注册**
 
 `assets/game/fixture/registry.ts` 改为运行时视图（删除对 `../../samples/game_*/assembly` 的全部静态 import）：
+
 ```ts
 import type { GameFixture } from "./GameFixture";
 import { lookupBundle } from "../../framework";
@@ -436,6 +460,7 @@ export function gameFixtureRegistry(): Readonly<Record<string, GameFixtureFactor
 ```
 
 `assets/samples/entry.ts`（新文件，samples bundle 顶层副作用；同 bundle 内静态 import 五个 assembly 是安全的）：
+
 ```ts
 import { registerBundle } from "../framework";
 import { createCardFixture } from "./game_card/assembly";
@@ -456,9 +481,11 @@ registerBundle("samples", {
     presenters: { card: createCardBattlePresenter },
 });
 ```
+
 （各 `game_*/assembly.ts` **不要**自行 `registerBundle`，避免同名覆盖。）
 
 `assets/game/entry.ts`（新文件，game bundle 顶层副作用）：
+
 ```ts
 import { registerBundle } from "../framework";
 import { gameTypeCatalog } from "./lobby/catalog";
@@ -480,6 +507,7 @@ registerBundle("game", {
 - [ ] **Step 5: 编写 samples 自注册测试**
 
 新增 `tests/framework/foundation/bundle-module-registration.test.ts`：
+
 ```ts
 import { describe, expect, it } from "bun:test";
 import { registerBundle } from "../../../assets/framework";
@@ -542,6 +570,7 @@ git commit -m "refactor: 品类夹具与呈现器经注册桥运行时自注册�
 ### Task 6: boot 解耦 game 静态依赖 + game 正式成 bundle
 
 **Files:**
+
 - Modify: `assets/game.meta`（`userData.isBundle: true`）
 - Modify: `assets/game/fixture/scene.ts`（`bundle: "ui"` → `bundle: "game"`，paths `["game"]`）
 - Modify: `assets/boot/AppRoot.ts`（删 game/fixture import；sceneMap/catalog 改经桥读；host 能力经桥注入）
@@ -552,23 +581,27 @@ git commit -m "refactor: 品类夹具与呈现器经注册桥运行时自注册�
 - Test: `task68-scope-review.test.ts`、`boot-flow.test.ts`、`boot-game-lobby-host.test.ts`
 
 **Interfaces:**
+
 - Consumes: Task 2 注册桥、Task 5 game bundle 模块、`BOOTSTRAP_SCENE`（本任务定义）。
 - Produces: main（boot+framework）不含任何 game 静态引用；host-services 经注册桥注入 game bundle；`game` 正式成为 bundle。
 
 - [ ] **Step 1: 定义 BOOTSTRAP_SCENE 并改 BootFlow**
 
 在 `assets/boot/flow/BootFlow.ts`（或新增 `assets/boot/config/Bootstrap.ts`）：
+
 ```ts
 /** 入口场景静态引导：main 必须知道首个 bundle 的入口场景才能加载它（配置非代码）。 */
 export const BOOTSTRAP_SCENE: Readonly<Record<string, SceneResources>> = Object.freeze({
     game: Object.freeze({ bundle: "game", paths: ["game"] }),
 });
 ```
+
 BootFlow 的 `sceneMap` 依赖改为：默认使用 `BOOTSTRAP_SCENE`，game bundle 加载后经注册桥的 `sceneResources` 可覆盖/扩展。`AppRoot` 传入动态 `getSceneMap()` 而非静态 import。
 
 - [ ] **Step 2: AppRoot 去 game 静态 import + 经桥注入 host 能力**
 
 `assets/boot/AppRoot.ts`：
+
 - 删除 `import { sceneMap, EntryPageHandle, GameEntryInfo } from "../game/fixture/lobby"`（类型改 `import type` 自 `../game/lobby/host` 或直接本地化）。
 - `assembleApp` 后，把 host 能力写入桥：`registerBundle("host-services", { uiHost, lobbyHost })`（供 game bundle 的 lobby 编排经 `lookupBundle("host-services")` 获取宿主）。
 - `createBootFlow` 的 `sceneMap` 参数改为 `() => gameModuleSceneResources()`（读 `lookupBundle("game").sceneResources`，回退 BOOTSTRAP_SCENE）。
@@ -577,6 +610,7 @@ BootFlow 的 `sceneMap` 依赖改为：默认使用 `BOOTSTRAP_SCENE`，game bun
 - [ ] **Step 3: GameLobbyHostImpl 去 game 运行时 import + 实现 loadBundle**
 
 `assets/boot/host/GameLobbyHostImpl.ts`：
+
 - `game/fixture/lobby` 的运行时符号（`createGameLobby`/`gameTypeCatalog`/`lobbyItemNodeName`/`LOBBY_LIST_ENTRY`）删除；类型改 `import type`。
 - 列表页编排（`openListPage`/`openListPageWithRetry`）迁至 game bundle 的 lobby 模块（经 `host-services` 桥注入本宿主能力），boot 宿主只保留 `openEntryPage`/`closeEntryPage`/`ensureSharedUiDependencies` 原语。
 - 新增 `loadBundle(bundle)`：`const handle = this.resourceProvider.load(bundle, "placeholder"); await handle.done;`（samples 用哨兵 placeholder；game 用 `"game"`）。同时把 `GameLobbyHost` 接口的 `loadBundle?` 收为必选。
@@ -585,11 +619,13 @@ BootFlow 的 `sceneMap` 依赖改为：默认使用 `BOOTSTRAP_SCENE`，game bun
 
 `assets/game.meta` 追加 `"userData": { "isBundle": true }`。
 `assets/game/fixture/scene.ts` 的 sceneMap 改为：
+
 ```ts
 export const sceneMap = Object.freeze({
     game: Object.freeze({ bundle: "game", paths: ["game"] }),
 });
 ```
+
 （此刻 boot 已不再静态 import 任何 game 代码，game 成 bundle 不会把 game 代码重复打进 main。）
 
 - [ ] **Step 5: 更新 task68-scope-review 断言**
@@ -624,6 +660,7 @@ git commit -m "refactor: boot 解耦 game 静态依赖，game 正式成 bundle�
 ### Task 7: 冒烟系统重构（URL 分派经 bundle 动态加载）
 
 **Files:**
+
 - Move: `assets/boot/smoke/ui-smoke.ts`、`scene-smoke.ts`、`modal-click.ts` → `assets/game/smoke/`
 - Move: `assets/boot/smoke/card-battle.ts`、`perf.ts` → `assets/samples/`（自注册）
 - Modify: `assets/boot/smoke/smoke-proxy.ts`、`assets/boot/flow/SmokeRouter.ts`（tag → `{ bundle, entry }` 映射，动态加载后运行）
@@ -632,6 +669,7 @@ git commit -m "refactor: boot 解耦 game 静态依赖，game 正式成 bundle�
 - Test: `tests/framework/foundation/boot-smoke-router.test.ts`、`game-fixture-smoke.test.ts`、`game-fixture-perf.test.ts`
 
 **Interfaces:**
+
 - Consumes: Task 5 的 game/samples 模块 `smokes`；Task 6 的桥。
 - Produces: 冒烟 URL 分派经 `{ bundle, entry }` 表 + `provider.load(bundle 哨兵)` + `lookupBundleModule(bundle).smokes[entry]()` 执行。
 
@@ -646,6 +684,7 @@ git commit -m "refactor: boot 解耦 game 静态依赖，game 正式成 bundle�
 - [ ] **Step 3: SmokeRouter 改为 bundle 映射**
 
 `assets/boot/flow/SmokeRouter.ts` 的 `SmokeRouterDeps` 改为：
+
 ```ts
 export interface SmokeRouterDeps {
     /** 按冒烟标识加载其所属 bundle 并运行：tag → { bundle, entry } 由分派表提供。 */
@@ -658,6 +697,7 @@ export interface SmokeAction {
     readonly run: () => Promise<void>;
 }
 ```
+
 `resolve` 返回含 `bundle`/`entry` 的 action；`run` 由 SmokeProxy 注入：`await provider.load(bundle, "placeholder"); await lookupBundle(bundle).smokes[entry]();`。
 
 - [ ] **Step 4: 更新冒烟路由测试**

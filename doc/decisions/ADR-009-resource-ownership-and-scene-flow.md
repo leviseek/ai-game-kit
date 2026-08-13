@@ -4,13 +4,11 @@
 
 Accepted
 
-
 ## 背景
 
 父级 `create-game-framework-v1` 第 5 节需要资源所有权与场景流转边界。ADR-004 已确立 Bundle First 资源策略（`IResourceProvider` 唯一入口、禁止业务直接调用 `assetManager.loadBundle()`、Bundle 规划 `boot`/`common`/`ui`/`audio`/`game-content`），但只声明了"生命周期清晰"，从未定义资源所有权模型、加载协调语义与场景流转编排。本 ADR 记录 change `implement-resource-and-scene-flow-v1` 产生的长期架构决策，并显式标注与 ADR-004（Bundle First 落地）、ADR-008（FSM 复用基础）、ADR-002（FairyGUI package 选型）的关系。
 
 不记录这些决策的风险与 ADR-006 背景一致：未来重构（如 UI/音频/存档引入重载、驱逐或缓存策略）可能在无感中改变既定行为预期。
-
 
 ## 决策
 
@@ -55,6 +53,7 @@ Cocos Asset Bundle 适配器（`adapters/cocos/resource/CocosResourceProvider.ts
 `core/scene/SceneFlow.ts` 复用 ADR-008 的 `StateMachine` 表达确定性状态转移：状态集 `idle`/`preloading`/`transitioning`/`active`/`failed`。转移表为 `idle --start--> preloading`、`preloading --preloaded--> transitioning`、`preloading --preloadDone--> idle`（预加载完成不切换时回 idle）、`preloading --failed--> failed`、`transitioning --activated--> active`、`transitioning --failed--> failed`、`active/failed --start--> preloading`（再次发起切换或失败后重试）。预加载与激活是异步过程，其完成或失败由回调转换为 FSM 事件再 `send`；FSM 内部不管理异步期，释放后停止接收事件、不回退状态。
 
 关键编排语义：
+
 - **失败保留当前场景**：切换失败时当前场景对象不被释放，编排层回到可再次发起切换的状态（`failed --start--> preloading`），失败上报带原因与场景标识。
 - **重试重新走流程**：重试重新执行预加载与切换，上一次失败期间创建的预加载资源随流转作用域释放，不残留半激活状态。
 - **切换中拒绝重复请求**：`preloading`/`transitioning` 期间重复 `switchTo` 被拒绝并返回原因。
@@ -70,14 +69,12 @@ Cocos 场景适配器只做 `cc.director.loadScene` 薄映射，场景资源所�
 
 **未采用方案：** 不在 `SceneFlow` 内置切换动画、渐变或异步队列；不把场景名注册表做进内核（属于游戏层组合，见总计划第 9 节收口）。
 
-
 ## 理由
 
 - 资源 handle 契约、终态缓存与 `invalidate` 失效语义是跨模块必须遵循的公开 API 语义；未来 UI/音频/存档重载若不知此语义，可能无感改变行为（呼应 ADR-006 的判断标准）。
 - 资源作用域所有权模型（引用归零 + 无进行中加载才卸载、所有权转移先增后减）影响所有后续能力对资源生命周期的预期。
 - `IResourceProvider` 契约形态与引擎接缝是 ADR-004 未定义的公开 API 面，必须成文以明确边界。
 - SceneFlow 编排语义（失败保留、重试、切换拒绝、preload 复用）是长期行为契约，非实现细节。
-
 
 ## 影响
 

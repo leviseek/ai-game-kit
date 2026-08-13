@@ -27,6 +27,6 @@
 ## 5. 验证与文档
 
 - [x] 5.1 浏览器缩窗口验证框跟随 + 面板分辨率更新（≤500ms 延迟可接受）；编辑器切不同设计分辨率核对（需在 Cocos 编辑器运行，人工验证）
-  - 验证中发现并修复两处缺陷：① 上下边虚线不可见（Cocos TILED 对 2px 细边只采样纹理底部带，横向虚线单元改放纹理底部行）→ 重新生成 `frame_dash.png` 并发布 DevOverlay 包；② 全屏虚线框显示时拦截鼠标（FGUI 组件默认 touchable）导致 hover 反复闪烁 + 悬浮球拖拽失效 → `SafeAreaOverlayViewHandle` 创建组件后设 `touchable=false`，配套新增单测
+    - 验证中发现并修复两处缺陷：① 上下边虚线不可见（Cocos TILED 对 2px 细边只采样纹理底部带，横向虚线单元改放纹理底部行）→ 重新生成 `frame_dash.png` 并发布 DevOverlay 包；② 全屏虚线框显示时拦截鼠标（FGUI 组件默认 touchable）导致 hover 反复闪烁 + 悬浮球拖拽失效 → `SafeAreaOverlayViewHandle` 创建组件后设 `touchable=false`，配套新增单测
 - [x] 5.2 运行 `bun test`、lint、typecheck 全绿（相关测试 67 通过；foundation 全量 2 个既有失败与本改动无关，基线一致）
 - [x] 5.3 ADR 检查：本次安全区可视化引入新架构决策（分层落点/像素图选型/resize 链路）→ 已创建 `doc/decisions/ADR-034-dev-overlay-safe-area-visualization.md`

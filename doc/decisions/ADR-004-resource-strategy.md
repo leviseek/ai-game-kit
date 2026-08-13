@@ -1,10 +1,8 @@
 # ADR-004 Resource Management Strategy
 
-
 ## 状态
 
 Accepted
-
 
 ## 背景
 
@@ -17,24 +15,19 @@ Accepted
 - 释放
 - FairyGUI Package
 
-
 避免所有资源进入resources目录。
-
 
 ## 决策
 
 采用Bundle First资源策略。
 
-
 资源访问必须通过：
 
 IResourceProvider
 
-
 禁止业务代码直接调用：
 
 assetManager.loadBundle()
-
 
 ## Bundle规划
 
@@ -42,26 +35,21 @@ boot
 
 启动资源
 
-
 common
 
 公共资源
-
 
 ui
 
 UI资源
 
-
 audio
 
 音频资源
 
-
 game-content
 
 游戏内容资源
-
 
 ## 影响
 
@@ -69,7 +57,6 @@ game-content
 
 - 生命周期清晰
 - 支持扩展
-
 
 缺点：
 

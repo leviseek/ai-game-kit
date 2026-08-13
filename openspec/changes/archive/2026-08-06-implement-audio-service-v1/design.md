@@ -7,12 +7,14 @@
 ## Goals / Non-Goals
 
 **Goals:**
+
 - 提供引擎无关的分组音频服务：music/sfx/ui 分组、音量、静音、切歌、作用域停止、可选模块降级
 - Cocos 音频适配器：基于 `cc.AudioSource`/`AudioClip` 的播放、停止与音量，引擎接缝可注入 mock
 - 前后台策略：接 `ApplicationVisibility`，后台暂停、前台恢复
 - 严格类型化，内核不依赖 `cc`，根入口白名单同步
 
 **Non-Goals:**
+
 - 不实现 3D 空间音频、音效混合图、音频流文件流式播放或 DSP 效果
 - 不实现音频资源清单与加载编排（复用资源层 `kind: "asset"`，不重建加载逻辑）
 - 不在框架定义具体游戏音效/音乐标识（属 `game` 层）

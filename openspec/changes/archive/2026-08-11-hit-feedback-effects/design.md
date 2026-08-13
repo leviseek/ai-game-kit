@@ -5,12 +5,14 @@
 ## Goals / Non-Goals
 
 **Goals:**
+
 - 事件→特效投影器：把 `attack`/`skill-damage`（伤害飘字 + 受击闪白/抖动）与 `skill-heal`（治疗飘字）投影为特效意图。
 - 引擎无关纯逻辑可测：投影器是纯函数（事件增量 → 特效意图），动画器时间源可注入（测试可控推进）。
 - 动画终态回到 state 姿态：飘字/闪白/抖动结束后无残留位移/透明度。
 - 不进入逻辑层、不改事件流与战斗结果（确定性不回归）。
 
 **Non-Goals:**
+
 - 不做序列帧光效、粒子、复杂动画（D4 排除）。
 - 不改战斗逻辑层与事件流；特效不产生新事件。
 - 不改 `gridToXY` 坐标语义与 UnitSlot 绑定。
@@ -88,6 +90,7 @@ createEffectAnimator(options: {
 ### 决策 5：presenter 集成与生命周期
 
 `presenter.ts` 每帧：
+
 1. `clock.advance` + tick（不变）→ `render()`（state 全量渲染，不变）；
 2. `projectHitFeedbackEvents(events, cursor)` 取增量特效；
 3. `animator.play(effects)`；`animator.step()` 推进动画并回写终态；

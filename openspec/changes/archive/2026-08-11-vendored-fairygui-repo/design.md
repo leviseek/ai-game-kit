@@ -5,11 +5,13 @@
 ## Goals / Non-Goals
 
 **Goals:**
+
 - 统一第三方库子模块目录 `third-party/`（根，未来其它库复用），fairygui 为其首个成员。
 - 构建导出脚本固化"子模块源码 → assets 产物"链路，保持 Cocos 解析兼容（import-map 不变）。
 - 库获得独立版本历史（fork 仓库 + submodule 指针）；UBB 修复在 fork 源码完成。
 
 **Non-Goals:**
+
 - 不改库代码（UBB 修复是后续独立 change）。
 - 不迁移到 npm 包（Cocos 对 node_modules+.mjs 支持未验证，库稳定前不做）。
 - 不删除 `fairygui.min.mjs`（产物随官方 dist 三件套维护，减负留待库稳定后评估）。
@@ -20,6 +22,7 @@
 ### 决策 1：源码统一目录 `third-party/`（根）+ submodule 挂载
 
 根目录新建 `third-party/`，`third-party/fairygui` 为 submodule 指向 fork 仓库（分支 `ccc3.0`）。理由：
+
 - 满足"日后第三方库子模块统一存放"——一个目录容纳多个第三方库子模块（fairygui、未来其它）。
 - 与 `assets/` 彻底分离：子模块内源码/构建产物不混入 Cocos 资源目录，避免 .meta 噪声与资源扫描干扰。
 - 第三方库源码有独立版本历史，主仓库只记录 submodule 指针。
@@ -44,11 +47,13 @@
 ```
 
 职责：
+
 - 校验 `third-party/fairygui/source/dist/` 存在（子模块已 init）。
 - 拷贝 `fairygui.mjs` / `fairygui.min.mjs` / `fairygui.d.ts` / `LICENSE`（或按需先跑子模块内 `gulp build` 再拷贝）到产物目录。
 - 只写内容文件，不动 `.meta`；输出同步摘要（源/目标/字节/hash）。
 
 两条调用路径：
+
 - **纯同步**（默认）：子模块 dist 已是最新（官方/自己提交了 dist），直接拷贝——首次挂载零 diff。
 - **源码修改后**（如 UBB 修复）：在子模块内改 `source/src` → 子模块内 `npm run build`（官方 gulp）产出新 dist → 本脚本同步到产物目录。
 
@@ -63,6 +68,7 @@
 ### 决策 5：克隆/构建流程文档化
 
 新克隆流程：`git clone --recursive`（或 `git submodule update --init`）→ `bun run build:fairygui`（首次需要，产物已随仓库提交则可选）。README / `docs/troubleshooting/` 记录：
+
 - submodule init 命令与"third-party/ 未 init 时 build:fairygui 报错"排障。
 - 第三方库统一目录约定：新库 → `third-party/<lib>` 子模块 + 对应导出脚本 + `build:<lib>` script。
 

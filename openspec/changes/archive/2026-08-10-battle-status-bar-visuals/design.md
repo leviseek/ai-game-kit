@@ -5,10 +5,12 @@
 ## Goals / Non-Goals
 
 **Goals:**
+
 - 战场页血条与能量条视觉可区分（颜色/尺寸/标签至少一项不同），观战者可凭视觉辨别血量与能量。
 - 区分仅落在 FGUI 样式层；绑定节点名与 progress 语义、`view/view.ts` 绑定声明、`logic/`、数据模型零改动（或仅对齐）。
 
 **Non-Goals:**
+
 - 不新增进度条**组件类型**语义（不造 `CommonHpBar`/`CommonEnergyBar` 两个独立 exported 组件造成接口膨胀）；优先在既有 `CommonProgressBar` 的**样式变体**内表达差异。
 - 不改变进度值语义、不引入颜色/样式运行时绑定（颜色静态定在 XML/资源，不由 VM 驱动）。
 - 不改战斗逻辑与数据模型（hp/energy 字段已具备）。
@@ -16,16 +18,19 @@
 ## Decisions
 
 **决策 1：区分方式用"样式变体 + 填充色不同"为主，尺寸/标签为辅**
+
 - 血条 fill 用暖色（如红色，需先加入 `palette.json`）、能量条保留现有蓝色 `fill`，两者颜色不同；可辅以尺寸差异（能量条略窄）或标签（`txt_unit_{n}_hp` 已带 `HP` 前缀，能量条可加 `MP`/能量标签）强化辨识。
 - 实现形态由 fgui-designer 定稿：a) 在 `Common` 包内复制 `CommonProgressBar.xml` 为样式变体（如 `CommonBarHp.xml`，同一 `extention="ProgressBar"`），或 b) 在 `AutoBattleView.xml` 内就地换 fill 资源（若能以 `<image>` 显式指定不同 fill）。**倾向 a**：样式可复用、跨页面一致，且不改 `AutoBattleView` 的 `src` 引用语义之外的结构。
 - 备选：在 `AutoBattleView.xml` 中直接改 fill 资源引用、不动 Common——**否决**：与既有"共享通用组件承载于 Common"的 AGENTS 约定相悖，跨页面无法复用。
 - 备选：TS 运行时改进度条子节点颜色——**否决**：颜色应由 FGUI 资源静态表达，运行时改色绕过 validate 语义检查且与"表现层只消费状态"原则冲突。
 
 **决策 2：像素图/调色板走 CLI 确定性通道**
+
 - 新增色先写 `palette.json`（如 `fill_hp: #d64545`），再 `bun run fgui sprite` 生成纯色 fill 像素图并登记（`next-id --prefix` 续编）；禁止手写色值绕过调色板。
 - 若 fgui-designer 判定无需新增图（沿用现有 `progress_fill.png` 仅换 bar 底色/叠加），则保持零新增资源。
 
 **决策 3：绑定与逻辑零改动，验证走冒烟 + 视觉核对**
+
 - `view/view.ts` 绑定声明不变（节点名、progress 语义、`HP x/y` 文本均不动），保证冒烟节点名对齐校验与既有测试通过。
 - 新增视觉断言不写进单元测试（颜色/尺寸是像素表现，非逻辑行为）；由 `?smoke=auto-battle` 冒烟回归 + 截图 + `visual-verifier`（mode=fgui）核对"血条与能量条可辨识"。
 

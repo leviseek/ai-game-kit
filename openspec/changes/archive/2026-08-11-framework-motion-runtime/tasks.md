@@ -33,4 +33,3 @@
 ## 7. ADR 检查
 
 - [x] 7.1 ADR 检查：本 change 即 ADR-029 落地（决策 5.1 已创建）；确认无其它新架构决策需独立 ADR（GameClock 内部实现细节、MAX_DECOR_RATE 默认值属实现期决策，记录即可）。
-

@@ -19,10 +19,12 @@
 ### Task 1: 代次安全 GraphSnapshotStore
 
 **Files:**
+
 - Create: `tools/arch-viewer/lib/server/snapshot-store.ts`
 - Test: `tools/arch-viewer/test/snapshot-store.test.ts`
 
 **Interfaces:**
+
 - Produces: `AnalysisState = "idle" | "index-waiting" | "analyzing" | "error"`。
 - Produces: `SnapshotEvent` 判别联合。
 - Produces: `GraphSnapshotStore.begin/commit/fail/current/subscribe`。
@@ -75,11 +77,13 @@ Expected: PASS。
 ### Task 2: ProjectWatcher 与分析调度
 
 **Files:**
+
 - Create: `tools/arch-viewer/lib/server/watcher.ts`
 - Create: `tools/arch-viewer/lib/server/scheduler.ts`
 - Test: `tools/arch-viewer/test/watcher.test.ts`
 
 **Interfaces:**
+
 - Produces: `WatchBackend` 注入接口。
 - Produces: `createAnalysisScheduler({ sync, analyze, store, debounceMs })`。
 - Produces: `watchProject(root, onChange): { dispose(): void }`。
@@ -124,6 +128,7 @@ Expected: PASS。
 ### Task 3: HTTP 路由、源码安全与 SSE
 
 **Files:**
+
 - Create: `tools/arch-viewer/lib/server/http-server.ts`
 - Create: `tools/arch-viewer/lib/server/routes.ts`
 - Create: `tools/arch-viewer/lib/server/source.ts`
@@ -131,6 +136,7 @@ Expected: PASS。
 - Test: `tools/arch-viewer/test/http-server.test.ts`
 
 **Interfaces:**
+
 - Produces: `startArchServer(options): Promise<{ port, url, close }>`。
 - Produces API: `/api/project`、`/api/views/:type`、`/api/groups/:id`、`/api/symbols/search`、`/api/nodes/:id/neighborhood`、`/api/source`、`/api/events`。
 - Produces: `readSourceExcerpt(root, file, line, radius): SourceExcerpt`，其中 `location` 只可能来自服务端验证过的仓库内路径。
@@ -172,6 +178,7 @@ Expected: PASS。
 ### Task 4: CLI、web 编译与浏览器打开
 
 **Files:**
+
 - Create: `tools/arch-viewer/lib/server/static.ts`
 - Create: `tools/arch-viewer/lib/server/open-browser.ts`
 - Create: `tools/arch-viewer/lib/args.ts`
@@ -179,6 +186,7 @@ Expected: PASS。
 - Test: `tools/arch-viewer/test/cli.test.ts`
 
 **Interfaces:**
+
 - CLI flags: `--port <number>`、`--no-open`、`--once`、`--help`。
 - Produces: `run(argv, deps?): Promise<number>`，测试可注入 build/open/server/analyzer。
 

@@ -19,6 +19,7 @@
 ### Task 1: FUI 类型化错误
 
 **Files:**
+
 - Create: `assets/framework/core/fui/FuiErrors.ts`
 - Modify: `assets/framework/core/fui/FuiComponentRegistry.ts`
 - Modify: `assets/framework/contracts/ui/FuiView.ts`
@@ -30,6 +31,7 @@
 - Modify: `tests/framework/foundation/public-boundary.test.ts`
 
 **Interfaces:**
+
 - Internal: `FuiComponentRegistrationError`、`FuiViewBindingRegistrationError`、`FuiViewCreationError`、`FuiBindingError`。
 - Public: `FuiViewCleanupError extends FrameworkError`，`errors: readonly unknown[]`。
 
@@ -88,12 +90,14 @@ Expected: PASS。
 ### Task 2: View 与 Host 清理隔离
 
 **Files:**
+
 - Modify: `assets/framework/contracts/ui/FuiView.ts`
 - Modify: `assets/framework/adapters/cocos/ui/FuiViewHost.ts`
 - Modify: `tests/framework/foundation/fui-view.test.ts`
 - Modify: `tests/framework/foundation/fui-view-host.test.ts`
 
 **Interfaces:**
+
 - Produces: `FuiView.__own(handle: { dispose(): void }): void`。
 - Behavior: View disposables 逆序全部执行；Host 始终销毁 GComponent。
 
@@ -120,6 +124,7 @@ Expected: FAIL，第一个异常会中断清理。
 ### Task 3: 页面、UiHost 与会话资源清理
 
 **Files:**
+
 - Modify: `assets/framework/adapters/cocos/ui/FairyGuiPageAdapter.ts`
 - Modify: `assets/boot/host/UiHost.ts`
 - Modify: `assets/boot/host/GameLobbyHostImpl.ts`
@@ -127,6 +132,7 @@ Expected: FAIL，第一个异常会中断清理。
 - Modify: `tests/framework/foundation/boot-game-lobby-host.test.ts`
 
 **Interfaces:**
+
 - Behavior: 页面状态先标记 disposed；adapter.dispose 继续清理其它页面/容器；closeEntryPage 始终 release scope；UiHost.dispose 始终释放 navigator 与 uiScope。
 
 - [ ] **Step 1: 写四组失败测试**

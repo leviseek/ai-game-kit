@@ -229,13 +229,13 @@ FairyGUI 输入
 
 **结果：** 五类组合关注基础设施适配点：
 
-| 品类 | v1 重点验证 | 明确留在游戏层 |
-|---|---|---|
-| RPG | 跨场景状态、FairyGUI route、ViewModel、资源作用域与存档组合 | 角色、技能、任务、战斗 |
-| 回合制卡牌 | 可控时间、状态机、配置、ViewModel 与 FairyGUI 组合 | 卡组、回合、效果结算 |
-| 放置挂机 | wall clock、暂停恢复、版本化存档、ViewModel 与 FairyGUI route | 离线收益和成长公式 |
-| 模拟经营 | 调度器、配置、存档、复杂 FairyGUI 分层与 ViewModel | 生产链和经济模型 |
-| 横板格斗 | gameplay action、FairyGUI HUD、模拟时钟、池和音频组合 | 判定盒、连招、帧数据 |
+| 品类       | v1 重点验证                                                   | 明确留在游戏层         |
+| ---------- | ------------------------------------------------------------- | ---------------------- |
+| RPG        | 跨场景状态、FairyGUI route、ViewModel、资源作用域与存档组合   | 角色、技能、任务、战斗 |
+| 回合制卡牌 | 可控时间、状态机、配置、ViewModel 与 FairyGUI 组合            | 卡组、回合、效果结算   |
+| 放置挂机   | wall clock、暂停恢复、版本化存档、ViewModel 与 FairyGUI route | 离线收益和成长公式     |
+| 模拟经营   | 调度器、配置、存档、复杂 FairyGUI 分层与 ViewModel            | 生产链和经济模型       |
+| 横板格斗   | gameplay action、FairyGUI HUD、模拟时钟、池和音频组合         | 判定盒、连招、帧数据   |
 
 ### 17. 使用 Bun 验证纯 TypeScript，使用 Cocos Web Desktop 验证引擎集成
 
@@ -296,7 +296,6 @@ FairyGUI 输入
 - Configuration：
   业务相关配置数据
 
-
 Framework 只提供基础设施能力和通用接口契约。
 
 Framework 不应该了解任何具体游戏业务，例如：
@@ -308,17 +307,16 @@ Framework 不应该了解任何具体游戏业务，例如：
 - 任务
 - 商店
 
-
 示例结构：
 
 game/features
 
 ├── inventory
 │
-│   ├── domain
-│   ├── application
-│   ├── presentation
-│   └── config
+│ ├── domain
+│ ├── application
+│ ├── presentation
+│ └── config
 │
 ├── battle
 │
@@ -333,16 +331,13 @@ ApplicationContext 仅允许存在于：
 - Composition Root（应用组合入口）
 - Module 生命周期管理边界
 
-
 ApplicationContext 的职责：
 
 - 创建和装配 Framework 服务
 - 管理模块生命周期
 - 提供基础设施依赖
 
-
 业务代码禁止直接依赖 ApplicationContext。
-
 
 禁止：
 
@@ -426,3 +421,4 @@ class InventoryService {
 以上系统必须在具体游戏 Feature 验证需求后，再逐步引入。
 
 避免为了假设需求提前设计复杂系统。
+```

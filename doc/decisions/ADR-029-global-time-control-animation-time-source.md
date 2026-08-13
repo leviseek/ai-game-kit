@@ -65,7 +65,7 @@ Accepted
 - `SimulationClock` 驱动源从 `Date.now()` 改为 GameClock delta；`WallClock` 不变。
 - 动画器（effect-animator / vs-entrance / MotionTween）注入 GameClock，动画器零感知（只读 `now(domain)`）。
 - presenter 挡位实现收敛为 GameClock.rate；分层 pause 接入（menu/combat 域）。
-- 新增/修正约束 C-05/C-08/C-08b/C-13/C-14/C-17/C-19/C-20；其余 C-01~C-04/C-06/C-07/C-09/C-10~C-12/C-15/C-16/C-18 为本 ADR 基线。
+- 新增/修正约束 C-05/C-08/C-08b/C-13/C-14/C-17/C-19/C-20；其余 C-01~~C-04/C-06/C-07/C-09/C-10~~C-12/C-15/C-16/C-18 为本 ADR 基线。
 - 落地 change：`framework-motion-runtime`（core GameClock + MotionTween 契约 + 动画接入 + 测试 + ADR-029 + AGENTS 补充）。
 
 ## 需 spike / 业务确认

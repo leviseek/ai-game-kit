@@ -13,9 +13,11 @@
 ## Capabilities
 
 ### New Capabilities
+
 - `service-registry`: 类型化 token、服务注册/解析/查询、重复注册拒绝、缺失 token 拒绝、解析期依赖循环检测、重复解析防护与公开入口收口。
 
 ### Modified Capabilities
+
 <!-- 无：ApplicationContext 与 Module 契约锁定保持不变，现有 specs 行为不变 -->
 
 ## Impact

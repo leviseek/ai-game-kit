@@ -16,9 +16,11 @@
 ## Capabilities
 
 ### New Capabilities
+
 - `game-composite-fixtures`: 品类组合夹具的公共契约、五类游戏层夹具装配、业务模型留在游戏层的负向断言，以及五类组合统一生命周期测试。
 
 ### Modified Capabilities
+
 - `fairygui-ui-adapter`: 导航模态状态到遮罩的自动同步（从手动 `setModal` 接缝改为消费 `UiNavigator` 模态状态自动呈现/移除遮罩）、遮罩可见性与输入阻断增强、窗口 resize 同步、真实交互点击验证下的模态输入阻断断言。
 
 ## Impact

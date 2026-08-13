@@ -21,6 +21,7 @@
 ### Task 1: 初始化 AutoBattle 包并分配资源 id
 
 **Files:**
+
 - Create: `ui/demo/assets/AutoBattle/package.xml`
 - Create: `ui/demo/assets/AutoBattle/img/`
 
@@ -31,6 +32,7 @@
 ### Task 2: 生成纯色背景 sprite 并登记资源
 
 **Files:**
+
 - Create: `ui/demo/assets/AutoBattle/img/bg_battle.png`
 - Modify: `ui/demo/assets/AutoBattle/package.xml`
 
@@ -40,6 +42,7 @@
 ### Task 3: 创建 BattleView 组件
 
 **Files:**
+
 - Create: `ui/demo/assets/AutoBattle/BattleView.xml`
 - Modify: `ui/demo/assets/AutoBattle/package.xml`
 
@@ -51,6 +54,7 @@
 ### Task 4: 严格校验并修复
 
 **Files:**
+
 - Verify: `ui/demo/assets/AutoBattle/package.xml`
 - Verify: `ui/demo/assets/AutoBattle/BattleView.xml`
 

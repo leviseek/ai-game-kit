@@ -1,15 +1,12 @@
 # ADR-005 Framework Game Boundary
 
-
 ## 状态
 
 Accepted
 
-
 ## 背景
 
 Framework需要支持多个不同类型游戏。
-
 
 如果Framework包含：
 
@@ -20,11 +17,9 @@ Framework需要支持多个不同类型游戏。
 
 会导致框架变成具体游戏模板。
 
-
 ## 决策
 
 Framework只提供基础能力。
-
 
 Framework负责：
 
@@ -36,7 +31,6 @@ Framework负责：
 - 配置
 - 日志
 
-
 Game负责：
 
 - 角色
@@ -45,14 +39,11 @@ Game负责：
 - 任务
 - 经济
 
-
 ## 规则
 
 Framework禁止依赖Game。
 
-
 Game允许依赖Framework。
-
 
 ## 影响
 

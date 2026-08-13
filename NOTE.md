@@ -1,4 +1,5 @@
 ## 为什么选择 GPT-5.6 + Superpowers + OpenSpec
+
 你是：
 
 一个高级程序员挑战架构升级。
@@ -28,11 +29,13 @@ OpenSpec
 所有系统变化留下记录。
 
 ## 安装 Superpowers
+
 ```codex
 Fetch and follow instructions from https://raw.githubusercontent.com/obra/superpowers/refs/heads/main/.codex/INSTALL.md
 ```
 
 ## 安装 OpenSpec
+
 ```powershell
 npm install -g @fission-ai/openspec@latest
 
@@ -41,6 +44,7 @@ openspec init
 ```
 
 ## 自动维护 ADR
+
 ```codex
 加一个规则：
 
@@ -48,7 +52,6 @@ openspec init
 ```
 
 ## AI 游戏研发四层流程关系
-
 
 ```text
              AI 游戏研发体系

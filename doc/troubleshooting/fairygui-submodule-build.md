@@ -8,11 +8,11 @@ FairyGUI Cocos 运行库源码以 git submodule 存放于根目录 `third-party/
 
 ## 目录分工
 
-| 目录 | 角色 | 变更来源 |
-|---|---|---|
-| `third-party/fairygui/source/src/` | 库源码权威源（TS） | fork 仓库提交 |
-| `third-party/fairygui/source/dist/` | 构建产物（官方 gulp） | fork 仓库提交（或源码修改后 `npm run build`） |
-| `assets/framework/libs/fairygui/` | Cocos 解析产物目录 | `bun run build:fairygui`（只写内容，不碰 `.meta`） |
+| 目录                                | 角色                  | 变更来源                                           |
+| ----------------------------------- | --------------------- | -------------------------------------------------- |
+| `third-party/fairygui/source/src/`  | 库源码权威源（TS）    | fork 仓库提交                                      |
+| `third-party/fairygui/source/dist/` | 构建产物（官方 gulp） | fork 仓库提交（或源码修改后 `npm run build`）      |
+| `assets/framework/libs/fairygui/`   | Cocos 解析产物目录    | `bun run build:fairygui`（只写内容，不碰 `.meta`） |
 
 ## 常用命令
 

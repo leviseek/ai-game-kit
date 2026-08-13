@@ -5,11 +5,13 @@
 ## Goals / Non-Goals
 
 **Goals:**
+
 - 安全区虚线框：纯逻辑控制器（可单测）+ Adapter 视图薄壳，框与悬浮球面板展开联动。
 - 分辨率采样：扩 `DevInfo`/`DevInfoSamplerOptions`，面板展示物理/逻辑/GRoot 适配三组数值。
 - 所有读数实时（防创建时快照），值变化才重绘（脏检查）。
 
 **Non-Goals:**
+
 - 不做框的动画（呼吸/闪烁），静态虚线框对调试已足够（YAGNI）。
 - 不引入 safe area 策略/组件本身，仅可视化现有 inset。
 - 不接入 GM 面板（沿用 onTap 预留模式）。
@@ -19,6 +21,7 @@
 ### 1. 像素图 9-slice 承载虚线，而非运行时 GGraph
 
 运行时 `new GGraph()` 不违反 XML graph 禁令（项目已有 `createFairyGuiMask` 先例），但 GGraph 仅支持实线，虚线需 hack 底层或逐段建对象，脆弱。改为 `bun run fgui sprite` 生成黄色虚线单元像素图（进 palette.json），四边各一条 `<image>` 用 9-slice fill 拉伸：虚线即图本身、缩放由 FGUI 渲染管线处理、零 hack。
+
 - 备选 A：GGraph 实线——快速但非等比缩放下矢量线宽变形，且无虚线 API。
 - 备选 C：cc.Graphics 挂 GRoot——虚线自由但引入第二套坐标系/层级体系，违背"fgui 类型只在 Adapter 边界"精神。
 

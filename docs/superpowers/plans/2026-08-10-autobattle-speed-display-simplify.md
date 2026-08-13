@@ -21,6 +21,7 @@
 ### Task 1: 视图层绑定迁移（view.ts + 相关测试断言）
 
 **Files:**
+
 - Modify: `assets/samples/game_auto_battle/view/view.ts`（`createAutoBattleBindings`，view.ts:162-168）
 - Modify: `tests/framework/foundation/game-auto-battle-presenter.test.ts`（96, 113-120 行）
 - Modify: `tests/framework/foundation/game-auto-battle-speed-control.test.ts`（88-102 行）
@@ -28,62 +29,65 @@
 - Modify: `tests/framework/foundation/game-auto-battle-view.test.ts`（180-185 行）
 
 **Interfaces:**
+
 - Consumes: `AutoBattleViewModel.speed: AutoBattleSpeed`（已有）；`Binding` 类型（framework 导出）；`createAutoBattlePresenter(fixture, node)`；`fixture.viewModel.node(name)`。
 - Produces: `createAutoBattleBindings(commands)` 返回数组含 `btn_speed` 的 text + command 绑定、不再含 `txt_speed` 绑定；测试断言统一改走 `btn_speed`。签名本身不变（仅数组内容变化）。
 
 - [ ] **Step 1: 更新所有测试断言（先红）**
 
 **presenter.test.ts 96 行**（renders static HUD 测试）：
+
 ```typescript
-            expect(view.nodes.get("txt_round")?.text).toBe("第 1 回合");
-            expect(view.nodes.get("btn_speed")?.text).toBe("x1");
+expect(view.nodes.get("txt_round")?.text).toBe("第 1 回合");
+expect(view.nodes.get("btn_speed")?.text).toBe("x1");
 ```
 
 **presenter.test.ts 113-120 行**（clicking the speed button 测试）：
-```typescript
-            expect(view.nodes.get("btn_speed")?.text).toBe("x1");
-            view.nodes.get("btn_speed")?.clickHandler?.();
-            expect(fixture.speed).toBe(2);
-            expect(view.nodes.get("btn_speed")?.text).toBe("x2");
 
-            view.nodes.get("btn_speed")?.clickHandler?.();
-            expect(fixture.speed).toBe(3);
-            expect(view.nodes.get("btn_speed")?.text).toBe("x3");
+```typescript
+expect(view.nodes.get("btn_speed")?.text).toBe("x1");
+view.nodes.get("btn_speed")?.clickHandler?.();
+expect(fixture.speed).toBe(2);
+expect(view.nodes.get("btn_speed")?.text).toBe("x2");
+
+view.nodes.get("btn_speed")?.clickHandler?.();
+expect(fixture.speed).toBe(3);
+expect(view.nodes.get("btn_speed")?.text).toBe("x3");
 ```
 
 **speed-control.test.ts 88-102 行**：测试名 `"the speed command updates the txt_speed binding via VM"` → `"the speed command updates the btn_speed title via VM"`；断言：
+
 ```typescript
-            fixture.viewModel.render();
-            expect(fixture.viewModel.node("btn_speed").text).toBe("x1");
+fixture.viewModel.render();
+expect(fixture.viewModel.node("btn_speed").text).toBe("x1");
 
-            fixture.cycleSpeed();
-            fixture.viewModel.render();
-            expect(fixture.viewModel.node("btn_speed").text).toBe("x2");
+fixture.cycleSpeed();
+fixture.viewModel.render();
+expect(fixture.viewModel.node("btn_speed").text).toBe("x2");
 
-            fixture.cycleSpeed();
-            fixture.viewModel.render();
-            expect(fixture.viewModel.node("btn_speed").text).toBe("x3");
+fixture.cycleSpeed();
+fixture.viewModel.render();
+expect(fixture.viewModel.node("btn_speed").text).toBe("x3");
 ```
 
 **smoke.ts 209-216 行**：
+
 ```typescript
-    const firstResult = endState.result;
-    fixture.cycleSpeed();
-    fixture.viewModel.render();
-    const speedNode = fixture.viewModel.node("btn_speed").text;
-    report(
-        "speed-cycle",
-        fixture.speed === 2 && speedNode === "x2",
-        `speed=${fixture.speed} title=${speedNode ?? "none"}`,
-    );
+const firstResult = endState.result;
+fixture.cycleSpeed();
+fixture.viewModel.render();
+const speedNode = fixture.viewModel.node("btn_speed").text;
+report("speed-cycle", fixture.speed === 2 && speedNode === "x2", `speed=${fixture.speed} title=${speedNode ?? "none"}`);
 ```
+
 同步更新该段上方注释（若点名 txt_speed）为按钮标题语义。
 
 **view.test.ts 180-185 行**（static bindings 测试，vm.speed 固定 1）：
+
 ```typescript
-        expect(view.nodes.get("txt_round")?.text).toBe("第 1 回合");
-        expect(view.nodes.get("btn_speed")?.text).toBe("x1");
-        expect(view.nodes.get("txt_result")?.visible).toBe(false);
+expect(view.nodes.get("txt_round")?.text).toBe("第 1 回合");
+expect(view.nodes.get("btn_speed")?.text).toBe("x1");
+expect(view.nodes.get("txt_result")?.visible).toBe(false);
 ```
 
 - [ ] **Step 2: 运行测试确认失败（红）**
@@ -141,15 +145,18 @@ git commit -m "feat: 速度挡位绑定从 txt_speed 迁移到 btn_speed 标题"
 ### Task 2: FGUI 组件修改（委派 fgui-designer）
 
 **Files:**
+
 - Modify: `ui/demo/assets/AutoBattle/AutoBattleView.xml`（fgui-designer 产出）
 
 **Interfaces:**
+
 - Consumes: Task 1 的绑定 `node: "btn_speed"`（FGUI 组件需保留 `btn_speed` 节点名不变）。
 - Produces: AutoBattleView 组件不再含 `txt_speed` 节点；`btn_speed` 在 (580,448)；`bun run fgui validate --strict` 通过；发布产物更新。
 
 - [ ] **Step 1: 委派 fgui-designer 删除 txt_speed 并上移按钮**
 
 使用 `/fgui-edit` 命令委派 fgui-designer 修改 `AutoBattleView.xml`：
+
 - 删除 `<text id="ab_txt_speed" name="txt_speed" .../>` 节点。
 - 把 `btn_speed` 从 `xy="580,484"` 上移到 `xy="580,448"`（原 txt_speed 位置），其余属性不变（`CommonButton`，标题 `x1`）。
 - 不触碰 `txt_round`/`txt_log`/`txt_result`/`btn_restart` 等其它节点。
@@ -177,9 +184,11 @@ git commit -m "feat: AutoBattleView 删除 txt_speed，速度按钮上移显示�
 ### Task 3: 全量验证
 
 **Files:**
+
 - 无代码改动；仅运行验证。
 
 **Interfaces:**
+
 - Consumes: 全部先前任务的产物。
 
 - [ ] **Step 1: typecheck + lint**
@@ -211,4 +220,4 @@ Expected: 仅剩归档文档 `docs/superpowers/plans/2026-08-10-lineup-editor-cl
 
 - **Spec 覆盖**：D1（删 txt_speed + 按钮上移 y448）→ Task 2；D2（btn_speed text 绑定）→ Task 1；测试同步 → Task 1（先红后绿）；发布产物 → Task 2 Step 3；全量验证 → Task 3。
 - **占位符**：所有步骤含具体代码/命令，无 TBD/TODO。
-- **类型一致性**：绑定 `node: "btn_speed"`、`get: (vm) => \`x${vm.speed}\`` 与现有 `AutoBattleSpeed`/`Binding` 类型一致；测试断言统一用 `btn_speed` 的 `text` 字段（内存节点 `toViewModelNode` 的 `setText` 写入 `recording.text`，与 txt_round 断言同机制）。Task 1 内先断言后实现，保证红→绿闭环。
+- **类型一致性**：绑定 `node: "btn_speed"`、`get: (vm) => \`x${vm.speed}\``与现有`AutoBattleSpeed`/`Binding`类型一致；测试断言统一用`btn_speed`的`text`字段（内存节点`toViewModelNode`的`setText`写入`recording.text`，与 txt_round 断言同机制）。Task 1 内先断言后实现，保证红→绿闭环。

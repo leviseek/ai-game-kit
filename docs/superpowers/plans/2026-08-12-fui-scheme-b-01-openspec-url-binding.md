@@ -19,6 +19,7 @@
 ### Task 1: 创建 OpenSpec change
 
 **Files:**
+
 - Create: `openspec/changes/fui-runtime-binding-boundary-v1/proposal.md`
 - Create: `openspec/changes/fui-runtime-binding-boundary-v1/design.md`
 - Create: `openspec/changes/fui-runtime-binding-boundary-v1/tasks.md`
@@ -27,6 +28,7 @@
 - Create: `openspec/changes/fui-runtime-binding-boundary-v1/specs/framework-diagnostics/spec.md`
 
 **Interfaces:**
+
 - Produces: 已校验 change，覆盖 URL、required runtime binding、事务式 scope、端到端清理和 ADR 检查。
 
 - [ ] **Step 1: 使用 `openspec-propose` 创建 change**
@@ -70,6 +72,7 @@ Expected: PASS，0 errors。
 ### Task 2: URL 契约贯穿绑定链
 
 **Files:**
+
 - Modify: `assets/framework/core/fui/FuiBindings.ts`
 - Modify: `assets/framework/core/fui/FuiComponentRegistry.ts`
 - Modify: `assets/framework/adapters/cocos/ui/FuiViewHost.ts`
@@ -81,6 +84,7 @@ Expected: PASS，0 errors。
 - Modify: `tests/framework/foundation/public-boundary.test.ts`
 
 **Interfaces:**
+
 - Produces: `FuiComponentUrl = \`ui://${string}/${string}\``。
 - Produces: internal `createFuiComponentUrl(packageName, componentName): FuiComponentUrl`。
 - Produces: `FUIBind(url, fields, options)`，其中 `options.runtimeBinding: "required" | "none"` 必填。
@@ -93,7 +97,9 @@ Expected: PASS，0 errors。
 const LOGIN_VIEW_URL = ("ui" + "://Login/LoginView") as FuiComponentUrl;
 
 @FUIBind(LOGIN_VIEW_URL, fields, { runtimeBinding: "required" })
-class LoginView extends FuiView<LoginState, LoginViewShape> { /* 现有类体 */ }
+class LoginView extends FuiView<LoginState, LoginViewShape> {
+    /* 现有类体 */
+}
 ```
 
 在 `contracts.typecheck.ts` 增加真实 tsc 门禁：`FuiComponentRegistry.register/lookup` 只接收 `FuiComponentUrl`；非 `ui://包/组件` 字符串用 `@ts-expect-error` 断言拒绝；不传第三参数的 `FUIBind(TEST_URL, fields)` 用 `@ts-expect-error` 断言拒绝；entry 记录 `runtimeBinding`。

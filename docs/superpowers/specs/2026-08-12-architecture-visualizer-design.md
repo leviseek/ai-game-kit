@@ -71,37 +71,37 @@ CodeGraph CLI + TypeScript SourceScanner + architecture.config.ts
 
 ```ts
 interface GraphNode {
-  readonly id: string;
-  readonly kind: NodeKind;
-  readonly label: string;
-  readonly source?: SourceLocation;
-  readonly groupId?: string;
-  readonly metadata: Readonly<Record<string, unknown>>;
+    readonly id: string;
+    readonly kind: NodeKind;
+    readonly label: string;
+    readonly source?: SourceLocation;
+    readonly groupId?: string;
+    readonly metadata: Readonly<Record<string, unknown>>;
 }
 
 interface GraphEdge {
-  readonly id: string;
-  readonly from: string;
-  readonly to: string;
-  readonly relation: EdgeRelation;
-  readonly evidence: readonly Evidence[];
-  readonly declared: boolean;
+    readonly id: string;
+    readonly from: string;
+    readonly to: string;
+    readonly relation: EdgeRelation;
+    readonly evidence: readonly Evidence[];
+    readonly declared: boolean;
 }
 
 interface GraphGroup {
-  readonly id: string;
-  readonly kind: "project" | "system" | "layer" | "module" | "directory";
-  readonly label: string;
-  readonly parentId?: string;
-  readonly childIds: readonly string[];
+    readonly id: string;
+    readonly kind: "project" | "system" | "layer" | "module" | "directory";
+    readonly label: string;
+    readonly parentId?: string;
+    readonly childIds: readonly string[];
 }
 
 interface Diagnostic {
-  readonly severity: "info" | "warning" | "error";
-  readonly rule: string;
-  readonly message: string;
-  readonly nodeIds: readonly string[];
-  readonly evidence: readonly Evidence[];
+    readonly severity: "info" | "warning" | "error";
+    readonly rule: string;
+    readonly message: string;
+    readonly nodeIds: readonly string[];
+    readonly evidence: readonly Evidence[];
 }
 ```
 
@@ -163,40 +163,30 @@ View / FuiView -> Application facade / Use Case -> Domain + Ports
 
 ```ts
 export default defineArchitectureConfig({
-  hierarchy: { root: group("ai-game-kit", [
-    group("boot", ["assets/boot/**"]),
-    group("framework", [
-      "assets/framework/*.ts",
-      group("core", ["assets/framework/core/**"]),
-      group("contracts", ["assets/framework/contracts/**"]),
-      group("application", ["assets/framework/application/**"]),
-      group("diagnostics", ["assets/framework/diagnostics/**"]),
-      group("adapters", ["assets/framework/adapters/**"]),
-      group("libraries", ["assets/framework/libs/**"]),
-    ]),
-    group("game", [
-      "assets/game/**", "assets/samples/**", "assets/ui/**",
-      "assets/audio/**", "assets/common/**", "assets/game-content/**", "assets/resources/**",
-    ]),
-    group("tooling", ["tools/**"]),
-  ]) },
-  dependencyRules: [
-    allow("boot", ["framework", "game"]),
-    allow("game", ["framework"]),
-    deny("framework", ["boot", "game"]),
-  ],
-  startup: {
-    entry: symbol("AppRoot::onLoad", "assets/boot/AppRoot.ts"),
-    phases: [phase("assembly", ["assembleApp", "createBootFlow"])],
-    branches: [
-      branch("application", ["AppRoot::start", "Application::start"]),
-      branch("presentation", [
-        "AppRoot::start", "createBootFlow::launch", "createSceneFlow::switchTo", "UiHost::init",
-      ]),
-    ],
-  },
-  dataFlows: [],
-  resources: [],
+    hierarchy: {
+        root: group("ai-game-kit", [
+            group("boot", ["assets/boot/**"]),
+            group("framework", [
+                "assets/framework/*.ts",
+                group("core", ["assets/framework/core/**"]),
+                group("contracts", ["assets/framework/contracts/**"]),
+                group("application", ["assets/framework/application/**"]),
+                group("diagnostics", ["assets/framework/diagnostics/**"]),
+                group("adapters", ["assets/framework/adapters/**"]),
+                group("libraries", ["assets/framework/libs/**"]),
+            ]),
+            group("game", ["assets/game/**", "assets/samples/**", "assets/ui/**", "assets/audio/**", "assets/common/**", "assets/game-content/**", "assets/resources/**"]),
+            group("tooling", ["tools/**"]),
+        ]),
+    },
+    dependencyRules: [allow("boot", ["framework", "game"]), allow("game", ["framework"]), deny("framework", ["boot", "game"])],
+    startup: {
+        entry: symbol("AppRoot::onLoad", "assets/boot/AppRoot.ts"),
+        phases: [phase("assembly", ["assembleApp", "createBootFlow"])],
+        branches: [branch("application", ["AppRoot::start", "Application::start"]), branch("presentation", ["AppRoot::start", "createBootFlow::launch", "createSceneFlow::switchTo", "UiHost::init"])],
+    },
+    dataFlows: [],
+    resources: [],
 });
 ```
 

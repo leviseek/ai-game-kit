@@ -13,10 +13,13 @@
 ## Capabilities
 
 ### New Capabilities
+
 <!-- Capabilities being introduced. Replace <name> with kebab-case identifier (e.g., user-auth, data-export, api-rate-limiting). Each creates specs/<name>/spec.md -->
+
 - 无（规模可配置属于对既有战斗能力的扩展，不新增独立 capability）。
 
 ### Modified Capabilities
+
 - `auto-battle-playable`: 战斗规模从固定每队 3 单位演进为 N 可配置（上限 6），单位身份引入逻辑槽位 `side+slotIndex`，观战规模不限 3v3。
 - `view-model-rendering`: 视图节点接缝 `ViewModelNode` 新增坐标写入能力（`setXY`），渲染管线支持把 VM 位置数据映射到节点坐标（向后兼容扩展，不影响既有文本/进度/显隐/命令绑定）。
 

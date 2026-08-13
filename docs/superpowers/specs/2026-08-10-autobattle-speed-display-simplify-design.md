@@ -16,8 +16,8 @@
 
 - `ui/demo/assets/AutoBattle/AutoBattleView.xml`：根下直接子节点含 `txt_speed`（id=ab_txt_speed，text 类型，初始 `x1`）与 `btn_speed`（id=ab_btn_speed，`CommonButton` 组件，标题初始 `x1`）。
 - `assets/samples/game_auto_battle/view/view.ts`：
-  - `txt_speed` text 绑定（view.ts:162-166）。
-  - `btn_speed` command 绑定（view.ts:168），无 text 绑定。
+    - `txt_speed` text 绑定（view.ts:162-166）。
+    - `btn_speed` command 绑定（view.ts:168），无 text 绑定。
 - 绑定机制：`wrapFairyGuiObject.setText` → `child.text = value`；fgui 的 `GButton` 有 `set text → set title`（fairygui.mjs:13006-13011），因此对按钮节点加 text 绑定即可更新标题。
 
 根因结论：txt_speed 绑定未生效的根因不阻塞本改动——本次直接删除该节点，从根源消除问题；同时用验证过的 text 绑定机制（`GButton.text` → 标题）解决按钮标题不更新的确定问题。
@@ -33,8 +33,8 @@
 ### D2 给 `btn_speed` 增加 text 绑定
 
 - `view.ts` 的 `createAutoBattleBindings`：
-  - 移除 `txt_speed` 的 text 绑定。
-  - 新增 `{ kind: "text", node: "btn_speed", get: (vm) => \`x${vm.speed}\` }`。
+    - 移除 `txt_speed` 的 text 绑定。
+    - 新增 `{ kind: "text", node: "btn_speed", get: (vm) => \`x${vm.speed}\` }`。
 - 与现有 command 绑定共存（不同 index，无冲突；命令去重按节点名，不重复注册 onClick）。
 
 ## 具体改动清单

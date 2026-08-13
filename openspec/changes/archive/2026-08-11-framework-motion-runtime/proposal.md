@@ -7,11 +7,11 @@
 ## What Changes
 
 - **framework core/time 新增 `GameClock`**（纯 TS，实现 `TimeSource`）：
-  - `now(domain)`：当且仅当该域被暂停时冻结；`rate` 全局（含在 now 计算）。
-  - `pause(domain)` / `resume(domain)`：`PauseDomain` 枚举（`menu` / `combat`，支持层级 menu ⊃ combat）；**menu 暂停不冻结 combat**。
-  - `advance(ms)`：由引擎 update dt 或外部节拍驱动。
-  - `jumpTo(t)`：显式时间跳跃（动画 seek 终态）。
-  - 应用级 pause（切后台）= 冻结全部域（最顶层）。
+    - `now(domain)`：当且仅当该域被暂停时冻结；`rate` 全局（含在 now 计算）。
+    - `pause(domain)` / `resume(domain)`：`PauseDomain` 枚举（`menu` / `combat`，支持层级 menu ⊃ combat）；**menu 暂停不冻结 combat**。
+    - `advance(ms)`：由引擎 update dt 或外部节拍驱动。
+    - `jumpTo(t)`：显式时间跳跃（动画 seek 终态）。
+    - 应用级 pause（切后台）= 冻结全部域（最顶层）。
 - **framework contracts 新增 `MotionTween` 契约**：`timeSource: TimeSource` 必填（禁默认 Date.now），动画器只读 `now(domain)` 插值、不自行乘 rate/判跳变；可选 `timeScale` 覆盖。
 - **动画接入**：`effect-animator` / `vs-entrance` 的 timeSource 改注入 GameClock（动画器零感知，仅换注入源）。
 - **presenter 挡位收敛**：`GameClock.rate = 挡位倍率` + 用 GameClock delta 驱动 `clock.advance`，替代"每 interval 推多次"。

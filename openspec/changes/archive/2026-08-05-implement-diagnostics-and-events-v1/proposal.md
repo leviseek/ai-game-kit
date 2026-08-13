@@ -13,10 +13,12 @@ Foundation 已有结构化日志契约（Logger/ScopedLogger）和生命周期/�
 ## Capabilities
 
 ### New Capabilities
+
 - `diagnostics`: 类型化框架错误、嵌套 cause、可恢复性分类、敏感字段过滤与诊断记录边界。
 - `scoped-events`: 类型化作用域事件发布/订阅/取消，处理器失败隔离与作用域关闭语义。
 
 ### Modified Capabilities
+
 <!-- 无：platform-time-scheduling 主 spec 已归档且行为不变 -->
 
 ## Impact

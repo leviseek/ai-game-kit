@@ -21,10 +21,12 @@
 ### Task 1: VsEntranceTemplate 组件
 
 **Files:**
+
 - Create: `assets/samples/game_auto_battle/view/vs-entrance.ts`
 - Test: `tests/framework/foundation/game-auto-battle-vs-entrance.test.ts`
 
 **Interfaces:**
+
 - Consumes: `EffectNode`（`assets/samples/game_auto_battle/view/effect-animator.ts` 导出：`setText?`/`setAlpha?`/`setXY?`）
 - Produces: `VsEntranceConfig`、`VsEntranceHandle`、`createVsEntranceTemplate`（供 presenter 与测试使用）
 
@@ -34,10 +36,7 @@
 
 ```ts
 import { describe, expect, test } from "bun:test";
-import {
-    createVsEntranceTemplate,
-    type VsEntranceConfig,
-} from "../../../assets/samples/game_auto_battle/view/vs-entrance";
+import { createVsEntranceTemplate, type VsEntranceConfig } from "../../../assets/samples/game_auto_battle/view/vs-entrance";
 import type { EffectNode } from "../../../assets/samples/game_auto_battle/view/effect-animator";
 
 /** 记录型节点：记录 setter 写入。 */
@@ -52,16 +51,27 @@ function recordNode(): RecordingNode {
         text: undefined,
         alpha: undefined,
         xy: undefined,
-        setText: (v) => { recording.text = v; },
-        setAlpha: (v) => { recording.alpha = v; },
-        setXY: (x, y) => { recording.xy = { x, y }; },
+        setText: (v) => {
+            recording.text = v;
+        },
+        setAlpha: (v) => {
+            recording.alpha = v;
+        },
+        setXY: (x, y) => {
+            recording.xy = { x, y };
+        },
     };
     return recording;
 }
 
 function makeTime() {
     let now = 0;
-    return { timeSource: () => now, advance: (ms: number) => { now += ms; } };
+    return {
+        timeSource: () => now,
+        advance: (ms: number) => {
+            now += ms;
+        },
+    };
 }
 
 const DEFAULT_CONFIG: VsEntranceConfig = {
@@ -205,11 +215,7 @@ export interface VsEntranceHandle {
 }
 
 /** VS 屏幕级覆盖层：左右武将从屏外两侧向中心入场，中间 VS 大字淡入定格，整体淡出。 */
-export function createVsEntranceTemplate(options: {
-    node: (name: string) => EffectNode | undefined;
-    timeSource: () => number;
-    config: VsEntranceConfig;
-}): VsEntranceHandle {
+export function createVsEntranceTemplate(options: { node: (name: string) => EffectNode | undefined; timeSource: () => number; config: VsEntranceConfig }): VsEntranceHandle {
     const { node, timeSource, config } = options;
     // 左右武将屏外起始偏移：left 在屏幕左侧外、right 在右侧外（向中心 x=0 收敛）
     const SIDE_OFFSET = 640;
@@ -328,11 +334,13 @@ git commit -m "feat(auto-battle): VS 进场通用模板（左右武将 + VS 大�
 ### Task 2: presenter 三阶段状态机
 
 **Files:**
+
 - Modify: `assets/samples/game_auto_battle/view/presenter.ts`
 - Modify: `assets/samples/game_auto_battle/assembly.ts`
 - Test: `tests/framework/foundation/game-auto-battle-presenter.test.ts`
 
 **Interfaces:**
+
 - Consumes: `createVsEntranceTemplate` / `VsEntranceConfig`（Task 1）；`autoBattle.battle.state.units`（选队长：每方 index 最小存活单位）；`createEffectAnimator`（既有）
 - Produces: presenter 三阶段（`vs → entrance → fighting`）；`restart` 重置回 vs
 
@@ -383,9 +391,7 @@ const entranceEnd = vsEnd + ENTRANCE_PHASE_MS; // 既有 entranceEnd 语义改�
 
 // 选择每方队长：index 最小存活单位
 function leaderOf(side: "ally" | "enemy"): string {
-    const units = autoBattle.battle.state.units.filter(
-        (u) => u.side === side && u.hp > 0,
-    );
+    const units = autoBattle.battle.state.units.filter((u) => u.side === side && u.hp > 0);
     if (units.length === 0) {
         return "";
     }
@@ -475,10 +481,12 @@ git commit -m "feat(auto-battle): presenter VS→入场→战斗三阶段串联"
 ### Task 3: FGUI VS 节点（委派 fgui-designer）
 
 **Files:**
+
 - Create（fgui-designer 产出）: `ui/demo/assets/AutoBattle/VsEntranceCom.xml`、`ui/demo/assets/AutoBattle/img/*`（VS 大字/遮罩像素图）、`ui/demo/assets/AutoBattle/package.xml` 登记
 - Modify: `ui/demo/assets/AutoBattle/AutoBattleView.xml`（加入 `container_vs` 或直接预置 VS 节点组）
 
 **Interfaces:**
+
 - Produces: FGUI 节点 `vs_left`/`vs_right`/`vs_badge`/`vs_mask`（presenter 经 node(name) 寻址）
 
 - [ ] **Step 1: 委派 fgui-designer 产出节点**
@@ -506,6 +514,7 @@ git commit -m "feat(fgui): AutoBattle VS 进场节点（VsEntranceCom + 像素�
 ### Task 4: 集成验证与回归
 
 **Files:**
+
 - Test: `tests/framework/foundation/game-auto-battle-vs-entrance.test.ts`、`game-auto-battle-presenter.test.ts`
 
 - [ ] **Step 1: 全量测试回归**

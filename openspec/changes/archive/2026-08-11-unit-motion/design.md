@@ -5,12 +5,14 @@
 ## Goals / Non-Goals
 
 **Goals:**
+
 - 逻辑层持有并更新单位当前位置（`gridKey` 可变，真源移至逻辑层）。
 - 攻击前按 `attackRange` 判定：超射程逐格前移（优先同排向前）再普攻；射程内原地。
 - `move`/`teleport` 事件入事件流（保序、确定性）；技能可触发换位。
 - 表现层：入场/前冲/后撤/瞬移动画（事件驱动，终态回 `gridToXY` state 坐标）。
 
 **Non-Goals:**
+
 - 不做格子寻路/路径动画（逐格前移即可，roadmap 明确"不做格子寻路/路径动画"）。
 - 不做仇恨/嘲讽等目标选择扩展（06 后续，留待未来）。
 - 不改伤害/能量/终局规则；不改行动次序（`order`）。
@@ -53,6 +55,7 @@ resolveMovePath(
 ### 决策 4：`battle.ts` 普攻两阶段（移动 + 普攻），技能可 teleport
 
 `basicAttack(actor)` 改为：
+
 1. `resolveAutoBattleTarget` 选目标（锁定优先，change-06）；
 2. `resolveMovePath` 计算移动：若 destination ≠ actor.gridKey，逐格 `grid.move` + 更新 `actor.gridKey` + 每步广播 `move` 事件（带 `fromGridKey`/`toGridKey`）；
 3. 对目标 `applyAutoBattleDamage` 普攻（既有逻辑不变）。
@@ -60,10 +63,12 @@ resolveMovePath(
 `castSkill` 伤害分支：结算前同样按 `attackRange` 判定是否前移（技能也受射程约束）；结算后若技能定义含 `teleport`（如目标换位到指定格），校验目标格空闲则 `grid.move` + 广播 `teleport` 事件，否则不执行（spec: 占用格换位失败）。
 
 `move`/`teleport` 事件结构（`models.ts`）：
+
 ```ts
 | { type: "move"; sourceId; fromGridKey: string; toGridKey: string; round }
 | { type: "teleport"; sourceId; fromGridKey: string; toGridKey: string; round }
 ```
+
 纳入 `AutoBattleEventType`，`AutoBattleEvent` 加可选 `fromGridKey`/`toGridKey`。
 
 理由：移动是"行动前置阶段"（进事件流、保序），与普攻在同一行动内完成，不改 `order`/轮次语义；teleport 作为技能效果的可选子事件，确定性由占用校验保证。

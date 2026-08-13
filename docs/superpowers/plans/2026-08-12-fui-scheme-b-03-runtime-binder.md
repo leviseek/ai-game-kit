@@ -19,12 +19,14 @@
 ### Task 1: 事务式 binder registry
 
 **Files:**
+
 - Create: `assets/framework/core/fui/FuiViewBinderRegistry.ts`
 - Modify: `assets/framework/index.ts`
 - Create: `tests/framework/foundation/fui-view-binder-registry.test.ts`
 - Modify: `tests/framework/foundation/public-boundary.test.ts`
 
 **Interfaces:**
+
 - Public: `FuiViewBindingScope`、`FuiViewBinding<V>`、`FuiViewBindingRegistrar`、`defineFuiViewBinding`。
 - Internal: `FuiViewBindingResolver`、`createFuiViewBinderRegistry`。
 
@@ -73,10 +75,12 @@ Expected: PASS。
 ### Task 2: Host required binder 与事务回滚
 
 **Files:**
+
 - Modify: `assets/framework/adapters/cocos/ui/FuiViewHost.ts`
 - Modify: `tests/framework/foundation/fui-view-host.test.ts`
 
 **Interfaces:**
+
 - `createBoundView(packageName, resName, componentRegistry, bindingResolver, createObject?)`。
 - `createFairyGuiBoundView(bindingResolver, options?)`，`options.componentRegistry` 缺省为 `getFuiComponentRegistry()`，`options.createObject` 缺省为 `UIPackage.createObject`。
 
@@ -103,12 +107,14 @@ Host 在 `__attach` 后创建幂等 scope；`scope.own` 立即登记到底层非
 ### Task 3: assembleApp 产出已接线 UiHost
 
 **Files:**
+
 - Modify: `assets/boot/host/UiHost.ts`
 - Modify: `assets/boot/AppRoot.ts`
 - Modify: `tests/framework/foundation/boot-game-lobby-host.test.ts`
 - Modify: `tests/framework/foundation/approot-composition.test.ts`
 
 **Interfaces:**
+
 - `UiHostDeps` 接收 internal resolver 与可选 `FuiObjectFactory` 测试接缝。
 - `AppAssembly` 直接返回已接线 `uiHost` 和 public `fuiViewBindingRegistrar`；resolver 保持 assembleApp 内部局部值。
 - `assembleApp(options?: { fuiObjectFactory?: FuiObjectFactory })` 仅允许测试覆盖对象创建；生产无参调用使用 `UIPackage.createObject`。

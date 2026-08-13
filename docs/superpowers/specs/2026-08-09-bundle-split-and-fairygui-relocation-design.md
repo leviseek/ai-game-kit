@@ -37,8 +37,8 @@ assets/
 framework 新增 game 无关的全局注册桥 `framework/core/module/BundleModuleRegistry.ts`，存于 `globalThis` 私有符号键，跨 bundle 模块作用域共享（对齐 Cocos 官方"全局命名空间共享"建议）。
 
 ```ts
-registerBundleModule(name, descriptor)   // bundle 顶层副作用调用；幂等（重载时覆盖）
-lookupBundleModule(name)                 // bundle 加载后查询
+registerBundleModule(name, descriptor); // bundle 顶层副作用调用；幂等（重载时覆盖）
+lookupBundleModule(name); // bundle 加载后查询
 ```
 
 - **game bundle** 顶层副作用注册 `{ catalog, sceneResources, smokes }`。

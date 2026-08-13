@@ -19,6 +19,7 @@
 ### Task 1: 前端状态、API client 与 SSE 刷新
 
 **Files:**
+
 - Create: `tools/arch-viewer/web/types.ts`
 - Create: `tools/arch-viewer/web/api.ts`
 - Create: `tools/arch-viewer/web/state.ts`
@@ -26,6 +27,7 @@
 - Test: `tools/arch-viewer/test/web-state.test.ts`
 
 **Interfaces:**
+
 - Produces: `WorkbenchState { viewType, filters, breadcrumbs, selectedNodeId?, snapshotVersion, status }`。
 - Produces: `reduceWorkbench(state, action): WorkbenchState`。
 - Produces: `reconcileSnapshot(state, view): WorkbenchState`。
@@ -47,9 +49,7 @@ EventSource 收到 `snapshot-ready` 后先 GET 当前 view，再 reconcile；错
 
 ```ts
 export function reconcileSnapshot(state: WorkbenchState, view: GraphView): WorkbenchState {
-    const selected = view.nodes.some((node) => node.id === state.selectedNodeId)
-        ? state.selectedNodeId
-        : nearestExistingBreadcrumb(state.breadcrumbs, view);
+    const selected = view.nodes.some((node) => node.id === state.selectedNodeId) ? state.selectedNodeId : nearestExistingBreadcrumb(state.breadcrumbs, view);
     return { ...state, selectedNodeId: selected, status: "ready" };
 }
 ```
@@ -71,6 +71,7 @@ Expected: PASS。
 ### Task 2: 六类确定性布局
 
 **Files:**
+
 - Create: `tools/arch-viewer/web/layout/types.ts`
 - Create: `tools/arch-viewer/web/layout/shared.ts`
 - Create: `tools/arch-viewer/web/layout/hierarchy.ts`
@@ -82,6 +83,7 @@ Expected: PASS。
 - Test: `tools/arch-viewer/test/layouts.test.ts`
 
 **Interfaces:**
+
 - Produces: `LayoutNode`、`LayoutEdge`、`LayoutGraph { width, height, nodes, edges, lanes }`。
 - Produces: `layoutView(view, viewport): LayoutGraph`。
 
@@ -102,12 +104,18 @@ Expected: FAIL。
 ```ts
 export function layoutView(view: GraphView, viewport: Viewport): LayoutGraph {
     switch (view.type) {
-        case "hierarchy": return layoutHierarchy(view, viewport);
-        case "startup": return layoutStartup(view, viewport);
-        case "dependencies": return layoutDependencies(view, viewport);
-        case "data-flow": return layoutDataFlow(view, viewport);
-        case "calls": return layoutCalls(view, viewport);
-        case "resources": return layoutResources(view, viewport);
+        case "hierarchy":
+            return layoutHierarchy(view, viewport);
+        case "startup":
+            return layoutStartup(view, viewport);
+        case "dependencies":
+            return layoutDependencies(view, viewport);
+        case "data-flow":
+            return layoutDataFlow(view, viewport);
+        case "calls":
+            return layoutCalls(view, viewport);
+        case "resources":
+            return layoutResources(view, viewport);
     }
 }
 ```
@@ -131,6 +139,7 @@ Expected: PASS。
 ### Task 3: App shell、SVG renderer 与 Inspector
 
 **Files:**
+
 - Create: `tools/arch-viewer/web/index.html`
 - Create: `tools/arch-viewer/web/styles.css`
 - Create: `tools/arch-viewer/web/app.ts`
@@ -142,6 +151,7 @@ Expected: PASS。
 - Test: `tools/arch-viewer/test/vscode-link.test.ts`
 
 **Interfaces:**
+
 - Produces: 设计确认的左导航/中画布/右 Inspector/顶部搜索工作台。
 - Produces: `createVsCodeUrl(location): string`，只对 `/api/source` 返回的已验证 `SourceLocation` 调用。
 
@@ -194,6 +204,7 @@ Expected: 编译 PASS；搜索仅允许 `vscode://` 构造代码，不含 CDN、
 ### Task 4: 集成冒烟、门禁与文档收口
 
 **Files:**
+
 - Create: `tools/arch-viewer/test/integration.test.ts`
 - Modify: `README.md`
 - Modify: `docs/superpowers/specs/2026-08-12-architecture-visualizer-design.md`
@@ -201,6 +212,7 @@ Expected: 编译 PASS；搜索仅允许 `vscode://` 构造代码，不含 CDN、
 - Create or Modify: `doc/decisions/ADR-033-architecture-visualizer-fact-sources.md`（仅 ADR 检查确认有新决策时）
 
 **Interfaces:**
+
 - Produces: 可复查的端到端证据和使用文档。
 
 - [ ] **Step 1: 写 HTTP + SSE + 前端资源集成测试**

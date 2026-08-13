@@ -5,12 +5,14 @@ framework core/time 已有 `SimulationClock`（advance/rate/pause 单层，`asse
 ## Goals / Non-Goals
 
 **Goals:**
+
 - `GameClock`：全局 rate、分层 pause（PauseDomain menu/combat）、advance、jumpTo、应用级冻结；纯 TS 可测。
 - `MotionTween` 契约：timeSource 必填（禁默认 Date.now），动画器零感知。
 - 动画器/挡位接入 GameClock（替换 Date.now 散落驱动）。
 - ADR-029 创建；AGENTS/.ai 动画约束补充。
 
 **Non-Goals:**
+
 - 不引入引擎动画桥（GTween/Transition/GMovieClip）——装饰/行为动画均 TS 驱动。
 - 不改造 `SimulationClock` 语义（保持纯净离散，不 jumpTo）；`WallClock` 不变。
 - 不做动画器迁移到新运行时（effect-animator 已满足"零感知"模式，仅换注入源）。
@@ -42,7 +44,7 @@ export class GameClock implements TimeSource {
 
     now(domain: PauseDomain = PauseDomain.Combat): number;
     get timeScale(): number;
-    setTimeScale(rate: number): void;  // isValidRate 校验（对齐 SimulationClock）
+    setTimeScale(rate: number): void; // isValidRate 校验（对齐 SimulationClock）
     pause(domain: PauseDomain): void;
     resume(domain: PauseDomain): void;
     advance(milliseconds: number): void; // 只推进未冻结域（记录各域上次推进，语义见决策 2）
@@ -57,11 +59,13 @@ export class GameClock implements TimeSource {
 - `now(domain)` 返回 currentTime，但**各域冻结时读数保持**——实现：每域维护 `lastNow`（该域冻结时刻读数），advance 只更新未冻结域。或用"baseTime + elapsedPerDomain"模型：每个域独立累计已推进量。
 
 **推荐实现（per-domain elapsed）**：
+
 ```ts
 // 每域 elapsed（已推进量）与 paused 标志；currentTime 由未冻结域共享推进
 advance(ms): for each domain, if not paused, domainElapsed[domain] += ms * rate;
 now(domain): return baseTime + domainElapsed[domain];  // jumpTo 调 baseTime
 ```
+
 - 说明：各域共享 baseTime（jumpTo 统一跳），elapsed 分域累计；暂停域 elapsed 不增 → now 冻结；未暂停域正常推进。
 - 应用级暂停 = 全部 domainPaused = true（freezeAll 置位所有域）。
 
@@ -83,8 +87,8 @@ now(domain): return baseTime + domainElapsed[domain];  // jumpTo 调 baseTime
 ```ts
 /** 声明式动画契约：timeSource 必填，动画器只读 now(domain)，不自行乘 rate/判跳变。 */
 export interface MotionTweenOptions {
-    readonly timeSource: TimeSource;      // 必填；禁默认 Date.now
-    readonly domain?: PauseDomain;       // 默认 Combat（行为/装饰动画绑战斗域）
+    readonly timeSource: TimeSource; // 必填；禁默认 Date.now
+    readonly domain?: PauseDomain; // 默认 Combat（行为/装饰动画绑战斗域）
     readonly durationMs: number;
     readonly onStep: (progress: number, now: number) => void;
     readonly onComplete?: () => void;
@@ -99,8 +103,8 @@ export interface MotionTweenOptions {
 ### 决策 4：presenter 挡位收敛
 
 - presenter 创建 `GameClock`（rate 初始 1），`autoBattle.clock`（SimulationClock）的 advance 改由 GameClock delta 驱动：
-  - interval 每帧：`delta = gameClock.now() - lastGameNow`；`simulationClock.advance(delta)`；tick 仍按模拟钟节拍（或挡位换算保留）。
-  - `cycleSpeed` → `gameClock.setTimeScale(speed)`（替代 clock.setTimeScale + 每 interval 推多次）。
+    - interval 每帧：`delta = gameClock.now() - lastGameNow`；`simulationClock.advance(delta)`；tick 仍按模拟钟节拍（或挡位换算保留）。
+    - `cycleSpeed` → `gameClock.setTimeScale(speed)`（替代 clock.setTimeScale + 每 interval 推多次）。
 - 装饰动画跟 rate：effect-animator timeSource = GameClock（`now(Combat)`），3x 时真实时长 = 基准/3；`MAX_DECOR_RATE` 常量（默认 2）供 spike 后启用（本 change 落常量，默认不 clamp 或 clamp 2 待定——建议先全跟，C-19 标注）。
 
 理由：ADR-029 C-08/C-13；收敛挡位到 GameClock.rate，动画与战斗同步响应倍速。
@@ -115,7 +119,7 @@ export interface MotionTweenOptions {
 
 ### 决策 6：ADR-029 与 AGENTS 约束
 
-- 创建 `doc/decisions/ADR-029-global-time-control-animation-time-source.md`（含 C-01~C-20，本 change 落地 C-05/C-08/C-10~C-14/C-17/C-19/C-20 相关决策，其余为基线）。
+- 创建 `doc/decisions/ADR-029-global-time-control-animation-time-source.md`（含 C-01~~C-20，本 change 落地 C-05/C-08/C-10~~C-14/C-17/C-19/C-20 相关决策，其余为基线）。
 - AGENTS/.ai 补充："动画优先用 framework 动画 API 与 GameClock；游戏层禁直接 import cc 做 tween；FGUI 禁 transition 不变"。
 
 理由：架构决策落档 + AI 协作约束沉淀。

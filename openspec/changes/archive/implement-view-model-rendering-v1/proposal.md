@@ -5,9 +5,9 @@
 ## What Changes
 
 - 新增框架通用能力：自动 diff 渲染管线（ViewModel→视图绑定）。
-  - `contracts/ui/ViewModel.ts`（新增）：`Bindable<T>`（get/set/subscribe）、`ViewModelNode`（读 text/progress/visible/点击）、绑定声明 `Binding<T>` 等契约。
-  - `core/ui/ViewModelRenderer.ts`（新增）：纯 TS 渲染器，`setViewModel` 全量渲染、字段变化自动 diff 只更新对应绑定、dispose 清理。
-  - `adapters/cocos/ui/FairyGuiViewHandle.ts`（新增）：视图接缝，包装 fgui 视图暴露 `node(name)` → `ViewModelNode`，fgui 类型仅此文件可见。
+    - `contracts/ui/ViewModel.ts`（新增）：`Bindable<T>`（get/set/subscribe）、`ViewModelNode`（读 text/progress/visible/点击）、绑定声明 `Binding<T>` 等契约。
+    - `core/ui/ViewModelRenderer.ts`（新增）：纯 TS 渲染器，`setViewModel` 全量渲染、字段变化自动 diff 只更新对应绑定、dispose 清理。
+    - `adapters/cocos/ui/FairyGuiViewHandle.ts`（新增）：视图接缝，包装 fgui 视图暴露 `node(name)` → `ViewModelNode`，fgui 类型仅此文件可见。
 - `framework/index.ts` 白名单登记新增稳定符号（只增不改）。
 - 保持既有 `core`+`contracts` 文件零修改（ADR-018 口径延续）；新增 ADR 记录"允许在 contracts/ui/ 与 core/ui/ 新增文件，既有文件不变"。
 

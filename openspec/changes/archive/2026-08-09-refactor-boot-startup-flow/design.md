@@ -13,12 +13,14 @@
 ## Goals / Non-Goals
 
 **Goals:**
+
 - AppRoot 瘦身为"装配 + 委托 + 清理"（~250 行），职责外移。
 - 建立启动流程：startup（logo 纯原生、热更占位、框架级预加载，零 GRoot）→ 默认单向 `switchTo("game")` → game 首次呈现初始化 GRoot 并打开默认主入口。
 - GRoot 在默认流程下全生命周期只初始化一次；冒烟路径保持 startup 立即初始化（dev 分叉）。
 - 预加载分层：L0 常驻（Common/config，uiScope/应用生命周期）、L1 场景流转（game 场景资源，SceneFlow 单槽位）、L2 会话（品类包，按需）、L3 不预加载。
 
 **Non-Goals:**
+
 - 不实现热更新下载引擎（version.manifest/增量/回滚）——热更仅启动流程占位阶段，归独立 OpenSpec change。
 - 不做多段场景切换基础设施（startup→preload→game 的中间 preload 场景不引入；hall 场景不引入）。
 - 不改 `framework/core` + `contracts`（ADR-018 口径）。

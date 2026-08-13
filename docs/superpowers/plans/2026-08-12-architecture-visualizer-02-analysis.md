@@ -19,6 +19,7 @@
 ### Task 1: CodeGraphGateway 公共 CLI 适配
 
 **Files:**
+
 - Create: `tools/arch-viewer/lib/codegraph/types.ts`
 - Create: `tools/arch-viewer/lib/codegraph/process.ts`
 - Create: `tools/arch-viewer/lib/codegraph/gateway.ts`
@@ -26,6 +27,7 @@
 - Test: `tools/arch-viewer/test/codegraph-gateway.test.ts`
 
 **Interfaces:**
+
 - Produces: `CodeGraphNode`、`CodeGraphFile`、`CodeGraphRelationNode`、`CodeGraphStatus`。
 - Produces: `CommandRunner(args, options): Promise<CommandResult>` 注入点。
 - Produces: `CodeGraphGateway.status/sync/files/search/callers/callees/impact`。
@@ -78,11 +80,13 @@ Expected: PASS。
 ### Task 2: TypeScript SourceScanner
 
 **Files:**
+
 - Create: `tools/arch-viewer/lib/analysis/source-scanner.ts`
 - Create: `tools/arch-viewer/lib/analysis/module-resolver.ts`
 - Test: `tools/arch-viewer/test/source-scanner.test.ts`
 
 **Interfaces:**
+
 - Produces: `ImportDependency { fromFile, toFile?, specifier, kind: "import" | "export", typeOnly, external }`。
 - Produces: `SourceDeclaration { id, name, qualifiedName, kind, filePath, startLine, endLine, exported }`。
 - Produces: `SourceScanResult { files, declarations, imports }`。
@@ -129,6 +133,7 @@ Expected: PASS，输出按 `fromFile/toFile/specifier` 排序。
 ### Task 3: 层次与依赖视图分析
 
 **Files:**
+
 - Create: `tools/arch-viewer/lib/analysis/hierarchy.ts`
 - Create: `tools/arch-viewer/lib/analysis/dependencies.ts`
 - Create: `tools/arch-viewer/lib/analysis/glob.ts`
@@ -136,6 +141,7 @@ Expected: PASS，输出按 `fromFile/toFile/specifier` 排序。
 - Test: `tools/arch-viewer/test/dependency-analysis.test.ts`
 
 **Interfaces:**
+
 - Produces: `buildHierarchyView(config, files, symbols): GraphView`。
 - Produces: `buildDependencyView(config, imports, hierarchy): GraphView`。
 - Produces: `matchProjectGlob(path, pattern): boolean`，只支持配置所需 `*`、`**`、`{a,b}`。
@@ -182,6 +188,7 @@ Expected: PASS。
 ### Task 4: 启动、数据流、调用与资源视图
 
 **Files:**
+
 - Create: `tools/arch-viewer/lib/analysis/semantic-path.ts`
 - Create: `tools/arch-viewer/lib/analysis/startup.ts`
 - Create: `tools/arch-viewer/lib/analysis/data-flow.ts`
@@ -190,6 +197,7 @@ Expected: PASS。
 - Test: `tools/arch-viewer/test/semantic-views.test.ts`
 
 **Interfaces:**
+
 - Produces: `resolveConfiguredPath(gateway, anchors): Promise<ResolvedSemanticPath>`。
 - Produces: `buildStartupView`、`buildDataFlowView`、`buildCallView`、`buildResourceView`。
 
@@ -235,6 +243,7 @@ Expected: PASS。
 ### Task 5: 完整 ArchitectureAnalyzer 与真实仓库契约
 
 **Files:**
+
 - Create: `tools/arch-viewer/lib/analysis/analyzer.ts`
 - Create: `tools/arch-viewer/lib/analysis/query-service.ts`
 - Create: `tools/arch-viewer/test/fixtures/codegraph-fixture.ts`
@@ -242,6 +251,7 @@ Expected: PASS。
 - Test: `tools/arch-viewer/test/repository-contract.test.ts`
 
 **Interfaces:**
+
 - Produces: `ArchitectureBuildInput { readonly version: number }`。
 - Produces: `ArchitectureAnalyzer.buildSnapshot(input: ArchitectureBuildInput): Promise<GraphSnapshot>`。
 - Produces: `ArchitectureQueryService.project/view/group/search/neighborhood`；源码读取留在 server 层。

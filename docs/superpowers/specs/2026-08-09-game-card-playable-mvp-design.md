@@ -16,11 +16,11 @@
 
 ### 1. 三个独立 change 拆分（C1 → C2 → C3）
 
-| Change | 内容 | 交付物 |
-|---|---|---|
-| C1 目录分级重构 | 五类 `game_*` 统一子目录形态 | 纯重构，无行为变化，`test:foundation` 全绿验证 |
-| C2 MVVM 渲染管线 | 框架通用自动 diff 渲染能力 | 新增 contracts/core/adapter 文件 + 新 ADR |
-| C3 game_card 真实可玩 MVP | 玩法规则 + 真实 FGUI 页面 + 冒烟 | 可玩的单战场页 |
+| Change                    | 内容                             | 交付物                                         |
+| ------------------------- | -------------------------------- | ---------------------------------------------- |
+| C1 目录分级重构           | 五类 `game_*` 统一子目录形态     | 纯重构，无行为变化，`test:foundation` 全绿验证 |
+| C2 MVVM 渲染管线          | 框架通用自动 diff 渲染能力       | 新增 contracts/core/adapter 文件 + 新 ADR      |
+| C3 game_card 真实可玩 MVP | 玩法规则 + 真实 FGUI 页面 + 冒烟 | 可玩的单战场页                                 |
 
 每步走 `openspec-propose → openspec-apply-change → openspec-archive-change` 完整闭环，避免互相阻塞。
 
@@ -53,9 +53,9 @@ assets/game_card/（其余四类同形）
 - **敌方阶段**：惰性同步（对齐现有 `syncPhase()`），每间隔 `enemyAttackIntervalMs` 对玩家造成 `enemyDamage`；enemy 阶段总时长 `turnDurationMs` 内可多次攻击。
 - **攻击时钟语义**：每次 `syncPhase` 时按已过时长一次性结算多次伤害（与现有惰性推进模式一致，跳帧确定性可测）。
 - **终局**：
-  - `enemyHp <= 0` → 胜利（`result: "win"`，进入 `over`）
-  - `playerHp <= 0` → 战败（`result: "lose"`，进入 `over`）
-  - `CardBattleState` 增加 `result: "win" | "lose" | undefined`；UI 展示胜负提示 + 重开按钮。
+    - `enemyHp <= 0` → 胜利（`result: "win"`，进入 `over`）
+    - `playerHp <= 0` → 战败（`result: "lose"`，进入 `over`）
+    - `CardBattleState` 增加 `result: "win" | "lose" | undefined`；UI 展示胜负提示 + 重开按钮。
 - 配置扩展：`enemyAttackIntervalMs`、`enemyDamage`。
 
 ### 5. ViewModel 绑定声明（view.ts）
@@ -92,18 +92,18 @@ TDD，全部 memory 适配器，不加载 fgui/cc：
 
 - **C1**：重构后 `test:foundation` 全绿即验证无行为漂移。
 - **C2** `view-model-renderer.test.ts`：
-  - 全量渲染：setViewModel 后所有绑定写入视图节点
-  - diff 渲染：字段变化只更新对应绑定（记录型 mock 视图断言只调用变化的 node）
-  - subscribe 自动刷新：VM 变化触发自动 diff
-  - 命令绑定：节点点击事件 → 业务回调
-  - dispose：清理订阅、重复 dispose 幂等
-  - 边界：未知 node 名优雅处理
+    - 全量渲染：setViewModel 后所有绑定写入视图节点
+    - diff 渲染：字段变化只更新对应绑定（记录型 mock 视图断言只调用变化的 node）
+    - subscribe 自动刷新：VM 变化触发自动 diff
+    - 命令绑定：节点点击事件 → 业务回调
+    - dispose：清理订阅、重复 dispose 幂等
+    - 边界：未知 node 名优雅处理
 - **C3** `game-card-fixture.test.ts` 扩展：
-  - 敌方攻击：advance 时钟跨间隔，playerHp 逐次扣减
-  - 跳帧补扣：一次 advance 跨多间隔，一次性结算多次
-  - 战败终局：playerHp≤0 → over + result "lose"
-  - 胜利终局：enemyHp≤0 → over + result "win"
-  - ViewModel 经渲染器反映战斗状态（绑定到记录型视图断言）
+    - 敌方攻击：advance 时钟跨间隔，playerHp 逐次扣减
+    - 跳帧补扣：一次 advance 跨多间隔，一次性结算多次
+    - 战败终局：playerHp≤0 → over + result "lose"
+    - 胜利终局：enemyHp≤0 → over + result "win"
+    - ViewModel 经渲染器反映战斗状态（绑定到记录型视图断言）
 
 ## 错误处理
 

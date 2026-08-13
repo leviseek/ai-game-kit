@@ -5,8 +5,8 @@
 ## What Changes
 
 - `game_card` 玩法规则扩展（`logic/battle.ts`）：
-  - 敌方阶段自动攻击：每间隔 `enemyAttackIntervalMs` 对玩家造成 `enemyDamage`（惰性同步补扣，对齐既有 syncPhase 模式）。
-  - 玩家 HP ≤ 0 → 战败终局；敌方 HP ≤ 0 → 胜利终局（`CardBattleState` 增加 `result: "win" | "lose" | undefined`）。
+    - 敌方阶段自动攻击：每间隔 `enemyAttackIntervalMs` 对玩家造成 `enemyDamage`（惰性同步补扣，对齐既有 syncPhase 模式）。
+    - 玩家 HP ≤ 0 → 战败终局；敌方 HP ≤ 0 → 胜利终局（`CardBattleState` 增加 `result: "win" | "lose" | undefined`）。
 - 配置扩展（`logic/config.ts`）：`enemyAttackIntervalMs`、`enemyDamage`。
 - 真实 FGUI 页面（`ui/demo/assets/CardGame/` 包）：`BattleView.xml`——背景 + 敌我 HP 条 + mana 文本 + 3 手牌按钮 + 结束回合按钮 + 胜负提示层 + 重开按钮。创建委派 fgui-designer，id 前缀 `cg` 续编，sprite 颜色 ⊆ palette.json，`fgui validate --strict` 通过。
 - UI 呈现层（`game_card/view/`）：新增 `view.ts` 定义 ViewModel + 绑定声明（VM 派生 + text/progress/visible/command 绑定），`ui.ts` 保留 route 登记。

@@ -7,12 +7,14 @@
 ## Goals / Non-Goals
 
 **Goals:**
+
 - 提供引擎无关的版本化存档仓库：命名空间隔离、schema version、连续迁移、未来版本拒绝、DTO 可序列化校验
 - 迁移链按注册版本逐级执行，迁移规则由调用方提供，框架不感知游戏数据形状
 - 通过 `PlatformStorage` 契约注入存储后端，可用内存实现完成 TDD 闭环
 - 严格类型化：错误以类型化错误（`FrameworkError` 子类或既有错误机制）表达
 
 **Non-Goals:**
+
 - 不实现平台存储适配器（`adapters/memory`/`adapters/cocos` 存储实现）——属原 7.5
 - 不实现配置服务（原 7.1/7.2）、音频（6.6/6.7）、输入（6.4/6.5）
 - 不接入 `index.ts` 白名单导出与 AppRoot 装配（本层为独立能力，待集成）

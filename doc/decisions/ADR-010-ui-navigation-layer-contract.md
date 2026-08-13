@@ -25,6 +25,7 @@ Accepted
 ### 2. 重复打开策略在导航建立时全局锁定三选一
 
 `createUiNavigator({ duplicatePolicy })` 在建立时锁定 `focus-existing | reject | allow-stack` 三选一，全局一致，不按 route 单独配置：
+
 - `focus-existing`：已存在同 route 页面时提升到其层级内的最高位置（仍受七层层级覆盖关系约束，不会压过更高层页面），不新增实例。
 - `reject`：拒绝本次打开并返回原因。
 - `allow-stack`：允许同 route 多实例堆叠。

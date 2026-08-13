@@ -5,12 +5,14 @@
 ## Goals / Non-Goals
 
 **Goals:**
+
 - 补齐写操作闭环：文档保存 → 资源导入 → 结构编辑 → 控制器/关系/包/分支管理，全部走编辑器桥且可回滚。
 - 补齐读侧查询：工程设置、未使用/重复资源、全文搜索、文档结构、过渡列表。
 - 提供视觉验证 subagent（绑定 `codexapis/gpt-5.6-sol`）与编辑器截图采集通道。
 - 在 handler 层强制屏蔽项目禁止路径（graph、transition 写入）。
 
 **Non-Goals:**
+
 - 不迁移 `tools/fgui` 的 XML 生成/校验权威；新写工具与「写 XML → register → validate」路径互为补充而非取代。
 - 不做依赖交互手势的编辑器能力（拖拽/剪贴板/拾取）、不接阻塞式对话框。
 - 不做高风险破坏性自动删除（未使用资源只出报告）；不自动切换颜色空间。
@@ -48,6 +50,7 @@
 ### D8: 移植 FairyGUI-MCP 工具面（去重后补全）
 
 参考 `D:\git-clone\FairyGUI-MCP`（Lua 插件 + Python MCP server）的工具面，去重当前已实现项后移植 9 个工具：open_component/show_preview/get_selection/select_element/close_document/get_component_info/get_logs/clear_logs/publish_all。关键取舍：
+
 - **get_logs** 用 `FileShare.ReadWrite` 流式读 `Application.consoleLogPath`（Player.log）——`ReadAllText` 会因 Unity 进程独占锁抛 Sharing violation。
 - **publish_all** 顺序遍历 `allPackages` 逐个 PublishHandler（复用 trigger_publish 的 deferred 模式），默认重定向 scratch。
 - **不移植项**：`start_test`/`stop_test`（F5 覆盖 `runInBackground`，main.ts 注释明确警告）、`switch_device`/`list_devices`（依赖 testView 内部状态，高风险）、`activate`（Python 端 Win32 窗口激活，非编辑器 API）、`reload_plugin`（FairyGUI-MCP 自身仍通过 probe_plugin_api 探测）、`open_publish_settings`/`probe_*`（调试/探针性质）。

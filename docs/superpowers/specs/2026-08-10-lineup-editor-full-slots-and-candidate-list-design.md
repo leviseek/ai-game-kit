@@ -58,9 +58,9 @@
 ### D4 FGUI 组件改造（委派 fgui-designer）
 
 - `ui/demo/assets/AutoBattle/LineupEditorView.xml`：
-  - 补第 3 排 `slot_6/7/8` 三个按钮 `<component>`（`CommonButton`，alpha=0 透明覆盖，对齐既有 6 个）。
-  - 候选区：6 个预置候选槽 → GList 列表组件（带滚动容器）。
-  - 新建候选 item 模板组件（名称文本 + 已上阵态），放 `ui/demo/assets/Common/` 跨包复用。
+    - 补第 3 排 `slot_6/7/8` 三个按钮 `<component>`（`CommonButton`，alpha=0 透明覆盖，对齐既有 6 个）。
+    - 候选区：6 个预置候选槽 → GList 列表组件（带滚动容器）。
+    - 新建候选 item 模板组件（名称文本 + 已上阵态），放 `ui/demo/assets/Common/` 跨包复用。
 - 组件创建/编辑委派 fgui-designer；`bun run fgui validate --strict` 通过；发布产物由编辑器生成（不手改 bin/atlas）。
 
 ## 具体改动清单
@@ -70,31 +70,31 @@
 - `logic/grid.ts`：无改动（`FORMATION_GRID_SIZE` 已存在）。
 - `logic/config.ts`：无改动（`MAX_TEAM_SIZE=6` 保持）。注释如需澄清"上阵上限/布阵区容量"语义可补充。
 - `logic/lineup.ts`：
-  - slot 越界检查 `slot >= MAX_TEAM_SIZE` → `slot >= FORMATION_GRID_SIZE`。
-  - fill 时新增"非空数 ≥ MAX_TEAM_SIZE 且目标槽为空 → 拒绝"约束。
+    - slot 越界检查 `slot >= MAX_TEAM_SIZE` → `slot >= FORMATION_GRID_SIZE`。
+    - fill 时新增"非空数 ≥ MAX_TEAM_SIZE 且目标槽为空 → 拒绝"约束。
 - `logic/lineup-store.ts`：
-  - `LINEUP_SAVE_VERSION = 2`。
-  - 新增 v1→v2 迁移器（补 3 个 `null`）。
-  - `isLineupRecord` 长度校验改用 `FORMATION_GRID_SIZE`。
+    - `LINEUP_SAVE_VERSION = 2`。
+    - 新增 v1→v2 迁移器（补 3 个 `null`）。
+    - `isLineupRecord` 长度校验改用 `FORMATION_GRID_SIZE`。
 - `assembly.ts`：`toFullLineup` 定长、`selectHero` 的选中槽/空槽范围改用 `FORMATION_GRID_SIZE`。
 
 ### 视图层
 
 - `view/lineup.ts`：
-  - 删除 `LINEUP_CANDIDATE_SLOTS` 与 `candidate_{i}` 绑定。
-  - 槽位绑定循环 `slot < MAX_TEAM_SIZE` → `slot < FORMATION_GRID_SIZE`。
-  - `LineupEditorViewModel` 候选渲染数据保留（供 GList 句柄消费）。
+    - 删除 `LINEUP_CANDIDATE_SLOTS` 与 `candidate_{i}` 绑定。
+    - 槽位绑定循环 `slot < MAX_TEAM_SIZE` → `slot < FORMATION_GRID_SIZE`。
+    - `LineupEditorViewModel` 候选渲染数据保留（供 GList 句柄消费）。
 - `view/lineup-presenter.ts`：
-  - `createLineupEditorPresenter` 增加可选候选列表句柄参数。
-  - `render()` 把候选数据喂给列表句柄（`setItems`）。
+    - `createLineupEditorPresenter` 增加可选候选列表句柄参数。
+    - `render()` 把候选数据喂给列表句柄（`setItems`）。
 - 新增 `view/lineup-candidate-item.ts`（或并入现有文件）：候选 item 渲染映射（名称文本字段、deployed 置灰字段、点击命令），供列表句柄 itemRenderer 消费。
 
 ### 适配层
 
 - 新增 `assets/framework/adapters/cocos/ui/FairyGuiListHandle.ts`：
-  - `createFairyGuiListHandle(view, options)` 包装 GList。
-  - `setItems(items)` 设置 `numItems`；`itemRenderer` 内把 item 对象包装为 `ViewModelNode`。
-  - 命令注册去重（对齐 `ViewModelRenderer.registeredCommandNodes` 思路），避免 item 复用重复注册 onClick。
+    - `createFairyGuiListHandle(view, options)` 包装 GList。
+    - `setItems(items)` 设置 `numItems`；`itemRenderer` 内把 item 对象包装为 `ViewModelNode`。
+    - 命令注册去重（对齐 `ViewModelRenderer.registeredCommandNodes` 思路），避免 item 复用重复注册 onClick。
 
 ### 装配层
 
@@ -118,9 +118,9 @@
 
 - `bun run typecheck`（strict 全量）。
 - `bun test ./tests/framework/foundation`：既有不回归 + 新增：
-  - reducer：slots 9 长度、fill 超 6 拒绝、替换允许、slot 越界 9。
-  - store：v1(6 长度)→v2(9 长度) 迁移、损坏记录拒绝。
-  - presenter：9 槽绑定齐全、候选 GList 渲染（有句柄）/退化（无句柄）。
+    - reducer：slots 9 长度、fill 超 6 拒绝、替换允许、slot 越界 9。
+    - store：v1(6 长度)→v2(9 长度) 迁移、损坏记录拒绝。
+    - presenter：9 槽绑定齐全、候选 GList 渲染（有句柄）/退化（无句柄）。
 - `bun run fgui validate --strict`（AutoBattle 包，含新增 Common 候选 item）。
 - 冒烟/截图：`?smoke=auto-battle` 链路验证编队→开战；LineupEditorView 截图核对 9 槽按钮与候选列表渲染。
 

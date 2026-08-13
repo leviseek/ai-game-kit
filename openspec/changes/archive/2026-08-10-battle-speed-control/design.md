@@ -5,11 +5,13 @@
 ## Goals / Non-Goals
 
 **Goals:**
+
 - 提供 1x/2x/3x 挡位循环切换，改变 presenter 驱动节拍（模拟时间推进倍率 + 每 interval 行动 tick 次数），观战节奏可调。
 - 挡位只改驱动节拍：tick 内容（行动/结算/事件生成）不变，同一对局不同挡位事件序列（除 `time` 字段外）与终局结果一致，确定性由测试锁定。
 - 挡位状态与切换命令经 ViewModel 绑定到 FGUI 页面（`txt_speed` 状态文本 + `btn_speed` 循环按钮）。
 
 **Non-Goals:**
+
 - 不改战斗逻辑、tick 内容、结算规则、事件类型与数据模型（`logic/battle.ts` / `skills.ts` / `formation.ts` / `config.ts` / `models.ts` 零改动，仅新增挡位类型）。
 - 不做暂停/倍率渐变/自定义速率（roadmap 只要求 1x/2x/3x）。
 - 不引入框架 `SimulationClock` 替换 `AutoBattleClock`（框架根入口不导出它，夹具层自实现最小可控时钟是既有约定；本 change 仅在其上增加倍率语义）。
@@ -17,15 +19,18 @@
 ## Decisions
 
 **决策 1：挡位倍率落在 `AutoBattleClock` 上，presenter 按挡位换算驱动节拍**
+
 - `AutoBattleClock` 增加 `timeScale` 语义：`setTimeScale(rate)` 校验有限正数，`advance(ms)` 按当前倍率推进 `ms * timeScale` 的模拟时间（对齐框架 `SimulationClock` 的既有语义）。事件 `time` 字段随挡位变化是预期行为（加速时模拟时间流逝更快），故确定性断言以"除 `time` 外的事件序列一致"为准。
 - presenter 持有一个内部挡位状态（`AutoBattleSpeed`），每个 interval：`clock.advance(delta * rate)` 推进模拟时间，再按挡位 `rate` 次循环调用 `battle.tick()`（1x→1 次、2x→2 次、3x→3 次），最后 `render()`。挡位切换命令 `cycleSpeed` 更新挡位状态并调用 `clock.setTimeScale`，随后立即 render 刷新挡位文本。
 - 备选：presenter 直接按挡位缩短 interval 间隔（如 2x 时 50ms）——**否决**：受浏览器/运行时最小间隔抖动影响，确定性不如"同一 interval 内放大 tick 次数 + 模拟时间"直观，且 tick 次数与模拟时间同步推进更贴近"驱动节拍"语义。
 
 **决策 2：挡位命令用"循环切换 + 状态文本"而非三个独立按钮**
+
 - 采用单个 `btn_speed` 按钮（复用 `CommonButton`，标题可显示挡位）+ `txt_speed` 状态文本（显示 `x1`/`x2`/`x3`）。点击 `cycleSpeed`：1x→2x→3x→1x。减少 FGUI 节点与绑定声明，观战页右下/日志区放置不干扰布局。
 - 备选：三个独立挡位按钮——**否决**：节点多、绑定多，MVP 观战加速无需多选；循环按钮 + 状态文本足够清晰。
 
 **决策 3：挡位状态由 presenter 持有，VM 只做派生**
+
 - `AutoBattleViewModel` 增加只读 `speed` 字段（当前挡位），`AutoBattleCommands` 增加 `cycleSpeed()`；presenter 作为命令注入方，在创建 bindings 时注入 `cycleSpeed`，持有挡位状态，切换后调 `clock.setTimeScale` 并重渲染。fixture（`assembly.ts`）同理暴露 `speed` 状态与 `cycleSpeed` 供测试驱动。
 - 这样逻辑层（battle/clock 之外）不新增业务状态：挡位是**呈现/驱动层**状态，只存在于 presenter 与 clock 的 timeScale。
 

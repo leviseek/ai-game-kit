@@ -22,10 +22,12 @@
 ### Task 1: 逻辑层 slots 扩到 9 + 上阵上限 6 约束（reducer）
 
 **Files:**
+
 - Modify: `assets/samples/game_auto_battle/logic/lineup.ts`
 - Test: `tests/framework/foundation/game-auto-battle-lineup.test.ts`
 
 **Interfaces:**
+
 - Consumes: `FORMATION_GRID_SIZE`（`logic/grid.ts`，值 9）、`MAX_TEAM_SIZE`（`logic/config.ts`，值 6）、`editLineup(lineup, action)` 现有签名。
 - Produces: `editLineup` 新语义——slot 越界检查改用 `FORMATION_GRID_SIZE`；fill 空槽时非空数 ≥ `MAX_TEAM_SIZE` 拒绝（返回原对象）；fill 已占槽（替换）不受上限约束。
 
@@ -46,10 +48,7 @@ function emptyLineup(): AutoBattleLineup {
 
 /** 构造带指定占用槽的编队：{[slot]: heroId}。 */
 function lineupWith(occupied: Readonly<Record<number, string>>): AutoBattleLineup {
-    const slots = Array.from<unknown, string | null>(
-        { length: FORMATION_GRID_SIZE },
-        () => null,
-    );
+    const slots = Array.from<unknown, string | null>({ length: FORMATION_GRID_SIZE }, () => null);
     for (const [slot, heroId] of Object.entries(occupied)) {
         slots[Number(slot)] = heroId;
     }
@@ -136,9 +135,7 @@ import { FORMATION_GRID_SIZE } from "./grid";
 import type { AutoBattleLineup } from "../models";
 
 /** 编队编辑动作：填充/替换指定槽，或卸下指定槽。 */
-export type LineupAction =
-    | { readonly type: "fill"; readonly slot: number; readonly heroId: string }
-    | { readonly type: "remove"; readonly slot: number };
+export type LineupAction = { readonly type: "fill"; readonly slot: number; readonly heroId: string } | { readonly type: "remove"; readonly slot: number };
 
 /**
  * 编队 reducer：纯函数状态变换，返回新的 AutoBattleLineup（不可变，输入不被
@@ -149,10 +146,7 @@ export type LineupAction =
  * slot 语义 = 定长编队槽位（含空槽），与开战实例化时的压缩 index（只含已上阵
  * 序）解耦（见 design.md D1 衔接说明）。
  */
-export function editLineup(
-    lineup: AutoBattleLineup,
-    action: LineupAction,
-): AutoBattleLineup {
+export function editLineup(lineup: AutoBattleLineup, action: LineupAction): AutoBattleLineup {
     const slot = action.slot;
     if (slot < 0 || slot >= FORMATION_GRID_SIZE) {
         return lineup;
@@ -178,10 +172,7 @@ export function editLineup(
     }
     // 上阵上限：目标槽为空且当前非空数已达上限，拒绝新增上阵
     if (next[slot] === null) {
-        const occupiedCount = next.reduce<number>(
-            (count, heroId) => (heroId === null ? count : count + 1),
-            0,
-        );
+        const occupiedCount = next.reduce<number>((count, heroId) => (heroId === null ? count : count + 1), 0);
         if (occupiedCount >= MAX_TEAM_SIZE) {
             return lineup;
         }
@@ -206,10 +197,12 @@ Expected: 除后续任务将更新的 store/presenter 测试外，其余全绿�
 ### Task 2: 存档 schema v1→v2 迁移（slots 6 长度 → 9 长度）
 
 **Files:**
+
 - Modify: `assets/samples/game_auto_battle/logic/lineup-store.ts`
 - Test: `tests/framework/foundation/game-auto-battle-lineup-store.test.ts`
 
 **Interfaces:**
+
 - Consumes: `FORMATION_GRID_SIZE`（`logic/grid.ts`）、`MAX_TEAM_SIZE`（`logic/config.ts`）、`createLineupStore(options)` 现有签名。
 - Produces: `LINEUP_SAVE_VERSION=2`；内置 v1→v2 迁移器（6 长度 slots 补 3 个 `null` 到 9）；`isLineupRecord` 长度校验改用 `FORMATION_GRID_SIZE`；`createLineupStore` 默认 `migrators={ 1: migrateV1ToV2 }`。
 
@@ -222,19 +215,12 @@ import { MemoryPlatform } from "../../../assets/framework/adapters/memory/Memory
 import type { PlatformStorage } from "../../../assets/framework/contracts/platform/Platform";
 import { MAX_TEAM_SIZE } from "../../../assets/samples/game_auto_battle/logic/config";
 import { FORMATION_GRID_SIZE } from "../../../assets/samples/game_auto_battle/logic/grid";
-import {
-    LINEUP_STORAGE_KEY,
-    LINEUP_SAVE_VERSION,
-    createLineupStore,
-} from "../../../assets/samples/game_auto_battle/logic/lineup-store";
+import { LINEUP_STORAGE_KEY, LINEUP_SAVE_VERSION, createLineupStore } from "../../../assets/samples/game_auto_battle/logic/lineup-store";
 import type { AutoBattleLineup } from "../../../assets/samples/game_auto_battle/models";
 
 /** 构造合法编队：指定占用槽，其余为 null；定长为布阵区容量 FORMATION_GRID_SIZE。 */
 function lineup(occupied: Readonly<Record<number, string>> = {}): AutoBattleLineup {
-    const slots = Array.from<unknown, string | null>(
-        { length: FORMATION_GRID_SIZE },
-        () => null,
-    );
+    const slots = Array.from<unknown, string | null>({ length: FORMATION_GRID_SIZE }, () => null);
     for (const [slot, heroId] of Object.entries(occupied)) {
         slots[Number(slot)] = heroId;
     }
@@ -248,15 +234,9 @@ function lineup(occupied: Readonly<Record<number, string>> = {}): AutoBattleLine
 test("migrates a legacy v1 record (6-length slots) to v2 (9-length) by default", async () => {
     const storage = new MemoryPlatform();
     // 旧版本 v1 存档：slots 为 6 长度（MAX_TEAM_SIZE），这正是旧 schema 的定长
-    const legacySlots = Array.from<unknown, string | null>(
-        { length: MAX_TEAM_SIZE },
-        () => null,
-    );
+    const legacySlots = Array.from<unknown, string | null>({ length: MAX_TEAM_SIZE }, () => null);
     legacySlots[0] = "a";
-    await seed(
-        storage,
-        JSON.stringify({ version: 1, data: { slots: legacySlots } }),
-    );
+    await seed(storage, JSON.stringify({ version: 1, data: { slots: legacySlots } }));
 
     const store = createLineupStore({ storage });
 
@@ -313,10 +293,7 @@ export type LineupSaveMigrator = (data: unknown) => unknown;
  */
 export const MIGRATE_V1_TO_V2: LineupSaveMigrator = (data) => {
     const record = data as { slots: readonly (string | null)[] };
-    const slots: (string | null)[] = Array.from(
-        { length: FORMATION_GRID_SIZE },
-        (_, index) => record.slots[index] ?? null,
-    );
+    const slots: (string | null)[] = Array.from({ length: FORMATION_GRID_SIZE }, (_, index) => record.slots[index] ?? null);
     return { slots };
 };
 ```
@@ -359,9 +336,11 @@ Expected: PASS。
 ### Task 3: 装配层 slots 定长改用 FORMATION_GRID_SIZE
 
 **Files:**
+
 - Modify: `assets/samples/game_auto_battle/assembly.ts`
 
 **Interfaces:**
+
 - Consumes: `FORMATION_GRID_SIZE`（`logic/grid.ts`）、`MAX_TEAM_SIZE`（`logic/config.ts`）。
 - Produces: `toFullLineup(ids)` 定长 `FORMATION_GRID_SIZE`；`selectHero` 选中槽/空槽范围扩到 9。
 
@@ -375,10 +354,7 @@ Expected: PASS。
 ```ts
 /** 压缩 heroId 序列 → 定长编队（空槽 null）；不足布阵区容量 FORMATION_GRID_SIZE 的部分留空。 */
 function toFullLineup(ids: readonly string[]): AutoBattleLineup {
-    const slots: (string | null)[] = Array.from(
-        { length: FORMATION_GRID_SIZE },
-        () => null,
-    );
+    const slots: (string | null)[] = Array.from({ length: FORMATION_GRID_SIZE }, () => null);
     ids.forEach((heroId, index) => {
         slots[index] = heroId;
     });
@@ -414,10 +390,12 @@ Expected: PASS。
 ### Task 4: 视图层槽位绑定扩 9 + 删除候选预置绑定
 
 **Files:**
+
 - Modify: `assets/samples/game_auto_battle/view/lineup.ts`
 - Test: `tests/framework/foundation/game-auto-battle-lineup-view.test.ts`
 
 **Interfaces:**
+
 - Consumes: `FORMATION_GRID_SIZE`（`logic/grid.ts`）；`LineupEditorViewModel` 候选数据（candidates）仍保留供 GList 消费。
 - Produces: 删除 `LINEUP_CANDIDATE_SLOTS` 与 `candidate_{i}` 预置绑定；槽位绑定循环 `slot < FORMATION_GRID_SIZE`（9）；候选渲染移交给 presenter 的列表句柄。
 
@@ -440,10 +418,7 @@ function lineup(slots: readonly (string | null)[]): AutoBattleLineup {
 ```ts
 test("slot bindings cover the full formation size (9 slots)", () => {
     const calls: string[] = [];
-    const heroes: readonly AutoBattleHero[] = Array.from(
-        { length: 9 },
-        (_, i) => hero(`h${i}`, `H${i}`),
-    );
+    const heroes: readonly AutoBattleHero[] = Array.from({ length: 9 }, (_, i) => hero(`h${i}`, `H${i}`));
     const vm = createLineupEditorViewModel(heroes, lineup(["h0", null, "h2", "h3", null, "h5", "h6", null, "h8"]), null);
     const view = recordingView();
     const renderer = createViewModelRenderer<LineupEditorViewModel>({
@@ -497,11 +472,13 @@ Expected: PASS。
 ### Task 5: FairyGuiListHandle 引擎无关契约
 
 **Files:**
+
 - Create: `assets/framework/contracts/ui/List.ts`
 - Modify: `assets/framework/index.ts`
 - Test: `tests/framework/foundation/contracts.typecheck.ts`
 
 **Interfaces:**
+
 - Consumes: `ViewModelNode`（`contracts/ui/ViewModel.ts`）。
 - Produces: `FairyGuiListItemView<T>`（index + item + field 子节点解析）、`FairyGuiListHandle<T>`（setItems / setItemRenderer / setItemClick）；经 `framework/index.ts` 导出。
 
@@ -546,10 +523,7 @@ export interface FairyGuiListHandle<T> {
 在 `assets/framework/index.ts` 的 contracts/ui 导出区（`ViewModel` 导出附近）追加：
 
 ```ts
-export type {
-    FairyGuiListItemView,
-    FairyGuiListHandle,
-} from "./contracts/ui/List";
+export type { FairyGuiListItemView, FairyGuiListHandle } from "./contracts/ui/List";
 ```
 
 - [ ] **Step 3: typecheck 确认导出与契约类型编译通过**
@@ -562,6 +536,7 @@ Expected: PASS（该脚本编译 framework 全部非 cocos TS + contracts.typech
 ### Task 6: cocos 适配层 FairyGuiListHandle 实现
 
 **Files:**
+
 - Create: `assets/framework/adapters/cocos/ui/FairyGuiListHandle.ts`
 - Modify: `assets/boot/host/GameLobbyHostImpl.ts`
 - Modify: `assets/game/lobby/host.ts`
@@ -572,6 +547,7 @@ Expected: PASS（该脚本编译 framework 全部非 cocos TS + contracts.typech
 - Test: `tests/framework/foundation/game-auto-battle-lineup-presenter.test.ts`
 
 **Interfaces:**
+
 - Consumes: `FairyGuiListHandle`/`FairyGuiListItemView`（Task 5）、`wrapFairyGuiObject`（`FairyGuiViewHandle.ts`）、`GList`（fairygui-cc）。
 - Produces: `createFairyGuiListHandle<T>(list)` 与 `createFairyGuiListViewHandle(view)`（按名解析 GList）；`EntryPageHandle.list` 可选列表解析器；`GamePresenterFactory` 第 4 可选参数 `list`；`createLineupEditorPresenter` 接收 list 解析器并在 render 时驱动候选列表。
 
@@ -581,10 +557,7 @@ Expected: PASS（该脚本编译 framework 全部非 cocos TS + contracts.typech
 
 ```ts
 import { Event, GComponent, GList, GObject } from "fairygui-cc";
-import type {
-    FairyGuiListItemView,
-    FairyGuiListHandle,
-} from "../../../contracts/ui/List";
+import type { FairyGuiListItemView, FairyGuiListHandle } from "../../../contracts/ui/List";
 import { wrapFairyGuiObject } from "./FairyGuiViewHandle";
 
 /**
@@ -620,14 +593,17 @@ export function createFairyGuiListHandle<T>(list: GList): FairyGuiListHandle<T> 
         });
         if (clickHandler !== undefined && !registeredClick.has(obj)) {
             registeredClick.add(obj);
-            obj.on(Event.CLICK, () => {
-                const currentIndex = objIndex.get(obj);
-                const currentItem =
-                    currentIndex === undefined ? undefined : items[currentIndex];
-                if (currentIndex !== undefined && currentItem !== undefined) {
-                    clickHandler(currentIndex, currentItem);
-                }
-            }, obj);
+            obj.on(
+                Event.CLICK,
+                () => {
+                    const currentIndex = objIndex.get(obj);
+                    const currentItem = currentIndex === undefined ? undefined : items[currentIndex];
+                    if (currentIndex !== undefined && currentItem !== undefined) {
+                        clickHandler(currentIndex, currentItem);
+                    }
+                },
+                obj,
+            );
         }
     };
 
@@ -649,9 +625,7 @@ export function createFairyGuiListHandle<T>(list: GList): FairyGuiListHandle<T> 
  * 视图节点接缝：包装 fgui 页面根组件按名解析 GList 并暴露 FairyGuiListHandle。
  * 节点不是 GList 或不存在时返回 undefined（渲染器按契约跳过该绑定）。
  */
-export function createFairyGuiListViewHandle(
-    view: GComponent,
-): (name: string) => FairyGuiListHandle<unknown> | undefined {
+export function createFairyGuiListViewHandle(view: GComponent): (name: string) => FairyGuiListHandle<unknown> | undefined {
     return (name: string): FairyGuiListHandle<unknown> | undefined => {
         const child = view.getChild(name);
         if (child === null || !(child instanceof GList)) {
@@ -710,10 +684,7 @@ export type GamePresenterFactory = (
 修改 `assets/game/lobby/lobby.ts` 的两处 presenter 装配（`enter` 与 `switchEntry`）：
 
 ```ts
-const presenter =
-    presenterFactory === undefined
-        ? undefined
-        : presenterFactory(fixture, page.node, navigate, page.list);
+const presenter = presenterFactory === undefined ? undefined : presenterFactory(fixture, page.node, navigate, page.list);
 ```
 
 ```ts
@@ -761,12 +732,7 @@ import type { GameSessionNavigator } from "../../../game/lobby/presenter";
 import type { GameFixture } from "../../../game/fixture/GameFixture";
 import { AUTO_BATTLE_BATTLE_ENTRY } from "../../../game/lobby/catalog";
 import type { AutoBattleFixture } from "../assembly";
-import {
-    createLineupEditorBindings,
-    createLineupEditorViewModel,
-    type LineupCandidateView,
-    type LineupEditorViewModel,
-} from "./lineup";
+import { createLineupEditorBindings, createLineupEditorViewModel, type LineupCandidateView, type LineupEditorViewModel } from "./lineup";
 import { createAutoBattlePresenter } from "./presenter";
 
 export function createLineupEditorPresenter(
@@ -779,9 +745,7 @@ export function createLineupEditorPresenter(
 
     // 候选英雄 GList 句柄：编队页候选区为虚拟列表，presenter 在 render 时
     // setItems 驱动；节点不存在（内存测试/非真实页面）时退化，候选不渲染
-    const candidateList = list?.("candidate_list") as
-        | FairyGuiListHandle<LineupCandidateView>
-        | undefined;
+    const candidateList = list?.("candidate_list") as FairyGuiListHandle<LineupCandidateView> | undefined;
     if (candidateList !== undefined) {
         candidateList.setItemRenderer((view) => {
             view.field("txt_candidate_name")?.setText(view.item.heroName);
@@ -802,15 +766,9 @@ export function createLineupEditorPresenter(
 
     function render(): void {
         const enemyIds = new Set(autoBattle.config.enemy.map((unit) => unit.id));
-        const candidates = autoBattle.config.heroes.filter(
-            (hero) => !enemyIds.has(hero.id),
-        );
+        const candidates = autoBattle.config.heroes.filter((hero) => !enemyIds.has(hero.id));
         // VM 派生候选数据（含 deployed 上阵态）供列表句柄消费，避免重复派生
-        const vm = createLineupEditorViewModel(
-            candidates,
-            autoBattle.lineup.value,
-            autoBattle.lineup.selectedSlot,
-        );
+        const vm = createLineupEditorViewModel(candidates, autoBattle.lineup.value, autoBattle.lineup.selectedSlot);
         renderer.setViewModel(vm);
         if (candidateList !== undefined) {
             candidateList.setItems(vm.candidates);
@@ -868,11 +826,13 @@ Expected: PASS；`bun run test:foundation:types` 也通过（新契约导出纳�
 ### Task 7: FGUI 组件改造（委派 fgui-designer）
 
 **Files:**
+
 - Modify: `ui/demo/assets/AutoBattle/LineupEditorView.xml`
 - Create: `ui/demo/assets/Common/CandidateItem.xml`（候选英雄行模板，名称文本 + 已上阵标记）
 - Modify: `ui/demo/assets/Common/package.xml`（仅通过 `fgui register-component`）
 
 **Interfaces:**
+
 - Consumes: `createLineupEditorBindings()` 的槽位节点名（`slot_0..8`、`txt_slot_0..8_name`、`slot_selected_0..8`）；presenter 列表句柄的候选节点名（`candidate_list` 容器、item 内 `txt_candidate_name`、`mark_deployed`）。
 - Produces: 9 个布阵按钮（`slot_0..8`，透明 CommonButton 覆盖层）；候选区 GList 组件（`candidate_list`，defaultItem 指向 Common/CandidateItem）；Common/CandidateItem（按钮 + 名称文本 + 已上阵标记）。
 
@@ -900,9 +860,11 @@ FGUI 编辑器发布 AutoBattle 与 Common 包（产物由编辑器生成，不�
 ### Task 8: 全量验证与冒烟
 
 **Files:**
+
 - Modify: `tests/framework/foundation/game-auto-battle-lineup-editor.test.ts`（如存在候选预置断言则更新）
 
 **Interfaces:**
+
 - Consumes: Task 1-7 全部产物。
 - Produces: 全量验证证据（typecheck / lint / test / fgui validate）。
 

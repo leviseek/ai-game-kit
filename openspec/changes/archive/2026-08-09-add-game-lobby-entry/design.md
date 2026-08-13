@@ -5,11 +5,13 @@
 ## Goals / Non-Goals
 
 **Goals:**
+
 - 把"冒烟时代一次性硬编码的进入路径"固化为游戏层大厅编排模块（catalog + lobby），AppRoot 只做宿主注入与默认触发。
 - 建立统一的"进入品类 → 真实页面 → 退出会话"生命周期，资源经会话作用域正确释放，列表包常驻不受影响。
 - 无 URL 参数时默认打开列表页作为主入口。
 
 **Non-Goals:**
+
 - 不做多会话并发/资源池化（MVP 单会话，重入拒绝）。
 - 不实现 fight/idle/rpg/tycoon 的真实页面（仅列表占位）。
 - 不改变五个品类夹具内部的行为契约（game-composite-fixtures 需求不变）。
@@ -20,6 +22,7 @@
 ### D1：大厅做成游戏层薄编排模块，而非 GameFixture 或 AppRoot 硬编码
 
 新增 `assets/game/lobby/`：
+
 - `catalog.ts`：纯数据 `GameTypeInfo[]`（id/title/playable/entry{route, packageName, resName}），显式清单不自动扫描；id 与 `gameFixtureRegistry`（assets/game/fixture/registry.ts）对齐。
 - `lobby.ts`：`createGameLobby(host)`，引擎无关；`enter(id)` / `exit()` / `active`，单会话、重入拒绝。
 
@@ -55,13 +58,13 @@ export interface GameTypeInfo {
     readonly id: string;
     readonly title: string;
     readonly subtitle?: string;
-    readonly icon?: string;              // fgui 内图标资源名，可后置
+    readonly icon?: string; // fgui 内图标资源名，可后置
     readonly entry: {
-        readonly route: string;          // 如 "card/battle"
-        readonly packageName: string;    // 如 "CardGame"
-        readonly resName: string;        // 如 "BattleView"
+        readonly route: string; // 如 "card/battle"
+        readonly packageName: string; // 如 "CardGame"
+        readonly resName: string; // 如 "BattleView"
     };
-    readonly playable: boolean;          // false → 列表项显示"敬请期待"
+    readonly playable: boolean; // false → 列表项显示"敬请期待"
 }
 export const gameTypeCatalog: readonly GameTypeInfo[];
 ```
@@ -74,8 +77,8 @@ export interface GameLobbyHost {
     closeEntryPage(handle: EntryPageHandle): Promise<void>;
 }
 export interface GameLobby {
-    enter(id: string): Promise<GameSession>;  // 创建夹具 + start + 打开入口页；重入拒绝
-    exit(): Promise<void>;                    // 关闭页面 + 会话 scope 释放 + 夹具 dispose
+    enter(id: string): Promise<GameSession>; // 创建夹具 + start + 打开入口页；重入拒绝
+    exit(): Promise<void>; // 关闭页面 + 会话 scope 释放 + 夹具 dispose
     readonly active: GameSession | undefined;
 }
 ```

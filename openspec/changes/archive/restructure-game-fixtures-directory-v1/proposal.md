@@ -5,10 +5,10 @@
 ## What Changes
 
 - 将五类 `assets/game_*`（card/rpg/idle/tycoon/fight）统一为子目录形态：
-  - `assembly.ts` 留根（组合根）
-  - `models/`：类型（业务模型 + action + route + ViewModel 类型）
-  - `logic/`：能力实现（battle/config/clock/input/resource/save/scene/state 等）
-  - `view/`：UI 呈现（VM 派生 + 绑定声明）与 route 登记
+    - `assembly.ts` 留根（组合根）
+    - `models/`：类型（业务模型 + action + route + ViewModel 类型）
+    - `logic/`：能力实现（battle/config/clock/input/resource/save/scene/state 等）
+    - `view/`：UI 呈现（VM 派生 + 绑定声明）与 route 登记
 - 同步更新依赖这些文件路径的引用：`assets/game/fixture/registry.ts` 五处 import、五类夹具测试（`tests/framework/foundation/game-*-fixture.test.ts`）。
 - 纯重构：无行为变化，无新能力。
 

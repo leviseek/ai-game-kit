@@ -5,11 +5,13 @@ C1 已把 `game_card` 分级为 `models/`、`logic/`、`view/`、`assembly.ts` �
 ## Goals / Non-Goals
 
 **Goals:**
+
 - `game_card` 单战场页真实可玩：点击出牌、敌攻、胜负终局、重开。
 - 经 C2 渲染管线驱动页面，游戏层不导入 fgui（public-boundary 锁定）。
 - Cocos `?smoke=card-battle` 冒烟验证真实页面。
 
 **Non-Goals:**
+
 - 不做存档、抽卡、牌库、技能、AI（扩展方向，不在 MVP）。
 - 不改框架 core/contracts（C2 已交付管线，本 change 只消费）。
 - 不做多页导航（单战场页，重开即重置）。
@@ -35,6 +37,7 @@ C1 已把 `game_card` 分级为 `models/`、`logic/`、`view/`、`assembly.ts` �
 ### 4. ViewModel 绑定声明（`game_card/view/view.ts`）
 
 纯数据声明，映射 CardBattleState → 节点名：
+
 ```
 txt_player_hp  text    `HP ${playerHp}`
 txt_enemy_hp   text    `HP ${enemyHp}`
@@ -45,6 +48,7 @@ btn_end_turn   command endTurn()
 txt_result     visible result !== undefined；text `胜利`/`战败`
 btn_restart    command restart()
 ```
+
 VM 派生函数 `createCardBattleViewModel(state)` 返回扁平 VM；绑定数组由 view.ts 导出。
 
 ### 5. FGUI 页面委托 fgui-designer

@@ -5,11 +5,13 @@
 ## Goals / Non-Goals
 
 **Goals:**
+
 - 战场单位组重构为敌左我右（敌方左、己方右），为后续坐标式渲染（slot→xy、位移、入场）提供稳定锚点。
 - 保持绑定节点名与单位槽位序不变，逻辑层零改动，冒烟与既有测试不回归。
 - 布局坐标仍由 FGUI XML 承载，本 change 不扩展 framework 契约。
 
 **Non-Goals:**
+
 - 不引入 slot→xy 渲染映射表 / ViewModelNode.setXY 契约（归 change-04 + ADR-025）。
 - 不调整侧内单位顺序语义（`unit_0..2` 己方、`unit_3..5` 敌方，先己方后敌方）。
 - 不改变战斗逻辑（side 语义、目标选择、行动序列、胜负判定）。
@@ -17,15 +19,18 @@
 ## Decisions
 
 **决策 1：敌左我右布局坐标方案**
+
 - 屏幕 1280x720 内，敌方三列置于左半区、己方三列置于右半区，保留"同一侧三列"结构；建议敌方列 x 与己方列 x 相对中线镜像，y 沿用侧内纵向排布（参考现有 y=88/440 基础上调整），具体坐标由 fgui-designer 在编辑器中定稿并保证可读。
 - 备选：只做水平翻转（原顶部→左侧、原底部→右侧）——**否决**：会破坏"同侧三列纵向分布"的战场纵深语义，且与后续位移表现（两侧对进）不符。
 - 布局是表现层数据，单位顺序、绑定、逻辑均不受影响。
 
 **决策 2：不扩展 ViewModelNode 契约（本 change 不引入 setXY）**
+
 - 现状 `ViewModelNode` 只有 setText/setProgress/setVisible/onClick，坐标全在 XML。布局重构只需改 XML 坐标，绑定声明无需感知坐标。
 - 备选：本 change 即引入 setXY + slot→xy 映射表，让 TS 驱动坐标——**否决**：这是 framework 契约 + 渲染器 + 适配器三层联动改动，且会与 XML 双真源；坐标演进主线（ADR-025）在 change-04 统一落地更稳，本 change 保持最小可交付。
 
 **决策 3：验证路径**
+
 - 布局为纯表现，用冒烟（`?smoke=auto-battle`，节点名对齐校验 + 驱动到终局）+ 截图 + visual-verifier（mode=fgui）核对敌左我右；不新增单元测试（无逻辑行为变化）。
 
 ## Risks / Trade-offs

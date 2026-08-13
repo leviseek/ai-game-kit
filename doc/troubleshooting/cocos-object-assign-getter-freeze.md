@@ -50,24 +50,26 @@ Bun 直接执行现代对象字面量语义：`{ ...base, get speed() {...} }` �
 
 1. **闭包方法（推荐，本仓库已采用）**：暴露 `getSpeed(): AutoBattleSpeed` 而非 `get speed()`。方法引用不会被 `Object.assign` 固化，跨 Bun / Cocos 语义一致：
 
-   ```ts
-   let speed: AutoBattleSpeed = clock.timeScale as AutoBattleSpeed;
-   const cycleSpeed = (): void => { /* 更新 speed + clock */ };
-   // ...
-   return {
-     ...base,
-     getSpeed: (): AutoBattleSpeed => speed,   // 方法，非 accessor
-     cycleSpeed,
-     // ...
-   };
-   ```
+    ```ts
+    let speed: AutoBattleSpeed = clock.timeScale as AutoBattleSpeed;
+    const cycleSpeed = (): void => {
+        /* 更新 speed + clock */
+    };
+    // ...
+    return {
+        ...base,
+        getSpeed: (): AutoBattleSpeed => speed, // 方法，非 accessor
+        cycleSpeed,
+        // ...
+    };
+    ```
 
 2. **显式定义 descriptor**：先创建对象，再用 `Object.defineProperty` 定义 getter。`Object.defineProperty` 复制的是 accessor descriptor 本身，不受 `Object.assign` 固化问题影响：
 
-   ```ts
-   const fixture = { ...base, cycleSpeed };
-   Object.defineProperty(fixture, "speed", { get: () => speed, enumerable: true });
-   ```
+    ```ts
+    const fixture = { ...base, cycleSpeed };
+    Object.defineProperty(fixture, "speed", { get: () => speed, enumerable: true });
+    ```
 
 **禁止**：依赖"含对象展开的对象字面量 getter"跨 Cocos 转译保持 descriptor。
 

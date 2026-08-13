@@ -5,12 +5,12 @@
 - [x] 1.3 编写 `Document.AddController`/`FController` 探针（加页/切页/删页），验证内存态控制器操作
 - [x] 1.4 编写截图采集探针（先试 `App.Capture` 等公开 API；不可用则实现 OS 级窗口截图备选），验证落盘 PNG 可读
 - [x] 1.5 汇总探针结论：可固化的 API 列表、需回退到 CLI 路径的能力、以及工具描述中的能力受限标注
-  - **controller**（实机 pass）：`Document.AddController(xml)`/`UpdateController`/`RemoveController`/`SwitchPage` + `FController` 加页/切页/删页全链路可用 → handler 固化。
-  - **import-resource**（实机 pass）：`FPackage.ImportResource`（Task 同步完成）+ `ResourceImportQueue.Process` 回调可导入并登记资源 → handler 固化。
-  - **copy-handler**（实机 partial→confirmed）：`CopyHandler.InitWithObject` 调用成功、依赖项复制**实际生效**（scratch 目标包中出现 StartButton、start_btn_up/down、background 等 zr7s0-zr7s3）；但主组件 DemoView.xml 未在目标包枚举中出现（命名/主项复制差异，属探针取证问题）。结论：**依赖复制可用**，`copy_items` handler 保留；`InitWithItems` 的 IList 互操作在 Puerts 不可用，故 handler 用 InitWithObject（doc.Serialize XML）实现。
-  - **capture**（实机 pass）：`doc.content.displayObject.GetScreenShot(null,1)` + `UnityEngine.ImageConversion.EncodeToPNG` 可用（参考 FairyGUI-MCP 路径）；`ScreenCapture.CaptureScreenshot`/`Application.CaptureScreenshot` 在 Puerts 不可调用，已弃用 OS 级 PowerShell 备选（Unity 内 Process.Start 受限）→ handler 用 GetScreenShot 实现。
-  - **通用经验**：Puerts 中 C# `long`（如 `FileInfo.Length`）映射为 BigInt，`JSON.stringify` 会抛错致响应丢失，所有序列化字段必须 `Number()` 转换。
-  - **ai-sensei 审查 P0-2 回应**：审查曾担忧 import_resource 的 `ResourceImportQueue.Process` 回调可能在后台线程执行复刻「后台线程访问 JS 闭包 → 闪退」高危模式。实机证据反驳：探针（pass）与闭环验证（import_resource 导入成功、`pkg.Save()`/`writeResponse` 均正常、无闪退）确认回调路径安全。四探针均已实机运行回填（probe-results.json ts=19:41）。
+    - **controller**（实机 pass）：`Document.AddController(xml)`/`UpdateController`/`RemoveController`/`SwitchPage` + `FController` 加页/切页/删页全链路可用 → handler 固化。
+    - **import-resource**（实机 pass）：`FPackage.ImportResource`（Task 同步完成）+ `ResourceImportQueue.Process` 回调可导入并登记资源 → handler 固化。
+    - **copy-handler**（实机 partial→confirmed）：`CopyHandler.InitWithObject` 调用成功、依赖项复制**实际生效**（scratch 目标包中出现 StartButton、start_btn_up/down、background 等 zr7s0-zr7s3）；但主组件 DemoView.xml 未在目标包枚举中出现（命名/主项复制差异，属探针取证问题）。结论：**依赖复制可用**，`copy_items` handler 保留；`InitWithItems` 的 IList 互操作在 Puerts 不可用，故 handler 用 InitWithObject（doc.Serialize XML）实现。
+    - **capture**（实机 pass）：`doc.content.displayObject.GetScreenShot(null,1)` + `UnityEngine.ImageConversion.EncodeToPNG` 可用（参考 FairyGUI-MCP 路径）；`ScreenCapture.CaptureScreenshot`/`Application.CaptureScreenshot` 在 Puerts 不可调用，已弃用 OS 级 PowerShell 备选（Unity 内 Process.Start 受限）→ handler 用 GetScreenShot 实现。
+    - **通用经验**：Puerts 中 C# `long`（如 `FileInfo.Length`）映射为 BigInt，`JSON.stringify` 会抛错致响应丢失，所有序列化字段必须 `Number()` 转换。
+    - **ai-sensei 审查 P0-2 回应**：审查曾担忧 import_resource 的 `ResourceImportQueue.Process` 回调可能在后台线程执行复刻「后台线程访问 JS 闭包 → 闪退」高危模式。实机证据反驳：探针（pass）与闭环验证（import_resource 导入成功、`pkg.Save()`/`writeResponse` 均正常、无闪退）确认回调路径安全。四探针均已实机运行回填（probe-results.json ts=19:41）。
 
 ## 2. 读侧查询工具（无破坏性，先行）
 
@@ -78,16 +78,16 @@
 
 - [x] 10.1 运行 `bun run fgui validate --strict` 与既有 fgui-mcp 测试套件（`test/`），确认新增工具未破坏既有确定性路径
 - [x] 10.2 在 FGUI 编辑器实机走一遍闭环：导入 sprite → 结构编辑 → 保存 → 发布 → `fgui_check_publish` 一致性通过
-  - **完整闭环已实机验证通过**：`fgui sprite` 生成 probe_loop.png → `fgui_import_resource` 导入（id=gg4p10）→ `fgui_create_component` 建 ProbeLoopView → `fgui_add_child` 加 image 子对象（id=n0_gg4p，走 InsertObject）→ `fgui_set_object_property` 设 xy/size → `fgui_save_documents` 落盘（XML 正确：`<image src="zjfpc" fileName="img/probe_loop.png" xy="10,20" size="50,30"/>`）→ `fgui_trigger_publish`（scratch 与真实两路均成功）→ `fgui_check_publish` 三重证据一致（ok:true）。
-  - **验证中修复**：add_child 带 src 改走 `doc.InsertObject`（`resourceURL` 是只读 getter 无法手动挂载）；findResourceItem 支持 id/name/文件名（修复 delete_resource/add_child 对 image 资源引用）；新增 `fgui_reload_package`（FairyGUI-MCP reload 方案固化：pkg.Touch + item.Touch）；BigInt 序列化陷阱已记录。
-  - 验证后已清理全部测试残留（ProbeLoopView/probe_loop/loop_import），Demo 校验通过、无污染。
+    - **完整闭环已实机验证通过**：`fgui sprite` 生成 probe_loop.png → `fgui_import_resource` 导入（id=gg4p10）→ `fgui_create_component` 建 ProbeLoopView → `fgui_add_child` 加 image 子对象（id=n0_gg4p，走 InsertObject）→ `fgui_set_object_property` 设 xy/size → `fgui_save_documents` 落盘（XML 正确：`<image src="zjfpc" fileName="img/probe_loop.png" xy="10,20" size="50,30"/>`）→ `fgui_trigger_publish`（scratch 与真实两路均成功）→ `fgui_check_publish` 三重证据一致（ok:true）。
+    - **验证中修复**：add_child 带 src 改走 `doc.InsertObject`（`resourceURL` 是只读 getter 无法手动挂载）；findResourceItem 支持 id/name/文件名（修复 delete_resource/add_child 对 image 资源引用）；新增 `fgui_reload_package`（FairyGUI-MCP reload 方案固化：pkg.Touch + item.Touch）；BigInt 序列化陷阱已记录。
+    - 验证后已清理全部测试残留（ProbeLoopView/probe_loop/loop_import），Demo 校验通过、无污染。
 - [x] 10.3 更新 `tools/fgui-mcp/README.md` 工具面清单（新增工具、能力受限标注、回滚约束）
 - [x] 10.4 确认 `.ai/instructions.md`/AGENTS.md 中与 fgui-mcp 相关的描述与新工具面一致，需要时同步
 - [x] 10.5 移植 FairyGUI-MCP（D:\git-clone\FairyGUI-MCP）去重后可用工具，实机验证通过
-  - **新增 9 工具并全部实机验证**：`fgui_open_component` / `fgui_show_preview` / `fgui_get_selection` / `fgui_select_element` / `fgui_close_document` / `fgui_get_component_info` / `fgui_get_logs` / `fgui_clear_logs` / `fgui_publish_all`。
-  - 关键实现：get_logs 用 `FileShare.ReadWrite` 流式读 Player.log（`ReadAllText` 会 Sharing violation）；publish_all 顺序遍历 `allPackages` 逐个 PublishHandler（deferred）；select_element 走 `UnselectAll + SelectObject`。
-  - **去重结论**（FairyGUI-MCP 有而本项目已覆盖）：save/read_document/list_controllers/list_resources/full_search/validate/move|delete_resource/reload 等。
-  - **不移植项及原因**：`start_test`/`stop_test`（F5 覆盖 runInBackground）、`switch_device`/`list_devices`（依赖 testView 内部状态，高风险）、`activate`（Python 端 Win32，非编辑器 API）、`reload_plugin`（FairyGUI-MCP 自身仍在探测 API）、`open_publish_settings`/`probe_*`（调试/探针性质，与确定性工具原则冲突）。
+    - **新增 9 工具并全部实机验证**：`fgui_open_component` / `fgui_show_preview` / `fgui_get_selection` / `fgui_select_element` / `fgui_close_document` / `fgui_get_component_info` / `fgui_get_logs` / `fgui_clear_logs` / `fgui_publish_all`。
+    - 关键实现：get_logs 用 `FileShare.ReadWrite` 流式读 Player.log（`ReadAllText` 会 Sharing violation）；publish_all 顺序遍历 `allPackages` 逐个 PublishHandler（deferred）；select_element 走 `UnselectAll + SelectObject`。
+    - **去重结论**（FairyGUI-MCP 有而本项目已覆盖）：save/read_document/list_controllers/list_resources/full_search/validate/move|delete_resource/reload 等。
+    - **不移植项及原因**：`start_test`/`stop_test`（F5 覆盖 runInBackground）、`switch_device`/`list_devices`（依赖 testView 内部状态，高风险）、`activate`（Python 端 Win32，非编辑器 API）、`reload_plugin`（FairyGUI-MCP 自身仍在探测 API）、`open_publish_settings`/`probe_*`（调试/探针性质，与确定性工具原则冲突）。
 
 ## 11. ADR 检查
 

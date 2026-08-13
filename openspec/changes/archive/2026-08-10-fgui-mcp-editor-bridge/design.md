@@ -3,6 +3,7 @@
 动机见 proposal.md - Why。当前工程约束：`tools/fgui` 确定性 CLI 是 XML 生成/校验的权威执行层（有测试）；发布产物必须由 FGUI 编辑器发布生成（AGENTS.md 第 14 条）；已验证的编辑器插件 API 证据集中在 `D:\ai-work\fgui-agent` 知识库、`D:\git-clone\fguiPlugin`、`D:\git-clone\future_lab\fgui_lab\plugins\ToolPlugin` 与 `D:\git-clone\XIHFrameWork`（onPublish 钩子触发、`GlobalPublishSettings` 程序化写入与 `allPackages.Open()` 刷新、`GetPackageByName`/`items`/`DependencyQuery` 遍历均为真实源码证实）。
 
 **阶段 0 实机探针结论（已收敛）**：
+
 - `pkg.Open()` 对已打开包幂等安全、6 包 15ms、编辑区闪烁"是"、无其它副作用——阶段 2 配置切换链路获实机背书。
 - 文件邮箱模式（插件内 `File.WriteAllText/ReadAllText`）读写闭环通过——桥接兜底通道成立。
 - `PublishHandler.Run()` **复测通过**：空 branch（`activeBranch:""`）构造合法、`Run()` 同步返回 299ms、`onComplete`/`isSuccess` 触发、**`onPublish` 钩子随 Run() 触发**（`onPublishHookFired=true`）、`allBranches=[]`。硬编码分支名抛 `Branch not exists`——branch 不是自由字符串，禁止硬编码。
@@ -12,12 +13,14 @@
 ## Goals / Non-Goals
 
 **Goals:**
+
 - 独立进程 MCP server + 编辑器插件双组件架构，打通「意图 → FGUI 组件 → 客户端产物」链路
 - 编辑器插件只做编辑器独有能力（发布配置切换、发布钩子、编辑器级查询），XML 生成/校验永不迁移进插件
 - 发布配置切换与产物检测全自动；发布动作首期半自动，探针收敛后开放全自动
 - 复用已验证插件源码片段，把确定性最高段直接抄（`MenuMain_Publish` 配置链路、插件骨架、邮箱通知）
 
 **Non-Goals:**
+
 - 不解析 bin 二进制内容做字节级比对（用三重增量证据替代）
 - 首期不做无 UI 的 batch mode 全自动发布（batchMode 行为未知）
 - 不改变 `tools/fgui` CLI 现有行为；不引入第三方运行时依赖（MCP SDK 仅 devDependency）
@@ -60,12 +63,12 @@ MCP server（`tools/fgui-mcp/`，标准 MCP SDK devDependency，**已实现**：
 
 - item 查找用 `FindItemByName`/`items` 遍历（有真实证据）；`GetItemByPath` 实机语义已收敛为 `"/DemoView"`（前导斜杠 + 无扩展名）。
 - 插入流程（与 fguiPlugin `EditorUtils.AddComponent` 语义对齐，并吸收探针"前台未激活"教训）：
-  1. `FindItemByName` → `item.GetURL()`
-  2. `doc = App.docView.OpenDocument(url, true)`
-  3. **强制激活**：`if (App.docView.activeDoc !== doc) App.docView.activeDoc = doc`（必要时 `Timers.CallLater` 等一帧）
-  4. 操作对象用 `App.activeDoc || doc`（与真实插件一致）
-  5. `op.UnselectAll()` → `op.InsertObject(url, pos?, index?)` → `op.SetModified(true)`
-  6. 数据验证：`content.children` 增量 / `Serialize()` XML 是否含 src
+    1. `FindItemByName` → `item.GetURL()`
+    2. `doc = App.docView.OpenDocument(url, true)`
+    3. **强制激活**：`if (App.docView.activeDoc !== doc) App.docView.activeDoc = doc`（必要时 `Timers.CallLater` 等一帧）
+    4. 操作对象用 `App.activeDoc || doc`（与真实插件一致）
+    5. `op.UnselectAll()` → `op.InsertObject(url, pos?, index?)` → `op.SetModified(true)`
+    6. 数据验证：`content.children` 增量 / `Serialize()` XML 是否含 src
 - **关键约束**：插入后必须校验 `App.activeDoc === 操作对象` 的引用相等性，否则插入落在非前台文档（探针 v1 实测陷阱）；可见性在插件侧无法自动断言，MCP 返回需带 activeDoc 状态与可见性提示。
 - 安全约束：探针在可丢弃文档上执行并延迟 `DiscardChanges` 恢复。
 
@@ -88,4 +91,4 @@ MCP server（`tools/fgui-mcp/`，标准 MCP SDK devDependency，**已实现**：
 3. 阶段 2：写工具——发布配置切换（复用 `MenuMain_Publish` 链路）+ 组件插入（v2 复测通过后，按决策 6 固化）。**已完成**（4 写工具 + 单测）。
 4. 阶段 3：半自动发布闭环（改源 → 配置切换 → 用户点击发布 → 邮箱检测 → validate）。**已完成**（发布信号 + 三重证据检测 + 单测）。
 5. 阶段 4（可选）：`Run()` 复测通过、HttpListener 增强通道就绪后开放全自动发布。**已完成**——`fgui_trigger_publish` 全自动发布工具实机验证通过（AutoBattle 232ms 无卡顿、端到端「配置切换 → 真实发布 → 检测」闭环全绿）；HTTP 增强通道因 `runInBackground` 已解决后台问题而必要性降低。
-回滚：新组件全部独立于 `tools/fgui` 与运行时，回滚即删除 `tools/fgui-mcp/` 与插件目录，现有确定性工作流零影响。
+   回滚：新组件全部独立于 `tools/fgui` 与运行时，回滚即删除 `tools/fgui-mcp/` 与插件目录，现有确定性工作流零影响。

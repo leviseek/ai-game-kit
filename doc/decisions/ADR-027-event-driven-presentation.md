@@ -56,6 +56,7 @@ Accepted
 ### 6. `move`/`teleport` 事件为一等公民（change 08 扩展）
 
 change 08 让 `move`/`teleport` 成为事件流一等公民：逻辑层在普攻/伤害技能前按 `attackRange` 判定并逐格前移（`resolveMovePath`），`move` 事件保序入流；技能可触发 `teleport` 换位（占用格失败不执行）。表现层按同一"事件投影 + 动画器"模式消费：
+
 - `move` → 从 `gridToXY(from)` 到 `gridToXY(to)` 插值位移；
 - `teleport` → 直接跳变；
 - `round-start`/开战 → 入场淡入到位；

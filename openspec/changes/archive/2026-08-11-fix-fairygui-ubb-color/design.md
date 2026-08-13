@@ -20,11 +20,13 @@ protected updateText(): void {
 ## Goals / Non-Goals
 
 **Goals:**
+
 - UBB 且含 `[color]` / `[size]` 标签的 GTextField 在 Cocos 普通 Label 上渲染出标签色与字号。
 - 无 UBB / 无对应标签的文本颜色与字号不变（回退 `this._color` / `this._fontSize`）。
 - 修复落在 fork 仓库源码，构建产物经既有 `build:fairygui` 链路同步。
 
 **Non-Goals:**
+
 - 不做"同一文本多段不同样式"（RichText 切换）——源码注释明确"不支持同一文本不同样式"，本项目飘字是整段单色，`lastColor` 单色语义等价；多段样式走 GRichTextField（见边界说明），留待未来需要时评估。
 - 不修 `[b]`/`[i]`/`[u]`/`[img]`/`[url]` 在 GTextField 下的表现（设计使然：Cocos Label 无富文本渲染，剥标签是正确行为；图片/链接/多段样式走 GRichTextField，`[url]` 链接不可点是既有缺口本次不修）。
 - 不改项目代码 / spec 契约 / import-map。
@@ -38,14 +40,10 @@ protected updateText(): void {
 ```ts
 if (this._ubbEnabled) {
     text2 = defaultParser.parse(text2, true);
-    if (defaultParser.lastColor)
-        this.assignFontColor(this._label, new Color().fromHEX(defaultParser.lastColor));
-    else
-        this.assignFontColor(this._label, this._color);
-    if (defaultParser.lastSize)
-        this._label.fontSize = parseInt(defaultParser.lastSize);
-    else
-        this._label.fontSize = this._fontSize;
+    if (defaultParser.lastColor) this.assignFontColor(this._label, new Color().fromHEX(defaultParser.lastColor));
+    else this.assignFontColor(this._label, this._color);
+    if (defaultParser.lastSize) this._label.fontSize = parseInt(defaultParser.lastSize);
+    else this._label.fontSize = this._fontSize;
 }
 ```
 
@@ -102,4 +100,3 @@ if (this._ubbEnabled) {
 
 - fork 仓库 `npm run build`（gulp）在 Windows 是否开箱可用？（可能需 `npm install`；失败则改用手工同步 dist 对应段，记录替代路径。）
 - lastSize 消费对多行文本 lineHeight 的视觉影响？（实现时冒烟确认；偏差明显则补 `_label.lineHeight` 同步。）
-

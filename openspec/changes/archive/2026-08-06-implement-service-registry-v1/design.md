@@ -36,8 +36,8 @@
 
 ```ts
 export interface ServiceToken<T> {
-  readonly description: string;
-  readonly __serviceTokenBrand: unique symbol;
+    readonly description: string;
+    readonly __serviceTokenBrand: unique symbol;
 }
 ```
 
@@ -53,10 +53,10 @@ export interface ServiceToken<T> {
 
 ```ts
 export interface ServiceRegistry {
-  register<T>(token: ServiceToken<T>, instance: T): void;
-  registerFactory<T>(token: ServiceToken<T>, factory: (resolve: <U>(token: ServiceToken<U>) => U) => T): void;
-  resolve<T>(token: ServiceToken<T>): T;
-  isRegistered<T>(token: ServiceToken<T>): boolean;
+    register<T>(token: ServiceToken<T>, instance: T): void;
+    registerFactory<T>(token: ServiceToken<T>, factory: (resolve: <U>(token: ServiceToken<U>) => U) => T): void;
+    resolve<T>(token: ServiceToken<T>): T;
+    isRegistered<T>(token: ServiceToken<T>): boolean;
 }
 ```
 

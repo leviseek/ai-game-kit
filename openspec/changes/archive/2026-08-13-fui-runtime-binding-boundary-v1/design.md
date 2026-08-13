@@ -1,6 +1,7 @@
 ## Context
 
 现状（见 proposal.md - Why 与 specs）：
+
 - `@FUIBind(packageName, componentName, fields)` 在类定义期自行拼接 `ui://${包}/${组件}` 裸字符串并登记 `FuiComponentRegistry`（globalThis 单例，ADR-032 C-14），Registry 的 `register/lookup` 以 string 为键。
 - `FuiViewHost.createFairyGuiBoundView()` 按「包+组件名」组合闭包：命中注册表则创建 GComponent + 注入字段，未命中回退 `createFairyGuiView`。
 - 页面运行期依赖经 `bind(store, callbacks)` 匿名回调传入示范页，非实例级、非 required、不可事务回滚。
@@ -10,6 +11,7 @@
 ## Goals / Non-Goals
 
 **Goals:**
+
 - 绑定链 URL 类型贯穿：`FuiComponentUrl` 模板字面量，`@FUIBind` 消费 `ui/generated` 常量，Registry/Host/错误全部复用同一 URL 值。
 - 实例级 required 运行时 binder：组件显式声明 `runtimeBinding`，required 缺 binder 创建即 fail-fast。
 - 事务式绑定作用域：binder 每获得句柄立即登记，失败时由 Host 逆序完整回滚。
@@ -17,13 +19,14 @@
 - 端口注入只到 Application facade；View 依赖仅 Store + facade。
 
 **Non-Goals:**
+
 - 不引入 EventBus、不重设计 Store、不做 `gen-constants` freshness 校验、不迁移 CloseDialog 之外的存量页（双轨共存延续 ADR-032 C-12）。
 
 ## Decisions
 
 ### D1: URL 契约贯穿绑定链（`FuiComponentUrl` 模板字面量）
 
-`export type FuiComponentUrl = \`ui://${string}/${string}\``；`FUIBind(url, fields, options)` 直接接收生成常量。Registry `register/lookup` 参数改为 `FuiComponentUrl`。`FuiViewHost` 内部只调用一次 internal `createFuiComponentUrl(packageName, resName)`，后续 Registry 查询、错误与 binder 复用该值。备选：保留三参数重载（违反总计划约束，不保留旧重载）；错误定位时临时拼接（散落类型断言，违背单一来源）。
+`export type FuiComponentUrl = \`ui://${string}/${string}\``；`FUIBind(url, fields, options)`直接接收生成常量。Registry`register/lookup`参数改为`FuiComponentUrl`。`FuiViewHost`内部只调用一次 internal`createFuiComponentUrl(packageName, resName)`，后续 Registry 查询、错误与 binder 复用该值。备选：保留三参数重载（违反总计划约束，不保留旧重载）；错误定位时临时拼接（散落类型断言，违背单一来源）。
 
 ### D2: 错误集中于 `core/fui/FuiErrors.ts`
 

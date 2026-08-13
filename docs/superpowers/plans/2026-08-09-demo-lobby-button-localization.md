@@ -26,11 +26,13 @@
 ### Task 1: Allocate Demo resource ids and generate button sprites
 
 **Files:**
+
 - Create: `ui/demo/assets/Demo/img/lobby_button_up.png`
 - Create: `ui/demo/assets/Demo/img/lobby_button_down.png`
 - Modify: `ui/demo/assets/Demo/package.xml` via the FGUI CLI registration performed by `fgui sprite`
 
 **Interfaces:**
+
 - Consumes: `ui/demo/palette.json` and the existing Demo package resource manifest.
 - Produces: Two registered Demo image resources and their actual PNG files, with ids allocated by `next-id` rather than invented manually.
 
@@ -77,10 +79,12 @@ Confirm both image names appear under `@/img/`, each has a unique CLI-assigned i
 ### Task 2: Create the local LobbyButton component
 
 **Files:**
+
 - Create: `ui/demo/assets/Demo/LobbyButton.xml`
 - Modify: `ui/demo/assets/Demo/package.xml` via `bun run fgui register-component`
 
 **Interfaces:**
+
 - Consumes: The two registered image ids and paths from Task 1.
 - Produces: A Demo component resource named `LobbyButton.xml`, registered and exported, with a local four-page Button skeleton.
 
@@ -131,9 +135,11 @@ Expected: no errors. Fix only resource ids, file paths, controller/gear pairing,
 ### Task 3: Replace LobbyView cross-package buttons
 
 **Files:**
+
 - Modify: `ui/demo/assets/Demo/LobbyView.xml`
 
 **Interfaces:**
+
 - Consumes: The registered local `LobbyButton.xml` resource id from Task 2.
 - Produces: A LobbyView with five local component references, preserved binding names/coordinates/sizes, one enabled card button, and four grayed placeholders.
 
@@ -177,6 +183,7 @@ Expected: no `pkg=`, `<graph>`, or `<transition>` matches; all five button names
 ### Task 4: Run strict package validation and review the diff
 
 **Files:**
+
 - Verify: `ui/demo/assets/Demo/LobbyView.xml`
 - Verify: `ui/demo/assets/Demo/LobbyButton.xml`
 - Verify: `ui/demo/assets/Demo/package.xml`
@@ -184,6 +191,7 @@ Expected: no `pkg=`, `<graph>`, or `<transition>` matches; all five button names
 - Verify: `ui/demo/assets/Demo/img/lobby_button_down.png`
 
 **Interfaces:**
+
 - Consumes: All outputs from Tasks 1–3.
 - Produces: A validated Demo package with no LobbyView cross-package reference.
 

@@ -30,19 +30,19 @@ bun run arch                              # 启动本地架构图谱工作台
 
 ## 门禁命令
 
-| 命令 | 内容 | 需要 Cocos |
-| --- | --- | --- |
-| `bun run typecheck` | 根 / Creator / FGUI / FGUI MCP / 架构工作台 TS 工程严格类型检查（含 Cocos 边界层，需本机 Creator 生成的 `temp/tsconfig.cocos.json`） | 是 |
-| `bun run typecheck:ci` | 引擎无关类型检查：`tsconfig.ci.json`（framework 除 cocos 适配层、game、samples）+ tools 工程 | 否 |
-| `bun run lint` | ESLint（typescript-eslint recommended，非 type-aware）全仓检查 | 否 |
-| `bun run test` | foundation、FGUI、FGUI MCP 与架构工作台测试 | 否 |
-| `bun run test:all` | 追加 `test:foundation:types`（framework 契约 + fairygui 接入类型检查） | 是 |
-| `bun run verify` | `typecheck` + `lint` + `test`，提交前完整门禁 | 是 |
-| `bun run fgui <command>` | FGUI 确定性工具链（资源清单/校验/短 id 等） | 否 |
-| `bun run ccc <command>` | Creator 命令行工具（构建/smoke/性能检查等） | 是 |
-| `bun run arch` | 启动本地架构图谱工作台（需已初始化 `.codegraph`） | 否 |
-| `bun run test:arch` | 架构分析、服务和前端纯函数测试 | 否 |
-| `bun run build:arch-web` | 编译架构工作台前端静态脚本 | 否 |
+| 命令                     | 内容                                                                                                                                 | 需要 Cocos |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ | ---------- |
+| `bun run typecheck`      | 根 / Creator / FGUI / FGUI MCP / 架构工作台 TS 工程严格类型检查（含 Cocos 边界层，需本机 Creator 生成的 `temp/tsconfig.cocos.json`） | 是         |
+| `bun run typecheck:ci`   | 引擎无关类型检查：`tsconfig.ci.json`（framework 除 cocos 适配层、game、samples）+ tools 工程                                         | 否         |
+| `bun run lint`           | ESLint（typescript-eslint recommended，非 type-aware）全仓检查                                                                       | 否         |
+| `bun run test`           | foundation、FGUI、FGUI MCP 与架构工作台测试                                                                                          | 否         |
+| `bun run test:all`       | 追加 `test:foundation:types`（framework 契约 + fairygui 接入类型检查）                                                               | 是         |
+| `bun run verify`         | `typecheck` + `lint` + `test`，提交前完整门禁                                                                                        | 是         |
+| `bun run fgui <command>` | FGUI 确定性工具链（资源清单/校验/短 id 等）                                                                                          | 否         |
+| `bun run ccc <command>`  | Creator 命令行工具（构建/smoke/性能检查等）                                                                                          | 是         |
+| `bun run arch`           | 启动本地架构图谱工作台（需已初始化 `.codegraph`）                                                                                    | 否         |
+| `bun run test:arch`      | 架构分析、服务和前端纯函数测试                                                                                                       | 否         |
+| `bun run build:arch-web` | 编译架构工作台前端静态脚本                                                                                                           | 否         |
 
 测试计数会随代码演进，以实际输出为准。
 
