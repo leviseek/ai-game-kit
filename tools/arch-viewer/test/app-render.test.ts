@@ -1,7 +1,8 @@
 import { describe, expect, test } from "bun:test";
 
-import { createWorkbenchRenderCoordinator } from "../web/app";
-import { dragCanvasTransform, wheelCanvasTransform } from "../web/render/svg";
+import { createInitialCanvasTransform, createWorkbenchRenderCoordinator } from "../web/app";
+import type { LayoutGraph } from "../web/layout/types";
+import { dragCanvasTransform, hierarchyBandBounds, nodeVisualClass, wheelCanvasTransform } from "../web/render/svg";
 
 describe("workbench render coordinator", () => {
     test("transform-only update does not run full canvas or inspector render", () => {
@@ -17,6 +18,15 @@ describe("workbench render coordinator", () => {
         coordinator.updateTransform();
 
         expect(calls).toEqual(["chrome", "canvas", "inspector", "transform"]);
+    });
+
+    test("initial hierarchy render fits a wide architecture overview", () => {
+        const layout: LayoutGraph = { width: 2800, height: 600, nodes: [], edges: [], lanes: [] };
+        const transform = createInitialCanvasTransform({ clientWidth: 700, clientHeight: 700 }, layout, "hierarchy");
+
+        expect(transform.scale).toBeLessThan(1);
+        expect(transform.x).toBeGreaterThanOrEqual(0);
+        expect(transform.y).toBeGreaterThanOrEqual(0);
     });
 });
 
@@ -35,5 +45,19 @@ describe("canvas transform math", () => {
 
         expect(first).toEqual({ x: 5, y: 2, scale: 1 });
         expect(second).toEqual({ x: 7, y: 6, scale: 1 });
+    });
+});
+
+describe("hierarchy renderer semantics", () => {
+    test("group cards and horizontal hierarchy bands have distinct visuals", () => {
+        expect(nodeVisualClass({ kind: "group" }, false)).toBe("node node-group");
+        expect(nodeVisualClass({ kind: "symbol" }, true)).toBe("node selected");
+        expect(hierarchyBandBounds({ id: "depth:1", label: "Layer 1", index: 1, x: 24, y: 160, orientation: "horizontal" }, 960)).toEqual({
+            x: 20,
+            y: 160,
+            width: 920,
+            height: 108,
+        });
+        expect(hierarchyBandBounds({ id: "lane:a", label: "A", index: 0, x: 48 }, 960)).toBeUndefined();
     });
 });

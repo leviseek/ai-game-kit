@@ -28,6 +28,7 @@ export type WorkbenchAction =
     | Readonly<{ type: "set-filters"; filters: Partial<WorkbenchFilters> }>
     | Readonly<{ type: "view-loading"; viewType: ViewType }>
     | Readonly<{ type: "view-loaded"; view: GraphView; snapshotVersion?: number }>
+    | Readonly<{ type: "group-loaded"; groupId: string; view: GraphView }>
     | Readonly<{ type: "snapshot-ready"; version: number; view: GraphView }>
     | Readonly<{ type: "analysis-error"; message: string }>;
 

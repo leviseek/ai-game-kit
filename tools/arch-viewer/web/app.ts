@@ -46,13 +46,14 @@ export async function startWorkbench(root: Document = document): Promise<Workben
     let state: WorkbenchState = createWorkbenchState(await client.view("hierarchy"));
     let transform: CanvasTransform = { x: 0, y: 0, scale: 1 };
     let lastLayout: LayoutGraph | undefined;
+    let autoFitNextRender = true;
     let inspectorTab: InspectorTab = "Source";
 
     const coordinator = createWorkbenchRenderCoordinator({
         renderChrome() {
             renderSidebar(root, state.viewType);
             renderStatus(elements.status, state);
-            renderBreadcrumbs(elements.breadcrumbs, state);
+            renderBreadcrumbs(elements.breadcrumbs, state, (id) => void loadGroup(id));
         },
         renderCanvas() {
             lastLayout = renderSvgCanvas(elements.canvas, {
@@ -66,6 +67,11 @@ export async function startWorkbench(root: Document = document): Promise<Workben
                     coordinator.updateTransform();
                 },
             });
+            if (autoFitNextRender && lastLayout !== undefined) {
+                transform = createInitialCanvasTransform(elements.canvas, lastLayout, state.viewType);
+                updateCanvasTransform(elements.canvas, transform);
+                autoFitNextRender = false;
+            }
         },
         renderInspector() {
             renderInspector(elements.inspector, {
@@ -110,6 +116,7 @@ export async function startWorkbench(root: Document = document): Promise<Workben
     async function loadView(viewType: ViewType): Promise<void> {
         dispatch({ type: "view-loading", viewType });
         try {
+            autoFitNextRender = true;
             dispatch({ type: "view-loaded", view: await client.view(viewType) });
         } catch (error) {
             dispatch({ type: "analysis-error", message: error instanceof Error ? error.message : String(error) });
@@ -119,13 +126,22 @@ export async function startWorkbench(root: Document = document): Promise<Workben
     async function loadGroup(id: string): Promise<void> {
         dispatch({ type: "view-loading", viewType: state.viewType });
         try {
-            dispatch({ type: "view-loaded", view: await client.group(id) });
+            autoFitNextRender = true;
+            dispatch({ type: "group-loaded", groupId: id, view: await client.group(id) });
         } catch (error) {
             dispatch({ type: "analysis-error", message: error instanceof Error ? error.message : String(error) });
         }
     }
 
     return { dispose: disconnect };
+}
+
+export function createInitialCanvasTransform(
+    container: Pick<HTMLElement, "clientWidth" | "clientHeight">,
+    layout: LayoutGraph,
+    viewType: ViewType,
+): CanvasTransform {
+    return viewType === "hierarchy" ? fitTransform(container, layout) : { x: 0, y: 0, scale: 1 };
 }
 
 function requiredElements(root: Document): Readonly<{
@@ -164,8 +180,19 @@ function renderStatus(container: HTMLElement, state: WorkbenchState): void {
     container.dataset.kind = state.status.kind;
 }
 
-function renderBreadcrumbs(container: HTMLElement, state: WorkbenchState): void {
-    container.replaceChildren(...(state.breadcrumbs.length === 0 ? [text("root")] : state.breadcrumbs.map(text)));
+function renderBreadcrumbs(container: HTMLElement, state: WorkbenchState, onNavigate: (id: string) => void): void {
+    if (state.breadcrumbs.length === 0) {
+        container.replaceChildren(text("root"));
+        return;
+    }
+    container.replaceChildren(...state.breadcrumbs.map((id, index) => {
+        if (index === state.breadcrumbs.length - 1) return text(id);
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = id;
+        button.addEventListener("click", () => onNavigate(id));
+        return button;
+    }));
 }
 
 function text(value: string): HTMLSpanElement {

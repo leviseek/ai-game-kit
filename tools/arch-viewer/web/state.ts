@@ -35,11 +35,40 @@ export function reduceWorkbench(state: WorkbenchState, action: WorkbenchAction):
                 viewType: action.view.type,
                 snapshotVersion: action.snapshotVersion ?? state.snapshotVersion,
             }, action.view);
+        case "group-loaded":
+            return withSelection({
+                ...state,
+                currentView: action.view,
+                viewType: action.view.type,
+                breadcrumbs: navigateBreadcrumbs(state.breadcrumbs, state.currentView.groups, action.groupId),
+                status: { kind: "ready" },
+            }, action.groupId);
         case "snapshot-ready":
             return reconcileSnapshot({ ...state, snapshotVersion: action.version }, action.view);
         case "analysis-error":
             return { ...state, status: { kind: "error", message: action.message } };
     }
+}
+
+function navigateBreadcrumbs(
+    breadcrumbs: readonly string[],
+    groups: GraphView["groups"],
+    groupId: string,
+): readonly string[] {
+    const existingIndex = breadcrumbs.indexOf(groupId);
+    if (existingIndex >= 0) return breadcrumbs.slice(0, existingIndex + 1);
+
+    const byId = new Map(groups.map((group) => [group.id, group]));
+    const ancestry: string[] = [];
+    let currentId: string | undefined = groupId;
+    while (currentId !== undefined) {
+        ancestry.unshift(currentId);
+        currentId = byId.get(currentId)?.parentId;
+    }
+    const anchorIndex = ancestry.findIndex((id) => breadcrumbs.includes(id));
+    if (anchorIndex < 0) return [...breadcrumbs, ...ancestry];
+    const breadcrumbIndex = breadcrumbs.indexOf(ancestry[anchorIndex]!);
+    return [...breadcrumbs.slice(0, breadcrumbIndex + 1), ...ancestry.slice(anchorIndex + 1)];
 }
 
 export function reconcileSnapshot(state: WorkbenchState, view: GraphView): WorkbenchState {

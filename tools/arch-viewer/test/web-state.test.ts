@@ -67,6 +67,34 @@ describe("workbench state", () => {
         expect(next.selectedNodeId).toBe("node:a");
         expect(next.status).toEqual({ kind: "error", message: "scanner failed" });
     });
+
+    test("group 下钻追加 breadcrumb，返回已有 group 时截断路径", () => {
+        const rootView = {
+            ...view("hierarchy", [], ["repository", "assets", "framework"]),
+            rootGroupId: "repository",
+        };
+        const root = createWorkbenchState(rootView);
+        const assets = reduceWorkbench(root, {
+            type: "group-loaded",
+            groupId: "assets",
+            view: view("hierarchy", [], ["assets", "framework"]),
+        });
+        const framework = reduceWorkbench(assets, {
+            type: "group-loaded",
+            groupId: "framework",
+            view: view("hierarchy", [], ["framework"]),
+        });
+        const back = reduceWorkbench(framework, {
+            type: "group-loaded",
+            groupId: "assets",
+            view: view("hierarchy", [], ["assets", "framework"]),
+        });
+
+        expect(assets.breadcrumbs).toEqual(["repository", "assets"]);
+        expect(framework.breadcrumbs).toEqual(["repository", "assets", "framework"]);
+        expect(back.breadcrumbs).toEqual(["repository", "assets"]);
+        expect(back.selectedNodeId).toBe("assets");
+    });
 });
 
 describe("ArchApiClient", () => {
