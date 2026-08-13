@@ -22,9 +22,7 @@ export interface CocosDeviceInfoOptions {
  * 引擎访问走惰性接缝（仅未注入时读 cc.sys，同 CocosStorageAdapter 模式），
  * 不进 framework 白名单，由 dev 层直接 import 使用（design D3）。
  */
-export function createCocosDeviceInfo(
-    options: CocosDeviceInfoOptions = {},
-): DeviceInfo {
+export function createCocosDeviceInfo(options: CocosDeviceInfoOptions = {}): DeviceInfo {
     const sys = options.sys ?? (cc.sys as unknown as CocosSysLike);
     const label = (value: unknown): string => {
         const text = String(value ?? "");

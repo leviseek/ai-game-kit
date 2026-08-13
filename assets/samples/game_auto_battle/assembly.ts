@@ -1,85 +1,22 @@
-import type {
-    GameFixture,
-    Module,
-    PlatformStorage,
-    UiNavigator,
-} from "../../framework";
-import {
-    createGameFixture,
-    createUiNavigator,
-    createViewModelRenderer,
-    type ViewModelNode,
-} from "../../framework";
-import type {
-    AutoBattleEvent,
-    AutoBattleHero,
-    AutoBattleLineup,
-    AutoBattleState,
-    AutoBattleUnit,
-} from "./models";
-import {
-    createAutoBattleClock,
-    createAutoBattleClockModule,
-    createIdleRewardClock,
-    createIdleRewardClockModule,
-    type AutoBattleClock,
-    type IdleRewardClock,
-} from "./logic/clock";
-import {
-    createAutoBattleConfig,
-    createAutoBattleConfigModule,
-    type AutoBattleConfigHandle,
-} from "./logic/config";
+import type { GameFixture, Module, PlatformStorage, UiNavigator } from "../../framework";
+import { createGameFixture, createUiNavigator, createViewModelRenderer, type ViewModelNode } from "../../framework";
+import type { AutoBattleEvent, AutoBattleHero, AutoBattleLineup, AutoBattleState, AutoBattleUnit } from "./models";
+import { createAutoBattleClock, createAutoBattleClockModule, createIdleRewardClock, createIdleRewardClockModule, type AutoBattleClock, type IdleRewardClock } from "./logic/clock";
+import { createAutoBattleConfig, createAutoBattleConfigModule, type AutoBattleConfigHandle } from "./logic/config";
 import { createAutoBattleSkillsModule } from "./logic/skills";
 import { createAutoBattleFormationModule } from "./logic/formation";
 import { createAutoBattleMoveModule } from "./logic/move";
 import { FORMATION_GRID_SIZE } from "./logic/grid";
-import {
-    createAutoBattleBattle,
-    createAutoBattleBattleModule,
-    type AutoBattleBattleHandle,
-    type AutoBattlePlacedUnit,
-} from "./logic/battle";
+import { createAutoBattleBattle, createAutoBattleBattleModule, type AutoBattleBattleHandle, type AutoBattlePlacedUnit } from "./logic/battle";
 import { editLineup } from "./logic/lineup";
-import {
-    createLineupStore,
-    type LineupStore,
-} from "./logic/LineupStore";
-import {
-    computeRate,
-    createAutoBattleIdleRewardsModule,
-    createIdleRewardsHandle,
-    type IdleRateSource,
-    type IdleRewardsHandle,
-} from "./logic/IdleRewards";
-import {
-    createIdleRewardsStore,
-    createIdleRewardsStoreModule,
-    type IdleRewardStore,
-} from "./logic/IdleRewardsStore";
-import type {
-    IdleOfflineSettlement,
-    IdleRewardState,
-} from "./models";
+import { createLineupStore, type LineupStore } from "./logic/LineupStore";
+import { computeRate, createAutoBattleIdleRewardsModule, createIdleRewardsHandle, type IdleRateSource, type IdleRewardsHandle } from "./logic/IdleRewards";
+import { createIdleRewardsStore, createIdleRewardsStoreModule, type IdleRewardStore } from "./logic/IdleRewardsStore";
+import type { IdleOfflineSettlement, IdleRewardState } from "./models";
 import { createAutoBattleUiModule } from "./view/ui";
-import {
-    buildAutoBattleBindings,
-    createAutoBattleViewModel,
-    formatAutoBattleEvent,
-    gridToXY,
-    type AutoBattleCommands,
-    type AutoBattleSpeed,
-    type AutoBattleViewModel,
-} from "./view/view";
-import {
-    createAutoBattleEffectsModule,
-    projectHitFeedbackEvents,
-    type HitFeedbackEffect,
-} from "./view/effects";
-import {
-    createEffectAnimator,
-    type AutoBattleEffectAnimator,
-} from "./view/EffectAnimator";
+import { buildAutoBattleBindings, createAutoBattleViewModel, formatAutoBattleEvent, gridToXY, type AutoBattleCommands, type AutoBattleSpeed, type AutoBattleViewModel } from "./view/view";
+import { createAutoBattleEffectsModule, projectHitFeedbackEvents, type HitFeedbackEffect } from "./view/effects";
+import { createEffectAnimator, type AutoBattleEffectAnimator } from "./view/EffectAnimator";
 import type { LineupEditorCommands } from "./view/lineup";
 
 /** 挡位循环次序：1x → 2x → 3x → 1x（与 presenter 共用同一循环语义）。 */
@@ -91,9 +28,27 @@ const DEFAULT_AUTO_BATTLE_CONFIG_CONTENT: Record<string, unknown> = {
         { id: "ally-tank", name: "坦克", position: "front", maxHp: 60, attack: 6, speed: 8, energyMax: 20, skill: { id: "ally-tank-skill", name: "重击", kind: "damage", value: 12, energyCost: 20 } },
         { id: "ally-mage", name: "法师", position: "mid", maxHp: 45, attack: 11, speed: 7, energyMax: 20, skill: { id: "ally-mage-skill", name: "火球", kind: "damage", value: 15, energyCost: 20 } },
         { id: "ally-priest", name: "牧师", position: "back", maxHp: 40, attack: 4, speed: 6, energyMax: 20, skill: { id: "ally-priest-skill", name: "治疗", kind: "heal", value: 10, energyCost: 20 } },
-        { id: "enemy-tank", name: "骷髅", position: "front", maxHp: 60, attack: 6, speed: 8, energyMax: 20, skill: { id: "enemy-tank-skill", name: "爪击", kind: "damage", value: 12, energyCost: 20 } },
+        {
+            id: "enemy-tank",
+            name: "骷髅",
+            position: "front",
+            maxHp: 60,
+            attack: 6,
+            speed: 8,
+            energyMax: 20,
+            skill: { id: "enemy-tank-skill", name: "爪击", kind: "damage", value: 12, energyCost: 20 },
+        },
         { id: "enemy-mage", name: "巫妖", position: "mid", maxHp: 45, attack: 9, speed: 7, energyMax: 20, skill: { id: "enemy-mage-skill", name: "暗影", kind: "damage", value: 15, energyCost: 20 } },
-        { id: "enemy-shaman", name: "萨满", position: "back", maxHp: 40, attack: 4, speed: 6, energyMax: 20, skill: { id: "enemy-shaman-skill", name: "妖术", kind: "damage", value: 8, energyCost: 20 } },
+        {
+            id: "enemy-shaman",
+            name: "萨满",
+            position: "back",
+            maxHp: 40,
+            attack: 4,
+            speed: 6,
+            energyMax: 20,
+            skill: { id: "enemy-shaman-skill", name: "妖术", kind: "damage", value: 8, energyCost: 20 },
+        },
     ],
     lineups: {
         ally: ["ally-tank", "ally-mage", "ally-priest"],
@@ -258,10 +213,7 @@ class MemoryStorage implements PlatformStorage {
 
 /** 压缩 heroId 序列 → 定长编队（空槽 null）；不足布阵区容量 FORMATION_GRID_SIZE 的部分留空。 */
 function toFullLineup(ids: readonly string[]): AutoBattleLineup {
-    const slots: (string | null)[] = Array.from(
-        { length: FORMATION_GRID_SIZE },
-        () => null,
-    );
+    const slots: (string | null)[] = Array.from({ length: FORMATION_GRID_SIZE }, () => null);
     ids.forEach((heroId, index) => {
         slots[index] = heroId;
     });
@@ -273,13 +225,9 @@ function toFullLineup(ids: readonly string[]): AutoBattleLineup {
  * 能力钩子暴露给测试驱动。可控时钟、配置、战斗、技能、阵列、UI 六类能力
  * 协作；技能/阵列为纯函数模块只登记装配关系。
  */
-export function createAutoBattleFixture(
-    options: AutoBattleFixtureOptions = {},
-): AutoBattleFixture {
+export function createAutoBattleFixture(options: AutoBattleFixtureOptions = {}): AutoBattleFixture {
     const clock = options.clock ?? createAutoBattleClock();
-    const config: AutoBattleConfigHandle = createAutoBattleConfig(
-        options.configContent ?? DEFAULT_AUTO_BATTLE_CONFIG_CONTENT,
-    );
+    const config: AutoBattleConfigHandle = createAutoBattleConfig(options.configContent ?? DEFAULT_AUTO_BATTLE_CONFIG_CONTENT);
     const navigator: UiNavigator = createUiNavigator();
 
     // 玩家编队：可变状态（定长槽位），初始 = 配置初始编队；经点击命令编辑并持久化
@@ -315,13 +263,7 @@ export function createAutoBattleFixture(
         // 格位（slot）输出，敌方压缩序映射到布阵区前段格。战斗实例化后持单位
         // 快照，后续编队改动只影响下一次重开
         lineups: () => ({
-            ally: lineup.slots.reduce<AutoBattlePlacedUnit[]>(
-                (placed, heroId, slot) =>
-                    heroId === null
-                        ? placed
-                        : placed.concat([{ slot, heroId }]),
-                [],
-            ),
+            ally: lineup.slots.reduce<AutoBattlePlacedUnit[]>((placed, heroId, slot) => (heroId === null ? placed : placed.concat([{ slot, heroId }])), []),
             enemy: config.lineups.enemy.map((heroId, slot) => ({ slot, heroId })),
         }),
         onEvent: (event) => {
@@ -343,10 +285,7 @@ export function createAutoBattleFixture(
         selectHero(heroId) {
             // 优先填入选中的布阵格（替换语义），否则填第一个空槽；满编（MAX_TEAM_SIZE）
             // 由 reducer 拒绝，空槽查找仍遍历全部布阵格
-            const target =
-                selectedSlot !== null && selectedSlot < FORMATION_GRID_SIZE
-                    ? selectedSlot
-                    : lineup.slots.findIndex((heroIdAt) => heroIdAt === null);
+            const target = selectedSlot !== null && selectedSlot < FORMATION_GRID_SIZE ? selectedSlot : lineup.slots.findIndex((heroIdAt) => heroIdAt === null);
             if (target === -1) {
                 return;
             }
@@ -468,21 +407,15 @@ export function createAutoBattleFixture(
                 // 按当前战斗状态派生 VM，事件日志经单位名解析后格式化；单位绑定
                 // 集随存活单位动态重建（静态标量 + 每单位一组动态绑定）
                 const state = battle.state;
-                const nameOf = (id: string): string =>
-                    state.units.find((unit) => unit.id === id)?.name ?? id;
-                const log = battle.events.map((event) =>
-                    formatAutoBattleEvent(event, nameOf),
-                );
+                const nameOf = (id: string): string => state.units.find((unit) => unit.id === id)?.name ?? id;
+                const log = battle.events.map((event) => formatAutoBattleEvent(event, nameOf));
                 const vm = createAutoBattleViewModel(state, log, speed);
-                viewModelRenderer.setBindings(
-                    buildAutoBattleBindings(autoBattleCommands, vm),
-                );
+                viewModelRenderer.setBindings(buildAutoBattleBindings(autoBattleCommands, vm));
                 viewModelRenderer.setViewModel(vm);
             },
         },
         effects: {
-            project: (events: readonly AutoBattleEvent[]) =>
-                projectHitFeedbackEvents(events, -1).effects,
+            project: (events: readonly AutoBattleEvent[]) => projectHitFeedbackEvents(events, -1).effects,
             animator: effectAnimator,
         },
         lineup: {
@@ -505,13 +438,9 @@ export function createAutoBattleFixture(
                 // 恢复前校验非空 heroId 均在英雄池内：损坏/手工构造存档含未知
                 // 英雄时拒绝恢复（保留当前编队），避免未知 id 进入编队页
                 const heroIds = new Set(config.heroes.map((hero) => hero.id));
-                const unknown = loaded.data.slots.find(
-                    (heroId) => heroId !== null && !heroIds.has(heroId),
-                );
+                const unknown = loaded.data.slots.find((heroId) => heroId !== null && !heroIds.has(heroId));
                 if (unknown !== undefined) {
-                    throw new Error(
-                        `auto-battle lineup: restored lineup references unknown hero "${unknown}"`,
-                    );
+                    throw new Error(`auto-battle lineup: restored lineup references unknown hero "${unknown}"`);
                 }
                 lineup = loaded.data;
                 // 迁移回写：旧版本存档经 load 逐级迁移后立即落盘当前版本，
@@ -544,11 +473,9 @@ export function createAutoBattleFixture(
                 idleRewardsHandle.restore(loaded.data);
                 // 迁移回写：旧版本存档经 load 逐级迁移后立即落盘当前版本，
                 // 避免每次重启重复执行迁移链
-                void idleRewardsStore.save(idleRewardsHandle.state).catch(
-                    (error: unknown) => {
-                        console.error(error);
-                    },
-                );
+                void idleRewardsStore.save(idleRewardsHandle.state).catch((error: unknown) => {
+                    console.error(error);
+                });
             },
             store: idleRewardsStore,
         },

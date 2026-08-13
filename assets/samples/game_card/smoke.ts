@@ -1,11 +1,5 @@
-import {
-    createCardFixture,
-    toViewModelNode,
-} from "./assembly";
-import {
-    createCardBattleBindings,
-    createCardBattleViewModel,
-} from "./view/view";
+import { createCardFixture, toViewModelNode } from "./assembly";
+import { createCardBattleBindings, createCardBattleViewModel } from "./view/view";
 import { createViewModelRenderer, type ViewModelNode } from "../../framework";
 
 /**
@@ -18,7 +12,11 @@ export interface CardBattleSmokeHost {
     loadPackage(bundle: string, path: string): Promise<{ readonly state: string }>;
     readonly pageAdapter:
         | {
-              createPage(route: string, layer: string, opts: { packageName: string; resName: string }): {
+              createPage(
+                  route: string,
+                  layer: string,
+                  opts: { packageName: string; resName: string },
+              ): {
                   disposed: boolean;
                   view: unknown;
                   error?: unknown;
@@ -45,11 +43,7 @@ export interface CardBattleSmokeOptions {
  * 记录型节点（样本层不 import fgui 适配器）。页面打开/关闭与 package 加载经
  * 注入的宿主接缝执行。
  */
-export async function runCardBattleSmoke(
-    host: CardBattleSmokeHost,
-    ensureSharedDependencies: () => Promise<void>,
-    options: CardBattleSmokeOptions = {},
-): Promise<void> {
+export async function runCardBattleSmoke(host: CardBattleSmokeHost, ensureSharedDependencies: () => Promise<void>, options: CardBattleSmokeOptions = {}): Promise<void> {
     const report = (step: string, ok: boolean, detail = "") => {
         console.log(`[card-battle] ${step}: ${ok ? "ok" : "FAIL"}${detail ? ` (${detail})` : ""}`);
     };
@@ -99,10 +93,7 @@ export async function runCardBattleSmoke(
     // 解析器，渲染落到真实 BattleView 节点（覆盖 XML↔viewModel 节点名对齐）；
     // 无接缝时回退夹具内存记录型节点（测试/无 fgui 环境）。
     const resolver = options.nodeResolver ?? host.nodeResolver;
-    const node: (name: string) => ViewModelNode | undefined =
-        resolver === undefined
-            ? (name: string): ViewModelNode => toViewModelNode(fixture.viewModel.node(name))
-            : resolver(page.view);
+    const node: (name: string) => ViewModelNode | undefined = resolver === undefined ? (name: string): ViewModelNode => toViewModelNode(fixture.viewModel.node(name)) : resolver(page.view);
 
     const renderer = createViewModelRenderer({
         node,
@@ -120,9 +111,7 @@ export async function runCardBattleSmoke(
     });
 
     const render = (): void => {
-        renderer.setViewModel(
-            createCardBattleViewModel(fixture.battle.state, 8),
-        );
+        renderer.setViewModel(createCardBattleViewModel(fixture.battle.state, 8));
     };
 
     // 完整对局：出牌 → 结束回合 → 敌攻 → 胜负 → 重开
@@ -131,30 +120,18 @@ export async function runCardBattleSmoke(
 
     fixture.battle.playCard(0); // 卡牌 0 伤害 2
     render();
-    report(
-        "play-card",
-        fixture.battle.state.enemyHp === 6,
-        `enemyHp=${fixture.battle.state.enemyHp}`,
-    );
+    report("play-card", fixture.battle.state.enemyHp === 6, `enemyHp=${fixture.battle.state.enemyHp}`);
 
     fixture.battle.endTurn(); // 进入敌方阶段
     fixture.clock.advance(600); // 敌攻一次（默认间隔 500ms）
     render();
-    report(
-        "enemy-attack",
-        fixture.battle.state.playerHp === 8,
-        `playerHp=${fixture.battle.state.playerHp}`,
-    );
+    report("enemy-attack", fixture.battle.state.playerHp === 8, `playerHp=${fixture.battle.state.playerHp}`);
 
     // 重开重置
     fixture.battle.restart();
     render();
     const restartState = fixture.battle.state;
-    report(
-        "restart",
-        restartState.phase === "player" && restartState.enemyHp === 8,
-        `phase=${restartState.phase} enemyHp=${restartState.enemyHp}`,
-    );
+    report("restart", restartState.phase === "player" && restartState.enemyHp === 8, `phase=${restartState.phase} enemyHp=${restartState.enemyHp}`);
 
     await fixture.dispose();
     renderer.dispose();

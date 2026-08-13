@@ -1,8 +1,5 @@
 import type { GameFixture } from "./GameFixture";
-import {
-    gameFixtureRegistry,
-    type GameFixtureRegistry,
-} from "./registry";
+import { gameFixtureRegistry, type GameFixtureRegistry } from "./registry";
 
 /**
  * 按品类夹具驱动一次完整生命周期冒烟：构造夹具并依次执行
@@ -11,14 +8,9 @@ import {
  * 未登记的品类报告 fixture-unknown 失败标记，不抛错；生命周期任一步失败
  * 报告该步失败标记并中止后续步骤，不中断序列其余部分。
  */
-export async function runFixtureSmoke(
-    fixtureId: string,
-    registry?: GameFixtureRegistry,
-): Promise<void> {
+export async function runFixtureSmoke(fixtureId: string, registry?: GameFixtureRegistry): Promise<void> {
     const report = (step: string, ok: boolean, detail = "") => {
-        console.log(
-            `[fixture-smoke] ${step}: ${ok ? "ok" : "FAIL"}${detail ? ` (${detail})` : ""}`,
-        );
+        console.log(`[fixture-smoke] ${step}: ${ok ? "ok" : "FAIL"}${detail ? ` (${detail})` : ""}`);
     };
 
     // registry 在调用时解析：samples 未加载时经 gameFixtureRegistry() 返回空表，
@@ -37,11 +29,7 @@ export async function runFixtureSmoke(
     try {
         fixture = factory();
     } catch (error) {
-        report(
-            "fixture-create",
-            false,
-            error instanceof Error ? error.message : String(error),
-        );
+        report("fixture-create", false, error instanceof Error ? error.message : String(error));
         return;
     }
 
@@ -68,11 +56,7 @@ export async function runFixtureSmoke(
             await run(fixture);
             report(step, true);
         } catch (error) {
-            report(
-                step,
-                false,
-                error instanceof Error ? error.message : String(error),
-            );
+            report(step, false, error instanceof Error ? error.message : String(error));
             return;
         }
     }

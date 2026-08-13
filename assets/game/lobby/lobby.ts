@@ -1,23 +1,9 @@
 import { lookupBundle } from "../../framework";
 import type { GameFixture } from "../fixture/GameFixture";
-import {
-    gameFixtureRegistry,
-    type GameFixtureRegistry,
-} from "../fixture/registry";
-import type {
-    GamePresenter,
-    GamePresenterFactory,
-    GameSessionNavigator,
-} from "./presenter";
-import {
-    gameTypeCatalog,
-    type GameEntryInfo,
-    type GameTypeInfo,
-} from "./catalog";
-import type {
-    EntryPageHandle,
-    GameLobbyHost,
-} from "./host";
+import { gameFixtureRegistry, type GameFixtureRegistry } from "../fixture/registry";
+import type { GamePresenter, GamePresenterFactory, GameSessionNavigator } from "./presenter";
+import { gameTypeCatalog, type GameEntryInfo, type GameTypeInfo } from "./catalog";
+import type { EntryPageHandle, GameLobbyHost } from "./host";
 
 // 类型经 host.ts 共享给 boot 与 game；fixture/lobby.ts 的薄转发依赖本文件
 // 继续 re-export 这两个类型（boot 仅 `import type`）。
@@ -75,10 +61,7 @@ export interface GameLobby {
  * 关闭页面自然触发会话清理；exit 与 closeEntryPage 均幂等，页面关闭回调
  * 与显式 exit 互不循环（exit 先清空 active，重入直接返回）。
  */
-export function createGameLobby(
-    host: GameLobbyHost,
-    options: GameLobbyOptions = {},
-): GameLobby {
+export function createGameLobby(host: GameLobbyHost, options: GameLobbyOptions = {}): GameLobby {
     const catalog = options.catalog ?? gameTypeCatalog;
 
     let active: GameSession | undefined;
@@ -107,12 +90,7 @@ export function createGameLobby(
      * 关闭触发的"退出会话"联动因 active 不再指向本会话而跳过）→ 宿主切换入口页
      * → 装配新呈现器 → 重建活动会话并登记新页退出联动。
      */
-    async function switchEntry(
-        session: GameSession,
-        entry: GameEntryInfo,
-        presenterFactory: GamePresenterFactory,
-        navigate: GameSessionNavigator,
-    ): Promise<void> {
+    async function switchEntry(session: GameSession, entry: GameEntryInfo, presenterFactory: GamePresenterFactory, navigate: GameSessionNavigator): Promise<void> {
         session.presenter?.dispose();
         active = undefined;
 
@@ -140,9 +118,7 @@ export function createGameLobby(
 
         async enter(id: string): Promise<GameSession> {
             if (active !== undefined) {
-                throw new Error(
-                    `game lobby: session "${active.id}" already active, reentry rejected`,
-                );
+                throw new Error(`game lobby: session "${active.id}" already active, reentry rejected`);
             }
 
             const info = findInfo(id);
@@ -188,10 +164,7 @@ export function createGameLobby(
 
             // 装配呈现器：按品类把夹具状态渲染到真实页面节点（引擎无关）
             const presenterFactory = presenters[id];
-            const presenter =
-                presenterFactory === undefined
-                    ? undefined
-                    : presenterFactory(fixture, page.node, navigate, page.list);
+            const presenter = presenterFactory === undefined ? undefined : presenterFactory(fixture, page.node, navigate, page.list);
 
             const session: GameSession = { id, fixture, page, presenter };
             active = session;

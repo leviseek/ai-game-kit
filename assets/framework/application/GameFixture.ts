@@ -52,10 +52,10 @@ const failingProbeModule: Module = {
 
 function createQuietLogger(): Logger {
     const logger: Logger = {
-        debug: () => { },
-        info: () => { },
-        warn: () => { },
-        error: () => { },
+        debug: () => {},
+        info: () => {},
+        warn: () => {},
+        error: () => {},
         child: () => logger,
     };
     return logger;
@@ -79,10 +79,7 @@ function createFixtureContext(logger: Logger): ApplicationContext {
  * Application 实例与独立探针状态机——不改变夹具自身 app 的当前状态。
  * 本接缝只证明组合可回滚；真实品类模块的失败注入由各品类自身测试承担。
  */
-async function runFailRollbackProbe(
-    modules: readonly Module[],
-    context: ApplicationContext,
-): Promise<void> {
+async function runFailRollbackProbe(modules: readonly Module[], context: ApplicationContext): Promise<void> {
     const probe = new Application([...modules, failingProbeModule], context);
     let rejected = false;
 
@@ -93,9 +90,7 @@ async function runFailRollbackProbe(
     }
 
     if (!rejected || probe.state !== "disposed") {
-        throw new Error(
-            "fixture failRollback: startup failure did not roll back to disposed",
-        );
+        throw new Error("fixture failRollback: startup failure did not roll back to disposed");
     }
 }
 

@@ -14,7 +14,7 @@ export interface ObjectPool<T> {
 }
 
 const NOOP_HANDLE: DisposeHandle = {
-    dispose: () => { },
+    dispose: () => {},
 };
 
 /**
@@ -23,12 +23,9 @@ const NOOP_HANDLE: DisposeHandle = {
  * 超出容量的获取会创建临时对象、经错误报告器上报溢出（overflow）以保证结果
  * 可观测，临时对象在归还时被丢弃。
  */
-export function createObjectPool<T>(
-    options: ObjectPoolOptions<T>,
-): ObjectPool<T> {
+export function createObjectPool<T>(options: ObjectPoolOptions<T>): ObjectPool<T> {
     const { capacity, factory, reset } = options;
-    const reportFailure =
-        options.onPoolError ?? ((error: unknown) => console.error(error));
+    const reportFailure = options.onPoolError ?? ((error: unknown) => console.error(error));
 
     const free: T[] = [];
     const borrowed = new Map<T, boolean>();
@@ -73,11 +70,7 @@ export function createObjectPool<T>(
 
         const overflow = create();
         borrowed.set(overflow, true);
-        report(
-            new Error(
-                `ObjectPool overflow beyond capacity ${capacity}: created a temporary object`,
-            ),
-        );
+        report(new Error(`ObjectPool overflow beyond capacity ${capacity}: created a temporary object`));
         return overflow;
     }
 
@@ -89,11 +82,7 @@ export function createObjectPool<T>(
         const isTemporary = borrowed.get(item);
 
         if (isTemporary === undefined) {
-            report(
-                new Error(
-                    "ObjectPool rejected release of an object it did not lend (unknown or double return)",
-                ),
-            );
+            report(new Error("ObjectPool rejected release of an object it did not lend (unknown or double return)"));
             return;
         }
 

@@ -35,9 +35,7 @@ function serializeKey(key: ResourceKey): string {
  * 同时满足"已就绪资源引用全部归零"与"没有进行中的加载"时才允许卸载并触发
  * 卸载执行器；仍被其他作用域引用或仍在加载的 Bundle 不会提前卸载。
  */
-export function createResourceScopeRegistry(
-    options: ResourceScopeRegistryOptions,
-): ResourceScopeRegistry {
+export function createResourceScopeRegistry(options: ResourceScopeRegistryOptions): ResourceScopeRegistry {
     const counts = new Map<string, CountedResource>();
     const bundleKeys = new Map<string, Set<string>>();
     const pendingCounts = new Map<string, number>();
@@ -121,10 +119,7 @@ export function createResourceScopeRegistry(
     }
 
     function createScope(): ResourceScope {
-        const held = new Map<
-            string,
-            { handle: ResourceHandle; counted: boolean; pending: boolean }
-        >();
+        const held = new Map<string, { handle: ResourceHandle; counted: boolean; pending: boolean }>();
         let released = false;
 
         function settle(keyId: string, settled: ResourceHandle): void {

@@ -1,7 +1,4 @@
-import type {
-    ApplicationVisibility,
-    ApplicationVisibilityState,
-} from "../../contracts/platform/Platform";
+import type { ApplicationVisibility, ApplicationVisibilityState } from "../../contracts/platform/Platform";
 
 export interface SaveCoordinatorOptions {
     /** 可见性源：暂停（background）/退出与恢复（foreground）经它触发保存。 */
@@ -33,9 +30,7 @@ const DEFAULT_TRIGGER_STATES = ["background"] as const;
  * 并保证保存串行执行、窗口内多次触发合并到最近一次有效状态，避免并发交错
  * 覆盖或丢失最后一次有效状态（7.6 保存收敛策略）。
  */
-export function createSaveCoordinator(
-    options: SaveCoordinatorOptions,
-): SaveCoordinator {
+export function createSaveCoordinator(options: SaveCoordinatorOptions): SaveCoordinator {
     const triggerStates = options.triggerStates ?? DEFAULT_TRIGGER_STATES;
     // 缺省记录错误诊断，避免保存失败静默吞掉（同 ScopedEventChannel 缺省模式）
     const onError = options.onError ?? ((error: unknown) => console.error(error));

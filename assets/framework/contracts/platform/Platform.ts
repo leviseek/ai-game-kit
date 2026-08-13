@@ -4,9 +4,7 @@ export type ApplicationVisibilityState = "foreground" | "background";
 export interface ApplicationVisibility {
     readonly state: ApplicationVisibilityState;
     setVisibility(state: ApplicationVisibilityState): void;
-    onVisibilityChange(
-        listener: (state: ApplicationVisibilityState) => void,
-    ): () => void;
+    onVisibilityChange(listener: (state: ApplicationVisibilityState) => void): () => void;
 }
 
 // 最小异步键值存储；存档 DTO/迁移属后续能力，不使用本接口承载。

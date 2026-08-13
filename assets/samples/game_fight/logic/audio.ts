@@ -14,7 +14,7 @@ export interface FightAudioHandle {
 
 /** 缺省降级音频后端：不可用，所有操作均为 no-op，夹具缺省不触达真实音频。 */
 function createUnavailableBackend(): AudioBackend {
-    const noop = (): void => { };
+    const noop = (): void => {};
     return {
         available: false,
         play: noop,

@@ -32,9 +32,7 @@ export function createAutoBattleClock(initialTime = 0): AutoBattleClock {
         },
         setTimeScale: (nextRate: number) => {
             if (!isValidRate(nextRate)) {
-                throw new Error(
-                    "AutoBattleClock timeScale must be finite and greater than zero",
-                );
+                throw new Error("AutoBattleClock timeScale must be finite and greater than zero");
             }
             rate = nextRate;
         },
@@ -79,9 +77,7 @@ export interface IdleRewardClock extends TimeSource {
     advance(milliseconds: number): void;
 }
 
-export function createIdleRewardClock(
-    nowSource: () => number = () => Date.now(),
-): IdleRewardClock {
+export function createIdleRewardClock(nowSource: () => number = () => Date.now()): IdleRewardClock {
     let offset = 0;
 
     return {

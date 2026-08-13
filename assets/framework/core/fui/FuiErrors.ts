@@ -17,10 +17,7 @@ export class FuiComponentRegistrationError extends FrameworkError {
 
 /** 视图运行时绑定注册失败：required 组件缺少对应 binder（见 fui-view-binding spec）。 */
 export class FuiViewBindingRegistrationError extends FrameworkError {
-    constructor(
-        url: FuiComponentUrl,
-        message = `runtime binding missing for ${url}`,
-    ) {
+    constructor(url: FuiComponentUrl, message = `runtime binding missing for ${url}`) {
         super(message, { component: url });
         this.name = "FuiViewBindingRegistrationError";
     }

@@ -1,14 +1,6 @@
-import type {
-    LogContext,
-    LogRecord,
-} from "../../contracts/logging/Logger";
+import type { LogContext, LogRecord } from "../../contracts/logging/Logger";
 
-const SENSITIVE_KEY_PATTERNS = [
-    /token$/i,
-    /secret$/i,
-    /password$/i,
-    /api[._-]?key$/i,
-];
+const SENSITIVE_KEY_PATTERNS = [/token$/i, /secret$/i, /password$/i, /api[._-]?key$/i];
 
 const REDACTED = "[REDACTED]";
 const CIRCULAR = "[Circular]";
@@ -41,25 +33,18 @@ function redactValue(value: unknown, seen: Set<object>): unknown {
 
     seen.add(value);
 
-    const result = Array.isArray(value)
-        ? value.map((item) => redactValue(item, seen))
-        : redactContext(value as LogContext, seen);
+    const result = Array.isArray(value) ? value.map((item) => redactValue(item, seen)) : redactContext(value as LogContext, seen);
 
     seen.delete(value);
 
     return result;
 }
 
-export function redactContext(
-    context: LogContext,
-    seen = new Set<object>(),
-): LogContext {
+export function redactContext(context: LogContext, seen = new Set<object>()): LogContext {
     const result: Record<string, unknown> = {};
 
     for (const key of Object.keys(context)) {
-        result[key] = isSensitiveKey(key)
-            ? REDACTED
-            : redactValue(context[key], seen);
+        result[key] = isSensitiveKey(key) ? REDACTED : redactValue(context[key], seen);
     }
 
     return result;

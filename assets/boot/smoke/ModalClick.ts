@@ -45,10 +45,14 @@ export async function runModalClickSmoke(host: UiHost): Promise<void> {
     }
     // 冒烟一次性下层视图：直接挂 normal 层容器，不进 adapter pages 登记
     // （无 route 管理需求），随容器在 AppRoot 销毁时一并释放
-    const under = createClickableFairyGuiView(() => {
-        underHits += 1;
-        console.log(`[modal-click] under-hit (${underHits})`);
-    }, width, height);
+    const under = createClickableFairyGuiView(
+        () => {
+            underHits += 1;
+            console.log(`[modal-click] under-hit (${underHits})`);
+        },
+        width,
+        height,
+    );
     container.addChild(under);
     report("under-mounted", true);
 
@@ -74,9 +78,11 @@ export async function runModalClickSmoke(host: UiHost): Promise<void> {
             // 点击是否命中下层页面：与 fgui InputProcessor 相同坐标转换
             // （screenToWorld + rootSize 高度翻转）后命中测试，等价"点击不穿透"
             hitIsUnder: () => {
-                const grNode = (host.root as unknown as {
-                    node?: Node;
-                }).node;
+                const grNode = (
+                    host.root as unknown as {
+                        node?: Node;
+                    }
+                ).node;
                 const rootG = host.root as unknown as {
                     height?: number;
                     hitTest?: (ax: number, ay: number, forTouch?: boolean) => unknown;
@@ -99,23 +105,19 @@ export async function runModalClickSmoke(host: UiHost): Promise<void> {
             // 应用内触摸注入：向 GRoot.node 派发 cc 触摸流（TOUCH_START + TOUCH_END），
             // 经 fgui InputProcessor 真实命中/遮罩拦截逻辑处理。返回是否注入成功。
             tap: () => {
-                const grNode = (host.root as unknown as {
-                    node?: Node;
-                }).node;
+                const grNode = (
+                    host.root as unknown as {
+                        node?: Node;
+                    }
+                ).node;
                 if (grNode === undefined) {
                     return false;
                 }
                 const c = center();
                 const touch = new Touch(c.x, c.y);
                 const all = [touch];
-                grNode.emit(
-                    Node.EventType.TOUCH_START,
-                    new EventTouch([touch], false, Node.EventType.TOUCH_START, all),
-                );
-                grNode.emit(
-                    Node.EventType.TOUCH_END,
-                    new EventTouch([touch], false, Node.EventType.TOUCH_END, all),
-                );
+                grNode.emit(Node.EventType.TOUCH_START, new EventTouch([touch], false, Node.EventType.TOUCH_START, all));
+                grNode.emit(Node.EventType.TOUCH_END, new EventTouch([touch], false, Node.EventType.TOUCH_END, all));
                 return true;
             },
         };

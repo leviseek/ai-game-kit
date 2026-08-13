@@ -1,25 +1,6 @@
-import type {
-    GameFixture,
-    IResourceProvider,
-    InputSample,
-    InputSource,
-    Module,
-    PlatformStorage,
-    SceneFlow,
-    UiNavigator,
-} from "../../framework";
-import {
-    createGameFixture,
-    createInputMapper,
-    createResourceProvider,
-    createSceneFlow,
-    createUiNavigator,
-} from "../../framework";
-import {
-    createRpgClockModule,
-    createRpgSimClock,
-    type RpgSimClock,
-} from "./logic/clock";
+import type { GameFixture, IResourceProvider, InputSample, InputSource, Module, PlatformStorage, SceneFlow, UiNavigator } from "../../framework";
+import { createGameFixture, createInputMapper, createResourceProvider, createSceneFlow, createUiNavigator } from "../../framework";
+import { createRpgClockModule, createRpgSimClock, type RpgSimClock } from "./logic/clock";
 import type { RpgAction } from "./models";
 import { createRpgInputSource, createRpgInputModule } from "./logic/input";
 import { createRpgResourceModule } from "./logic/resource";
@@ -69,10 +50,7 @@ export interface RpgFixture extends GameFixture {
     readonly storage: {
         readonly currentVersion: number;
         save(namespace: string, key: string, data: unknown): Promise<void>;
-        load(
-            namespace: string,
-            key: string,
-        ): Promise<{ version: number; data: unknown } | null>;
+        load(namespace: string, key: string): Promise<{ version: number; data: unknown } | null>;
     };
 }
 
@@ -96,7 +74,7 @@ class MemoryStorage implements PlatformStorage {
 function createDefaultProvider(): IResourceProvider {
     return createResourceProvider({
         loader: async (key) => key,
-        unloadBundle: () => { },
+        unloadBundle: () => {},
     });
 }
 
@@ -112,9 +90,7 @@ function createRecordingActivateScene(activated: string[]): (id: string) => Prom
  * 接缝，并把各能力钩子暴露给测试驱动。组合逻辑留在游戏层夹具内，
  * AppRoot 只做薄转发（design decision 3/4）。
  */
-export function createRpgFixture(
-    options: RpgFixtureOptions = {},
-): RpgFixture {
+export function createRpgFixture(options: RpgFixtureOptions = {}): RpgFixture {
     const provider = options.provider ?? createDefaultProvider();
     const storage = options.storage ?? new MemoryStorage();
     const activated: string[] = [];
@@ -203,8 +179,7 @@ export function createRpgFixture(
             get currentVersion() {
                 return save.currentVersion;
             },
-            save: (namespace: string, key: string, data: unknown) =>
-                save.save(namespace, key, data),
+            save: (namespace: string, key: string, data: unknown) => save.save(namespace, key, data),
             load: (namespace: string, key: string) => save.load(namespace, key),
         },
         dispose: async () => {

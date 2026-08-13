@@ -7,11 +7,7 @@
 export type CardTurnPhase = "player" | "enemy" | "over";
 
 /** 卡牌输入 action：类型化 gameplay action，action 标识由游戏层定义。 */
-export type CardAction =
-    | "play-card-0"
-    | "play-card-1"
-    | "play-card-2"
-    | "end-turn";
+export type CardAction = "play-card-0" | "play-card-1" | "play-card-2" | "end-turn";
 
 /** 卡牌数值配置：成本与伤害由配置表驱动。 */
 export interface CardConfig {

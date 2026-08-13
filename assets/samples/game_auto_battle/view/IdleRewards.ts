@@ -25,10 +25,7 @@ export interface IdleRewardsCommands {
  * 挂机页 VM 派生：离线预览直接委托控制器 previewOffline（与 settleOffline 用
  * 同一速率与墙钟，保证"预览 = 实际入账"，不推进 lastSeenAt）。领取由命令执行。
  */
-export function createIdleRewardsViewModel(
-    state: IdleRewardState,
-    preview: () => { readonly minutes: number; readonly earned: number },
-): IdleRewardsViewModel {
+export function createIdleRewardsViewModel(state: IdleRewardState, preview: () => { readonly minutes: number; readonly earned: number }): IdleRewardsViewModel {
     const p = preview();
     return {
         offlineMinutes: p.minutes,
@@ -43,9 +40,7 @@ export function createIdleRewardsViewModel(
  * IdleRewardsView 的约定：`txt_offline_minutes` / `txt_claimable` /
  * `txt_total_rewards` / `btn_claim` / `btn_back`）。
  */
-export function createIdleRewardsBindings(
-    commands: IdleRewardsCommands,
-): readonly Binding<IdleRewardsViewModel>[] {
+export function createIdleRewardsBindings(commands: IdleRewardsCommands): readonly Binding<IdleRewardsViewModel>[] {
     return [
         {
             kind: "text",

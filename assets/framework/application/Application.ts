@@ -1,7 +1,4 @@
-import type {
-    ApplicationContext,
-    ApplicationState,
-} from "../contracts/application/ApplicationContext";
+import type { ApplicationContext, ApplicationState } from "../contracts/application/ApplicationContext";
 import type { Module } from "../contracts/module/Module";
 import { ApplicationStateError } from "./ApplicationStateError";
 import { ModuleGraph } from "./ModuleGraph";
@@ -68,8 +65,12 @@ export class Application {
         this.inFlightStart = operation;
 
         operation.then(
-            () => { if (this.inFlightStart === operation) this.inFlightStart = null; },
-            () => { if (this.inFlightStart === operation) this.inFlightStart = null; },
+            () => {
+                if (this.inFlightStart === operation) this.inFlightStart = null;
+            },
+            () => {
+                if (this.inFlightStart === operation) this.inFlightStart = null;
+            },
         );
 
         return operation;
@@ -119,8 +120,16 @@ export class Application {
 
             const cleanupErrors: unknown[] = [];
 
-            try { await this.runner?.stop(); } catch (e) { cleanupErrors.push(e); }
-            try { await this.runner?.dispose(); } catch (e) { cleanupErrors.push(e); }
+            try {
+                await this.runner?.stop();
+            } catch (e) {
+                cleanupErrors.push(e);
+            }
+            try {
+                await this.runner?.dispose();
+            } catch (e) {
+                cleanupErrors.push(e);
+            }
 
             this.setState("disposed");
 
@@ -133,8 +142,12 @@ export class Application {
         this.inFlightDispose = operation;
 
         operation.then(
-            () => { if (this.inFlightDispose === operation) this.inFlightDispose = null; },
-            () => { if (this.inFlightDispose === operation) this.inFlightDispose = null; },
+            () => {
+                if (this.inFlightDispose === operation) this.inFlightDispose = null;
+            },
+            () => {
+                if (this.inFlightDispose === operation) this.inFlightDispose = null;
+            },
         );
 
         return operation;
@@ -147,24 +160,25 @@ export class Application {
     private async rollback(runner: ModuleRunner | undefined): Promise<void> {
         const cleanupErrors: unknown[] = [];
 
-        try { await runner?.stop(); } catch (e) { cleanupErrors.push(e); }
-        try { await runner?.dispose(); } catch (e) { cleanupErrors.push(e); }
+        try {
+            await runner?.stop();
+        } catch (e) {
+            cleanupErrors.push(e);
+        }
+        try {
+            await runner?.dispose();
+        } catch (e) {
+            cleanupErrors.push(e);
+        }
 
         if (cleanupErrors.length > 0) {
             this.reportCleanupErrors("start rollback", cleanupErrors);
         }
     }
 
-    private reportCleanupErrors(
-        phase: string,
-        errors: readonly unknown[],
-    ): void {
+    private reportCleanupErrors(phase: string, errors: readonly unknown[]): void {
         for (const error of errors) {
-            this.context.logger.error(
-                "Module cleanup failed",
-                { phase, errorCount: errors.length },
-                error instanceof Error ? error : undefined,
-            );
+            this.context.logger.error("Module cleanup failed", { phase, errorCount: errors.length }, error instanceof Error ? error : undefined);
         }
     }
 

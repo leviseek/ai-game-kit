@@ -1,9 +1,5 @@
 import * as cc from "cc";
-import type {
-    InputEvent,
-    InputSource,
-    InputSourceId,
-} from "../../../contracts/input/Input";
+import type { InputEvent, InputSource, InputSourceId } from "../../../contracts/input/Input";
 
 // 结构化的引擎接缝：只依赖本适配器用到的能力，便于测试注入 mock
 export interface CocosInputEventTypes {
@@ -66,33 +62,29 @@ export interface CocosGamepadLike {
 }
 
 // 手柄控件读取表：sourceId 尾段名称 -> 从接缝取出的控件；缺失控件跳过
-const GAMEPAD_BUTTONS: ReadonlyArray<
-    readonly [string, (gamepad: CocosGamepadLike) => CocosGamepadButtonLike | undefined]
-> = [
-        ["south", (g) => g.buttonSouth],
-        ["north", (g) => g.buttonNorth],
-        ["east", (g) => g.buttonEast],
-        ["west", (g) => g.buttonWest],
-        ["l1", (g) => g.buttonL1],
-        ["l2", (g) => g.buttonL2],
-        ["r1", (g) => g.buttonR1],
-        ["r2", (g) => g.buttonR2],
-        ["start", (g) => g.buttonStart],
-        ["options", (g) => g.buttonOptions],
-        ["dpadUp", (g) => g.dpad?.up],
-        ["dpadDown", (g) => g.dpad?.down],
-        ["dpadLeft", (g) => g.dpad?.left],
-        ["dpadRight", (g) => g.dpad?.right],
-    ];
+const GAMEPAD_BUTTONS: ReadonlyArray<readonly [string, (gamepad: CocosGamepadLike) => CocosGamepadButtonLike | undefined]> = [
+    ["south", (g) => g.buttonSouth],
+    ["north", (g) => g.buttonNorth],
+    ["east", (g) => g.buttonEast],
+    ["west", (g) => g.buttonWest],
+    ["l1", (g) => g.buttonL1],
+    ["l2", (g) => g.buttonL2],
+    ["r1", (g) => g.buttonR1],
+    ["r2", (g) => g.buttonR2],
+    ["start", (g) => g.buttonStart],
+    ["options", (g) => g.buttonOptions],
+    ["dpadUp", (g) => g.dpad?.up],
+    ["dpadDown", (g) => g.dpad?.down],
+    ["dpadLeft", (g) => g.dpad?.left],
+    ["dpadRight", (g) => g.dpad?.right],
+];
 
-const GAMEPAD_AXES: ReadonlyArray<
-    readonly [string, (gamepad: CocosGamepadLike) => CocosGamepadButtonLike | undefined]
-> = [
-        ["leftStickX", (g) => g.leftStick?.xAxis],
-        ["leftStickY", (g) => g.leftStick?.yAxis],
-        ["rightStickX", (g) => g.rightStick?.xAxis],
-        ["rightStickY", (g) => g.rightStick?.yAxis],
-    ];
+const GAMEPAD_AXES: ReadonlyArray<readonly [string, (gamepad: CocosGamepadLike) => CocosGamepadButtonLike | undefined]> = [
+    ["leftStickX", (g) => g.leftStick?.xAxis],
+    ["leftStickY", (g) => g.leftStick?.yAxis],
+    ["rightStickX", (g) => g.rightStick?.xAxis],
+    ["rightStickY", (g) => g.rightStick?.yAxis],
+];
 
 // 摇杆轴零漂阈值：低于该值视为中立（不派发按下），避免静止抖动产生采样
 const AXIS_DEADZONE = 0.05;
@@ -122,18 +114,14 @@ export interface CocosInputAdapter extends InputSource {
  * `key:<keyCode>`、`gamepad:<deviceId>:<控件名>`（控件名见 GAMEPAD_BUTTONS/AXES）。
  * 引擎 API 走可注入接缝；手柄缺失或未连接时降级为无输入而非报错。
  */
-export function createCocosInputAdapter(
-    options: CocosInputAdapterOptions = {},
-): CocosInputAdapter {
+export function createCocosInputAdapter(options: CocosInputAdapterOptions = {}): CocosInputAdapter {
     const input = options.input ?? (cc.input as unknown as CocosInputLike);
 
     let listener: ((event: InputEvent) => void) | undefined;
     let bound = false;
     // 注册用的 handler 引用：首次订阅时解析并缓存，退订复用同一引用，
     // 引擎按 callback 引用匹配退订，每次新建会导致 off 失效
-    let resolvedHandlers:
-        | ReadonlyArray<readonly [string, (event: unknown) => void]>
-        | undefined;
+    let resolvedHandlers: ReadonlyArray<readonly [string, (event: unknown) => void]> | undefined;
     // 手柄控件上次派发的状态：仅在状态变化时派发，避免轮询帧重复产生采样
     const lastState = new Map<string, { pressed: boolean; value: number }>();
     // 统一的订阅目标：引擎 on/off 需传同一 target 才能正确退订
@@ -187,12 +175,7 @@ export function createCocosInputAdapter(
         emit({ sourceId: `key:${keyCode}`, pressed });
     }
 
-    function syncControl(
-        gamepad: CocosGamepadLike,
-        name: string,
-        control: CocosGamepadButtonLike,
-        analog: boolean,
-    ): void {
+    function syncControl(gamepad: CocosGamepadLike, name: string, control: CocosGamepadButtonLike, analog: boolean): void {
         const rawValue = control.getValue();
         const value = analog && Math.abs(rawValue) < AXIS_DEADZONE ? 0 : rawValue;
         const pressed = analog ? value !== 0 : value > 0;
@@ -247,7 +230,7 @@ export function createCocosInputAdapter(
         subscribe(callback) {
             if (bound) {
                 // 重复订阅返回空退订，避免引擎监听重复注册
-                return () => { };
+                return () => {};
             }
             listener = callback;
             bound = true;

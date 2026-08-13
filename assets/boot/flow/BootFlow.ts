@@ -1,8 +1,5 @@
 import type { Logger, SceneFlow, SceneResources } from "../../framework";
-import {
-    createStateMachine,
-    type StateTransitionTable,
-} from "../../framework";
+import { createStateMachine, type StateTransitionTable } from "../../framework";
 import type { SmokeAction } from "./SmokeRouter";
 import { BUNDLES, SCENES } from "../constants";
 
@@ -17,14 +14,7 @@ export const BOOTSTRAP_SCENE: Readonly<Record<string, SceneResources>> = Object.
     game: Object.freeze({ bundle: BUNDLES.game, paths: [SCENES.game] }),
 });
 
-export type BootFlowState =
-    | "logo"
-    | "hotupdate"
-    | "preload"
-    | "dispatch"
-    | "active"
-    | "failed"
-    | "disposed";
+export type BootFlowState = "logo" | "hotupdate" | "preload" | "dispatch" | "active" | "failed" | "disposed";
 
 /** BootFlow 消费的 UI 根宿主能力：默认流程在 game 激活后 init，冒烟路径在 startup 立即 init。 */
 export interface BootFlowUiHost {
@@ -100,11 +90,7 @@ export function createBootFlow(deps: BootFlowDeps): BootFlow {
         initial: "logo",
         transitions,
         onTransitionError: (error) => {
-            logger.error(
-                "[boot] flow state transition error",
-                undefined,
-                error instanceof Error ? error : undefined,
-            );
+            logger.error("[boot] flow state transition error", undefined, error instanceof Error ? error : undefined);
         },
     });
 
@@ -159,11 +145,7 @@ export function createBootFlow(deps: BootFlowDeps): BootFlow {
         }
         const result = await sceneFlow.switchTo(SCENES.game, game);
         if (result.ok !== true) {
-            logger.error(
-                "[boot] switch to game scene failed",
-                undefined,
-                result.error instanceof Error ? result.error : undefined,
-            );
+            logger.error("[boot] switch to game scene failed", undefined, result.error instanceof Error ? result.error : undefined);
             fsm.send("fail");
             return;
         }

@@ -5,10 +5,7 @@ import { createFairyGuiViewHandle } from "../../framework/adapters/cocos/ui/Fair
 import { createFairyGuiListViewHandle } from "../../framework/adapters/cocos/ui/FairyGuiListHandle";
 import { createDynamicComponentViewHandle } from "../../framework/adapters/cocos/ui/DynamicComponentViewHandle";
 import type { GameEntryInfo } from "../../game/lobby/catalog";
-import type {
-    EntryPageHandle,
-    GameLobbyHost,
-} from "../../game/lobby/host";
+import type { EntryPageHandle, GameLobbyHost } from "../../game/lobby/host";
 import { BUNDLES, PACKAGE_PATHS, SENTINELS } from "../constants";
 import type { UiHost } from "./UiHost";
 
@@ -48,14 +45,9 @@ export class GameLobbyHostImpl implements GameLobbyHost {
      * 退出品类会话不受影响。重复调用幂等（加载协调器按 key 缓存终态）。
      */
     async ensureSharedUiDependencies(): Promise<void> {
-        const handle = await this.host.loadPackage(
-            BUNDLES.ui,
-            PACKAGE_PATHS.common,
-        );
+        const handle = await this.host.loadPackage(BUNDLES.ui, PACKAGE_PATHS.common);
         if (handle.state !== "ready") {
-            throw new Error(
-                `lobby: shared ui dependency load failed for "${PACKAGE_PATHS.common}" (${handle.state})`,
-            );
+            throw new Error(`lobby: shared ui dependency load failed for "${PACKAGE_PATHS.common}" (${handle.state})`);
         }
     }
 
@@ -86,9 +78,7 @@ export class GameLobbyHostImpl implements GameLobbyHost {
         const loaded = await pkgHandle.done;
         if (loaded.state !== "ready") {
             scope.release();
-            throw new Error(
-                `lobby host: package load failed for "${pkgPath}" (${loaded.state})`,
-            );
+            throw new Error(`lobby host: package load failed for "${pkgPath}" (${loaded.state})`);
         }
 
         const page = adapter.createPage(entry.route, "normal", {
@@ -123,20 +113,11 @@ export class GameLobbyHostImpl implements GameLobbyHost {
                       }
                   )?.unitNodeMappings?.[entry.mappingKey ?? ""]
                 : undefined;
-        const node =
-            resolver === "dynamic" && unitMapping !== undefined
-                ? createDynamicComponentViewHandle(
-                      page.view as never,
-                      unitMapping as never,
-                  )
-                : createFairyGuiViewHandle(page.view as never);
+        const node = resolver === "dynamic" && unitMapping !== undefined ? createDynamicComponentViewHandle(page.view as never, unitMapping as never) : createFairyGuiViewHandle(page.view as never);
 
         // 列表解析器：presenter 经 page.list 驱动候选渲染（对齐战场页动态单位
         // 映射装配路径）
-        const list =
-            resolver === "list"
-                ? createFairyGuiListViewHandle(page.view as never)
-                : undefined;
+        const list = resolver === "list" ? createFairyGuiListViewHandle(page.view as never) : undefined;
 
         const handle: EntryPageHandle = {
             node,
@@ -224,9 +205,7 @@ export class GameLobbyHostImpl implements GameLobbyHost {
         const pkgPath = `${entry.packageName}/${entry.packageName}`;
         const handle = await this.host.loadPackage(BUNDLES.ui, pkgPath);
         if (handle.state !== "ready") {
-            throw new Error(
-                `lobby host: global page package load failed for "${pkgPath}" (${handle.state})`,
-            );
+            throw new Error(`lobby host: global page package load failed for "${pkgPath}" (${handle.state})`);
         }
 
         const page = adapter.createPage(entry.route, "normal", {
@@ -234,9 +213,7 @@ export class GameLobbyHostImpl implements GameLobbyHost {
             resName: entry.resName,
         });
         if (page.disposed || page.view === undefined) {
-            throw new Error(
-                `lobby host: create global page failed for "${entry.resName}"`,
-            );
+            throw new Error(`lobby host: create global page failed for "${entry.resName}"`);
         }
         adapter.mount(page);
 
@@ -253,15 +230,10 @@ export class GameLobbyHostImpl implements GameLobbyHost {
      * 终态）。
      */
     async loadBundle(bundle: string): Promise<void> {
-        const handle = this.resourceProvider.load(
-            bundle,
-            this.bundleSentinel(bundle),
-        );
+        const handle = this.resourceProvider.load(bundle, this.bundleSentinel(bundle));
         const loaded = await handle.done;
         if (loaded.state !== "ready") {
-            throw new Error(
-                `lobby host: bundle load failed for "${bundle}" (${loaded.state})`,
-            );
+            throw new Error(`lobby host: bundle load failed for "${bundle}" (${loaded.state})`);
         }
     }
 

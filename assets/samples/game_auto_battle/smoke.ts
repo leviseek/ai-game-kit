@@ -1,13 +1,5 @@
-import {
-    createAutoBattleFixture,
-    toViewModelNode,
-} from "./assembly";
-import {
-    buildAutoBattleBindings,
-    createAutoBattleViewModel,
-    formatAutoBattleEvent,
-    type AutoBattleViewModel,
-} from "./view/view";
+import { createAutoBattleFixture, toViewModelNode } from "./assembly";
+import { buildAutoBattleBindings, createAutoBattleViewModel, formatAutoBattleEvent, type AutoBattleViewModel } from "./view/view";
 import { SPEED_BUTTON_NODE } from "./view/UiNodes";
 import { createViewModelRenderer, type ViewModelNode } from "../../framework";
 
@@ -86,15 +78,9 @@ function scaleConfigContent(scale: number): Record<string, unknown> {
  * 视图节点解析器优先取 nodeResolver（boot 注入的真实 fgui 路径）；无接缝时
  * 回退夹具内存记录型节点（样本层不 import fgui 适配器）。
  */
-export async function runAutoBattleSmoke(
-    host: AutoBattleSmokeHost,
-    ensureSharedDependencies: () => Promise<void>,
-    options: AutoBattleSmokeOptions = {},
-): Promise<void> {
+export async function runAutoBattleSmoke(host: AutoBattleSmokeHost, ensureSharedDependencies: () => Promise<void>, options: AutoBattleSmokeOptions = {}): Promise<void> {
     const report = (step: string, ok: boolean, detail = "") => {
-        console.log(
-            `[auto-battle] ${step}: ${ok ? "ok" : "FAIL"}${detail ? ` (${detail})` : ""}`,
-        );
+        console.log(`[auto-battle] ${step}: ${ok ? "ok" : "FAIL"}${detail ? ` (${detail})` : ""}`);
     };
 
     // 1. UI 根与页面适配器初始化
@@ -112,11 +98,7 @@ export async function runAutoBattleSmoke(
         packageLoaded = handle.state === "ready";
         report("package-load", packageLoaded, String(handle.state));
     } catch (error) {
-        report(
-            "package-load",
-            false,
-            error instanceof Error ? error.message : String(error),
-        );
+        report("package-load", false, error instanceof Error ? error.message : String(error));
         return;
     }
     const adapter = host.pageAdapter;
@@ -139,19 +121,11 @@ export async function runAutoBattleSmoke(
 
     // 4. 驱动游戏层完整对局：渲染器写视图节点，命令绑定接入重开
     //    规模配置按选项注入：缺省 3v3，注入 6v6 验证规模上限渲染与动态实例化
-    const fixture = createAutoBattleFixture(
-        options.scale !== undefined && options.scale !== 3
-            ? { configContent: scaleConfigContent(options.scale) }
-            : {},
-    );
+    const fixture = createAutoBattleFixture(options.scale !== undefined && options.scale !== 3 ? { configContent: scaleConfigContent(options.scale) } : {});
     await fixture.start();
 
     const resolver = options.nodeResolver ?? host.nodeResolver;
-    const node: (name: string) => ViewModelNode | undefined =
-        resolver === undefined
-            ? (name: string): ViewModelNode =>
-                  toViewModelNode(fixture.viewModel.node(name))
-            : resolver(page.view);
+    const node: (name: string) => ViewModelNode | undefined = resolver === undefined ? (name: string): ViewModelNode => toViewModelNode(fixture.viewModel.node(name)) : resolver(page.view);
 
     const renderer = createViewModelRenderer<AutoBattleViewModel>({
         node,
@@ -161,11 +135,8 @@ export async function runAutoBattleSmoke(
 
     const render = (): void => {
         const state = fixture.battle.state;
-        const nameOf = (id: string): string =>
-            state.units.find((unit) => unit.id === id)?.name ?? id;
-        const log = fixture.battle.events.map((event) =>
-            formatAutoBattleEvent(event, nameOf),
-        );
+        const nameOf = (id: string): string => state.units.find((unit) => unit.id === id)?.name ?? id;
+        const log = fixture.battle.events.map((event) => formatAutoBattleEvent(event, nameOf));
         const vm = createAutoBattleViewModel(state, log, fixture.getSpeed());
         renderer.setBindings(
             buildAutoBattleBindings(
@@ -186,15 +157,10 @@ export async function runAutoBattleSmoke(
     // 命中反馈特效投影断言：完整对局产生攻击/技能事件时，投影器应产出飘字/
     // 闪白特效意图（特效为演示层，不影响终局结果与事件序列）。动画器节点驱动
     // 由运行时 presenter 的节拍循环负责，冒烟只验证投影语义。
-    const effects = (): readonly { kind: string }[] =>
-        fixture.effects.project(fixture.battle.events);
+    const effects = (): readonly { kind: string }[] => fixture.effects.project(fixture.battle.events);
 
     render();
-    report(
-        "render-initial",
-        true,
-        `round=${fixture.battle.state.round} units=${fixture.battle.state.units.length}`,
-    );
+    report("render-initial", true, `round=${fixture.battle.state.round} units=${fixture.battle.state.units.length}`);
 
     // 完整对局：手动 tick 驱动到终局（确定性），护栏防止配置失衡死循环
     let guard = 0;
@@ -204,17 +170,11 @@ export async function runAutoBattleSmoke(
         render();
     }
     const endState = fixture.battle.state;
-    report(
-        "battle-end",
-        endState.phase === "over",
-        `round=${endState.round} result=${endState.result ?? "none"}`,
-    );
+    report("battle-end", endState.phase === "over", `round=${endState.round} result=${endState.result ?? "none"}`);
 
     // 命中反馈投影断言：对局产生过攻击/技能事件 → 投影器产出了飘字/闪白意图
     const projected = effects();
-    const hasDamageFloat = projected.some(
-        (effect) => effect.kind === "damage-float" || effect.kind === "heal-float",
-    );
+    const hasDamageFloat = projected.some((effect) => effect.kind === "damage-float" || effect.kind === "heal-float");
     const hasFlash = projected.some((effect) => effect.kind === "hit-flash");
     report(
         "hit-feedback",
@@ -229,24 +189,13 @@ export async function runAutoBattleSmoke(
     fixture.cycleSpeed();
     fixture.viewModel.render();
     const speedNode = fixture.viewModel.node(SPEED_BUTTON_NODE).text;
-    report(
-        "speed-cycle",
-        fixture.getSpeed() === 2 && speedNode === "x2",
-        `speed=${fixture.getSpeed()} title=${speedNode ?? "none"}`,
-    );
+    report("speed-cycle", fixture.getSpeed() === 2 && speedNode === "x2", `speed=${fixture.getSpeed()} title=${speedNode ?? "none"}`);
 
     // 重开重置
     fixture.battle.restart();
     render();
     const restartState = fixture.battle.state;
-    report(
-        "restart",
-        restartState.round === 1 &&
-            restartState.units.every(
-                (unit) => unit.hp === unit.maxHp && unit.energy === 0,
-            ),
-        `round=${restartState.round}`,
-    );
+    report("restart", restartState.round === 1 && restartState.units.every((unit) => unit.hp === unit.maxHp && unit.energy === 0), `round=${restartState.round}`);
 
     // 切换挡位后重开驱动到终局：结果与首次终局一致（挡位不改变战斗结果）
     let rerunGuard = 0;
@@ -255,11 +204,7 @@ export async function runAutoBattleSmoke(
         rerunGuard += 1;
     }
     const rerunState = fixture.battle.state;
-    report(
-        "speed-result-unchanged",
-        rerunState.phase === "over" && rerunState.result === firstResult,
-        `speed=${fixture.getSpeed()} result=${rerunState.result ?? "none"}`,
-    );
+    report("speed-result-unchanged", rerunState.phase === "over" && rerunState.result === firstResult, `speed=${fixture.getSpeed()} result=${rerunState.result ?? "none"}`);
 
     await fixture.dispose();
     renderer.dispose();

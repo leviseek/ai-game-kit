@@ -6,12 +6,7 @@ import type { GameSessionNavigator } from "../../../game/lobby/presenter";
 import type { GameFixture } from "../../../game/fixture/GameFixture";
 import { AUTO_BATTLE_BATTLE_ENTRY } from "../../../game/lobby/catalog";
 import type { AutoBattleFixture } from "../assembly";
-import {
-    createLineupEditorBindings,
-    createLineupEditorViewModel,
-    type LineupCandidateView,
-    type LineupEditorViewModel,
-} from "./lineup";
+import { createLineupEditorBindings, createLineupEditorViewModel, type LineupCandidateView, type LineupEditorViewModel } from "./lineup";
 import { createAutoBattlePresenter } from "./presenter";
 import { createIdleRewardsPresenter } from "./IdleRewardsPresenter";
 import { AUTO_BATTLE_IDLE_REWARDS_ENTRY } from "../../../game/lobby/catalog";
@@ -34,9 +29,7 @@ export function createLineupEditorPresenter(
 
     // 候选英雄 GList 句柄：编队页候选区为虚拟列表，presenter 在 render 时
     // setItems 驱动；节点不存在（内存测试/非真实页面）时退化，候选不渲染
-    const candidateList = list?.("candidate_list") as
-        | FairyGuiListHandle<LineupCandidateView>
-        | undefined;
+    const candidateList = list?.("candidate_list") as FairyGuiListHandle<LineupCandidateView> | undefined;
     if (candidateList !== undefined) {
         candidateList.setItemRenderer((view) => {
             view.field("txt_candidate_name")?.setText(view.item.heroName);
@@ -67,19 +60,13 @@ export function createLineupEditorPresenter(
                 // 开战由当前编队实例化；随后切到战场页并装配战场呈现器
                 autoBattle.lineup.startBattle();
                 if (session !== undefined) {
-                    void session.openEntry(
-                        AUTO_BATTLE_BATTLE_ENTRY,
-                        createAutoBattlePresenter,
-                    );
+                    void session.openEntry(AUTO_BATTLE_BATTLE_ENTRY, createAutoBattlePresenter);
                 }
             },
             openIdleRewards: () => {
                 // 打开挂机收益页：会话内切页并装配挂机呈现器
                 if (session !== undefined) {
-                    void session.openEntry(
-                        AUTO_BATTLE_IDLE_REWARDS_ENTRY,
-                        createIdleRewardsPresenter,
-                    );
+                    void session.openEntry(AUTO_BATTLE_IDLE_REWARDS_ENTRY, createIdleRewardsPresenter);
                 }
             },
         }),
@@ -87,15 +74,9 @@ export function createLineupEditorPresenter(
 
     function render(): void {
         const enemyIds = new Set(autoBattle.config.enemy.map((unit) => unit.id));
-        const candidates = autoBattle.config.heroes.filter(
-            (hero) => !enemyIds.has(hero.id),
-        );
+        const candidates = autoBattle.config.heroes.filter((hero) => !enemyIds.has(hero.id));
         // VM 派生候选数据（含 deployed 上阵态）供列表句柄消费，避免重复派生
-        const vm = createLineupEditorViewModel(
-            candidates,
-            autoBattle.lineup.value,
-            autoBattle.lineup.selectedSlot,
-        );
+        const vm = createLineupEditorViewModel(candidates, autoBattle.lineup.value, autoBattle.lineup.selectedSlot);
         renderer.setViewModel(vm);
         if (candidateList !== undefined) {
             candidateList.setItems(vm.candidates);

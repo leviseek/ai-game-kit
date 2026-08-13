@@ -68,10 +68,7 @@ function unwrap(raw: string): string {
     }
 
     const envelope = parsed as Partial<Envelope>;
-    if (
-        typeof envelope.value !== "string" ||
-        typeof envelope.check !== "string"
-    ) {
+    if (typeof envelope.value !== "string" || typeof envelope.check !== "string") {
         throw new SaveCorruptionError("unexpected envelope shape");
     }
 
@@ -82,18 +79,13 @@ function unwrap(raw: string): string {
     return envelope.value;
 }
 
-export function createCocosStorageAdapter(
-    options: CocosStorageAdapterOptions = {},
-): CocosStorageAdapter {
+export function createCocosStorageAdapter(options: CocosStorageAdapterOptions = {}): CocosStorageAdapter {
     // 惰性取引擎后端：仅在未注入时读取，避免构造即访问 cc.sys（同 CocosInputAdapter）。
-    const backend =
-        options.localStorage ?? (cc.sys as { localStorage: LocalStorageLike }).localStorage;
+    const backend = options.localStorage ?? (cc.sys as { localStorage: LocalStorageLike }).localStorage;
 
     // 平台无键值后端时构造即报错，避免首次调用才抛难以诊断的 TypeError
     if (backend === undefined || backend === null) {
-        throw new Error(
-            "Cocos storage adapter requires a localStorage backend; inject one via options.localStorage",
-        );
+        throw new Error("Cocos storage adapter requires a localStorage backend; inject one via options.localStorage");
     }
 
     async function set(key: string, value: string): Promise<void> {

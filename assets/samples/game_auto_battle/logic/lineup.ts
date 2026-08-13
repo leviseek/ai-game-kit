@@ -3,9 +3,7 @@ import { FORMATION_GRID_SIZE } from "./grid";
 import type { AutoBattleLineup } from "../models";
 
 /** 编队编辑动作：填充/替换指定槽，或卸下指定槽。 */
-export type LineupAction =
-    | { readonly type: "fill"; readonly slot: number; readonly heroId: string }
-    | { readonly type: "remove"; readonly slot: number };
+export type LineupAction = { readonly type: "fill"; readonly slot: number; readonly heroId: string } | { readonly type: "remove"; readonly slot: number };
 
 /**
  * 编队 reducer：纯函数状态变换，返回新的 AutoBattleLineup（不可变，输入不被
@@ -16,10 +14,7 @@ export type LineupAction =
  * slot 语义 = 定长编队槽位（含空槽），与开战实例化时的压缩 index（只含已上阵
  * 序）解耦（见 design.md D1 衔接说明）。
  */
-export function editLineup(
-    lineup: AutoBattleLineup,
-    action: LineupAction,
-): AutoBattleLineup {
+export function editLineup(lineup: AutoBattleLineup, action: LineupAction): AutoBattleLineup {
     const slot = action.slot;
     if (slot < 0 || slot >= FORMATION_GRID_SIZE) {
         return lineup;
@@ -45,10 +40,7 @@ export function editLineup(
     }
     // 上阵上限：目标槽为空且当前非空数已达上限，拒绝新增上阵
     if (next[slot] === null) {
-        const occupiedCount = next.reduce<number>(
-            (count, heroId) => (heroId === null ? count : count + 1),
-            0,
-        );
+        const occupiedCount = next.reduce<number>((count, heroId) => (heroId === null ? count : count + 1), 0);
         if (occupiedCount >= MAX_TEAM_SIZE) {
             return lineup;
         }

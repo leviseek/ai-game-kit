@@ -1,9 +1,6 @@
 import type { Module } from "../../../framework";
 import type { IdleClock } from "./clock";
-import type {
-    IdleOfflineSettlement,
-    IdleProgressState,
-} from "../models";
+import type { IdleOfflineSettlement, IdleProgressState } from "../models";
 
 /** 在线收益 tick 间隔：墙钟推进一个间隔后由调度器结算一次在线收益。 */
 export const ONLINE_TICK_MS = 1000;

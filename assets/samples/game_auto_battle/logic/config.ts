@@ -1,17 +1,6 @@
 import type { Module } from "../../../framework";
-import {
-    configArray,
-    configNumber,
-    configObject,
-    createConfigTable,
-    type ConfigTable,
-} from "../../../framework";
-import type {
-    AutoBattleHero,
-    AutoBattleSide,
-    AutoBattleSkill,
-    AutoBattleUnit,
-} from "../models";
+import { configArray, configNumber, configObject, createConfigTable, type ConfigTable } from "../../../framework";
+import type { AutoBattleHero, AutoBattleSide, AutoBattleSkill, AutoBattleUnit } from "../models";
 
 /**
  * 每队单位数量上限：战斗规模可配置为 1..MAX_TEAM_SIZE（首版 1v1..6v6）。
@@ -56,9 +45,7 @@ function isSkillConfig(value: unknown): value is AutoBattleSkill {
         typeof record.energyCost === "number" &&
         Number.isFinite(record.energyCost) &&
         record.energyCost > 0 &&
-        (record.teleportTo === undefined ||
-            (typeof record.teleportTo === "string" &&
-                /^\d+:\d+$/.test(record.teleportTo)))
+        (record.teleportTo === undefined || (typeof record.teleportTo === "string" && /^\d+:\d+$/.test(record.teleportTo)))
     );
 }
 
@@ -75,9 +62,7 @@ function isHeroConfig(value: unknown): value is AutoBattleHero {
         record.id.length > 0 &&
         typeof record.name === "string" &&
         record.name.length > 0 &&
-        (record.position === "front" ||
-            record.position === "mid" ||
-            record.position === "back") &&
+        (record.position === "front" || record.position === "mid" || record.position === "back") &&
         typeof record.maxHp === "number" &&
         Number.isFinite(record.maxHp) &&
         record.maxHp > 0 &&
@@ -87,10 +72,7 @@ function isHeroConfig(value: unknown): value is AutoBattleHero {
         typeof record.speed === "number" &&
         Number.isFinite(record.speed) &&
         record.speed >= 0 &&
-        (record.attackRange === undefined ||
-            (typeof record.attackRange === "number" &&
-                Number.isFinite(record.attackRange) &&
-                record.attackRange >= 0)) &&
+        (record.attackRange === undefined || (typeof record.attackRange === "number" && Number.isFinite(record.attackRange) && record.attackRange >= 0)) &&
         typeof record.energyMax === "number" &&
         Number.isFinite(record.energyMax) &&
         record.energyMax > 0 &&
@@ -105,26 +87,18 @@ function readHeroAttackRange(record: { readonly attackRange?: number }): number 
 }
 
 /** 读取一队单位清单：逐项校验，非法条目抛错并给出序号定位。 */
-function readTeam(
-    table: ConfigTable,
-    key: string,
-    side: AutoBattleSide,
-): readonly AutoBattleUnit[] {
+function readTeam(table: ConfigTable, key: string, side: AutoBattleSide): readonly AutoBattleUnit[] {
     const raw = table.read(key, configArray, []);
     if (raw.length === 0) {
         throw new Error(`auto-battle config: team "${key}" must not be empty`);
     }
     // 逻辑槽位 0..N-1：每队至多 MAX_TEAM_SIZE 单位，超规模配置拒绝开战
     if (raw.length > MAX_TEAM_SIZE) {
-        throw new Error(
-            `auto-battle config: team "${key}" must have at most ${MAX_TEAM_SIZE} units`,
-        );
+        throw new Error(`auto-battle config: team "${key}" must have at most ${MAX_TEAM_SIZE} units`);
     }
     return raw.map((entry, index) => {
         if (!isHeroConfig(entry)) {
-            throw new Error(
-                `auto-battle config: team "${key}" entry at index ${index} has an invalid shape`,
-            );
+            throw new Error(`auto-battle config: team "${key}" entry at index ${index} has an invalid shape`);
         }
         return {
             ...entry,
@@ -151,9 +125,7 @@ function readHeroes(table: ConfigTable): readonly AutoBattleHero[] {
     const raw = table.read("heroes", configArray, []);
     const heroes = raw.map((entry, index) => {
         if (!isHeroConfig(entry)) {
-            throw new Error(
-                `auto-battle config: heroes entry at index ${index} has an invalid shape`,
-            );
+            throw new Error(`auto-battle config: heroes entry at index ${index} has an invalid shape`);
         }
         return { ...entry, attackRange: readHeroAttackRange(entry) };
     });
@@ -177,29 +149,21 @@ function readLineup(
         throw new Error(`auto-battle config: lineups.${key} must not be empty`);
     }
     if (raw.length > MAX_TEAM_SIZE) {
-        throw new Error(
-            `auto-battle config: lineups.${key} must have at most ${MAX_TEAM_SIZE} heroes`,
-        );
+        throw new Error(`auto-battle config: lineups.${key} must have at most ${MAX_TEAM_SIZE} heroes`);
     }
     const ids: string[] = [];
     const seen = new Set<string>();
     const units = raw.map((entry, index) => {
         if (typeof entry !== "string" || entry.length === 0) {
-            throw new Error(
-                `auto-battle config: lineups.${key} entry at index ${index} must be a hero id`,
-            );
+            throw new Error(`auto-battle config: lineups.${key} entry at index ${index} must be a hero id`);
         }
         if (seen.has(entry)) {
-            throw new Error(
-                `auto-battle config: lineups.${key} repeats hero id "${entry}"`,
-            );
+            throw new Error(`auto-battle config: lineups.${key} repeats hero id "${entry}"`);
         }
         seen.add(entry);
         const heroDef = heroById.get(entry);
         if (heroDef === undefined) {
-            throw new Error(
-                `auto-battle config: lineups.${key} references unknown hero "${entry}"`,
-            );
+            throw new Error(`auto-battle config: lineups.${key} references unknown hero "${entry}"`);
         }
         ids.push(entry);
         return { ...heroDef, side, index };
@@ -224,9 +188,7 @@ function readEnergyGain(table: ConfigTable, key: string, fallback: number): numb
  * configNumber 读取（缺省键走传入的缺省内容）。配置内容由组合根注入；本模块
  * 只负责解析，不承载业务数值的默认值来源之外逻辑。
  */
-export function createAutoBattleConfig(
-    content: Record<string, unknown>,
-): AutoBattleConfigHandle {
+export function createAutoBattleConfig(content: Record<string, unknown>): AutoBattleConfigHandle {
     const table: ConfigTable = createConfigTable(content);
 
     const energyGainAttacker = readEnergyGain(table, "energyGainAttacker", 10);
@@ -236,9 +198,7 @@ export function createAutoBattleConfig(
     if (Object.prototype.hasOwnProperty.call(content, "heroes")) {
         const heroes = readHeroes(table);
         const heroById = new Map(heroes.map((hero) => [hero.id, hero]));
-        const lineupsTable: ConfigTable = createConfigTable(
-            table.read("lineups", configObject, {}),
-        );
+        const lineupsTable: ConfigTable = createConfigTable(table.read("lineups", configObject, {}));
         const ally = readLineup(lineupsTable, "ally", "ally", heroById);
         const enemy = readLineup(lineupsTable, "enemy", "enemy", heroById);
         return {
@@ -286,9 +246,7 @@ export function createAutoBattleConfig(
  * 配置模块：组合根创建配置句柄并注入；模块只登记引用，配置表为不可变数据，
  * 生命周期无副作用，不在此释放共享配置。
  */
-export function createAutoBattleConfigModule(
-    config: AutoBattleConfigHandle,
-): Module {
+export function createAutoBattleConfigModule(config: AutoBattleConfigHandle): Module {
     return {
         id: "auto_battle.config",
         dependencies: [],

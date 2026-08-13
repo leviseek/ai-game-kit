@@ -1,11 +1,6 @@
 import type { Module, UiNavigator } from "../../../framework";
 import type { TycoonEconomicState, TycoonProductionState } from "../models";
-import {
-    TYCOON_FACTORY_ROUTE,
-    TYCOON_HUB_ROUTE,
-    type TycoonFactoryViewModel,
-    type TycoonHubViewModel,
-} from "../models";
+import { TYCOON_FACTORY_ROUTE, TYCOON_HUB_ROUTE, type TycoonFactoryViewModel, type TycoonHubViewModel } from "../models";
 
 /**
  * 分层 UI 的呈现数据源：各层 ViewModel 由 live 经营/生产状态派生。
@@ -24,10 +19,7 @@ export interface TycoonUiViewModels {
  * （读 economy/production 控制器），本层只做映射，保证业务数据
  * 经统一的呈现形状暴露给导航 route。
  */
-export function createTycoonUiViewModels(sources: {
-    readonly economyState: () => TycoonEconomicState;
-    readonly productionState: () => TycoonProductionState;
-}): TycoonUiViewModels {
+export function createTycoonUiViewModels(sources: { readonly economyState: () => TycoonEconomicState; readonly productionState: () => TycoonProductionState }): TycoonUiViewModels {
     return {
         get hubViewModel(): TycoonHubViewModel {
             const state = sources.economyState();

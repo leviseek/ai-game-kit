@@ -1,9 +1,5 @@
 import type { ViewModelNode } from "../../framework";
-import {
-    createMotionTween,
-    easeOutCubic,
-    type MotionTween,
-} from "../../framework/core/time/MotionTween";
+import { createMotionTween, easeOutCubic, type MotionTween } from "../../framework/core/time/MotionTween";
 import type { DevInfoSampler } from "./DevInfo";
 
 /**
@@ -23,10 +19,7 @@ export interface XY {
 /** FGUI 组件节点名约定：fgui-designer 创建的 XML 必须与这些名字对齐。
  *  ball/panel 契约源在 framework（DevOverlayNodes），此处 import + re-export
  *  保持 boot 消费方与测试导入路径不变。 */
-import {
-    DEV_BALL_NODE as BALL_NODE,
-    DEV_PANEL_NODE as PANEL_NODE,
-} from "../../framework/adapters/cocos/ui/DevOverlayNodes";
+import { DEV_BALL_NODE as BALL_NODE, DEV_PANEL_NODE as PANEL_NODE } from "../../framework/adapters/cocos/ui/DevOverlayNodes";
 export { DEV_BALL_NODE as BALL_NODE, DEV_PANEL_NODE as PANEL_NODE } from "../../framework/adapters/cocos/ui/DevOverlayNodes";
 export const BADGE_FPS_NODE = "badge_fps";
 export const INFO_UPTIME_NODE = "info_uptime";
@@ -63,13 +56,8 @@ function lerpXY(from: XY, to: XY, progress: number): XY {
  * FPS 徽标被屏幕边缘裁掉一半），y 保留拖动结束位置并钳制在设计分辨率边界内。
  * 边界以 UI 根容器（GRoot）尺寸为准，勿用物理像素（design D4）。
  */
-export function computeSnapTarget(
-    position: XY,
-    size: { readonly width: number; readonly height: number },
-    bounds: { readonly width: number; readonly height: number },
-): XY {
-    const clampY = (y: number): number =>
-        Math.min(Math.max(0, y), Math.max(0, bounds.height - size.height));
+export function computeSnapTarget(position: XY, size: { readonly width: number; readonly height: number }, bounds: { readonly width: number; readonly height: number }): XY {
+    const clampY = (y: number): number => Math.min(Math.max(0, y), Math.max(0, bounds.height - size.height));
     return { x: 0, y: clampY(position.y) };
 }
 
@@ -120,16 +108,13 @@ export interface DevBallController {
  * fgui 的 TOUCH/ROLL_OVER 桥接到对应方法；点击（轻点）不做状态处理，仅触发
  * 预留的 onTap 回调（日后接入 GM 面板）；信息面板由鼠标悬停展开。
  */
-export function createDevBallController(
-    options: DevBallOptions,
-): DevBallController {
+export function createDevBallController(options: DevBallOptions): DevBallController {
     const { node, ballSize, timeSource, sampler } = options;
     const getBounds = options.readBounds;
     const now = timeSource;
 
     let state: DevBallState = "collapsed";
-    let position: XY =
-        options.initialPosition ?? { x: 0, y: 0 };
+    let position: XY = options.initialPosition ?? { x: 0, y: 0 };
 
     // 拖动状态：touching 为触点按下期间；moved 标记位移超过轻点阈值
     let touching = false;
@@ -142,11 +127,11 @@ export function createDevBallController(
     let snapTween: MotionTween | undefined;
     let panelAnim:
         | {
-            readonly fromAlpha: number;
-            readonly toAlpha: number;
-            readonly start: number;
-            readonly end: number;
-        }
+              readonly fromAlpha: number;
+              readonly toAlpha: number;
+              readonly start: number;
+              readonly end: number;
+          }
         | undefined;
     // 面板当前 alpha：淡入/淡出以实际值为起点，避免打断后闪回 1 再淡出
     let panelAlpha = 0;
@@ -214,43 +199,23 @@ export function createDevBallController(
 
     function refreshBadge(): void {
         const info = sampler.sample();
-        setText(
-            BADGE_FPS_NODE,
-            info.fps === null ? "--" : String(Math.round(info.fps)),
-        );
+        setText(BADGE_FPS_NODE, info.fps === null ? "--" : String(Math.round(info.fps)));
     }
 
     function refreshExpandedInfo(): void {
         const info = sampler.sample();
         setText(INFO_UPTIME_NODE, info.uptime);
-        setText(
-            INFO_DEVICE_NODE,
-            `${info.platform} / ${info.model} / ${info.language}`,
-        );
-        setText(
-            INFO_NETWORK_NODE,
-            `${info.online ? "在线" : "离线"} (${info.networkType})`,
-        );
+        setText(INFO_DEVICE_NODE, `${info.platform} / ${info.model} / ${info.language}`);
+        setText(INFO_NETWORK_NODE, `${info.online ? "在线" : "离线"} (${info.networkType})`);
         setText(INFO_FPS_NODE, info.fps === null ? "--" : String(Math.round(info.fps)));
-        const memory =
-            info.textureMemoryMB === null || info.bufferMemoryMB === null
-                ? "--"
-                : `tex ${info.textureMemoryMB.toFixed(1)}MB / buf ${info.bufferMemoryMB.toFixed(1)}MB`;
+        const memory = info.textureMemoryMB === null || info.bufferMemoryMB === null ? "--" : `tex ${info.textureMemoryMB.toFixed(1)}MB / buf ${info.bufferMemoryMB.toFixed(1)}MB`;
         setText(INFO_MEMORY_NODE, memory);
         // 实际分辨率：物理像素为主、逻辑/CSS 像素为辅；读取器缺省显示 --
         const viewport = info.viewport;
-        setText(
-            INFO_VIEWPORT_NODE,
-            viewport === null
-                ? "--"
-                : `${viewport.physical.width}x${viewport.physical.height} (css ${viewport.logical.width}x${viewport.logical.height})`,
-        );
+        setText(INFO_VIEWPORT_NODE, viewport === null ? "--" : `${viewport.physical.width}x${viewport.physical.height} (css ${viewport.logical.width}x${viewport.logical.height})`);
         // 适配后分辨率：UI 根容器（GRoot）尺寸；读取器缺省显示 --
         const uiSize = info.uiSize;
-        setText(
-            INFO_RESOLUTION_NODE,
-            uiSize === null ? "--" : `${uiSize.width}x${uiSize.height}`,
-        );
+        setText(INFO_RESOLUTION_NODE, uiSize === null ? "--" : `${uiSize.width}x${uiSize.height}`);
     }
 
     writeBallXY(position);

@@ -48,10 +48,7 @@ export interface CocosViewportInfo {
      * 安全区 inset（相对指定容器尺寸的设计分辨率坐标系）：safe area 矩形
      * 四边到容器边界的距离；矩形为全屏或读取失败时全 0。实时读取。
      */
-    readSafeAreaInset(bounds: {
-        readonly width: number;
-        readonly height: number;
-    }): {
+    readSafeAreaInset(bounds: { readonly width: number; readonly height: number }): {
         readonly left: number;
         readonly top: number;
         readonly right: number;
@@ -59,14 +56,15 @@ export interface CocosViewportInfo {
     };
 }
 
-export function createCocosViewportInfo(
-    options: CocosViewportInfoOptions = {},
-): CocosViewportInfo {
+export function createCocosViewportInfo(options: CocosViewportInfoOptions = {}): CocosViewportInfo {
     const view = options.view ?? (cc.view as unknown as CocosViewportLike);
     const sys = options.sys ?? (cc.sys as unknown as CocosSysLike);
     const screen = options.screen ?? (cc.screen as unknown as CocosScreenLike);
 
-    const toPair = (size: { readonly width: number; readonly height: number }): {
+    const toPair = (size: {
+        readonly width: number;
+        readonly height: number;
+    }): {
         readonly width: number;
         readonly height: number;
     } => ({ width: size.width, height: size.height });

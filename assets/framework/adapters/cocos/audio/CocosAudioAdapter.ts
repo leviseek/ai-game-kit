@@ -1,8 +1,5 @@
 import * as cc from "cc";
-import type {
-    AudioBackend,
-    AudioGroup,
-} from "../../../contracts/audio/Audio";
+import type { AudioBackend, AudioGroup } from "../../../contracts/audio/Audio";
 import type { ResourceScope } from "../../../contracts/resource/ResourceScope";
 import type { IResourceProvider } from "../../../contracts/resource/ResourceProvider";
 
@@ -88,9 +85,7 @@ function defaultCreateSource(group: AudioGroup): CocosAudioSourceLike {
  * 加载为异步，过期结果（已被更新的 play/stop 取代）会被丢弃并释放占位。
  * dispose 销毁引擎侧 AudioSource/Node 并释放全部持有。
  */
-export function createCocosAudioAdapter(
-    options: CocosAudioAdapterOptions,
-): AudioBackend {
+export function createCocosAudioAdapter(options: CocosAudioAdapterOptions): AudioBackend {
     const provider = options.provider;
     const createSource = options.createSource ?? defaultCreateSource;
 

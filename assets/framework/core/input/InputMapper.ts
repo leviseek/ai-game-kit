@@ -1,10 +1,4 @@
-import type {
-    InputContextId,
-    InputEvent,
-    InputMapping,
-    InputSample,
-    InputSource,
-} from "../../contracts/input/Input";
+import type { InputContextId, InputEvent, InputMapping, InputSample, InputSource } from "../../contracts/input/Input";
 import type { TimeSource } from "../../contracts/time/TimeSource";
 
 export interface InputMapperOptions<TAction> {
@@ -47,15 +41,9 @@ export interface InputMapper<TAction> {
  * 当前激活上下文决定哪些映射生效；输入源事件到达时在激活上下文下查表，
  * 命中且未被阻断则产出一条携带状态/值/时间戳的采样。不依赖 cc/fgui。
  */
-export function createInputMapper<TAction>(
-    options: InputMapperOptions<TAction>,
-): InputMapper<TAction> {
+export function createInputMapper<TAction>(options: InputMapperOptions<TAction>): InputMapper<TAction> {
     const { timeSource, source: initialSource, onSample } = options;
-    const isBlocked =
-        options.isBlocked ??
-        (options.navigator === undefined
-            ? () => false
-            : () => options.navigator?.modal === true);
+    const isBlocked = options.isBlocked ?? (options.navigator === undefined ? () => false : () => options.navigator?.modal === true);
 
     let activeContext = options.activeContext;
     let mappings = options.mappings;

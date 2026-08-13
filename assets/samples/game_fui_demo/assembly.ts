@@ -1,15 +1,7 @@
-import {
-    defineFuiViewBinding,
-    type FuiViewBindingRegistrar,
-    type Store,
-} from "../../framework";
+import { defineFuiViewBinding, type FuiViewBindingRegistrar, type Store } from "../../framework";
 import { UiDemoCloseDialog } from "../../ui/generated/ui-demo";
 import { CloseDialog } from "./view/CloseDialog";
-import {
-    createCloseDialogStore,
-    type CloseDialogAction,
-    type CloseDialogState,
-} from "./store";
+import { createCloseDialogStore, type CloseDialogAction, type CloseDialogState } from "./store";
 
 /**
  * CloseDialog Application facade：Use Case 端口。confirm/cancel 执行外部 effect，
@@ -41,10 +33,7 @@ export interface CloseDialogFeature {
  * 页面局部句柄（View.bind 内部 __own 订阅，随页面 dispose 逆序释放）。
  * `dispose()` 先注销 registration 再 dispose Store，重复调用幂等。
  */
-export function createCloseDialogFeature(
-    registrar: FuiViewBindingRegistrar,
-    effects: CloseDialogEffects,
-): CloseDialogFeature {
+export function createCloseDialogFeature(registrar: FuiViewBindingRegistrar, effects: CloseDialogEffects): CloseDialogFeature {
     const store = createCloseDialogStore();
     const application: CloseDialogApplication = {
         confirm: () => effects.confirm(),

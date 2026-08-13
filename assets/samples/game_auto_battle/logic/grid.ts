@@ -46,11 +46,7 @@ function keyOf(row: number, col: number): string {
  * 解析并校验 gridKey：必须为 `row:col` 非负整数，且落在 rows×cols 网格内；
  * 非法或越界返回 undefined（调用方据此拒绝，保持网格纯函数的确定性）。
  */
-function parseGridKey(
-    gridKey: string,
-    rows: number,
-    cols: number,
-): { readonly row: number; readonly col: number } | undefined {
+function parseGridKey(gridKey: string, rows: number, cols: number): { readonly row: number; readonly col: number } | undefined {
     const match = /^(\d+):(\d+)$/.exec(gridKey);
     if (match === null) {
         return undefined;
@@ -69,10 +65,7 @@ function parseGridKey(
  * 左半 [0, FORMATION_GRID_COLS)、己方右半 [cols-FORMATION_GRID_COLS, cols)），
  * 与网格宽度解耦；默认 cols=BATTLEFIELD_COLS 时两侧各 3 列、互不重叠。
  */
-export function createMapGrid(
-    rows = FORMATION_GRID_ROWS,
-    cols = BATTLEFIELD_COLS,
-): MapGrid {
+export function createMapGrid(rows = FORMATION_GRID_ROWS, cols = BATTLEFIELD_COLS): MapGrid {
     const occupied = new Map<string, string>();
     const unitGrid = new Map<string, string>();
 

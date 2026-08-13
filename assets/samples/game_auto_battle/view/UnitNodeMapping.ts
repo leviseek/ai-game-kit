@@ -7,24 +7,13 @@
 
 import { UiAutoBattleUnitHitFeedbackCom } from "../../../ui/generated/ui-autobattle";
 import { UiCommonUnitSlot } from "../../../ui/generated/ui-common";
-import {
-    FX_CONTAINER,
-    FX_FLASH_NODE,
-    FX_FLOAT_NODE,
-    UNIT_ENERGY_BAR_NODE,
-    UNIT_HP_BAR_NODE,
-    UNIT_HP_TEXT_NODE,
-    UNIT_NAME_NODE,
-    UNIT_SLOT_CONTAINER,
-} from "./UiNodes";
+import { FX_CONTAINER, FX_FLASH_NODE, FX_FLOAT_NODE, UNIT_ENERGY_BAR_NODE, UNIT_HP_BAR_NODE, UNIT_HP_TEXT_NODE, UNIT_NAME_NODE, UNIT_SLOT_CONTAINER } from "./UiNodes";
 
 export interface AutoBattleUnitNodeMapping {
     readonly containerName: string;
     readonly componentUrl: string;
     /** 节点名 → 动态实例目标（id + UnitSlot 内子字段；field null = 实例本身）。 */
-    readonly parse: (
-        name: string,
-    ) => { readonly id: string; readonly field: string | null } | undefined;
+    readonly parse: (name: string) => { readonly id: string; readonly field: string | null } | undefined;
     /** 可选活跃 id 推导：缺省按 parse(nodeNames) 推导，提供则用该函数（见 FX 映射）。 */
     readonly activeIds?: (nodeNames: readonly string[]) => ReadonlySet<string>;
 }
@@ -90,7 +79,4 @@ export const AUTO_BATTLE_FX_NODE_MAPPING: AutoBattleUnitNodeMapping = {
 };
 
 /** 战场页全部动态节点映射：单位实例 + 命中反馈特效实例（装配层按序匹配）。 */
-export const AUTO_BATTLE_DYNAMIC_NODE_MAPPINGS: readonly AutoBattleUnitNodeMapping[] = [
-    AUTO_BATTLE_UNIT_NODE_MAPPING,
-    AUTO_BATTLE_FX_NODE_MAPPING,
-];
+export const AUTO_BATTLE_DYNAMIC_NODE_MAPPINGS: readonly AutoBattleUnitNodeMapping[] = [AUTO_BATTLE_UNIT_NODE_MAPPING, AUTO_BATTLE_FX_NODE_MAPPING];

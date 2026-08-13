@@ -6,10 +6,7 @@ import type { IResourceProvider, Module, ResourceScope } from "../../../framewor
  * 共享作用域——组合根的 dispose 统一释放（避免 failRollback 探针复用模块
  * 实例时提前释放夹具自身作用域，对齐 GameFixture 幂等契约）。
  */
-export function createRpgResourceModule(
-    provider: IResourceProvider,
-    _scope: ResourceScope,
-): Module {
+export function createRpgResourceModule(provider: IResourceProvider, _scope: ResourceScope): Module {
     return {
         id: "rpg.resource",
         dependencies: [],

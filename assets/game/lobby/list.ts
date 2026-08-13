@@ -1,16 +1,7 @@
 import type { Logger } from "../../framework";
-import {
-    gameTypeCatalog,
-    lobbyItemNodeName,
-    LOBBY_LIST_ENTRY,
-} from "./catalog";
-import type {
-    GameLobbyHost,
-} from "./host";
-import {
-    createGameLobby,
-    type GameLobby,
-} from "./lobby";
+import { gameTypeCatalog, lobbyItemNodeName, LOBBY_LIST_ENTRY } from "./catalog";
+import type { GameLobbyHost } from "./host";
+import { createGameLobby, type GameLobby } from "./lobby";
 
 /** 列表页流：持有会话编排（lobby），UI 就绪后打开列表页并装配点击。 */
 export interface GameListFlow {
@@ -46,11 +37,7 @@ export function createGameListFlow(host: GameLobbyHost, logger: Logger): GameLis
             return;
         }
         openListPage().catch((error) => {
-            logger.error(
-                "[lobby] list page open failed",
-                undefined,
-                error instanceof Error ? error : undefined,
-            );
+            logger.error("[lobby] list page open failed", undefined, error instanceof Error ? error : undefined);
         });
     }
 
@@ -73,11 +60,7 @@ export function createGameListFlow(host: GameLobbyHost, logger: Logger): GameLis
             const item = handle.node(lobbyItemNodeName(info.id));
             item?.onClick(() => {
                 lobby.enter(info.id).catch((error) => {
-                    logger.error(
-                        "[lobby] enter failed",
-                        undefined,
-                        error instanceof Error ? error : undefined,
-                    );
+                    logger.error("[lobby] enter failed", undefined, error instanceof Error ? error : undefined);
                 });
             });
         }

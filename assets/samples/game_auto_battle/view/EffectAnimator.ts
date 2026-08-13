@@ -105,16 +105,12 @@ export function createEffectAnimator(options: {
 
     /** 飘字文本：伤害用鲜红（-value）、治疗用亮绿（+value），UBB 颜色嵌入。 */
     function floatText(kind: "damage" | "heal", value: number): string {
-        return kind === "damage"
-            ? `[color=#ff5252]-${value}[/color]`
-            : `[color=#6fd96f]+${value}[/color]`;
+        return kind === "damage" ? `[color=#ff5252]-${value}[/color]` : `[color=#6fd96f]+${value}[/color]`;
     }
 
     /** 终止同单位同 kind 的旧动画（新特效覆盖）。 */
     function replace(unitId: string, kind: ActiveAnimation["kind"]): void {
-        const index = activeAnimations.findIndex(
-            (anim) => anim.unitId === unitId && anim.kind === kind,
-        );
+        const index = activeAnimations.findIndex((anim) => anim.unitId === unitId && anim.kind === kind);
         if (index >= 0) {
             activeAnimations.splice(index, 1);
         }
@@ -134,13 +130,7 @@ export function createEffectAnimator(options: {
                     value: effect.value,
                 });
                 const base = homeXYOf(effect.unitId);
-                writeText(
-                    `fx_float_${effect.unitId}`,
-                    floatText(
-                        effect.kind === "damage-float" ? "damage" : "heal",
-                        effect.value,
-                    ),
-                );
+                writeText(`fx_float_${effect.unitId}`, floatText(effect.kind === "damage-float" ? "damage" : "heal", effect.value));
                 writeXY(`fx_float_${effect.unitId}`, base.x, base.y);
                 writeAlpha(`fx_float_${effect.unitId}`, 1);
             } else if (effect.kind === "hit-flash") {
@@ -199,33 +189,21 @@ export function createEffectAnimator(options: {
                 // 飘字：以单位绝对坐标为基准，alpha 1→0 淡出，向上位移随进度线性增长
                 const base = homeXYOf(anim.unitId);
                 writeAlpha(`fx_float_${anim.unitId}`, 1 - progress);
-                writeXY(
-                    `fx_float_${anim.unitId}`,
-                    base.x,
-                    base.y - progress * FLOAT_RISE,
-                );
+                writeXY(`fx_float_${anim.unitId}`, base.x, base.y - progress * FLOAT_RISE);
             } else if (anim.kind === "flash") {
                 // 闪白：alpha 先升后降（峰值在 FLASH_PEAK 处）
-                const alpha =
-                    progress < FLASH_PEAK
-                        ? progress / FLASH_PEAK
-                        : (1 - progress) / (1 - FLASH_PEAK);
+                const alpha = progress < FLASH_PEAK ? progress / FLASH_PEAK : (1 - progress) / (1 - FLASH_PEAK);
                 writeAlpha(`fx_flash_${anim.unitId}`, alpha);
             } else if (anim.kind === "shake") {
                 // 抖动：以单位绝对坐标为基准，xy 在 ±SHAKE_OFFSET 间按正弦摆动
                 const base = anim.base ?? homeXYOf(anim.unitId);
-                const offset =
-                    Math.sin(progress * Math.PI * 2) * SHAKE_OFFSET * (1 - progress);
+                const offset = Math.sin(progress * Math.PI * 2) * SHAKE_OFFSET * (1 - progress);
                 writeXY(`unit_${anim.unitId}`, base.x + offset, base.y);
             } else if (anim.kind === "move") {
                 // 位移：from→to 网格坐标线性插值
                 const from = anim.fromXY ?? homeXYOf(anim.unitId);
                 const to = anim.toXY ?? homeXYOf(anim.unitId);
-                writeXY(
-                    `unit_${anim.unitId}`,
-                    lerp(from.x, to.x, progress),
-                    lerp(from.y, to.y, progress),
-                );
+                writeXY(`unit_${anim.unitId}`, lerp(from.x, to.x, progress), lerp(from.y, to.y, progress));
             } else if (anim.kind === "teleport") {
                 // 瞬移：直接跳变（end=start，进度恒 1）
                 const to = anim.toXY ?? homeXYOf(anim.unitId);
@@ -233,23 +211,14 @@ export function createEffectAnimator(options: {
             } else if (anim.kind === "entrance") {
                 // 入场：从下方上浮到位 + alpha 0→1 淡入
                 const base = anim.base ?? homeXYOf(anim.unitId);
-                writeXY(
-                    `unit_${anim.unitId}`,
-                    base.x,
-                    base.y + ENTRANCE_RISE * (1 - progress),
-                );
+                writeXY(`unit_${anim.unitId}`, base.x, base.y + ENTRANCE_RISE * (1 - progress));
                 writeAlpha(`unit_${anim.unitId}`, progress);
             }
 
             if (now >= anim.end) {
                 // 终态回位：飘字/闪白 alpha=0；位移/入场对齐 state 坐标与 alpha=1
                 if (anim.kind === "float" || anim.kind === "flash") {
-                    writeAlpha(
-                        anim.kind === "float"
-                            ? `fx_float_${anim.unitId}`
-                            : `fx_flash_${anim.unitId}`,
-                        0,
-                    );
+                    writeAlpha(anim.kind === "float" ? `fx_float_${anim.unitId}` : `fx_flash_${anim.unitId}`, 0);
                 } else if (anim.kind === "shake") {
                     const base = anim.base ?? homeXYOf(anim.unitId);
                     writeXY(`unit_${anim.unitId}`, base.x, base.y);
@@ -267,12 +236,7 @@ export function createEffectAnimator(options: {
     function reset(): void {
         for (const anim of activeAnimations) {
             if (anim.kind === "float" || anim.kind === "flash") {
-                writeAlpha(
-                    anim.kind === "float"
-                        ? `fx_float_${anim.unitId}`
-                        : `fx_flash_${anim.unitId}`,
-                    0,
-                );
+                writeAlpha(anim.kind === "float" ? `fx_float_${anim.unitId}` : `fx_flash_${anim.unitId}`, 0);
             } else if (anim.kind === "shake") {
                 const base = anim.base ?? homeXYOf(anim.unitId);
                 writeXY(`unit_${anim.unitId}`, base.x, base.y);

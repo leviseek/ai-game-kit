@@ -7,8 +7,7 @@ import { FORMATION_GRID_SIZE } from "./grid";
 export const LINEUP_SAVE_VERSION = 2;
 
 /** 底层存储键：前缀 + 命名空间/存档键编码（对齐 game_idle `createIdleSave` 先例）。 */
-export const LINEUP_STORAGE_KEY =
-    `auto-battle:${encodeURIComponent("auto_battle")}:${encodeURIComponent("lineup")}`;
+export const LINEUP_STORAGE_KEY = `auto-battle:${encodeURIComponent("auto_battle")}:${encodeURIComponent("lineup")}`;
 
 /** 迁移器：把某旧版本的 lineup 存档数据升级为下一版本数据。 */
 export type LineupSaveMigrator = (data: unknown) => unknown;
@@ -23,10 +22,7 @@ export const MIGRATE_V1_TO_V2: LineupSaveMigrator = (data) => {
     if (!Array.isArray(record.slots)) {
         return { slots: null };
     }
-    const slots: (string | null)[] = Array.from(
-        { length: FORMATION_GRID_SIZE },
-        (_, index) => record.slots?.[index] ?? null,
-    );
+    const slots: (string | null)[] = Array.from({ length: FORMATION_GRID_SIZE }, (_, index) => record.slots?.[index] ?? null);
     return { slots };
 };
 
@@ -64,15 +60,10 @@ function isLineupRecord(value: unknown): value is AutoBattleLineup {
     if (!Array.isArray(slots) || slots.length !== FORMATION_GRID_SIZE) {
         return false;
     }
-    if (
-        slots.some((slot) => slot !== null && typeof slot !== "string")
-    ) {
+    if (slots.some((slot) => slot !== null && typeof slot !== "string")) {
         return false;
     }
-    const occupiedCount = slots.reduce<number>(
-        (count, slot) => (slot === null ? count : count + 1),
-        0,
-    );
+    const occupiedCount = slots.reduce<number>((count, slot) => (slot === null ? count : count + 1), 0);
     return occupiedCount <= MAX_TEAM_SIZE;
 }
 
@@ -98,9 +89,7 @@ export function createLineupStore(options: LineupStoreOptions): LineupStore {
         while (source < currentVersion) {
             const migrator = migrators[source];
             if (migrator === undefined) {
-                throw new Error(
-                    `lineup store: missing migration from version ${source}`,
-                );
+                throw new Error(`lineup store: missing migration from version ${source}`);
             }
             migrated = migrator(migrated);
             source += 1;
@@ -134,23 +123,14 @@ export function createLineupStore(options: LineupStoreOptions): LineupStore {
             }
 
             const version = (parsed as { version?: unknown }).version;
-            if (
-                typeof version !== "number" ||
-                !Number.isInteger(version) ||
-                version <= 0
-            ) {
+            if (typeof version !== "number" || !Number.isInteger(version) || version <= 0) {
                 throw corrupt("unexpected record shape");
             }
             if (version > currentVersion) {
-                throw new Error(
-                    `lineup store: save version ${version} is newer than supported version ${currentVersion}`,
-                );
+                throw new Error(`lineup store: save version ${version} is newer than supported version ${currentVersion}`);
             }
 
-            const data =
-                version === currentVersion
-                    ? (parsed as { data?: unknown }).data
-                    : migrate((parsed as { data?: unknown }).data, version);
+            const data = version === currentVersion ? (parsed as { data?: unknown }).data : migrate((parsed as { data?: unknown }).data, version);
 
             if (!isLineupRecord(data)) {
                 throw corrupt("unexpected lineup shape");

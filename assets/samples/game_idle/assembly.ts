@@ -1,30 +1,10 @@
-import type {
-    GameFixture,
-    Module,
-    PlatformStorage,
-} from "../../framework";
+import type { GameFixture, Module, PlatformStorage } from "../../framework";
 import { createGameFixture } from "../../framework";
 import { createIdleClock, createIdleClockModule, type IdleClock } from "./logic/clock";
-import type {
-    IdleOfflineSettlement,
-    IdleProgressState,
-} from "./models";
-import {
-    createIdleProgress,
-    createIdleProgressModule,
-    ONLINE_TICK_MS,
-    type IdleProgressHandle,
-} from "./logic/progress";
-import {
-    createIdleSave,
-    createIdleSaveModule,
-    type IdleSave,
-} from "./logic/save";
-import {
-    createIdleScheduler,
-    createIdleSchedulerModule,
-    type IdleScheduler,
-} from "./logic/scheduler";
+import type { IdleOfflineSettlement, IdleProgressState } from "./models";
+import { createIdleProgress, createIdleProgressModule, ONLINE_TICK_MS, type IdleProgressHandle } from "./logic/progress";
+import { createIdleSave, createIdleSaveModule, type IdleSave } from "./logic/save";
+import { createIdleScheduler, createIdleSchedulerModule, type IdleScheduler } from "./logic/scheduler";
 
 /**
  * 挂机组合夹具的注入选项：测试可注入受控替身驱动协作行为；
@@ -56,10 +36,7 @@ export interface IdleFixture extends GameFixture {
     readonly storage: {
         readonly currentVersion: number;
         save(namespace: string, key: string, data: unknown): Promise<void>;
-        load(
-            namespace: string,
-            key: string,
-        ): Promise<{ version: number; data: unknown } | null>;
+        load(namespace: string, key: string): Promise<{ version: number; data: unknown } | null>;
     };
 }
 
@@ -85,9 +62,7 @@ class MemoryStorage implements PlatformStorage {
  * 钩子暴露给测试驱动。组合逻辑留在游戏层夹具内，AppRoot 只做薄转发
  * （design decision 3/4）。墙钟、调度、成长进度、版本化存档四类能力协作。
  */
-export function createIdleFixture(
-    options: IdleFixtureOptions = {},
-): IdleFixture {
+export function createIdleFixture(options: IdleFixtureOptions = {}): IdleFixture {
     const clock = options.clock ?? createIdleClock();
     const storage = options.storage ?? new MemoryStorage();
     const progress: IdleProgressHandle = createIdleProgress(clock);
@@ -99,12 +74,7 @@ export function createIdleFixture(
         repeat: true,
     });
 
-    const modules: Module[] = [
-        createIdleClockModule(clock),
-        createIdleSchedulerModule(scheduler),
-        createIdleProgressModule(progress),
-        createIdleSaveModule(save),
-    ];
+    const modules: Module[] = [createIdleClockModule(clock), createIdleSchedulerModule(scheduler), createIdleProgressModule(progress), createIdleSaveModule(save)];
 
     const base = createGameFixture({
         id: "idle",
@@ -150,8 +120,7 @@ export function createIdleFixture(
             get currentVersion() {
                 return save.currentVersion;
             },
-            save: (namespace: string, key: string, data: unknown) =>
-                save.save(namespace, key, data),
+            save: (namespace: string, key: string, data: unknown) => save.save(namespace, key, data),
             load: (namespace: string, key: string) => save.load(namespace, key),
         },
         pause: async () => {

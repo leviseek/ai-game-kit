@@ -1,10 +1,5 @@
 import type { Module } from "../../../framework";
-import {
-    configArray,
-    configNumber,
-    createConfigTable,
-    type ConfigTable,
-} from "../../../framework";
+import { configArray, configNumber, createConfigTable, type ConfigTable } from "../../../framework";
 import type { CardConfig } from "../models";
 
 /** 配置读取句柄：把不可变配置表解析为卡牌数值与回合时长。 */

@@ -3,30 +3,12 @@ import type { AutoBattleClock } from "./clock";
 import { MAX_TEAM_SIZE } from "./config";
 import { FORMATION_GRID_COLS } from "./grid";
 import type { AutoBattleConfigHandle } from "./config";
-import {
-    applyAutoBattleDamage,
-    growAutoBattleEnergy,
-    resolveAutoBattleSkill,
-} from "./skills";
-import {
-    isAutoBattleAlive,
-    resolveAutoBattleTarget,
-    selectAutoBattleHealTarget,
-    sortAutoBattleOrder,
-} from "./formation";
-import {
-    createMutableUnit,
-    snapshotUnits,
-    type MutableUnit,
-} from "./units";
+import { applyAutoBattleDamage, growAutoBattleEnergy, resolveAutoBattleSkill } from "./skills";
+import { isAutoBattleAlive, resolveAutoBattleTarget, selectAutoBattleHealTarget, sortAutoBattleOrder } from "./formation";
+import { createMutableUnit, snapshotUnits, type MutableUnit } from "./units";
 import { createMapGrid } from "./grid";
 import { resolveMovePath } from "./move";
-import type {
-    AutoBattleEvent,
-    AutoBattlePhase,
-    AutoBattleSide,
-    AutoBattleState,
-} from "../models";
+import type { AutoBattleEvent, AutoBattlePhase, AutoBattleSide, AutoBattleState } from "../models";
 
 /** 开战编队单位：slot = 布阵区格位（0..FORMATION_GRID_SIZE-1），heroId 引用英雄池。 */
 export interface AutoBattlePlacedUnit {
@@ -45,12 +27,8 @@ export interface AutoBattleLineupPair {
  * slot 按 0..n-1 连续映射到布阵区前段格（无空槽，与玩家编队定长结构互为转换）。
  * 玩家编队（含空槽）由装配层显式构造 placement，不经此转换。
  */
-export function toLineupPair(lineups: {
-    readonly ally: readonly string[];
-    readonly enemy: readonly string[];
-}): AutoBattleLineupPair {
-    const toPlacement = (ids: readonly string[]): readonly AutoBattlePlacedUnit[] =>
-        ids.map((heroId, slot) => ({ slot, heroId }));
+export function toLineupPair(lineups: { readonly ally: readonly string[]; readonly enemy: readonly string[] }): AutoBattleLineupPair {
+    const toPlacement = (ids: readonly string[]): readonly AutoBattlePlacedUnit[] => ids.map((heroId, slot) => ({ slot, heroId }));
     return {
         ally: toPlacement(lineups.ally),
         enemy: toPlacement(lineups.enemy),
@@ -89,12 +67,10 @@ export interface AutoBattleBattleHandle {
  * 行动：一方全灭即进入 over，tick 不再推进。事件经选项 onEvent 广播并保序
  * 记录，确定性来自速度稳定排序与纯函数结算（同输入同结果）。
  */
-export function createAutoBattleBattle(
-    options: AutoBattleBattleOptions,
-): AutoBattleBattleHandle {
+export function createAutoBattleBattle(options: AutoBattleBattleOptions): AutoBattleBattleHandle {
     const clock = options.clock;
     const config = options.config;
-    const report = options.onEvent ?? (() => { });
+    const report = options.onEvent ?? (() => {});
 
     const events: AutoBattleEvent[] = [];
 
@@ -125,32 +101,22 @@ export function createAutoBattleBattle(
     function resetUnits(): void {
         grid = createMapGrid();
         units = [];
-        const lineups: AutoBattleLineupPair =
-            options.lineups === undefined ? toLineupPair(config.lineups) : options.lineups();
+        const lineups: AutoBattleLineupPair = options.lineups === undefined ? toLineupPair(config.lineups) : options.lineups();
         const heroById = new Map(config.heroes.map((hero) => [hero.id, hero]));
 
-        const placeSide = (
-            side: AutoBattleSide,
-            placed: readonly AutoBattlePlacedUnit[],
-        ): void => {
+        const placeSide = (side: AutoBattleSide, placed: readonly AutoBattlePlacedUnit[]): void => {
             const cells = grid.formationCells(side);
             if (placed.length > MAX_TEAM_SIZE) {
-                throw new Error(
-                    `auto-battle battle: ${side} lineup must have at most ${MAX_TEAM_SIZE} units`,
-                );
+                throw new Error(`auto-battle battle: ${side} lineup must have at most ${MAX_TEAM_SIZE} units`);
             }
             placed.forEach((placement, index) => {
                 const { slot, heroId } = placement;
                 const hero = heroById.get(heroId);
                 if (hero === undefined) {
-                    throw new Error(
-                        `auto-battle battle: lineup references unknown hero "${heroId}"`,
-                    );
+                    throw new Error(`auto-battle battle: lineup references unknown hero "${heroId}"`);
                 }
                 if (slot < 0 || slot >= cells.length) {
-                    throw new Error(
-                        `auto-battle battle: ${side} slot ${slot} out of formation bounds`,
-                    );
+                    throw new Error(`auto-battle battle: ${side} slot ${slot} out of formation bounds`);
                 }
                 const gridKey = cells[slot]!;
                 grid.place(heroId, gridKey);
@@ -190,9 +156,7 @@ export function createAutoBattleBattle(
     /** 开始一轮：轮次 +1、按存活单位速度降序快照行动序列并广播 round-start。 */
     function beginRound(nextRound: number): void {
         round = nextRound;
-        order = sortAutoBattleOrder(
-            snapshotUnits(units).filter(isAutoBattleAlive),
-        ).map((unit) => unit.id);
+        order = sortAutoBattleOrder(snapshotUnits(units).filter(isAutoBattleAlive)).map((unit) => unit.id);
         actionIndex = 0;
         emit({
             type: "round-start",
@@ -211,12 +175,7 @@ export function createAutoBattleBattle(
      * 返回是否发生移动（供调用方判断"移动 + 普攻"两阶段的移动阶段）。
      */
     function moveTowardTarget(actor: MutableUnit, target: MutableUnit): boolean {
-        const { steps } = resolveMovePath(
-            grid,
-            actor.gridKey,
-            target.gridKey,
-            actor.def.attackRange,
-        );
+        const { steps } = resolveMovePath(grid, actor.gridKey, target.gridKey, actor.def.attackRange);
         if (steps.length === 0) {
             return false;
         }
@@ -263,10 +222,7 @@ export function createAutoBattleBattle(
     /** 普攻：对锁定目标（无锁定时前排优先）造成自身攻击力伤害，双方按配置增长能量。 */
     function basicAttack(actor: MutableUnit): void {
         const opposingSide: AutoBattleSide = actor.side === "ally" ? "enemy" : "ally";
-        const target = resolveAutoBattleTarget(
-            sideUnits(opposingSide),
-            actor.lockedTargetId,
-        ) as MutableUnit | undefined;
+        const target = resolveAutoBattleTarget(sideUnits(opposingSide), actor.lockedTargetId) as MutableUnit | undefined;
         // 锁定目标死亡后该行动即重选新目标并锁定（"目标死亡后顺延"在一个行动内完成）
         actor.lockedTargetId = target?.id ?? null;
         if (target === undefined) {
@@ -279,18 +235,10 @@ export function createAutoBattleBattle(
 
         const outcome = applyAutoBattleDamage(target.hp, actor.def.attack);
         target.hp = outcome.hp;
-        actor.energy = growAutoBattleEnergy(
-            actor.energy,
-            actor.def.energyMax,
-            config.energyGainAttacker,
-        );
+        actor.energy = growAutoBattleEnergy(actor.energy, actor.def.energyMax, config.energyGainAttacker);
         // 阵亡目标不再累计受击能量（实现收窄，测试锁定其行为）
         if (!outcome.kills) {
-            target.energy = growAutoBattleEnergy(
-                target.energy,
-                target.def.energyMax,
-                config.energyGainTarget,
-            );
+            target.energy = growAutoBattleEnergy(target.energy, target.def.energyMax, config.energyGainTarget);
         }
 
         emit({
@@ -312,10 +260,7 @@ export function createAutoBattleBattle(
         const skill = actor.def.skill;
         if (skill.kind === "damage") {
             const opposingSide: AutoBattleSide = actor.side === "ally" ? "enemy" : "ally";
-            const target = resolveAutoBattleTarget(
-                sideUnits(opposingSide),
-                actor.lockedTargetId,
-            ) as MutableUnit | undefined;
+            const target = resolveAutoBattleTarget(sideUnits(opposingSide), actor.lockedTargetId) as MutableUnit | undefined;
             // 伤害技能与普攻共用锁定语义：目标死亡后该行动即重选并锁定
             actor.lockedTargetId = target?.id ?? null;
             if (target === undefined) {
@@ -348,9 +293,7 @@ export function createAutoBattleBattle(
             return;
         }
 
-        const target = selectAutoBattleHealTarget(sideUnits(actor.side)) as
-            | MutableUnit
-            | undefined;
+        const target = selectAutoBattleHealTarget(sideUnits(actor.side)) as MutableUnit | undefined;
         if (target === undefined) {
             return;
         }
@@ -446,9 +389,7 @@ export function createAutoBattleBattle(
  * 战斗模块：组合根创建战斗控制器并注入；模块只登记引用，不在此释放共享
  * 控制器——组合根的 dispose 统一负责（对齐 GameFixture 幂等契约）。
  */
-export function createAutoBattleBattleModule(
-    battle: AutoBattleBattleHandle,
-): Module {
+export function createAutoBattleBattleModule(battle: AutoBattleBattleHandle): Module {
     return {
         id: "auto_battle.battle",
         dependencies: [],

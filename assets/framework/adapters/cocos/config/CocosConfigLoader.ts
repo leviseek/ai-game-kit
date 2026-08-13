@@ -19,9 +19,7 @@ export interface CocosConfigLoader {
  * 经 LoadCoordinator 去重与并发共享，全程不触达存档键值后端。
  * 真实引擎下 JSON 配置资源以 JsonAsset 暴露，`.json` 即纯数据内容。
  */
-export function createCocosConfigLoader(
-    provider: IResourceProvider,
-): CocosConfigLoader {
+export function createCocosConfigLoader(provider: IResourceProvider): CocosConfigLoader {
     return {
         loadConfig(bundle, path) {
             return loadConfigTable(provider, bundle, path, (resource) => {
@@ -29,11 +27,7 @@ export function createCocosConfigLoader(
                 // 形状不符（如 TextAsset）以 ConfigLoadError 携带 bundle/path 表达，
                 // 保证诊断可定位到具体资源。
                 const asset = resource as JsonAsset | undefined;
-                if (
-                    asset === null ||
-                    typeof asset !== "object" ||
-                    !Object.prototype.hasOwnProperty.call(asset, "json")
-                ) {
+                if (asset === null || typeof asset !== "object" || !Object.prototype.hasOwnProperty.call(asset, "json")) {
                     throw new ConfigLoadError(bundle, path, {
                         cause: new Error("loaded resource is not a JSON config asset"),
                     });

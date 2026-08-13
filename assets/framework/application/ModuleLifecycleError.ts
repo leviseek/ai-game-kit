@@ -5,11 +5,7 @@ export class ModuleLifecycleError extends FrameworkError {
     declare readonly moduleId: string;
     declare readonly phase: ModulePhase;
 
-    constructor(
-        moduleId: string,
-        phase: ModulePhase,
-        cause: unknown,
-    ) {
+    constructor(moduleId: string, phase: ModulePhase, cause: unknown) {
         super("Module lifecycle failed", {
             cause,
             moduleId,

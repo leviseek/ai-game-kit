@@ -23,10 +23,7 @@ export type HitFeedbackEffect =
  * - unit-dead 及其它事件 → 不产生特效
  * 纯函数无副作用，返回新游标；调用方（presenter）保存游标以增量消费。
  */
-export function projectHitFeedbackEvents(
-    events: readonly AutoBattleEvent[],
-    cursor: number,
-): { readonly effects: readonly HitFeedbackEffect[]; readonly cursor: number } {
+export function projectHitFeedbackEvents(events: readonly AutoBattleEvent[], cursor: number): { readonly effects: readonly HitFeedbackEffect[]; readonly cursor: number } {
     const effects: HitFeedbackEffect[] = [];
     let next = cursor;
 

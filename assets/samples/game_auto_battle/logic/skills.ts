@@ -12,31 +12,20 @@ export type AutoBattleSkillEffect =
     | { readonly kind: "heal"; readonly hp: number; readonly applied: number };
 
 /** 受击结算：扣除伤害并 clamp 到 0，返回实际扣减量与是否阵亡。 */
-export function applyAutoBattleDamage(
-    hp: number,
-    damage: number,
-): { readonly hp: number; readonly applied: number; readonly kills: boolean } {
+export function applyAutoBattleDamage(hp: number, damage: number): { readonly hp: number; readonly applied: number; readonly kills: boolean } {
     const applied = Math.min(hp, damage);
     const next = Math.max(0, hp - damage);
     return { hp: next, applied, kills: next === 0 };
 }
 
 /** 治疗结算：恢复血量并 clamp 到上限，返回实际恢复量。 */
-export function applyAutoBattleHeal(
-    hp: number,
-    maxHp: number,
-    heal: number,
-): { readonly hp: number; readonly applied: number } {
+export function applyAutoBattleHeal(hp: number, maxHp: number, heal: number): { readonly hp: number; readonly applied: number } {
     const applied = Math.min(heal, Math.max(0, maxHp - hp));
     return { hp: hp + applied, applied };
 }
 
 /** 能量增长：按配置增加能量，不超过能量上限。 */
-export function growAutoBattleEnergy(
-    energy: number,
-    energyMax: number,
-    gain: number,
-): number {
+export function growAutoBattleEnergy(energy: number, energyMax: number, gain: number): number {
     return Math.min(energyMax, energy + gain);
 }
 
@@ -45,11 +34,7 @@ export function growAutoBattleEnergy(
  * HP，不修改任何状态。battle 的 castSkill 与受击结算共用同一套语义，
  * 避免伤害钳制/治疗上限规则在多处重复实现导致漂移。
  */
-export function resolveAutoBattleSkill(
-    skill: AutoBattleSkill,
-    targetHp: number,
-    targetMaxHp: number,
-): AutoBattleSkillEffect {
+export function resolveAutoBattleSkill(skill: AutoBattleSkill, targetHp: number, targetMaxHp: number): AutoBattleSkillEffect {
     if (skill.kind === "damage") {
         const outcome = applyAutoBattleDamage(targetHp, skill.value);
         return {

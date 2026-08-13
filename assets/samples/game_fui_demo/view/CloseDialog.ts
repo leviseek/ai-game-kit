@@ -1,25 +1,10 @@
-import {
-    FClick,
-    FUIBind,
-    FuiView,
-    type Store,
-} from "../../../framework";
-import type {
-    CloseDialogNodes,
-    ICloseDialog,
-} from "../../../ui/generated/ui-demo-types";
+import { FClick, FUIBind, FuiView, type Store } from "../../../framework";
+import type { CloseDialogNodes, ICloseDialog } from "../../../ui/generated/ui-demo-types";
 import { CloseDialogFields } from "../../../ui/generated/ui-demo-types";
 import { UiDemoCloseDialog } from "../../../ui/generated/ui-demo";
 import type { CloseDialogApplication } from "../assembly";
-import type {
-    CloseDialogAction,
-    CloseDialogState,
-    CloseDialogViewModel,
-} from "../store";
-import {
-    CLOSE_DIALOG_ACTIONS,
-    projectCloseDialog,
-} from "../store";
+import type { CloseDialogAction, CloseDialogState, CloseDialogViewModel } from "../store";
+import { CLOSE_DIALOG_ACTIONS, projectCloseDialog } from "../store";
 
 /**
  * 演示静态页：经 gen-types 生成的 declaration merging interface（I 前缀形状）提供
@@ -37,8 +22,7 @@ import {
 // 接口为空体仅为继承生成形状，故显式豁免 no-empty-object-type 与
 // unsafe-declaration-merging 检查。
 /* eslint-disable @typescript-eslint/no-empty-object-type, @typescript-eslint/no-unsafe-declaration-merging */
-export interface CloseDialog extends ICloseDialog {
-}
+export interface CloseDialog extends ICloseDialog {}
 
 @FUIBind(UiDemoCloseDialog, CloseDialogFields, { runtimeBinding: "required" })
 export class CloseDialog extends FuiView<CloseDialogState, CloseDialogViewModel> {
@@ -46,10 +30,7 @@ export class CloseDialog extends FuiView<CloseDialogState, CloseDialogViewModel>
     private application?: CloseDialogApplication;
 
     /** 注入 Store 与 Application facade（Feature assembly binder 创建时调用）：订阅 + 首次投影。 */
-    bind(deps: {
-        readonly store: Store<CloseDialogState, CloseDialogAction>;
-        readonly application: CloseDialogApplication;
-    }): void {
+    bind(deps: { readonly store: Store<CloseDialogState, CloseDialogAction>; readonly application: CloseDialogApplication }): void {
         this.store = deps.store;
         this.application = deps.application;
         this.bindStore(this.store, projectCloseDialog);
@@ -60,7 +41,7 @@ export class CloseDialog extends FuiView<CloseDialogState, CloseDialogViewModel>
         this.store?.dispatch({ type: CLOSE_DIALOG_ACTIONS.OPEN, content });
     }
 
-    protected onConstruct(): void { }
+    protected onConstruct(): void {}
 
     protected onState(vm: CloseDialogViewModel): void {
         this._txt_content.setText(vm.content);

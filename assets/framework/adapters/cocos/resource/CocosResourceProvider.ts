@@ -11,21 +11,14 @@ interface CocosBundleLike {
 }
 
 interface CocosAssetManagerLike {
-    loadBundle(
-        name: string,
-        onComplete: (err: Error | null, bundle?: CocosBundleLike) => void,
-    ): void;
+    loadBundle(name: string, onComplete: (err: Error | null, bundle?: CocosBundleLike) => void): void;
     getBundle(name: string): CocosBundleLike | null;
     removeBundle(bundle: CocosBundleLike): void;
 }
 
 // fairygui-cc 的 UIPackage 静态 API 接缝：真实实现由引擎提供，测试可注入 mock
 interface UIPackageLike {
-    loadPackage(
-        bundle: CocosBundleLike,
-        path: string,
-        onComplete?: (error: unknown, pkg?: { readonly name: string }) => void,
-    ): void;
+    loadPackage(bundle: CocosBundleLike, path: string, onComplete?: (error: unknown, pkg?: { readonly name: string }) => void): void;
     removePackage(nameOrId: string): void;
 }
 
@@ -41,16 +34,9 @@ function defaultUiPackage(): UIPackageLike {
         loadPackage(bundle, path, onComplete) {
             // bundle 在真实运行时即 AssetManager.Bundle（loadBundle 回调产物），
             // 类型断言集中在 Adapter 边界（design 决策 7 风险预案）
-            UIPackage.loadPackage(
-                bundle as unknown as cc.AssetManager.Bundle,
-                path,
-                (error, pkg) => {
-                    onComplete?.(
-                        error as unknown,
-                        pkg as { readonly name: string } | undefined,
-                    );
-                },
-            );
+            UIPackage.loadPackage(bundle as unknown as cc.AssetManager.Bundle, path, (error, pkg) => {
+                onComplete?.(error as unknown, pkg as { readonly name: string } | undefined);
+            });
         },
         removePackage(nameOrId) {
             UIPackage.removePackage(nameOrId);
@@ -58,11 +44,7 @@ function defaultUiPackage(): UIPackageLike {
     };
 }
 
-function createCocosLoader(
-    manager: CocosAssetManagerLike,
-    uiPackage: UIPackageLike,
-    registeredPackages: Map<string, string[]>,
-): (key: ResourceKey) => Promise<unknown> {
+function createCocosLoader(manager: CocosAssetManagerLike, uiPackage: UIPackageLike, registeredPackages: Map<string, string[]>): (key: ResourceKey) => Promise<unknown> {
     return (key: ResourceKey) =>
         new Promise((resolve, reject) => {
             manager.loadBundle(key.bundle, (bundleError, bundle) => {
@@ -85,11 +67,7 @@ function createCocosLoader(
                             return;
                         }
                         if (pkg === undefined) {
-                            reject(
-                                new Error(
-                                    `Cocos package "${key.path}" in bundle "${key.bundle}" was not loaded`,
-                                ),
-                            );
+                            reject(new Error(`Cocos package "${key.path}" in bundle "${key.bundle}" was not loaded`));
                             return;
                         }
                         const names = registeredPackages.get(key.bundle) ?? [];
@@ -114,11 +92,7 @@ function createCocosLoader(
         });
 }
 
-function createCocosUnloadBundle(
-    manager: CocosAssetManagerLike,
-    uiPackage: UIPackageLike,
-    registeredPackages: Map<string, string[]>,
-): (bundle: string) => void {
+function createCocosUnloadBundle(manager: CocosAssetManagerLike, uiPackage: UIPackageLike, registeredPackages: Map<string, string[]>): (bundle: string) => void {
     return (bundleName: string) => {
         const bundle = manager.getBundle(bundleName);
 
@@ -149,9 +123,7 @@ function createCocosUnloadBundle(
  * 卸载只在 Bundle 不再被任何作用域持有且无进行中加载时触发；fairygui-package
  * 键按 kind 分派到 UIPackage，卸载时先清理 FairyGUI 注册表。
  */
-export function createCocosResourceProvider(
-    options: CocosResourceProviderOptions = {},
-): IResourceProvider {
+export function createCocosResourceProvider(options: CocosResourceProviderOptions = {}): IResourceProvider {
     // 惰性读取 cc.assetManager：未注入时才使用引擎默认实例
     const manager = options.assetManager ?? cc.assetManager;
     const uiPackage = options.uiPackage ?? defaultUiPackage();
@@ -160,10 +132,6 @@ export function createCocosResourceProvider(
 
     return createResourceProvider({
         loader: createCocosLoader(manager, uiPackage, registeredPackages),
-        unloadBundle: createCocosUnloadBundle(
-            manager,
-            uiPackage,
-            registeredPackages,
-        ),
+        unloadBundle: createCocosUnloadBundle(manager, uiPackage, registeredPackages),
     });
 }

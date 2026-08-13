@@ -19,10 +19,7 @@ function parseGridKey(gridKey: string): { readonly row: number; readonly col: nu
 }
 
 /** 曼哈顿距离：|Δrow| + |Δcol|（移动前移的射程判定依据）。 */
-export function manhattanDistance(
-    from: GridKey,
-    to: GridKey,
-): number {
+export function manhattanDistance(from: GridKey, to: GridKey): number {
     const a = parseGridKey(from);
     const b = parseGridKey(to);
     if (a === undefined || b === undefined) {
@@ -32,10 +29,7 @@ export function manhattanDistance(
 }
 
 /** 同排前移一步：同一 row 向目标 col 方向推进一列。返回目标格；越界/解析失败返回 undefined。 */
-function stepToward(
-    current: GridKey,
-    target: GridKey,
-): GridKey | undefined {
+function stepToward(current: GridKey, target: GridKey): GridKey | undefined {
     const cur = parseGridKey(current);
     const tgt = parseGridKey(target);
     if (cur === undefined || tgt === undefined) {
@@ -59,12 +53,7 @@ function stepToward(
  * - 超射程但同排推进受限（非同排/占用/边界）返回 destination=起点（不移动）。
  * 无副作用、无随机，同输入同输出（确定性）；battle 消费返回路径执行 grid.move。
  */
-export function resolveMovePath(
-    grid: MapGrid,
-    actorGrid: GridKey,
-    targetGrid: GridKey,
-    attackRange: number,
-): AutoBattleMovePath {
+export function resolveMovePath(grid: MapGrid, actorGrid: GridKey, targetGrid: GridKey, attackRange: number): AutoBattleMovePath {
     if (manhattanDistance(actorGrid, targetGrid) <= attackRange) {
         return { steps: [], destination: actorGrid };
     }

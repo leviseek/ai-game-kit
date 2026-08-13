@@ -1,15 +1,6 @@
 import type { Binding } from "../../../framework";
 import type { CardBattleState } from "../models";
-import {
-    END_TURN_BUTTON_NODE,
-    ENEMY_HP_BAR_NODE,
-    ENEMY_HP_TEXT_NODE,
-    HAND_CARD_BUTTONS,
-    MANA_TEXT_NODE,
-    PLAYER_HP_TEXT_NODE,
-    RESTART_BUTTON_NODE,
-    RESULT_TEXT_NODE,
-} from "../nodes";
+import { END_TURN_BUTTON_NODE, ENEMY_HP_BAR_NODE, ENEMY_HP_TEXT_NODE, HAND_CARD_BUTTONS, MANA_TEXT_NODE, PLAYER_HP_TEXT_NODE, RESTART_BUTTON_NODE, RESULT_TEXT_NODE } from "../nodes";
 
 /**
  * 战场页 ViewModel：从战斗状态派生的纯呈现数据，只承载节点需要的字段，
@@ -31,10 +22,7 @@ export interface CardBattleCommands {
 }
 
 /** VM 派生：把战斗状态映射为页面呈现数据。 */
-export function createCardBattleViewModel(
-    state: CardBattleState,
-    enemyHpMax: number,
-): CardBattleViewModel {
+export function createCardBattleViewModel(state: CardBattleState, enemyHpMax: number): CardBattleViewModel {
     return {
         playerHp: state.playerHp,
         enemyHp: state.enemyHp,
@@ -49,9 +37,7 @@ export function createCardBattleViewModel(
  * 不导入 fgui）。节点名与 BattleView.xml 子元素名对齐（txt_/bar_/btn_ 前缀）。
  * 命令绑定把节点点击接入战斗操作。
  */
-export function createCardBattleBindings(
-    commands: CardBattleCommands,
-): readonly Binding<CardBattleViewModel>[] {
+export function createCardBattleBindings(commands: CardBattleCommands): readonly Binding<CardBattleViewModel>[] {
     return [
         { kind: "text", node: PLAYER_HP_TEXT_NODE, get: (vm) => `HP ${vm.playerHp}` },
         { kind: "text", node: ENEMY_HP_TEXT_NODE, get: (vm) => `HP ${vm.enemyHp}` },
@@ -73,8 +59,7 @@ export function createCardBattleBindings(
         {
             kind: "text",
             node: RESULT_TEXT_NODE,
-            get: (vm) =>
-                vm.result === "win" ? "胜利" : vm.result === "lose" ? "战败" : "",
+            get: (vm) => (vm.result === "win" ? "胜利" : vm.result === "lose" ? "战败" : ""),
         },
         { kind: "command", node: RESTART_BUTTON_NODE, run: () => commands.restart() },
     ];

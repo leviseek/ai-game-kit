@@ -1,26 +1,9 @@
-import {
-    createUiNavigator,
-    FuiViewCleanupError,
-    type Logger,
-    type ResourceHandle,
-    type ResourceScope,
-    type UiLayer,
-    type UiNavigator,
-} from "../../framework";
+import { createUiNavigator, FuiViewCleanupError, type Logger, type ResourceHandle, type ResourceScope, type UiLayer, type UiNavigator } from "../../framework";
 import type { IResourceProvider } from "../../framework";
 import type { FuiViewBindingResolver } from "../../framework/core/fui/FuiViewBinderRegistry";
-import {
-    createFairyGuiPageAdapter,
-    type FairyGuiPageAdapter,
-} from "../../framework/adapters/cocos/ui/FairyGuiPageAdapter";
-import {
-    createFairyGuiBoundView,
-    type FuiObjectFactory,
-} from "../../framework/adapters/cocos/ui/FuiViewHost";
-import type {
-    CocosUiRoot,
-    GRootLike,
-} from "../../framework/adapters/cocos/ui/CocosUiRoot";
+import { createFairyGuiPageAdapter, type FairyGuiPageAdapter } from "../../framework/adapters/cocos/ui/FairyGuiPageAdapter";
+import { createFairyGuiBoundView, type FuiObjectFactory } from "../../framework/adapters/cocos/ui/FuiViewHost";
+import type { CocosUiRoot, GRootLike } from "../../framework/adapters/cocos/ui/CocosUiRoot";
 
 /**
  * UI 根宿主依赖：由组合根把装配好的引擎接缝注入，AppRoot/BootFlow/GameLobbyHostImpl
@@ -70,11 +53,7 @@ export class UiHost {
         try {
             this.uiRoot.init();
         } catch (error) {
-            this.logger.error(
-                "[ui] FairyGUI UI root initialization failed",
-                undefined,
-                error instanceof Error ? error : undefined,
-            );
+            this.logger.error("[ui] FairyGUI UI root initialization failed", undefined, error instanceof Error ? error : undefined);
         }
     }
 
@@ -127,12 +106,7 @@ export class UiHost {
     }
 
     /** 冒烟触发：打开页面。pageAdapter 未就绪时返回 false；页面创建失败保留诊断。 */
-    openPage(
-        route: string,
-        layer: UiLayer,
-        packageName: string,
-        resName: string,
-    ): boolean {
+    openPage(route: string, layer: UiLayer, packageName: string, resName: string): boolean {
         if (!this.ensurePageAdapter() || this.adapter === undefined) {
             return false;
         }

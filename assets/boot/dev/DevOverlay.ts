@@ -4,22 +4,10 @@ import { createCocosDeviceInfo } from "../../framework/adapters/cocos/device/Coc
 import { createCocosViewportInfo } from "../../framework/adapters/cocos/viewport/CocosViewportInfo";
 import { createDevOverlayView } from "../../framework/adapters/cocos/ui/DevOverlayViewHandle";
 import type { GRootLike } from "../../framework/adapters/cocos/ui/CocosUiRoot";
-import {
-    createDevBallController,
-    type DevBallController,
-} from "./DevBall";
-import {
-    createSafeAreaOverlayController,
-    type SafeAreaOverlayController,
-    type SafeAreaInset,
-    type SafeAreaRect,
-} from "./SafeAreaOverlayController";
+import { createDevBallController, type DevBallController } from "./DevBall";
+import { createSafeAreaOverlayController, type SafeAreaOverlayController, type SafeAreaInset, type SafeAreaRect } from "./SafeAreaOverlayController";
 import { createDevPresentationClock } from "./DevClock";
-import {
-    createDevInfoSampler,
-    type DevInfoSampler,
-    type ViewportInfo,
-} from "./DevInfo";
+import { createDevInfoSampler, type DevInfoSampler, type ViewportInfo } from "./DevInfo";
 import { sampleProfilerStats } from "../profiler";
 import { BUNDLES, PACKAGE_PATHS } from "../constants";
 
@@ -108,13 +96,10 @@ function defaultDrive(tick: () => void): { dispose(): void } {
 // 者的 overlay（正常仅一个 persistRootNode，此约定记录以免误用）。
 const mountedByRoot = new WeakMap<object, DevOverlayMountHandle>();
 
-function createOverlayHandle(
-    key: object,
-    options: DevOverlayMountOptions,
-): DevOverlayMountHandle {
+function createOverlayHandle(key: object, options: DevOverlayMountOptions): DevOverlayMountHandle {
     const view = options.createView();
     if (view === undefined) {
-        return { mounted: false, dispose(): void { } };
+        return { mounted: false, dispose(): void {} };
     }
 
     // 安全区框：视图创建失败时退化为不显示（undefined），装配仍可挂载
@@ -183,7 +168,7 @@ function createOverlayHandle(
  */
 export function mountDevOverlay(options: DevOverlayMountOptions): DevOverlayMountHandle {
     if (!options.isDevEnabled()) {
-        return { mounted: false, dispose(): void { } };
+        return { mounted: false, dispose(): void {} };
     }
     const key = options.root as object;
     const existing = mountedByRoot.get(key);
@@ -223,9 +208,7 @@ export interface DevOverlayHostSetupOptions {
         /** 实际分辨率快照（物理 + 逻辑像素）。 */
         readonly sample: () => ViewportInfo;
         /** 安全区 inset（相对指定容器尺寸的 GRoot 坐标系）。 */
-        readonly readSafeAreaInset: (
-            bounds: { readonly width: number; readonly height: number },
-        ) => SafeAreaInset;
+        readonly readSafeAreaInset: (bounds: { readonly width: number; readonly height: number }) => SafeAreaInset;
     };
     /** 安全区框视图工厂（组合根注入 Adapter 句柄）；缺省不显示安全区框。 */
     readonly createSafeAreaView?: () => DevOverlaySafeAreaViewSeam | undefined;
@@ -250,7 +233,7 @@ const GRootRetryOptions = { maxAttempts: 20, intervalMs: 100 } as const;
  */
 export function setupDevOverlay(options: DevOverlayHostSetupOptions): DevOverlaySetupHandle {
     if (!options.isDevEnabled()) {
-        return { mounted: false, dispose(): void { } };
+        return { mounted: false, dispose(): void {} };
     }
 
     let disposed = false;
@@ -284,10 +267,7 @@ export function setupDevOverlay(options: DevOverlayHostSetupOptions): DevOverlay
 
         void (async () => {
             try {
-                const loadHandle = await options.host.loadPackage(
-                    BUNDLES.ui,
-                    PACKAGE_PATHS.devOverlay,
-                );
+                const loadHandle = await options.host.loadPackage(BUNDLES.ui, PACKAGE_PATHS.devOverlay);
                 if (disposed) {
                     return;
                 }
@@ -300,8 +280,7 @@ export function setupDevOverlay(options: DevOverlayHostSetupOptions): DevOverlay
                 }
                 // 墙钟供运行时间采样；GameClock（表现时间）供悬浮球动画插值（ADR-029）
                 // viewport 缺省装配 Adapter 读取器（对齐 createCocosDeviceInfo 模式）
-                const viewportInfo =
-                    options.viewport ?? createCocosViewportInfo();
+                const viewportInfo = options.viewport ?? createCocosViewportInfo();
                 const sampler = createDevInfoSampler({
                     clock: new WallClock(),
                     device: createCocosDeviceInfo(),
@@ -325,17 +304,17 @@ export function setupDevOverlay(options: DevOverlayHostSetupOptions): DevOverlay
                         options.createSafeAreaView === undefined
                             ? undefined
                             : {
-                                readSafeArea: () =>
-                                    viewportInfo.readSafeAreaInset({
-                                        width: root.width,
-                                        height: root.height,
-                                    }),
-                                readBounds: () => ({
-                                    width: root.width,
-                                    height: root.height,
-                                }),
-                                createView: options.createSafeAreaView,
-                            },
+                                  readSafeArea: () =>
+                                      viewportInfo.readSafeAreaInset({
+                                          width: root.width,
+                                          height: root.height,
+                                      }),
+                                  readBounds: () => ({
+                                      width: root.width,
+                                      height: root.height,
+                                  }),
+                                  createView: options.createSafeAreaView,
+                              },
                     drive:
                         options.drive ??
                         ((tick) => {
@@ -350,11 +329,7 @@ export function setupDevOverlay(options: DevOverlayHostSetupOptions): DevOverlay
                 mounted = handle.mounted;
             } catch (error) {
                 if (!disposed) {
-                    options.logger.error(
-                        "[dev] dev overlay mount failed",
-                        undefined,
-                        error instanceof Error ? error : undefined,
-                    );
+                    options.logger.error("[dev] dev overlay mount failed", undefined, error instanceof Error ? error : undefined);
                 }
             }
         })();

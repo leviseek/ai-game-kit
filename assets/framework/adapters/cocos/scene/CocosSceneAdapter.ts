@@ -2,10 +2,7 @@ import * as cc from "cc";
 
 // 结构化的引擎接缝：只依赖本适配器用到的能力，便于测试注入 mock
 interface CocosDirectorLike {
-    loadScene(
-        sceneName: string,
-        onLaunched?: (error: Error | null, scene?: unknown) => void,
-    ): boolean;
+    loadScene(sceneName: string, onLaunched?: (error: Error | null, scene?: unknown) => void): boolean;
 }
 
 export interface CocosSceneAdapterOptions {
@@ -26,9 +23,7 @@ export interface CocosSceneAdapter {
  * 只做薄映射，场景资源所有权与释放仍由 SceneFlow 通过资源提供者管理；
  * 不修改 startup.scene 序列化内容。
  */
-export function createCocosSceneAdapter(
-    options: CocosSceneAdapterOptions = {},
-): CocosSceneAdapter {
+export function createCocosSceneAdapter(options: CocosSceneAdapterOptions = {}): CocosSceneAdapter {
     // 惰性读取 cc.director：未注入时才使用引擎默认实例
     const director = options.director ?? cc.director;
 

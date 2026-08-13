@@ -1,7 +1,4 @@
-import {
-    createStore,
-    type Store,
-} from "../../framework";
+import { createStore, type Store } from "../../framework";
 
 /** 关闭对话框演示状态：可见性 + 内容文案。 */
 export interface CloseDialogState {
@@ -9,16 +6,10 @@ export interface CloseDialogState {
     readonly content: string;
 }
 
-export type CloseDialogAction =
-    | { readonly type: "open"; readonly content: string }
-    | { readonly type: "confirm" }
-    | { readonly type: "cancel" };
+export type CloseDialogAction = { readonly type: "open"; readonly content: string } | { readonly type: "confirm" } | { readonly type: "cancel" };
 
 /** 关闭对话框演示 reducer：纯函数，不可变更新。 */
-export function closeDialogReducer(
-    state: CloseDialogState,
-    action: CloseDialogAction,
-): CloseDialogState {
+export function closeDialogReducer(state: CloseDialogState, action: CloseDialogAction): CloseDialogState {
     switch (action.type) {
         case "open":
             return { visible: true, content: action.content };

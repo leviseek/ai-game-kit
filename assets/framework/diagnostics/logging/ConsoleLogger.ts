@@ -1,12 +1,5 @@
-import type {
-    LogContext,
-    Logger,
-    LogRecord,
-} from "../../contracts/logging/Logger";
-import {
-    createScopedLogger,
-    type LogRecordFilter,
-} from "./ScopedLogger";
+import type { LogContext, Logger, LogRecord } from "../../contracts/logging/Logger";
+import { createScopedLogger, type LogRecordFilter } from "./ScopedLogger";
 import { redactRecord } from "./redact";
 
 interface ConsoleOutput {
@@ -23,18 +16,8 @@ interface ConsoleOutput {
 export class ConsoleLogger implements Logger {
     private readonly delegate: Logger;
 
-    public constructor(
-        output: ConsoleOutput = console,
-        scope = "",
-        context: LogContext = {},
-        filter: LogRecordFilter = redactRecord,
-    ) {
-        this.delegate = createScopedLogger(
-            (record) => output[record.level](record),
-            scope,
-            context,
-            filter,
-        );
+    public constructor(output: ConsoleOutput = console, scope = "", context: LogContext = {}, filter: LogRecordFilter = redactRecord) {
+        this.delegate = createScopedLogger((record) => output[record.level](record), scope, context, filter);
     }
 
     public debug(message: string, context?: LogContext): void {

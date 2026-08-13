@@ -1,13 +1,7 @@
 import type { Logger } from "../logging/Logger";
 
 // 应用状态机推进方向：created -> initializing -> running <-> paused -> stopping -> disposed。
-export type ApplicationState =
-    | "created"
-    | "initializing"
-    | "running"
-    | "paused"
-    | "stopping"
-    | "disposed";
+export type ApplicationState = "created" | "initializing" | "running" | "paused" | "stopping" | "disposed";
 
 export interface ApplicationLifecycle {
     readonly state: ApplicationState;

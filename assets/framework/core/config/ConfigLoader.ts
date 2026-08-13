@@ -9,8 +9,7 @@ function unwrapCause(error: unknown): unknown {
     // FrameworkError 把 cause 传给 Error 构造器，但类本身未声明该字段
     // （ES2015 lib 无 Error.cause）；此处按已知形状窄化后读取。
     if (error instanceof FrameworkError) {
-        const cause = (error as FrameworkError & { readonly cause?: unknown })
-            .cause;
+        const cause = (error as FrameworkError & { readonly cause?: unknown }).cause;
         return cause !== undefined ? cause : error;
     }
     return error;
@@ -28,12 +27,7 @@ function unwrapCause(error: unknown): unknown {
  * extractContent 把加载到的引擎资源转换为配置内容；缺省原样透传，
  * Cocos 适配器用它把 JsonAsset 解包为纯数据后再走 createConfigTable。
  */
-export async function loadConfigTable(
-    provider: IResourceProvider,
-    bundle: string,
-    path: string,
-    extractContent: (resource: unknown) => unknown = (resource) => resource,
-): Promise<ConfigTable> {
+export async function loadConfigTable(provider: IResourceProvider, bundle: string, path: string, extractContent: (resource: unknown) => unknown = (resource) => resource): Promise<ConfigTable> {
     const handle = provider.load(bundle, path);
     const settled = await handle.done;
 

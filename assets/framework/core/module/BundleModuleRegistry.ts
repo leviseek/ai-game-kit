@@ -30,15 +30,10 @@ export function getBundleModuleRegistry(): BundleModuleRegistry {
     return registry;
 }
 
-export function registerBundle(
-    name: string,
-    exports: Readonly<Record<string, unknown>>,
-): void {
+export function registerBundle(name: string, exports: Readonly<Record<string, unknown>>): void {
     getBundleModuleRegistry().registerBundle(name, exports);
 }
 
-export function lookupBundle(
-    name: string,
-): Readonly<Record<string, unknown>> | undefined {
+export function lookupBundle(name: string): Readonly<Record<string, unknown>> | undefined {
     return getBundleModuleRegistry().lookupBundle(name);
 }

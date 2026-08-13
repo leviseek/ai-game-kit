@@ -1,10 +1,6 @@
 import type { DisposeHandle } from "../scheduling/DisposeHandle";
 
-export type StateHook<State extends string, Event extends string> = (
-    from: State,
-    event: Event,
-    to: State,
-) => void;
+export type StateHook<State extends string, Event extends string> = (from: State, event: Event, to: State) => void;
 
 export type StateTransitionTable<State extends string, Event extends string> = {
     readonly [from in State]?: { readonly [event in Event]?: State };
@@ -30,15 +26,12 @@ export interface StateMachine<State extends string, Event extends string> {
 }
 
 const NOOP_HANDLE: DisposeHandle = {
-    dispose: () => { },
+    dispose: () => {},
 };
 
-export function createStateMachine<State extends string, Event extends string>(
-    options: StateMachineOptions<State, Event>,
-): StateMachine<State, Event> {
+export function createStateMachine<State extends string, Event extends string>(options: StateMachineOptions<State, Event>): StateMachine<State, Event> {
     const { initial, transitions, hooks } = options;
-    const reportFailure =
-        options.onTransitionError ?? ((error: unknown) => console.error(error));
+    const reportFailure = options.onTransitionError ?? ((error: unknown) => console.error(error));
 
     let current: State = initial;
     let disposed = false;
@@ -58,11 +51,7 @@ export function createStateMachine<State extends string, Event extends string>(
         }
 
         if (inTransition) {
-            report(
-                new Error(
-                    `StateMachine rejected reentrant event "${String(event)}" from state "${String(current)}"`,
-                ),
-            );
+            report(new Error(`StateMachine rejected reentrant event "${String(event)}" from state "${String(current)}"`));
             return;
         }
 
@@ -71,11 +60,7 @@ export function createStateMachine<State extends string, Event extends string>(
         const to = eventTransitions?.[event];
 
         if (to === undefined) {
-            report(
-                new Error(
-                    `StateMachine rejected event "${String(event)}" from state "${String(from)}"`,
-                ),
-            );
+            report(new Error(`StateMachine rejected event "${String(event)}" from state "${String(from)}"`));
             return;
         }
 

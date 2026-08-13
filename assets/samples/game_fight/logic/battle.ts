@@ -1,9 +1,5 @@
 import type { Module } from "../../../framework";
-import type {
-    FightBattleState,
-    FightFrameData,
-    FightHitbox,
-} from "../models";
+import type { FightBattleState, FightFrameData, FightHitbox } from "../models";
 import type { FightEffect } from "./pool";
 import type { FightEffectPool } from "./pool";
 
@@ -56,12 +52,7 @@ interface ActiveMoveState {
 
 /** 矩形相交判定：判定盒与敌人判定区域是否重叠。 */
 function hitboxesOverlap(a: FightHitbox, b: FightHitbox): boolean {
-    return (
-        a.x < b.x + b.width &&
-        a.x + a.width > b.x &&
-        a.y < b.y + b.height &&
-        a.y + a.height > b.y
-    );
+    return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
 }
 
 /** 战斗控制器句柄：固定步长逐帧推进，命中经对象池产生特效并播放音频。 */
@@ -87,11 +78,9 @@ export interface FightBattleOptions {
  * 帧数据结算，active 窗口内判定盒命中敌人则造成伤害、连招 +1、从对象池
  * 借出命中特效并通知音频播放。对象池复用而非反复创建（created 保持小值）。
  */
-export function createFightBattle(
-    options: FightBattleOptions,
-): FightBattleHandle {
+export function createFightBattle(options: FightBattleOptions): FightBattleHandle {
     const pool = options.pool;
-    const reportHit = options.onHit ?? (() => { });
+    const reportHit = options.onHit ?? (() => {});
 
     let frame = 0;
     const playerHp = PLAYER_START_HP;
@@ -140,12 +129,7 @@ export function createFightBattle(
             const { move } = current;
 
             // 命中窗口：活动帧内判定盒与敌人相交，每个招式只结算一次
-            if (
-                !current.hitApplied &&
-                current.frameInMove > move.startupFrames &&
-                current.frameInMove <= move.startupFrames + move.activeFrames &&
-                hitboxesOverlap(move.hitbox, ENEMY_BODY)
-            ) {
+            if (!current.hitApplied && current.frameInMove > move.startupFrames && current.frameInMove <= move.startupFrames + move.activeFrames && hitboxesOverlap(move.hitbox, ENEMY_BODY)) {
                 current.hitApplied = true;
                 enemyHp = Math.max(0, enemyHp - move.damage);
                 combo += 1;
@@ -155,10 +139,7 @@ export function createFightBattle(
             }
 
             // 招式结束：startup + active + recovery 帧后回到空闲，归还命中特效
-            if (
-                current.frameInMove >=
-                move.startupFrames + move.activeFrames + move.recoveryFrames
-            ) {
+            if (current.frameInMove >= move.startupFrames + move.activeFrames + move.recoveryFrames) {
                 if (current.effect !== undefined) {
                     pool.release(current.effect);
                 }

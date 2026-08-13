@@ -1,7 +1,4 @@
-import type {
-    AutoBattleUnit,
-    AutoBattleUnitState,
-} from "../models";
+import type { AutoBattleUnit, AutoBattleUnitState } from "../models";
 import type { AutoBattleUnitView } from "./formation";
 
 /** 战斗内部可变单位：静态定义 + 可变 HP/能量 + 所在网格格，实现阵列查询视图结构。 */
@@ -20,10 +17,7 @@ export interface MutableUnit extends AutoBattleUnitView {
 }
 
 /** 从静态定义构造战斗初始单位：满血零能量，只读字段委托 def 读取。 */
-export function createMutableUnit(
-    def: AutoBattleUnit,
-    gridKey: string,
-): MutableUnit {
+export function createMutableUnit(def: AutoBattleUnit, gridKey: string): MutableUnit {
     return {
         get id() {
             return def.id;
@@ -52,9 +46,7 @@ export function createMutableUnit(
 }
 
 /** 可变单位数组 → 状态快照数组：供战斗 state 与行动序列重建读取。 */
-export function snapshotUnits(
-    units: readonly MutableUnit[],
-): readonly AutoBattleUnitState[] {
+export function snapshotUnits(units: readonly MutableUnit[]): readonly AutoBattleUnitState[] {
     return units.map((unit) => ({
         ...unit.def,
         hp: unit.hp,

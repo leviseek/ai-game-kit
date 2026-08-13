@@ -26,9 +26,7 @@ export interface InputSample<TAction> {
 }
 
 /** 单个输入上下文下的映射声明：底层输入源 → action。 */
-export type InputMapping<TAction> = Readonly<
-    Record<InputSourceId, TAction>
->;
+export type InputMapping<TAction> = Readonly<Record<InputSourceId, TAction>>;
 
 /**
  * 可替换的底层输入源。订阅后持续推送底层输入事件，取消订阅返回句柄；

@@ -1,9 +1,5 @@
 import type { ApplicationContext } from "../contracts/application/ApplicationContext";
-import type {
-    Module,
-    ModulePhase,
-    ModuleRuntimeState,
-} from "../contracts/module/Module";
+import type { Module, ModulePhase, ModuleRuntimeState } from "../contracts/module/Module";
 import { FrameworkError } from "../core/errors/FrameworkError";
 import { ModuleLifecycleError } from "./ModuleLifecycleError";
 
@@ -12,10 +8,7 @@ type CleanupPhase = "stop" | "dispose";
 class ModuleCleanupError extends FrameworkError {
     readonly errors: readonly ModuleLifecycleError[];
 
-    constructor(
-        errors: readonly ModuleLifecycleError[],
-        cause: ModuleLifecycleError,
-    ) {
+    constructor(errors: readonly ModuleLifecycleError[], cause: ModuleLifecycleError) {
         super("Module cleanup failed", { cause });
 
         this.name = "ModuleCleanupError";
@@ -34,10 +27,7 @@ export class ModuleRunner {
     private readonly context: ApplicationContext;
     private readonly states = new Map<string, ModuleRuntimeState>();
 
-    constructor(
-        modules: readonly Module[],
-        context: ApplicationContext,
-    ) {
+    constructor(modules: readonly Module[], context: ApplicationContext) {
         this.modules = [...modules];
         this.context = context;
 
@@ -60,17 +50,9 @@ export class ModuleRunner {
                 await this.invokePhase(module, "initialize");
                 this.states.set(module.id, "initialized");
             } catch (error) {
-                const primaryError = this.asLifecycleError(
-                    module,
-                    "initialize",
-                    error,
-                );
+                const primaryError = this.asLifecycleError(module, "initialize", error);
                 // 初始化失败只 dispose 已进入 initialized 的模块；尚未初始化的保持 registered。
-                const cleanupErrors = await this.cleanup(
-                    "dispose",
-                    (state) => state === "initialized",
-                    "disposed",
-                );
+                const cleanupErrors = await this.cleanup("dispose", (state) => state === "initialized", "disposed");
 
                 this.throwLifecycleFailure(primaryError, cleanupErrors);
             }
@@ -89,25 +71,10 @@ export class ModuleRunner {
             } catch (error) {
                 const primaryError = this.asLifecycleError(module, "start", error);
                 // 启动失败分两层回滚：先 stop 已 started 的模块，再 dispose 所有已注册的模块。
-                const stopErrors = await this.cleanup(
-                    "stop",
-                    (state) => state === "started",
-                    "stopped",
-                );
-                const disposeErrors = await this.cleanup(
-                    "dispose",
-                    (state) =>
-                        state === "initialized" ||
-                        state === "started" ||
-                        state === "paused" ||
-                        state === "stopped",
-                    "disposed",
-                );
+                const stopErrors = await this.cleanup("stop", (state) => state === "started", "stopped");
+                const disposeErrors = await this.cleanup("dispose", (state) => state === "initialized" || state === "started" || state === "paused" || state === "stopped", "disposed");
 
-                this.throwLifecycleFailure(
-                    primaryError,
-                    [...stopErrors, ...disposeErrors],
-                );
+                this.throwLifecycleFailure(primaryError, [...stopErrors, ...disposeErrors]);
             }
         }
     }
@@ -139,41 +106,22 @@ export class ModuleRunner {
     }
 
     async stop(): Promise<void> {
-        const errors = await this.cleanup(
-            "stop",
-            (state) => state === "started" || state === "paused",
-            "stopped",
-        );
+        const errors = await this.cleanup("stop", (state) => state === "started" || state === "paused", "stopped");
 
         this.throwCleanupErrors(errors);
     }
 
     async dispose(): Promise<void> {
-        const errors = await this.cleanup(
-            "dispose",
-            (state) =>
-                state === "initialized" ||
-                state === "started" ||
-                state === "paused" ||
-                state === "stopped",
-            "disposed",
-        );
+        const errors = await this.cleanup("dispose", (state) => state === "initialized" || state === "started" || state === "paused" || state === "stopped", "disposed");
 
         this.throwCleanupErrors(errors);
     }
 
-    private async invokePhase(
-        module: Module,
-        phase: ModulePhase,
-    ): Promise<void> {
+    private async invokePhase(module: Module, phase: ModulePhase): Promise<void> {
         try {
             await module[phase]?.call(module, this.context);
         } catch (error) {
-            const lifecycleError = new ModuleLifecycleError(
-                module.id,
-                phase,
-                error,
-            );
+            const lifecycleError = new ModuleLifecycleError(module.id, phase, error);
 
             this.context.logger.error(
                 "Module lifecycle failed",
@@ -195,11 +143,7 @@ export class ModuleRunner {
         });
     }
 
-    private async cleanup(
-        phase: CleanupPhase,
-        shouldRun: (state: ModuleRuntimeState | undefined) => boolean,
-        completedState: ModuleRuntimeState,
-    ): Promise<ModuleLifecycleError[]> {
+    private async cleanup(phase: CleanupPhase, shouldRun: (state: ModuleRuntimeState | undefined) => boolean, completedState: ModuleRuntimeState): Promise<ModuleLifecycleError[]> {
         const errors: ModuleLifecycleError[] = [];
         // 通用清理：按谓词判定每个模块应从何状态清理到 completedState，避免硬编码状态集合。
         // 逆序遍历保证后启动的模块先清理。
@@ -221,20 +165,11 @@ export class ModuleRunner {
         return errors;
     }
 
-    private asLifecycleError(
-        module: Module,
-        phase: ModulePhase,
-        error: unknown,
-    ): ModuleLifecycleError {
-        return error instanceof ModuleLifecycleError
-            ? error
-            : new ModuleLifecycleError(module.id, phase, error);
+    private asLifecycleError(module: Module, phase: ModulePhase, error: unknown): ModuleLifecycleError {
+        return error instanceof ModuleLifecycleError ? error : new ModuleLifecycleError(module.id, phase, error);
     }
 
-    private throwLifecycleFailure(
-        primaryError: ModuleLifecycleError,
-        cleanupErrors: readonly ModuleLifecycleError[],
-    ): never {
+    private throwLifecycleFailure(primaryError: ModuleLifecycleError, cleanupErrors: readonly ModuleLifecycleError[]): never {
         if (cleanupErrors.length > 0) {
             throw new ModuleCleanupError(cleanupErrors, primaryError);
         }
@@ -242,9 +177,7 @@ export class ModuleRunner {
         throw primaryError;
     }
 
-    private throwCleanupErrors(
-        errors: readonly ModuleLifecycleError[],
-    ): void {
+    private throwCleanupErrors(errors: readonly ModuleLifecycleError[]): void {
         if (errors.length > 0) {
             throw new ModuleCleanupError(errors, errors[0]);
         }

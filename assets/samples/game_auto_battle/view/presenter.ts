@@ -7,14 +7,7 @@ import type { AutoBattleSide } from "../models";
 import { projectHitFeedbackEvents } from "./effects";
 import { createEffectAnimator } from "./EffectAnimator";
 import { createVsEntranceTemplate } from "./VsEntrance";
-import {
-    buildAutoBattleBindings,
-    createAutoBattleViewModel,
-    formatAutoBattleEvent,
-    gridToXY,
-    type AutoBattleCommands,
-    type AutoBattleViewModel,
-} from "./view";
+import { buildAutoBattleBindings, createAutoBattleViewModel, formatAutoBattleEvent, gridToXY, type AutoBattleCommands, type AutoBattleViewModel } from "./view";
 
 /** VS 阶段子时长（ms）：入场（武将向中心+淡入）→ 定格 → 淡出。 */
 const VS_ENTRANCE_MS = 550;
@@ -36,10 +29,7 @@ const ENTRANCE_PHASE_MS = 750;
  * 渲染之上（每帧投影 → play → step），动画终态回到 state 姿态。restart 重置
  * 回 VS 阶段并重放覆盖层。dispose 清理渲染器、动画器、VS 覆盖层与时钟驱动。
  */
-export function createAutoBattlePresenter(
-    fixture: GameFixture,
-    node: (name: string) => ViewModelNode | undefined,
-): GamePresenter {
+export function createAutoBattlePresenter(fixture: GameFixture, node: (name: string) => ViewModelNode | undefined): GamePresenter {
     const autoBattle = fixture as AutoBattleFixture;
 
     // 表现时间控制点：动画/阶段/驱动节拍的统一时间源（全局 rate/pause/jump 经它控制）。
@@ -70,9 +60,7 @@ export function createAutoBattlePresenter(
         node: (name: string) => node(name),
         timeSource: () => gameClock.now(),
         homeXYOf: (unitId: string) => {
-            const unit = autoBattle.battle.state.units.find(
-                (candidate) => candidate.id === unitId,
-            );
+            const unit = autoBattle.battle.state.units.find((candidate) => candidate.id === unitId);
             return unit === undefined ? { x: 0, y: 0 } : gridToXY(unit.gridKey);
         },
         gridXYOf: (gridKey: string) => gridToXY(gridKey),
@@ -80,9 +68,7 @@ export function createAutoBattlePresenter(
 
     /** 每方队长：index 最小存活单位（VS 覆盖层展示用，纯读取 state）。 */
     function leaderOf(side: AutoBattleSide): string {
-        const leaders = autoBattle.battle.state.units
-            .filter((unit) => unit.side === side && unit.hp > 0)
-            .sort((a, b) => a.index - b.index);
+        const leaders = autoBattle.battle.state.units.filter((unit) => unit.side === side && unit.hp > 0).sort((a, b) => a.index - b.index);
         const leader = leaders[0];
         return leader === undefined ? "" : leader.name;
     }
@@ -142,11 +128,8 @@ export function createAutoBattlePresenter(
 
     function render(): void {
         const state = autoBattle.battle.state;
-        const nameOf = (id: string): string =>
-            state.units.find((unit) => unit.id === id)?.name ?? id;
-        const log = autoBattle.battle.events.map((event) =>
-            formatAutoBattleEvent(event, nameOf),
-        );
+        const nameOf = (id: string): string => state.units.find((unit) => unit.id === id)?.name ?? id;
+        const log = autoBattle.battle.events.map((event) => formatAutoBattleEvent(event, nameOf));
         const vm = createAutoBattleViewModel(state, log, autoBattle.getSpeed());
         renderer.setBindings(buildAutoBattleBindings(autoBattleCommands, vm));
         renderer.setViewModel(vm);
@@ -154,10 +137,7 @@ export function createAutoBattlePresenter(
 
     /** 每帧推进命中反馈：投影新事件为特效意图并推进动画。 */
     function stepEffects(): void {
-        const { effects, cursor } = projectHitFeedbackEvents(
-            autoBattle.battle.events,
-            effectCursor,
-        );
+        const { effects, cursor } = projectHitFeedbackEvents(autoBattle.battle.events, effectCursor);
         effectCursor = cursor;
         effectAnimator.play(effects);
         effectAnimator.step();

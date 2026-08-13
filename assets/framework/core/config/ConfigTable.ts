@@ -1,14 +1,5 @@
-import type {
-    ConfigKey,
-    ConfigReadType,
-    ConfigTable,
-    ReadonlyConfigSnapshot,
-} from "../../contracts/config/Config";
-import {
-    ConfigMissingError,
-    ConfigParseError,
-    ConfigTypeMismatchError,
-} from "./ConfigErrors";
+import type { ConfigKey, ConfigReadType, ConfigTable, ReadonlyConfigSnapshot } from "../../contracts/config/Config";
+import { ConfigMissingError, ConfigParseError, ConfigTypeMismatchError } from "./ConfigErrors";
 
 // 以 `{`/`[` 开头（允许前导空白，与 JSON.parse 的宽容性一致）的字符串
 // 按 JSON 结构化内容解析；其余字符串不视为可解析内容。
@@ -27,10 +18,7 @@ function isStructuredString(value: unknown): value is string {
  * 其余形状不符属类型不匹配（ConfigTypeMismatchError）。
  * 解析产物在返回前深度冻结，与直接对象字段路径的只读语义保持一致。
  */
-function createStructuredType<T>(
-    name: string,
-    matches: (raw: unknown) => raw is T,
-): ConfigReadType<T> {
+function createStructuredType<T>(name: string, matches: (raw: unknown) => raw is T): ConfigReadType<T> {
     return {
         name,
         parse(key, raw) {
@@ -100,12 +88,10 @@ export const configBoolean: ConfigReadType<boolean> = {
 };
 
 /** 对象类型声明：接受纯对象或可解析为对象的 JSON 字符串。 */
-export const configObject: ConfigReadType<Record<string, unknown>> =
-    createStructuredType("object", isPlainObject);
+export const configObject: ConfigReadType<Record<string, unknown>> = createStructuredType("object", isPlainObject);
 
 /** 数组类型声明：接受数组或可解析为数组的 JSON 字符串。 */
-export const configArray: ConfigReadType<readonly unknown[]> =
-    createStructuredType("array", isArray);
+export const configArray: ConfigReadType<readonly unknown[]> = createStructuredType("array", isArray);
 
 // 递归冻结对象与数组：配置装载后整体不可变，读取方拿到的快照与表共享同一份
 // 冻结结构。用访问中的祖先 WeakSet 检测循环引用，避免递归栈溢出；
@@ -153,11 +139,7 @@ export function createConfigTable(content: unknown): ConfigTable {
 
     const entries = deepFreeze(content);
 
-    function read<T>(
-        key: ConfigKey,
-        type: ConfigReadType<T>,
-        defaultValue?: T,
-    ): T {
+    function read<T>(key: ConfigKey, type: ConfigReadType<T>, defaultValue?: T): T {
         if (!Object.prototype.hasOwnProperty.call(entries, key)) {
             if (defaultValue !== undefined) {
                 return defaultValue;

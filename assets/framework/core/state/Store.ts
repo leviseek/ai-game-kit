@@ -11,10 +11,7 @@ import type { Action, Store, StoreListener } from "../../contracts/state/Store";
  * reducer 必须是纯函数：相同 (state, action) 必得相同输出；不得修改入参 state。
  * 初始状态直接作为当前 state，dispatch 前订阅者不可见（首次投影由调用方读取）。
  */
-export function createStore<S, A extends Action>(
-    reducer: (state: S, action: A) => S,
-    initialState: S,
-): Store<S, A> {
+export function createStore<S, A extends Action>(reducer: (state: S, action: A) => S, initialState: S): Store<S, A> {
     let state = initialState;
     let disposed = false;
     const listeners = new Set<StoreListener<S>>();

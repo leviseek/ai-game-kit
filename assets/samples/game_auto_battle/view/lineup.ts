@@ -39,14 +39,8 @@ export interface LineupEditorCommands {
 }
 
 /** 编队页 VM 派生：候选区 = 英雄池（含上阵态），布阵区 = 定长槽（含选中格）。 */
-export function createLineupEditorViewModel(
-    heroes: readonly AutoBattleHero[],
-    lineup: AutoBattleLineup,
-    selectedSlot: number | null,
-): LineupEditorViewModel {
-    const deployed = new Set(
-        lineup.slots.filter((heroId): heroId is string => heroId !== null),
-    );
+export function createLineupEditorViewModel(heroes: readonly AutoBattleHero[], lineup: AutoBattleLineup, selectedSlot: number | null): LineupEditorViewModel {
+    const deployed = new Set(lineup.slots.filter((heroId): heroId is string => heroId !== null));
 
     return {
         candidates: heroes.map((hero) => ({
@@ -55,8 +49,7 @@ export function createLineupEditorViewModel(
             deployed: deployed.has(hero.id),
         })),
         slots: lineup.slots.map((heroId, slot) => {
-            const hero =
-                heroId === null ? undefined : heroes.find((h) => h.id === heroId);
+            const hero = heroId === null ? undefined : heroes.find((h) => h.id === heroId);
             return { slot, heroId, heroName: hero?.name ?? "" };
         }),
         selectedSlot,
@@ -69,9 +62,7 @@ export function createLineupEditorViewModel(
  * 的列表句柄（GList），不再走预置绑定。布阵格点击：未选中则选中、已选中且该格
  * 已上阵则卸下（spec：点击已上阵英雄卸下）。
  */
-export function createLineupEditorBindings(
-    commands: LineupEditorCommands,
-): readonly Binding<LineupEditorViewModel>[] {
+export function createLineupEditorBindings(commands: LineupEditorCommands): readonly Binding<LineupEditorViewModel>[] {
     const bindings: Binding<LineupEditorViewModel>[] = [
         { kind: "command", node: "btn_start", run: () => commands.startBattle() },
         {
@@ -82,8 +73,7 @@ export function createLineupEditorBindings(
     ];
 
     for (let slot = 0; slot < FORMATION_GRID_SIZE; slot += 1) {
-        const slotAt = (vm: LineupEditorViewModel): LineupSlotView | undefined =>
-            vm.slots[slot];
+        const slotAt = (vm: LineupEditorViewModel): LineupSlotView | undefined => vm.slots[slot];
         bindings.push(
             {
                 kind: "text",

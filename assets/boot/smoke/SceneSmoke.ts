@@ -21,9 +21,7 @@ export interface SceneSmokeContext {
  */
 export async function runSceneFlowSmoke(context: SceneSmokeContext): Promise<void> {
     const report = (step: string, ok: boolean, detail = "") => {
-        console.log(
-            `[scene-smoke] ${step}: ${ok ? "ok" : "FAIL"}${detail ? ` (${detail})` : ""}`,
-        );
+        console.log(`[scene-smoke] ${step}: ${ok ? "ok" : "FAIL"}${detail ? ` (${detail})` : ""}`);
     };
 
     // 1. 入口：初始场景 startup，game Bundle 尚无持有（可卸载）
@@ -71,11 +69,7 @@ export async function runSceneFlowSmoke(context: SceneSmokeContext): Promise<voi
         });
         switched = result.ok === true && result.sceneId === SCENES.game;
         report("switch", switched, String(result.reason ?? ""));
-        report(
-            "switch-scene",
-            director.getScene()?.name === SCENES.game,
-            director.getScene()?.name ?? "",
-        );
+        report("switch-scene", director.getScene()?.name === SCENES.game, director.getScene()?.name ?? "");
         report("switch-holds-game", !context.canUnload(BUNDLES.game));
     } catch (error) {
         report("switch", false, error instanceof Error ? error.message : String(error));

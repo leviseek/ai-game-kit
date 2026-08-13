@@ -1,21 +1,9 @@
 import type { ApplicationContext } from "../application/ApplicationContext";
 
 // phase 推进方向：initialize -> start -> pause/resume -> stop -> dispose（启动正序、清理逆序）。
-export type ModulePhase =
-    | "initialize"
-    | "start"
-    | "pause"
-    | "resume"
-    | "stop"
-    | "dispose";
+export type ModulePhase = "initialize" | "start" | "pause" | "resume" | "stop" | "dispose";
 
-export type ModuleRuntimeState =
-    | "registered"
-    | "initialized"
-    | "started"
-    | "paused"
-    | "stopped"
-    | "disposed";
+export type ModuleRuntimeState = "registered" | "initialized" | "started" | "paused" | "stopped" | "disposed";
 
 /**
  * 模块契约：业务模块只依赖本接口与 ApplicationContext，phase 方法可选、

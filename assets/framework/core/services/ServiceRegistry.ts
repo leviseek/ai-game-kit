@@ -46,19 +46,14 @@ export class ServiceResolutionError extends FrameworkError {
 
 export interface ServiceRegistry {
     register<T>(token: ServiceToken<T>, instance: T): void;
-    registerFactory<T>(
-        token: ServiceToken<T>,
-        factory: (resolve: <U>(token: ServiceToken<U>) => U) => T,
-    ): void;
+    registerFactory<T>(token: ServiceToken<T>, factory: (resolve: <U>(token: ServiceToken<U>) => U) => T): void;
     resolve<T>(token: ServiceToken<T>): T;
     isRegistered<T>(token: ServiceToken<T>): boolean;
 }
 
 // 已注册条目：实例直接持有，工厂持有创建函数。registerFactory 不缓存
 // 工厂解析结果，每次 resolve 按工厂当前实现重新求值。
-type Registration<T> =
-    | { readonly kind: "instance"; readonly value: T }
-    | { readonly kind: "factory"; readonly factory: (resolve: <U>(token: ServiceToken<U>) => U) => T };
+type Registration<T> = { readonly kind: "instance"; readonly value: T } | { readonly kind: "factory"; readonly factory: (resolve: <U>(token: ServiceToken<U>) => U) => T };
 
 export function createServiceRegistry(): ServiceRegistry {
     // 以 token 对象身份为键存储注册条目；运行期不依赖 token 结构内容。
@@ -106,10 +101,7 @@ export function createServiceRegistry(): ServiceRegistry {
             registrations.set(key, { kind: "instance", value: instance });
         },
 
-        registerFactory<T>(
-            token: ServiceToken<T>,
-            factory: (resolve: <U>(token: ServiceToken<U>) => U) => T,
-        ): void {
+        registerFactory<T>(token: ServiceToken<T>, factory: (resolve: <U>(token: ServiceToken<U>) => U) => T): void {
             const key = findToken(token);
 
             if (registrations.has(key)) {

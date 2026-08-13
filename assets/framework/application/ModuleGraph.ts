@@ -36,22 +36,15 @@ export class ModuleGraph {
         for (const module of registeredModules) {
             for (const dependencyId of module.dependencies) {
                 if (!modulesById.has(dependencyId)) {
-                    throw new Error(
-                        `Module "${module.id}" depends on missing module "${dependencyId}"`,
-                    );
+                    throw new Error(`Module "${module.id}" depends on missing module "${dependencyId}"`);
                 }
 
-                dependencyCount.set(
-                    module.id,
-                    (dependencyCount.get(module.id) ?? 0) + 1,
-                );
+                dependencyCount.set(module.id, (dependencyCount.get(module.id) ?? 0) + 1);
                 dependents.get(dependencyId)?.push(module);
             }
         }
 
-        const readyModules = registeredModules.filter(
-            (module) => dependencyCount.get(module.id) === 0,
-        );
+        const readyModules = registeredModules.filter((module) => dependencyCount.get(module.id) === 0);
         const orderedModules: Module[] = [];
 
         while (readyModules.length > 0) {
@@ -64,19 +57,14 @@ export class ModuleGraph {
             orderedModules.push(module);
 
             for (const dependent of dependents.get(module.id) ?? []) {
-                const remainingDependencies =
-                    (dependencyCount.get(dependent.id) ?? 0) - 1;
+                const remainingDependencies = (dependencyCount.get(dependent.id) ?? 0) - 1;
 
                 dependencyCount.set(dependent.id, remainingDependencies);
 
                 if (remainingDependencies === 0) {
                     readyModules.push(dependent);
                     // 多个模块同时就绪时按注册顺序排序，保证启动顺序确定、可复现。
-                    readyModules.sort(
-                        (left, right) =>
-                            (registrationIndex.get(left.id) ?? 0) -
-                            (registrationIndex.get(right.id) ?? 0),
-                    );
+                    readyModules.sort((left, right) => (registrationIndex.get(left.id) ?? 0) - (registrationIndex.get(right.id) ?? 0));
                 }
             }
         }

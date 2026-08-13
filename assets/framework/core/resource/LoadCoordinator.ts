@@ -1,17 +1,8 @@
 import { FrameworkError } from "../errors/FrameworkError";
-import type {
-    ResourceHandle,
-    ResourceKey,
-    ResourceLoadState,
-} from "../../contracts/resource/Resource";
+import type { ResourceHandle, ResourceKey, ResourceLoadState } from "../../contracts/resource/Resource";
 
 // 类型定义提升至 contracts/resource，此处 re-export 保持既有导入路径兼容
-export type {
-    ResourceHandle,
-    ResourceKey,
-    ResourceKind,
-    ResourceLoadState,
-} from "../../contracts/resource/Resource";
+export type { ResourceHandle, ResourceKey, ResourceKind, ResourceLoadState } from "../../contracts/resource/Resource";
 
 export interface LoadCoordinatorOptions {
     readonly loader: (key: ResourceKey) => Promise<unknown>;
@@ -41,10 +32,7 @@ function serializeKey(key: ResourceKey): string {
 }
 
 function createLoadFailure(key: ResourceKey, cause: unknown): unknown {
-    return new FrameworkError(
-        `Failed to load resource "${key.bundle}:${key.path}" (kind=${key.kind})`,
-        { cause, moduleId: "resource", component: "load-coordinator" },
-    );
+    return new FrameworkError(`Failed to load resource "${key.bundle}:${key.path}" (kind=${key.kind})`, { cause, moduleId: "resource", component: "load-coordinator" });
 }
 
 /**
@@ -56,17 +44,10 @@ function createLoadFailure(key: ResourceKey, cause: unknown): unknown {
  * 提供的驱逐（eviction）与失效（invalidation）有意不在此实现，交接给后续阶段，
  * 参见 design.md 决策 2。
  */
-export function createLoadCoordinator(
-    options: LoadCoordinatorOptions,
-): LoadCoordinator {
+export function createLoadCoordinator(options: LoadCoordinatorOptions): LoadCoordinator {
     const entries = new Map<string, LoadEntry>();
 
-    function settleEntry(
-        entry: LoadEntry,
-        nextState: "ready" | "failed",
-        value: unknown,
-        error: unknown,
-    ): void {
+    function settleEntry(entry: LoadEntry, nextState: "ready" | "failed", value: unknown, error: unknown): void {
         if (entry.state !== "loading") {
             return;
         }
@@ -85,10 +66,7 @@ export function createLoadCoordinator(
         }
     }
 
-    function createHandle<T>(
-        key: ResourceKey,
-        entry: LoadEntry,
-    ): ResourceHandle<T> {
+    function createHandle<T>(key: ResourceKey, entry: LoadEntry): ResourceHandle<T> {
         let state: ResourceLoadState = "loading";
         let resource: T | undefined;
         let error: unknown;
@@ -167,13 +145,7 @@ export function createLoadCoordinator(
 
             loadPromise.then(
                 (value) => settleEntry(created, "ready", value, undefined),
-                (reason: unknown) =>
-                    settleEntry(
-                        created,
-                        "failed",
-                        undefined,
-                        createLoadFailure(key, reason),
-                    ),
+                (reason: unknown) => settleEntry(created, "failed", undefined, createLoadFailure(key, reason)),
             );
 
             entry = created;

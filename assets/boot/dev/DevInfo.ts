@@ -59,9 +59,7 @@ export interface DevInfoSampler {
 }
 
 /** 网络连接类型：connection 缺失或 effectiveType 为空时降级 "unknown"。 */
-export function effectiveType(
-    connection: NetworkLike["connection"],
-): string {
+export function effectiveType(connection: NetworkLike["connection"]): string {
     const type = connection?.effectiveType;
     return type === undefined || type.length === 0 ? "unknown" : type;
 }
@@ -80,15 +78,9 @@ export function formatUptime(milliseconds: number): string {
  * 一次快照。起点在创建时记录；性能采样器不可用时对应字段为 null（采样跳过）。
  * viewport/uiSize 读取器缺省时对应字段为 null（采样跳过）。
  */
-export function createDevInfoSampler(
-    options: DevInfoSamplerOptions,
-): DevInfoSampler {
+export function createDevInfoSampler(options: DevInfoSamplerOptions): DevInfoSampler {
     const startedAt = options.clock.now();
-    const nav =
-        options.navigator ??
-        (typeof navigator === "undefined"
-            ? undefined
-            : (navigator as unknown as NetworkLike));
+    const nav = options.navigator ?? (typeof navigator === "undefined" ? undefined : (navigator as unknown as NetworkLike));
 
     return {
         sample(): DevInfo {

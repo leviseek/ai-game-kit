@@ -8,10 +8,7 @@ export const IDLE_SAVE_VERSION = 1;
 export interface IdleSave {
     readonly currentVersion: number;
     save(namespace: string, key: string, data: unknown): Promise<void>;
-    load(
-        namespace: string,
-        key: string,
-    ): Promise<{ version: number; data: unknown } | null>;
+    load(namespace: string, key: string): Promise<{ version: number; data: unknown } | null>;
 }
 
 /**
@@ -21,8 +18,7 @@ export interface IdleSave {
  * "版本化"语义，不依赖框架根入口白名单外的内部实现（design decision 4 边界）。
  */
 export function createIdleSave(storage: PlatformStorage): IdleSave {
-    const keyFor = (namespace: string, key: string): string =>
-        `idle:${encodeURIComponent(namespace)}:${encodeURIComponent(key)}`;
+    const keyFor = (namespace: string, key: string): string => `idle:${encodeURIComponent(namespace)}:${encodeURIComponent(key)}`;
 
     return {
         currentVersion: IDLE_SAVE_VERSION,
@@ -33,10 +29,7 @@ export function createIdleSave(storage: PlatformStorage): IdleSave {
             });
             await storage.set(keyFor(namespace, key), record);
         },
-        async load(
-            namespace: string,
-            key: string,
-        ): Promise<{ version: number; data: unknown } | null> {
+        async load(namespace: string, key: string): Promise<{ version: number; data: unknown } | null> {
             const raw = await storage.get(keyFor(namespace, key));
             if (raw === null) {
                 return null;
@@ -51,10 +44,7 @@ export function createIdleSave(storage: PlatformStorage): IdleSave {
             }
 
             // 版本缺失或与当前版本不符的记录视为无效：夹具层不承载迁移
-            if (
-                typeof record.version !== "number" ||
-                record.version !== IDLE_SAVE_VERSION
-            ) {
+            if (typeof record.version !== "number" || record.version !== IDLE_SAVE_VERSION) {
                 return null;
             }
 
@@ -89,10 +79,5 @@ export function isIdleSaveRecord(value: unknown): value is IdleSaveRecord {
 
     const record = value as Record<string, unknown>;
 
-    return (
-        typeof record.level === "number" &&
-        Number.isFinite(record.level) &&
-        typeof record.gold === "number" &&
-        Number.isFinite(record.gold)
-    );
+    return typeof record.level === "number" && Number.isFinite(record.level) && typeof record.gold === "number" && Number.isFinite(record.gold);
 }

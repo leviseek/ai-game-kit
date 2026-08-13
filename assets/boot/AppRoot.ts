@@ -1,49 +1,19 @@
-import {
-    _decorator,
-    Component,
-    director,
-    sys,
-} from "cc";
+import { _decorator, Component, director, sys } from "cc";
 import { DEBUG } from "cc/env";
-import {
-    Application,
-    lookupBundle,
-    ServiceResolutionError,
-    type IResourceProvider,
-    type Logger,
-    type SceneFlow,
-} from "../framework";
+import { Application, lookupBundle, ServiceResolutionError, type IResourceProvider, type Logger, type SceneFlow } from "../framework";
 import { CocosApplicationAdapter } from "../framework/adapters/cocos/application/CocosApplicationAdapter";
 import { createSafeAreaOverlayView } from "../framework/adapters/cocos/ui/SafeAreaOverlayViewHandle";
 import type { GameEntryInfo } from "../game/lobby/catalog";
 import type { EntryPageHandle } from "../game/lobby/host";
 import type { GameListFlow } from "../game/lobby/list";
-import {
-    assembleApp,
-    type AppAssembly,
-    type GameModule,
-} from "./assembly";
+import { assembleApp, type AppAssembly, type GameModule } from "./assembly";
 import { BUNDLES, getWindowSearch, isRuntimeEnvironment } from "./constants";
 import type { UiHost } from "./host/UiHost";
-import {
-    createGameLobbyHost,
-    type GameLobbyHostImpl,
-} from "./host/GameLobbyHostImpl";
-import {
-    BOOTSTRAP_SCENE,
-    createBootFlow,
-    type BootFlow,
-} from "./flow/BootFlow";
-import {
-    createSmokeProxy,
-    type SmokeProxy,
-} from "./smoke/SmokeProxy";
+import { createGameLobbyHost, type GameLobbyHostImpl } from "./host/GameLobbyHostImpl";
+import { BOOTSTRAP_SCENE, createBootFlow, type BootFlow } from "./flow/BootFlow";
+import { createSmokeProxy, type SmokeProxy } from "./smoke/SmokeProxy";
 import { createIsDevEnabled } from "./dev/DevEnv";
-import {
-    setupDevOverlay,
-    type DevOverlayRoot,
-    type DevOverlaySetupHandle,
-} from "./dev/DevOverlay";
+import { setupDevOverlay, type DevOverlayRoot, type DevOverlaySetupHandle } from "./dev/DevOverlay";
 
 const { ccclass } = _decorator;
 
@@ -70,15 +40,7 @@ export class AppRoot extends Component {
     private devOverlay?: DevOverlaySetupHandle;
 
     onLoad(): void {
-        const {
-            app,
-            adapter,
-            sceneFlow,
-            resourceProvider,
-            logger,
-            validateAssembly,
-            uiHost,
-        }: AppAssembly = assembleApp();
+        const { app, adapter, sceneFlow, resourceProvider, logger, validateAssembly, uiHost }: AppAssembly = assembleApp();
         this.app = app;
         this.adapter = adapter;
         this.sceneFlow = sceneFlow;
@@ -111,9 +73,7 @@ export class AppRoot extends Component {
             lobbyHost: this.lobbyHost,
             smokeRouter: this.smoke.router,
             getSceneMap: () => {
-                const gameModule = lookupBundle(BUNDLES.game) as
-                    | GameModule
-                    | undefined;
+                const gameModule = lookupBundle(BUNDLES.game) as GameModule | undefined;
                 return {
                     ...BOOTSTRAP_SCENE,
                     ...(gameModule?.sceneResources ?? {}),
@@ -152,11 +112,7 @@ export class AppRoot extends Component {
             } else {
                 // 非装配校验错误（如 ApplicationStateError）Application 内部不记录，
                 // 由组合根记录避免静默吞错；模块生命周期失败仍由 Application 记录。
-                this.logger?.error(
-                    "AppRoot launch aborted",
-                    undefined,
-                    error instanceof Error ? error : undefined,
-                );
+                this.logger?.error("AppRoot launch aborted", undefined, error instanceof Error ? error : undefined);
             }
         });
 
@@ -165,11 +121,7 @@ export class AppRoot extends Component {
         // 环境触发（浏览器有 window，Cocos 原生经 sys.isNative）；纯 TS 测试不触发。
         if (isRuntimeEnvironment(sys.isNative === true)) {
             this.bootFlow?.launch().catch((error) => {
-                this.logger?.error(
-                    "[boot] flow launch failed",
-                    undefined,
-                    error instanceof Error ? error : undefined,
-                );
+                this.logger?.error("[boot] flow launch failed", undefined, error instanceof Error ? error : undefined);
             });
         }
     }
@@ -180,9 +132,7 @@ export class AppRoot extends Component {
         this.setupDevOverlayIfEnabled();
         const gameModule = lookupBundle(BUNDLES.game) as GameModule | undefined;
         if (gameModule?.createListFlow === undefined) {
-            this.logger?.warn(
-                "[boot] game bundle list flow not registered; skipping list page open",
-            );
+            this.logger?.warn("[boot] game bundle list flow not registered; skipping list page open");
             return;
         }
         if (this.lobbyHost === undefined || this.logger === undefined) {
@@ -212,9 +162,7 @@ export class AppRoot extends Component {
                 get root(): DevOverlayRoot | undefined {
                     return uiHost.root;
                 },
-                loadPackage: (bundle, path) =>
-                    uiHost.loadPackage(bundle, path) ??
-                    Promise.resolve({ state: "failed" }),
+                loadPackage: (bundle, path) => uiHost.loadPackage(bundle, path) ?? Promise.resolve({ state: "failed" }),
             },
             logger: appLogger,
             isDevEnabled: this.isDevEnabled,
@@ -222,9 +170,7 @@ export class AppRoot extends Component {
                 // 安全区框挂到 GRoot：root 就绪由 setupDevOverlay 重试保证，
                 // 此处回调在 attempt 内调用，未就绪返回 undefined（不显示）
                 const root = uiHost.root;
-                return root === undefined
-                    ? undefined
-                    : createSafeAreaOverlayView({ root });
+                return root === undefined ? undefined : createSafeAreaOverlayView({ root });
             },
         });
     }

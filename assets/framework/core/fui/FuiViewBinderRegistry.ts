@@ -30,19 +30,11 @@ export interface FuiViewBindingRegistrar {
 
 /** 内部解析接口：Host 在创建路径按 URL 解析并执行 binder（不进根公共导出）。 */
 export interface FuiViewBindingResolver {
-    bindRequired<V extends object>(
-        url: FuiComponentUrl,
-        view: V,
-        scope: FuiViewBindingScope,
-    ): void;
+    bindRequired<V extends object>(url: FuiComponentUrl, view: V, scope: FuiViewBindingScope): void;
 }
 
 /** 创建绑定描述：返回冻结对象，防止组合期后误改 url/ctor/bind。 */
-export function defineFuiViewBinding<V extends object>(
-    url: FuiComponentUrl,
-    ctor: new () => V,
-    bind: (view: V, scope: FuiViewBindingScope) => void,
-): FuiViewBinding<V> {
+export function defineFuiViewBinding<V extends object>(url: FuiComponentUrl, ctor: new () => V, bind: (view: V, scope: FuiViewBindingScope) => void): FuiViewBinding<V> {
     return Object.freeze({ url, ctor, bind });
 }
 
@@ -73,8 +65,7 @@ export function createFuiViewBindingScope(): FuiViewBindingScope & {
  * 实例级注册表工厂：返回 registrar + resolver 一体对象。
  * 不进根公共导出，由 boot 组合根内部深层导入后分发。
  */
-export function createFuiViewBinderRegistry(): FuiViewBindingRegistrar &
-    FuiViewBindingResolver {
+export function createFuiViewBinderRegistry(): FuiViewBindingRegistrar & FuiViewBindingResolver {
     // 存储统一按 <object> 擦除视图类型；bind 参数逆变导致泛型收窄无法直接赋值，
     // 仅在登记边界做一次受控转换，解析端以调用方视图类型经 instanceof 校验后调用。
     const bindings = new Map<FuiComponentUrl, FuiViewBinding<object>>();
@@ -84,10 +75,7 @@ export function createFuiViewBinderRegistry(): FuiViewBindingRegistrar &
             if (bindings.has(binding.url)) {
                 throw new FuiViewBindingRegistrationError(binding.url);
             }
-            bindings.set(
-                binding.url,
-                binding as unknown as FuiViewBinding<object>,
-            );
+            bindings.set(binding.url, binding as unknown as FuiViewBinding<object>);
             let disposed = false;
             return {
                 dispose() {
@@ -103,11 +91,7 @@ export function createFuiViewBinderRegistry(): FuiViewBindingRegistrar &
     };
 
     const resolver: FuiViewBindingResolver = {
-        bindRequired<V extends object>(
-            url: FuiComponentUrl,
-            view: V,
-            scope: FuiViewBindingScope,
-        ) {
+        bindRequired<V extends object>(url: FuiComponentUrl, view: V, scope: FuiViewBindingScope) {
             const binding = bindings.get(url) as FuiViewBinding<V> | undefined;
             if (binding === undefined) {
                 throw new FuiViewBindingRegistrationError(url);

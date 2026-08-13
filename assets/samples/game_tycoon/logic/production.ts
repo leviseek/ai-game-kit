@@ -1,10 +1,7 @@
 import type { Module } from "../../../framework";
 import type { TycoonConfigHandle } from "./config";
 import type { TycoonClock } from "./clock";
-import type {
-    TycoonEconomicState,
-    TycoonProductionState,
-} from "../models";
+import type { TycoonEconomicState, TycoonProductionState } from "../models";
 
 /**
  * 经济控制器：持有现金与各产品库存。生产开始时经 pay 扣成本，
@@ -23,9 +20,7 @@ export interface TycoonEconomyHandle {
     sell(productId: string): boolean;
 }
 
-export function createTycoonEconomy(
-    config: TycoonConfigHandle,
-): TycoonEconomyHandle {
+export function createTycoonEconomy(config: TycoonConfigHandle): TycoonEconomyHandle {
     let cash = config.startCash;
     const inventory = new Map<string, number>();
 
@@ -105,11 +100,7 @@ export interface TycoonProductionHandle {
     dispose(): void;
 }
 
-export function createTycoonProduction(
-    clock: TycoonClock,
-    config: TycoonConfigHandle,
-    economy: TycoonEconomyHandle,
-): TycoonProductionHandle {
+export function createTycoonProduction(clock: TycoonClock, config: TycoonConfigHandle, economy: TycoonEconomyHandle): TycoonProductionHandle {
     let activeProductId: string | null = null;
     let startedAtMs = 0;
     let disposed = false;
@@ -120,9 +111,7 @@ export function createTycoonProduction(
                 return { activeProductId: null, progress: 0 };
             }
 
-            const product = config.products.find(
-                (entry) => entry.id === activeProductId,
-            );
+            const product = config.products.find((entry) => entry.id === activeProductId);
             if (product === undefined || product.durationMs <= 0) {
                 return { activeProductId, progress: 0 };
             }
@@ -154,9 +143,7 @@ export function createTycoonProduction(
                 return;
             }
 
-            const product = config.products.find(
-                (entry) => entry.id === activeProductId,
-            );
+            const product = config.products.find((entry) => entry.id === activeProductId);
             if (product === undefined) {
                 return;
             }
@@ -183,9 +170,7 @@ export function createTycoonProduction(
  * 控制器——组合根的 dispose 统一负责（避免 failRollback 探针复用模块实例时
  * 提前销毁夹具自身能力，对齐 GameFixture 幂等契约）。
  */
-export function createTycoonProductionModule(
-    production: TycoonProductionHandle,
-): Module {
+export function createTycoonProductionModule(production: TycoonProductionHandle): Module {
     return {
         id: "tycoon.production",
         dependencies: [],

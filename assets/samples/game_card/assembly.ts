@@ -1,41 +1,12 @@
-import type {
-    GameFixture,
-    InputSample,
-    InputSource,
-    Module,
-    UiNavigator,
-} from "../../framework";
-import {
-    createGameFixture,
-    createInputMapper,
-    createUiNavigator,
-} from "../../framework";
+import type { GameFixture, InputSample, InputSource, Module, UiNavigator } from "../../framework";
+import { createGameFixture, createInputMapper, createUiNavigator } from "../../framework";
 import type { CardAction, CardConfig, CardTurnPhase } from "./models";
-import {
-    createCardBattle,
-    createCardBattleModule,
-    type CardBattleHandle,
-} from "./logic/battle";
-import {
-    createCardClockModule,
-    createCardSimClock,
-    type CardSimClock,
-} from "./logic/clock";
-import {
-    createCardConfig,
-    createCardConfigModule,
-    type CardConfigHandle,
-} from "./logic/config";
-import {
-    createCardInputModule,
-    createCardInputSource,
-} from "./logic/input";
+import { createCardBattle, createCardBattleModule, type CardBattleHandle } from "./logic/battle";
+import { createCardClockModule, createCardSimClock, type CardSimClock } from "./logic/clock";
+import { createCardConfig, createCardConfigModule, type CardConfigHandle } from "./logic/config";
+import { createCardInputModule, createCardInputSource } from "./logic/input";
 import { createCardUiModule } from "./view/ui";
-import {
-    createCardBattleBindings,
-    createCardBattleViewModel,
-    type CardBattleCommands,
-} from "./view/view";
+import { createCardBattleBindings, createCardBattleViewModel, type CardBattleCommands } from "./view/view";
 import { createViewModelRenderer, type ViewModelNode } from "../../framework";
 
 /** 缺省卡牌配置：回合时长与卡牌数值在夹具层内建，测试可注入覆盖。 */
@@ -150,13 +121,9 @@ export function toViewModelNode(recording: CardBattleViewNode): ViewModelNode {
     };
 }
 
-export function createCardFixture(
-    options: CardFixtureOptions = {},
-): CardFixture {
+export function createCardFixture(options: CardFixtureOptions = {}): CardFixture {
     const clock = options.clock ?? createCardSimClock();
-    const config: CardConfigHandle = createCardConfig(
-        options.configContent ?? DEFAULT_CARD_CONFIG_CONTENT,
-    );
+    const config: CardConfigHandle = createCardConfig(options.configContent ?? DEFAULT_CARD_CONFIG_CONTENT);
     const battle: CardBattleHandle = createCardBattle(clock, config);
     const navigator: UiNavigator = createUiNavigator();
 
@@ -194,13 +161,7 @@ export function createCardFixture(
         },
     });
 
-    const modules: Module[] = [
-        createCardClockModule(clock),
-        createCardConfigModule(config),
-        createCardBattleModule(battle),
-        createCardInputModule(inputHandle),
-        createCardUiModule(navigator),
-    ];
+    const modules: Module[] = [createCardClockModule(clock), createCardConfigModule(config), createCardBattleModule(battle), createCardInputModule(inputHandle), createCardUiModule(navigator)];
 
     const base = createGameFixture({
         id: "card",
@@ -282,9 +243,7 @@ export function createCardFixture(
             render: () => {
                 // 按当前战斗状态派生 VM 并全量刷新记录型节点
                 const state = battle.state;
-                viewModelRenderer.setViewModel(
-                    createCardBattleViewModel(state, config.enemyHp),
-                );
+                viewModelRenderer.setViewModel(createCardBattleViewModel(state, config.enemyHp));
             },
         },
         dispose: async () => {

@@ -5,8 +5,7 @@ import type { IdleRewardState } from "../models";
 export const IDLE_REWARDS_SAVE_VERSION = 1;
 
 /** 底层存储键：前缀 + 命名空间/存档键编码（对齐 LINEUP_STORAGE_KEY 先例）。 */
-export const IDLE_REWARDS_STORAGE_KEY =
-    `auto-battle:${encodeURIComponent("auto_battle")}:${encodeURIComponent("idle-rewards")}`;
+export const IDLE_REWARDS_STORAGE_KEY = `auto-battle:${encodeURIComponent("auto_battle")}:${encodeURIComponent("idle-rewards")}`;
 
 /** 迁移器：把某旧版本的挂机存档数据升级为下一版本数据。 */
 export type IdleRewardsSaveMigrator = (data: unknown) => unknown;
@@ -63,9 +62,7 @@ function corrupt(reason: string): Error {
  * data }` 记录；读取时按记录版本逐级迁移到当前版本，损坏/未来版本/缺失迁移
  * 均抛错（不静默降级为空状态），schema 版本化保证未来字段演进可迁移。
  */
-export function createIdleRewardsStore(
-    options: IdleRewardsStoreOptions,
-): IdleRewardStore {
+export function createIdleRewardsStore(options: IdleRewardsStoreOptions): IdleRewardStore {
     const { storage } = options;
     const currentVersion = options.currentVersion ?? IDLE_REWARDS_SAVE_VERSION;
     // 迁移映射：调用方按版本注册（v1 为当前版本，未来演进时递增并注册迁移器）
@@ -77,9 +74,7 @@ export function createIdleRewardsStore(
         while (source < currentVersion) {
             const migrator = migrators[source];
             if (migrator === undefined) {
-                throw new Error(
-                    `idle rewards store: missing migration from version ${source}`,
-                );
+                throw new Error(`idle rewards store: missing migration from version ${source}`);
             }
             migrated = migrator(migrated);
             source += 1;
@@ -113,23 +108,14 @@ export function createIdleRewardsStore(
             }
 
             const version = (parsed as { version?: unknown }).version;
-            if (
-                typeof version !== "number" ||
-                !Number.isInteger(version) ||
-                version <= 0
-            ) {
+            if (typeof version !== "number" || !Number.isInteger(version) || version <= 0) {
                 throw corrupt("unexpected record shape");
             }
             if (version > currentVersion) {
-                throw new Error(
-                    `idle rewards store: save version ${version} is newer than supported version ${currentVersion}`,
-                );
+                throw new Error(`idle rewards store: save version ${version} is newer than supported version ${currentVersion}`);
             }
 
-            const data =
-                version === currentVersion
-                    ? (parsed as { data?: unknown }).data
-                    : migrate((parsed as { data?: unknown }).data, version);
+            const data = version === currentVersion ? (parsed as { data?: unknown }).data : migrate((parsed as { data?: unknown }).data, version);
 
             if (!isIdleRewardRecord(data)) {
                 throw corrupt("unexpected idle rewards shape");

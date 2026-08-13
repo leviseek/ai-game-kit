@@ -1,9 +1,6 @@
 import type { Module, TimeSource } from "../../../framework";
 import type { AutoBattleLineup } from "../models";
-import type {
-    IdleOfflineSettlement,
-    IdleRewardState,
-} from "../models";
+import type { IdleOfflineSettlement, IdleRewardState } from "../models";
 
 /** 固定收益速率：每离线分钟入账的收益基数（首版常量，lineup 加权作为预留接缝）。 */
 export const DEFAULT_IDLE_RATE = 2;
@@ -21,11 +18,7 @@ export function computeRate(_lineup: AutoBattleLineup | null): number {
  * 一分钟不计收益），同输入 MUST 产生同输出，不依赖任何全局状态或时钟。
  * lastSeenAt/now 为墙钟时间戳（毫秒），now < lastSeenAt（时钟倒退）按 0 处理。
  */
-export function computeIdleRewards(
-    lastSeenAt: number,
-    now: number,
-    rate: number,
-): IdleOfflineSettlement {
+export function computeIdleRewards(lastSeenAt: number, now: number, rate: number): IdleOfflineSettlement {
     if (!Number.isFinite(lastSeenAt) || !Number.isFinite(now)) {
         throw new Error("computeIdleRewards: timestamps must be finite");
     }
@@ -61,9 +54,7 @@ export interface IdleRewardsHandleOptions {
     readonly rateSource?: IdleRateSource;
 }
 
-export function createIdleRewardsHandle(
-    options: IdleRewardsHandleOptions,
-): IdleRewardsHandle {
+export function createIdleRewardsHandle(options: IdleRewardsHandleOptions): IdleRewardsHandle {
     const { clock } = options;
     const rateSource = options.rateSource ?? (() => DEFAULT_IDLE_RATE);
     let lastSeenAtMs = clock.now();
@@ -80,11 +71,7 @@ export function createIdleRewardsHandle(
                 return { minutes: 0, earned: 0 };
             }
             const now = clock.now();
-            const settlement = computeIdleRewards(
-                lastSeenAtMs,
-                now,
-                rateSource(),
-            );
+            const settlement = computeIdleRewards(lastSeenAtMs, now, rateSource());
             // 结算即推进 lastSeenAt：同一段离线时长不重复累计（幂等）
             lastSeenAtMs = now;
             totalRewards += settlement.earned;
@@ -115,9 +102,7 @@ export function createIdleRewardsHandle(
  * 挂机收益模块：组合根创建控制器并注入；模块只登记引用，不在 dispose 释放
  * 共享控制器——组合根的 dispose 统一负责（对齐 GameFixture 幂等契约）。
  */
-export function createAutoBattleIdleRewardsModule(
-    idleRewards: IdleRewardsHandle,
-): Module {
+export function createAutoBattleIdleRewardsModule(idleRewards: IdleRewardsHandle): Module {
     return {
         id: "auto_battle.idle_rewards",
         dependencies: [],

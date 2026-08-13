@@ -20,17 +20,11 @@ import { ConsoleLogger } from "../framework/diagnostics/logging/ConsoleLogger";
 import { CocosApplicationAdapter } from "../framework/adapters/cocos/application/CocosApplicationAdapter";
 import { createCocosResourceProvider } from "../framework/adapters/cocos/resource/CocosResourceProvider";
 import { createCocosSceneAdapter } from "../framework/adapters/cocos/scene/CocosSceneAdapter";
-import {
-    createCocosUiRoot,
-    type CocosUiRoot,
-} from "../framework/adapters/cocos/ui/CocosUiRoot";
+import { createCocosUiRoot, type CocosUiRoot } from "../framework/adapters/cocos/ui/CocosUiRoot";
 import type { FuiObjectFactory } from "../framework/adapters/cocos/ui/FuiViewHost";
 import type { GameLobbyHost } from "../game/lobby/host";
 import type { GameListFlow } from "../game/lobby/list";
-import {
-    createUiHost,
-    type UiHost,
-} from "./host/UiHost";
+import { createUiHost, type UiHost } from "./host/UiHost";
 
 /**
  * 组合根装配（composition root）：显式创建 Application/Adapter/场景流转/服务注册表/
@@ -53,10 +47,7 @@ export function createModules(): readonly Module[] {
 
 // 装配前 token 校验：缺失 token 或解析期依赖循环抛 ServiceResolutionError，
 // 使非法装配在 Application.start 前失败、不进入 running。
-function validateRequiredTokens(
-    registry: ServiceRegistry,
-    requiredTokens: readonly ServiceToken<unknown>[],
-): void {
+function validateRequiredTokens(registry: ServiceRegistry, requiredTokens: readonly ServiceToken<unknown>[]): void {
     for (const token of requiredTokens) {
         registry.resolve(token);
     }
@@ -82,9 +73,7 @@ export interface AppAssembly {
     readonly fuiViewBindingRegistrar: FuiViewBindingRegistrar;
 }
 
-export function assembleApp(
-    options: { fuiObjectFactory?: FuiObjectFactory } = {},
-): AppAssembly {
+export function assembleApp(options: { fuiObjectFactory?: FuiObjectFactory } = {}): AppAssembly {
     const logger = new ConsoleLogger();
     const context = createApplicationContext(logger);
     const modules = createModules();
@@ -114,11 +103,7 @@ export function assembleApp(
             logger.info(`[smoke] scene "${sceneId}" progress: ${progress}`);
         },
         onError: (error) => {
-            logger.error(
-                "[smoke] scene flow error",
-                undefined,
-                error instanceof Error ? error : undefined,
-            );
+            logger.error("[smoke] scene flow error", undefined, error instanceof Error ? error : undefined);
         },
     });
 

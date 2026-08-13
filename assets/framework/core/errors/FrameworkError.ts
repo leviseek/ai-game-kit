@@ -6,10 +6,7 @@ export interface FrameworkErrorOptions {
     readonly recoverable?: boolean;
 }
 
-type ErrorConstructorWithCause = new (
-    message?: string,
-    options?: { readonly cause?: unknown },
-) => Error;
+type ErrorConstructorWithCause = new (message?: string, options?: { readonly cause?: unknown }) => Error;
 
 const ErrorWithCause = Error as ErrorConstructorWithCause;
 

@@ -6,11 +6,7 @@ import type { GameFixture } from "../../../game/fixture/GameFixture";
 import { AUTO_BATTLE_LINEUP_ENTRY } from "../../../game/lobby/catalog";
 import type { AutoBattleFixture } from "../assembly";
 import { createLineupEditorPresenter } from "./LineupPresenter";
-import {
-    createIdleRewardsBindings,
-    createIdleRewardsViewModel,
-    type IdleRewardsViewModel,
-} from "./IdleRewards";
+import { createIdleRewardsBindings, createIdleRewardsViewModel, type IdleRewardsViewModel } from "./IdleRewards";
 
 /**
  * 挂机收益页呈现器：把 fixture.idleRewards 状态渲染到 IdleRewardsView 节点。
@@ -19,11 +15,7 @@ import {
  * 增长。点击领取经命令入账（幂等：结算推进 lastSeenAt，重复点击不重复入账）
  * 并刷新显示；返回按钮经会话导航回编队页。dispose 清理渲染器与定时器。
  */
-export function createIdleRewardsPresenter(
-    fixture: GameFixture,
-    node: (name: string) => ViewModelNode | undefined,
-    session?: GameSessionNavigator,
-): GamePresenter {
+export function createIdleRewardsPresenter(fixture: GameFixture, node: (name: string) => ViewModelNode | undefined, session?: GameSessionNavigator): GamePresenter {
     const autoBattle = fixture as AutoBattleFixture;
 
     const renderer = createViewModelRenderer<IdleRewardsViewModel>({
@@ -37,10 +29,7 @@ export function createIdleRewardsPresenter(
             back: () => {
                 // 返回编队页：会话内切页并重装配编队呈现器
                 if (session !== undefined) {
-                    session.openEntry(
-                        AUTO_BATTLE_LINEUP_ENTRY,
-                        createLineupEditorPresenter,
-                    );
+                    session.openEntry(AUTO_BATTLE_LINEUP_ENTRY, createLineupEditorPresenter);
                 }
             },
         }),

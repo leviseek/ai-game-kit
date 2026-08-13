@@ -48,19 +48,11 @@ export interface SafeAreaOverlayController {
 }
 
 function sameRect(a: SafeAreaRect, b: SafeAreaRect): boolean {
-    return (
-        a.x === b.x &&
-        a.y === b.y &&
-        a.width === b.width &&
-        a.height === b.height
-    );
+    return a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
 }
 
 /** 由 inset 与容器尺寸换算框矩形；inset 全 0（无安全区）时仍返回容器内缩 0 的矩形。 */
-export function computeSafeAreaRect(
-    inset: SafeAreaInset,
-    bounds: { readonly width: number; readonly height: number },
-): SafeAreaRect {
+export function computeSafeAreaRect(inset: SafeAreaInset, bounds: { readonly width: number; readonly height: number }): SafeAreaRect {
     const left = Math.max(0, inset.left);
     const top = Math.max(0, inset.top);
     const right = Math.max(0, inset.right);
@@ -78,17 +70,12 @@ export function computeSafeAreaRect(
  * 更新框矩形（每次 step 重读 inset/bounds，防创建时快照）。可见性变化立即
  * 回调；矩形变化经脏检查后回调，值未变不触发无谓重绘。
  */
-export function createSafeAreaOverlayController(
-    options: SafeAreaOverlayControllerOptions,
-): SafeAreaOverlayController {
+export function createSafeAreaOverlayController(options: SafeAreaOverlayControllerOptions): SafeAreaOverlayController {
     const { readSafeArea, readBounds, onRect, onVisible } = options;
 
     let visible = false;
     let disposed = false;
-    let rect: SafeAreaRect = computeSafeAreaRect(
-        { left: 0, top: 0, right: 0, bottom: 0 },
-        { width: 0, height: 0 },
-    );
+    let rect: SafeAreaRect = computeSafeAreaRect({ left: 0, top: 0, right: 0, bottom: 0 }, { width: 0, height: 0 });
 
     function refresh(): void {
         const next = computeSafeAreaRect(readSafeArea(), readBounds());

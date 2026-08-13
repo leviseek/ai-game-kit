@@ -27,11 +27,7 @@ export interface VsEntranceHandle {
 }
 
 /** VS 屏幕级覆盖层：左右武将从屏外两侧向各自目标坐标入场，中间 VS 大字淡入定格，整体淡出。 */
-export function createVsEntranceTemplate(options: {
-    node: (name: string) => EffectNode | undefined;
-    timeSource: () => number;
-    config: VsEntranceConfig;
-}): VsEntranceHandle {
+export function createVsEntranceTemplate(options: { node: (name: string) => EffectNode | undefined; timeSource: () => number; config: VsEntranceConfig }): VsEntranceHandle {
     const { node, timeSource, config } = options;
     // 左右武将屏外起始偏移：从各自 baseXY.x 向屏幕外偏移（入场时收敛回 baseXY）
     const SIDE_OFFSET = 640;

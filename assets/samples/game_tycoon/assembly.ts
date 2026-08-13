@@ -1,45 +1,11 @@
-import type {
-    GameFixture,
-    Module,
-    PlatformStorage,
-    UiNavigator,
-} from "../../framework";
-import {
-    createGameFixture,
-    createUiNavigator,
-} from "../../framework";
-import {
-    createTycoonClock,
-    createTycoonClockModule,
-    type TycoonClock,
-} from "./logic/clock";
-import {
-    createTycoonConfig,
-    createTycoonConfigModule,
-    type TycoonConfigHandle,
-} from "./logic/config";
-import {
-    createTycoonEconomy,
-    createTycoonEconomyModule,
-    type TycoonEconomyHandle,
-    createTycoonProduction,
-    createTycoonProductionModule,
-    type TycoonProductionHandle,
-} from "./logic/production";
-import {
-    createTycoonSave,
-    createTycoonSaveModule,
-    type TycoonSave,
-} from "./logic/save";
-import {
-    createTycoonScheduler,
-    createTycoonSchedulerModule,
-    type TycoonScheduler,
-} from "./logic/scheduler";
-import {
-    createTycoonUiModule,
-    createTycoonUiViewModels,
-} from "./view/ui";
+import type { GameFixture, Module, PlatformStorage, UiNavigator } from "../../framework";
+import { createGameFixture, createUiNavigator } from "../../framework";
+import { createTycoonClock, createTycoonClockModule, type TycoonClock } from "./logic/clock";
+import { createTycoonConfig, createTycoonConfigModule, type TycoonConfigHandle } from "./logic/config";
+import { createTycoonEconomy, createTycoonEconomyModule, type TycoonEconomyHandle, createTycoonProduction, createTycoonProductionModule, type TycoonProductionHandle } from "./logic/production";
+import { createTycoonSave, createTycoonSaveModule, type TycoonSave } from "./logic/save";
+import { createTycoonScheduler, createTycoonSchedulerModule, type TycoonScheduler } from "./logic/scheduler";
+import { createTycoonUiModule, createTycoonUiViewModels } from "./view/ui";
 
 /** 生产 tick 间隔：调度器每次 tick 结算一次生产推进的固定节拍。 */
 export const PRODUCTION_TICK_MS = 1000;
@@ -96,10 +62,7 @@ export interface TycoonFixture extends GameFixture {
     readonly storage: {
         readonly currentVersion: number;
         save(namespace: string, key: string, data: unknown): Promise<void>;
-        load(
-            namespace: string,
-            key: string,
-        ): Promise<{ version: number; data: unknown } | null>;
+        load(namespace: string, key: string): Promise<{ version: number; data: unknown } | null>;
     };
     /** 配置驱动数值：产品清单与初始现金来自不可变配置表。 */
     readonly config: {
@@ -152,23 +115,13 @@ class MemoryStorage implements PlatformStorage {
  * （design decision 3/4）。可控时间、调度、配置、生产、经济、存档、分层
  * UI 七类能力协作。
  */
-export function createTycoonFixture(
-    options: TycoonFixtureOptions = {},
-): TycoonFixture {
+export function createTycoonFixture(options: TycoonFixtureOptions = {}): TycoonFixture {
     const clock = options.clock ?? createTycoonClock();
-    const config: TycoonConfigHandle = createTycoonConfig(
-        options.configContent ?? DEFAULT_TYCOON_CONFIG_CONTENT,
-    );
+    const config: TycoonConfigHandle = createTycoonConfig(options.configContent ?? DEFAULT_TYCOON_CONFIG_CONTENT);
     const economy: TycoonEconomyHandle = createTycoonEconomy(config);
-    const production: TycoonProductionHandle = createTycoonProduction(
-        clock,
-        config,
-        economy,
-    );
+    const production: TycoonProductionHandle = createTycoonProduction(clock, config, economy);
     const scheduler: TycoonScheduler = createTycoonScheduler(clock);
-    const save: TycoonSave = createTycoonSave(
-        options.storage ?? new MemoryStorage(),
-    );
+    const save: TycoonSave = createTycoonSave(options.storage ?? new MemoryStorage());
     const navigator: UiNavigator = createUiNavigator();
     // 分层 UI ViewModel：经 live 状态派生，供导航 route 消费
     const uiViewModels = createTycoonUiViewModels({
@@ -226,8 +179,7 @@ export function createTycoonFixture(
             get currentVersion() {
                 return save.currentVersion;
             },
-            save: (namespace: string, key: string, data: unknown) =>
-                save.save(namespace, key, data),
+            save: (namespace: string, key: string, data: unknown) => save.save(namespace, key, data),
             load: (namespace: string, key: string) => save.load(namespace, key),
         },
         config: {

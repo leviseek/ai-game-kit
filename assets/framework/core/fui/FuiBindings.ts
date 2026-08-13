@@ -6,10 +6,7 @@
  */
 
 import type { FuiClickMeta, FuiView } from "../../contracts/ui/FuiView";
-import {
-    getFuiComponentRegistry,
-    type FuiComponentUrl,
-} from "./FuiComponentRegistry";
+import { getFuiComponentRegistry, type FuiComponentUrl } from "./FuiComponentRegistry";
 
 /** @FClick 元数据原型挂载键：同一组件原型链上收集的点击声明。 */
 const FUI_CLICK_META_KEY = "__fuiClickMeta__";
@@ -39,11 +36,7 @@ export interface FuiBindOptions {
  * 重复登记同一复合键抛错。参数 fields 为 gen-types 生成的节点名联合，用于类型约束
  * 与运行时字段注入来源。
  */
-export function FUIBind<N extends string>(
-    url: FuiComponentUrl,
-    fields: Readonly<Record<string, N>>,
-    options: FuiBindOptions,
-): (ctor: new () => unknown) => void {
+export function FUIBind<N extends string>(url: FuiComponentUrl, fields: Readonly<Record<string, N>>, options: FuiBindOptions): (ctor: new () => unknown) => void {
     return (ctor: new () => unknown): void => {
         const registry = getFuiComponentRegistry();
         registry.register(url, {

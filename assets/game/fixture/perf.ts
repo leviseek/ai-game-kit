@@ -1,8 +1,5 @@
 import type { GameFixture } from "./GameFixture";
-import {
-    gameFixtureRegistry,
-    type GameFixtureRegistry,
-} from "./registry";
+import { gameFixtureRegistry, type GameFixtureRegistry } from "./registry";
 
 /**
  * 单次性能采样：由注入的采样器（组合根经 Cocos Profiler 提供）读取当前帧的
@@ -103,16 +100,9 @@ export function aggregatePerfSamples(samples: readonly PerfSample[]): PerfSummar
  * 由 headless Chrome + CDP 采集验证（对齐 runFixtureSmoke）。采样器不可用时
  * 采样被跳过，生命周期仍完整执行；汇总统计由引擎无关的纯函数完成。
  */
-export async function runFixturePerf(
-    fixtureId: string,
-    sampler: PerfSampler,
-    registry?: GameFixtureRegistry,
-    options: RunFixturePerfOptions = {},
-): Promise<void> {
+export async function runFixturePerf(fixtureId: string, sampler: PerfSampler, registry?: GameFixtureRegistry, options: RunFixturePerfOptions = {}): Promise<void> {
     const report = (step: string, ok: boolean, detail = "") => {
-        console.log(
-            `[fixture-perf] ${step}: ${ok ? "ok" : "FAIL"}${detail ? ` (${detail})` : ""}`,
-        );
+        console.log(`[fixture-perf] ${step}: ${ok ? "ok" : "FAIL"}${detail ? ` (${detail})` : ""}`);
     };
 
     const windowMs = options.windowMs ?? 3000;
@@ -135,11 +125,7 @@ export async function runFixturePerf(
     try {
         fixture = factory();
     } catch (error) {
-        report(
-            "fixture-create",
-            false,
-            error instanceof Error ? error.message : String(error),
-        );
+        report("fixture-create", false, error instanceof Error ? error.message : String(error));
         return;
     }
 
@@ -149,11 +135,7 @@ export async function runFixturePerf(
         await fixture.start();
         report("start", true);
     } catch (error) {
-        report(
-            "start",
-            false,
-            error instanceof Error ? error.message : String(error),
-        );
+        report("start", false, error instanceof Error ? error.message : String(error));
         return;
     }
 
@@ -172,9 +154,7 @@ export async function runFixturePerf(
     report("samples", summary.samples > 0, String(summary.samples));
     if (summary.samples > 0) {
         const range = (label: string, value: PerfRange) => {
-            console.log(
-                `[fixture-perf] ${label}: avg=${value.avg} min=${value.min} max=${value.max}`,
-            );
+            console.log(`[fixture-perf] ${label}: avg=${value.avg} min=${value.min} max=${value.max}`);
         };
         range("fps", summary.fps);
         range("frame-ms", summary.frameMs);
@@ -193,11 +173,7 @@ export async function runFixturePerf(
             await run(fixture);
             report(step, true);
         } catch (error) {
-            report(
-                step,
-                false,
-                error instanceof Error ? error.message : String(error),
-            );
+            report(step, false, error instanceof Error ? error.message : String(error));
             return;
         }
     }

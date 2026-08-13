@@ -54,10 +54,7 @@ export const SCENES = {
  * 但无 location）时返回空串。统一经此读取，避免消费点各自 typeof window 裸判。
  */
 export function getWindowSearch(): string {
-    if (
-        typeof window === "undefined" ||
-        typeof window.location === "undefined"
-    ) {
+    if (typeof window === "undefined" || typeof window.location === "undefined") {
         return "";
     }
     return window.location.search;

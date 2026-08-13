@@ -42,10 +42,7 @@ function createTurnFsm(): StateMachine<CardTurnPhase, CardTurnEvent> {
     });
 }
 
-export function createCardBattle(
-    clock: CardSimClock,
-    config: CardConfigHandle,
-): CardBattleHandle {
+export function createCardBattle(clock: CardSimClock, config: CardConfigHandle): CardBattleHandle {
     let fsm: StateMachine<CardTurnPhase, CardTurnEvent> = createTurnFsm();
 
     let disposed = false;

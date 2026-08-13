@@ -27,11 +27,7 @@ interface ScheduledTask {
  * 故夹具层自实现最小调度器，驱动在线收益的确定性推进。
  */
 export interface IdleScheduler {
-    schedule(
-        callback: () => void,
-        delayMilliseconds: number,
-        options?: IdleScheduleOptions,
-    ): IdleScheduleHandle;
+    schedule(callback: () => void, delayMilliseconds: number, options?: IdleScheduleOptions): IdleScheduleHandle;
     tick(): void;
     dispose(): void;
 }
@@ -41,19 +37,13 @@ export function createIdleScheduler(clock: IdleClock): IdleScheduler {
     let disposed = false;
 
     return {
-        schedule(
-            callback: () => void,
-            delayMilliseconds: number,
-            options: IdleScheduleOptions = {},
-        ): IdleScheduleHandle {
+        schedule(callback: () => void, delayMilliseconds: number, options: IdleScheduleOptions = {}): IdleScheduleHandle {
             if (disposed) {
                 throw new Error("IdleScheduler cannot schedule after disposal");
             }
 
             if (!Number.isFinite(delayMilliseconds) || delayMilliseconds < 0) {
-                throw new Error(
-                    "IdleScheduler delay must be finite and non-negative",
-                );
+                throw new Error("IdleScheduler delay must be finite and non-negative");
             }
 
             const task: ScheduledTask = {

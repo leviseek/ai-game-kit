@@ -27,11 +27,7 @@ interface ScheduledTask {
  * 故夹具层自实现最小调度器，驱动生产进度的确定性推进。
  */
 export interface TycoonScheduler {
-    schedule(
-        callback: () => void,
-        delayMilliseconds: number,
-        options?: TycoonScheduleOptions,
-    ): TycoonScheduleHandle;
+    schedule(callback: () => void, delayMilliseconds: number, options?: TycoonScheduleOptions): TycoonScheduleHandle;
     tick(): void;
     dispose(): void;
 }
@@ -41,19 +37,13 @@ export function createTycoonScheduler(clock: TycoonClock): TycoonScheduler {
     let disposed = false;
 
     return {
-        schedule(
-            callback: () => void,
-            delayMilliseconds: number,
-            options: TycoonScheduleOptions = {},
-        ): TycoonScheduleHandle {
+        schedule(callback: () => void, delayMilliseconds: number, options: TycoonScheduleOptions = {}): TycoonScheduleHandle {
             if (disposed) {
                 throw new Error("TycoonScheduler cannot schedule after disposal");
             }
 
             if (!Number.isFinite(delayMilliseconds) || delayMilliseconds < 0) {
-                throw new Error(
-                    "TycoonScheduler delay must be finite and non-negative",
-                );
+                throw new Error("TycoonScheduler delay must be finite and non-negative");
             }
 
             const task: ScheduledTask = {
@@ -133,9 +123,7 @@ export function createTycoonScheduler(clock: TycoonClock): TycoonScheduler {
  * 调度模块：组合根创建调度器并注入；模块只登记引用，不在 dispose 释放共享
  * 调度器——组合根的 dispose 统一负责（对齐 GameFixture 幂等契约）。
  */
-export function createTycoonSchedulerModule(
-    scheduler: TycoonScheduler,
-): Module {
+export function createTycoonSchedulerModule(scheduler: TycoonScheduler): Module {
     return {
         id: "tycoon.scheduler",
         dependencies: [],

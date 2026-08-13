@@ -28,19 +28,12 @@ export class PassiveScheduler {
     private tasks: ScheduledTask[] = [];
     private disposed = false;
 
-    constructor(
-        timeSource: TimeSource,
-        options: PassiveSchedulerOptions = {},
-    ) {
+    constructor(timeSource: TimeSource, options: PassiveSchedulerOptions = {}) {
         this.timeSource = timeSource;
         this.onTaskError = options.onTaskError ?? ((error) => console.error(error));
     }
 
-    schedule(
-        callback: () => void,
-        delayMilliseconds: number,
-        options: ScheduleOptions = {},
-    ): DisposeHandle {
+    schedule(callback: () => void, delayMilliseconds: number, options: ScheduleOptions = {}): DisposeHandle {
         if (this.disposed) {
             throw new Error("PassiveScheduler cannot schedule after disposal");
         }

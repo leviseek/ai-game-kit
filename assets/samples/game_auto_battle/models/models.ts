@@ -77,16 +77,7 @@ export interface AutoBattleUnitState extends AutoBattleUnit {
 }
 
 /** 战斗事件类型：日志回放与冒烟断言依赖的判别维度。 */
-export type AutoBattleEventType =
-    | "round-start"
-    | "attack"
-    | "skill-damage"
-    | "skill-heal"
-    | "unit-dead"
-    | "battle-over"
-    | "restart"
-    | "move"
-    | "teleport";
+export type AutoBattleEventType = "round-start" | "attack" | "skill-damage" | "skill-heal" | "unit-dead" | "battle-over" | "restart" | "move" | "teleport";
 
 /** 战斗事件：seq 保序，time 为事件发生时模拟时钟读数。 */
 export interface AutoBattleEvent {

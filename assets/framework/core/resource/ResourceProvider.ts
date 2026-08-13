@@ -1,7 +1,4 @@
-import type {
-    IResourceProvider,
-    ResourceProviderOptions,
-} from "../../contracts/resource/ResourceProvider";
+import type { IResourceProvider, ResourceProviderOptions } from "../../contracts/resource/ResourceProvider";
 import type { ResourceKey, ResourceKind } from "../../contracts/resource/Resource";
 import { createLoadCoordinator } from "./LoadCoordinator";
 import { createResourceScopeRegistry } from "./ResourceScope";
@@ -15,9 +12,7 @@ function key(kind: ResourceKind, bundle: string, path: string): ResourceKey {
  * （unloadBundle 接缝）组装成面向业务的统一入口。引擎差异只体现在注入的
  * loader/unloadBundle 上，契约与组装逻辑不依赖任何引擎。
  */
-export function createResourceProvider(
-    options: ResourceProviderOptions,
-): IResourceProvider {
+export function createResourceProvider(options: ResourceProviderOptions): IResourceProvider {
     const coordinator = createLoadCoordinator({ loader: options.loader });
     const registry = createResourceScopeRegistry({
         unloadBundle: options.unloadBundle,

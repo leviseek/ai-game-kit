@@ -1,18 +1,10 @@
 import type { IResourceProvider } from "../../contracts/resource/ResourceProvider";
 import type { ResourceHandle } from "../../contracts/resource/Resource";
 import type { ResourceScope } from "../../contracts/resource/ResourceScope";
-import {
-    createStateMachine,
-    type StateTransitionTable,
-} from "../fsm/StateMachine";
+import { createStateMachine, type StateTransitionTable } from "../fsm/StateMachine";
 import type { DisposeHandle } from "../scheduling/DisposeHandle";
 
-export type SceneFlowState =
-    | "idle"
-    | "preloading"
-    | "transitioning"
-    | "active"
-    | "failed";
+export type SceneFlowState = "idle" | "preloading" | "transitioning" | "active" | "failed";
 
 /** 目标场景的资源清单：单个 Bundle 下的路径集合。 */
 export interface SceneResources {
@@ -45,10 +37,7 @@ export interface SceneFlow {
      * 完整切换流程：预加载 → 激活目标场景 → 所有权转移。切换进行中重复发起
      * 会被拒绝并返回原因；失败保留当前场景并回到可重试状态。
      */
-    switchTo(
-        sceneId: string,
-        resources: SceneResources,
-    ): Promise<SceneSwitchResult>;
+    switchTo(sceneId: string, resources: SceneResources): Promise<SceneSwitchResult>;
     /**
      * 释放流转作用域与当前激活场景作用域：取消未完成的预加载/切换并释放
      * 已激活场景持有的资源，幂等。注意若在切换激活已提交后释放，引擎场景
@@ -57,12 +46,7 @@ export interface SceneFlow {
     dispose(): DisposeHandle;
 }
 
-type SceneFlowEvent =
-    | "start"
-    | "preloaded"
-    | "preloadDone"
-    | "activated"
-    | "failed";
+type SceneFlowEvent = "start" | "preloaded" | "preloadDone" | "activated" | "failed";
 
 const transitions: StateTransitionTable<SceneFlowState, SceneFlowEvent> = {
     idle: { start: "preloading" },
@@ -76,7 +60,7 @@ const transitions: StateTransitionTable<SceneFlowState, SceneFlowEvent> = {
     failed: { start: "preloading" },
 };
 
-const NOOP_HANDLE: DisposeHandle = { dispose: () => { } };
+const NOOP_HANDLE: DisposeHandle = { dispose: () => {} };
 
 /**
  * 引擎无关的场景流转编排器。复用 core/fsm/StateMachine 表达确定性的状态转移；
@@ -86,8 +70,7 @@ const NOOP_HANDLE: DisposeHandle = { dispose: () => { } };
 export function createSceneFlow(options: SceneFlowOptions): SceneFlow {
     const { provider, activateScene } = options;
     const onProgress = options.onProgress;
-    const reportFailure =
-        options.onError ?? ((error: unknown) => console.error(error));
+    const reportFailure = options.onError ?? ((error: unknown) => console.error(error));
 
     const fsm = createStateMachine<SceneFlowState, SceneFlowEvent>({
         initial: "idle",
@@ -120,10 +103,7 @@ export function createSceneFlow(options: SceneFlowOptions): SceneFlow {
         return next;
     }
 
-    function switchTo(
-        sceneId: string,
-        resources: SceneResources,
-    ): Promise<SceneSwitchResult> {
+    function switchTo(sceneId: string, resources: SceneResources): Promise<SceneSwitchResult> {
         return new Promise((resolve) => {
             if (disposed) {
                 resolve({ ok: false, sceneId, reason: "disposed" });
@@ -137,14 +117,8 @@ export function createSceneFlow(options: SceneFlowOptions): SceneFlow {
             // 命中已完成预加载的目标场景时复用其 handle：不失效缓存、不重新加载，
             // 直接进入激活；否则创建新流转作用域并重新走加载流程。复用要求 bundle 与
             // paths 清单一致，避免同 sceneId 不同资源被误复用。
-            const resourcesKey = JSON.stringify([
-                resources.bundle,
-                resources.paths,
-            ]);
-            const reusable =
-                preloadedSceneId === sceneId &&
-                preloadedResourcesKey === resourcesKey &&
-                preloadedHandles.every((handle) => handle.state === "ready");
+            const resourcesKey = JSON.stringify([resources.bundle, resources.paths]);
+            const reusable = preloadedSceneId === sceneId && preloadedResourcesKey === resourcesKey && preloadedHandles.every((handle) => handle.state === "ready");
 
             let scope: ResourceScope;
             let handles: ResourceHandle[];
@@ -325,10 +299,7 @@ export function createSceneFlow(options: SceneFlowOptions): SceneFlow {
                 // 预加载结果会被排除并重新加载）。
                 if (handles.length === resources.paths.length) {
                     preloadedSceneId = sceneId;
-                    preloadedResourcesKey = JSON.stringify([
-                        resources.bundle,
-                        resources.paths,
-                    ]);
+                    preloadedResourcesKey = JSON.stringify([resources.bundle, resources.paths]);
                     preloadedHandles = handles;
                 }
                 fsm.send("preloadDone");

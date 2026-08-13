@@ -1,17 +1,6 @@
 import type { Binding } from "../../../framework";
-import type {
-    AutoBattleEvent,
-    AutoBattleSide,
-    AutoBattleState,
-    AutoBattleUnitState,
-} from "../models";
-import {
-    LOG_TEXT_NODE,
-    RESTART_BUTTON_NODE,
-    RESULT_TEXT_NODE,
-    ROUND_TEXT_NODE,
-    SPEED_BUTTON_NODE,
-} from "./UiNodes";
+import type { AutoBattleEvent, AutoBattleSide, AutoBattleState, AutoBattleUnitState } from "../models";
+import { LOG_TEXT_NODE, RESTART_BUTTON_NODE, RESULT_TEXT_NODE, ROUND_TEXT_NODE, SPEED_BUTTON_NODE } from "./UiNodes";
 
 /** 战场网格屏幕布局（1280×720）：敌左 3 列、己右 3 列、3 行（与 AutoBattleView 容器化对齐）。 */
 const GRID_COL_STRIDE = 140;
@@ -93,11 +82,7 @@ function toUnitView(unit: AutoBattleUnitState): AutoBattleUnitView {
 }
 
 /** VM 派生：把战斗状态与事件日志映射为页面呈现数据。 */
-export function createAutoBattleViewModel(
-    state: AutoBattleState,
-    log: readonly string[],
-    speed: AutoBattleSpeed,
-): AutoBattleViewModel {
+export function createAutoBattleViewModel(state: AutoBattleState, log: readonly string[], speed: AutoBattleSpeed): AutoBattleViewModel {
     return {
         round: state.round,
         units: state.units.map(toUnitView),
@@ -108,10 +93,7 @@ export function createAutoBattleViewModel(
 }
 
 /** 事件 → 日志行格式化：按事件类型生成中文描述，单位名经 nameOf 解析。 */
-export function formatAutoBattleEvent(
-    event: AutoBattleEvent,
-    nameOf: (id: string) => string,
-): string {
+export function formatAutoBattleEvent(event: AutoBattleEvent, nameOf: (id: string) => string): string {
     const source = event.sourceId === "" ? "" : nameOf(event.sourceId);
     const target = event.targetId === undefined ? "" : nameOf(event.targetId);
 
@@ -141,9 +123,7 @@ export function formatAutoBattleEvent(
  * 对齐（txt_/bar_/btn_ 前缀）。单位实例绑定不在此——按存活单位动态生成
  * （见 createAutoBattleUnitBindings / buildAutoBattleBindings）。
  */
-export function createAutoBattleBindings(
-    commands: AutoBattleCommands,
-): readonly Binding<AutoBattleViewModel>[] {
+export function createAutoBattleBindings(commands: AutoBattleCommands): readonly Binding<AutoBattleViewModel>[] {
     return [
         {
             kind: "text",
@@ -163,8 +143,7 @@ export function createAutoBattleBindings(
         {
             kind: "text",
             node: RESULT_TEXT_NODE,
-            get: (vm) =>
-                vm.result === "win" ? "胜利" : vm.result === "lose" ? "战败" : "",
+            get: (vm) => (vm.result === "win" ? "胜利" : vm.result === "lose" ? "战败" : ""),
         },
         { kind: "command", node: RESTART_BUTTON_NODE, run: () => commands.restart() },
         {
@@ -182,12 +161,8 @@ export function createAutoBattleBindings(
  * 单向派生；文本/进度从当前 VM 按 id 解析。此绑定只为存活单位生成（见
  * buildAutoBattleBindings 过滤），阵亡单位实例由渲染层回收。
  */
-export function createAutoBattleUnitBindings(
-    unitId: string,
-    gridKey: string,
-): readonly Binding<AutoBattleViewModel>[] {
-    const unitAt = (vm: AutoBattleViewModel): AutoBattleUnitView | undefined =>
-        vm.units.find((unit) => unit.id === unitId);
+export function createAutoBattleUnitBindings(unitId: string, gridKey: string): readonly Binding<AutoBattleViewModel>[] {
+    const unitAt = (vm: AutoBattleViewModel): AutoBattleUnitView | undefined => vm.units.find((unit) => unit.id === unitId);
 
     return [
         {
@@ -218,9 +193,7 @@ export function createAutoBattleUnitBindings(
             node: `bar_unit_${unitId}_hp`,
             get: (vm) => {
                 const unit = unitAt(vm);
-                return unit !== undefined && unit.hpMax > 0
-                    ? unit.hp / unit.hpMax
-                    : 0;
+                return unit !== undefined && unit.hpMax > 0 ? unit.hp / unit.hpMax : 0;
             },
         },
         {
@@ -228,9 +201,7 @@ export function createAutoBattleUnitBindings(
             node: `bar_unit_${unitId}_energy`,
             get: (vm) => {
                 const unit = unitAt(vm);
-                return unit !== undefined && unit.energyMax > 0
-                    ? unit.energy / unit.energyMax
-                    : 0;
+                return unit !== undefined && unit.energyMax > 0 ? unit.energy / unit.energyMax : 0;
             },
         },
     ];
@@ -241,16 +212,7 @@ export function createAutoBattleUnitBindings(
  * 阵亡单位（hp=0）不生成绑定，对应 UnitSlot 实例随之从容器回收（动态实例化
  * 语义，对齐 spec——绑定集随存活单位增删重建，渲染器经 setBindings 全量刷新）。
  */
-export function buildAutoBattleBindings(
-    commands: AutoBattleCommands,
-    vm: AutoBattleViewModel,
-): readonly Binding<AutoBattleViewModel>[] {
-    const unitBindings = vm.units
-        .filter((unit) => unit.hp > 0)
-        .reduce<Binding<AutoBattleViewModel>[]>(
-            (acc, unit) =>
-                acc.concat(createAutoBattleUnitBindings(unit.id, unit.gridKey)),
-            [],
-        );
+export function buildAutoBattleBindings(commands: AutoBattleCommands, vm: AutoBattleViewModel): readonly Binding<AutoBattleViewModel>[] {
+    const unitBindings = vm.units.filter((unit) => unit.hp > 0).reduce<Binding<AutoBattleViewModel>[]>((acc, unit) => acc.concat(createAutoBattleUnitBindings(unit.id, unit.gridKey)), []);
     return [...createAutoBattleBindings(commands), ...unitBindings];
 }

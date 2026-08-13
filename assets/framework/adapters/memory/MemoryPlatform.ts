@@ -1,9 +1,4 @@
-import type {
-    ApplicationVisibility,
-    ApplicationVisibilityState,
-    DeviceInfo,
-    PlatformStorage,
-} from "../../contracts/platform/Platform";
+import type { ApplicationVisibility, ApplicationVisibilityState, DeviceInfo, PlatformStorage } from "../../contracts/platform/Platform";
 import type { TimeSource } from "../../contracts/time/TimeSource";
 
 export interface MemoryPlatformOptions {
@@ -17,12 +12,9 @@ export interface MemoryPlatformOptions {
  * 内存平台适配器：供测试与非 Cocos 环境使用的 ApplicationVisibility、
  * PlatformStorage、DeviceInfo 与 TimeSource 实现。
  */
-export class MemoryPlatform
-    implements ApplicationVisibility, PlatformStorage, DeviceInfo {
+export class MemoryPlatform implements ApplicationVisibility, PlatformStorage, DeviceInfo {
     private currentVisibility: ApplicationVisibilityState;
-    private readonly visibilityListeners = new Set<
-        (state: ApplicationVisibilityState) => void
-    >();
+    private readonly visibilityListeners = new Set<(state: ApplicationVisibilityState) => void>();
     private readonly entries = new Map<string, string>();
     private readonly timeNow: () => number;
 
@@ -76,9 +68,7 @@ export class MemoryPlatform
         }
     }
 
-    onVisibilityChange(
-        listener: (state: ApplicationVisibilityState) => void,
-    ): () => void {
+    onVisibilityChange(listener: (state: ApplicationVisibilityState) => void): () => void {
         this.visibilityListeners.add(listener);
 
         return () => {

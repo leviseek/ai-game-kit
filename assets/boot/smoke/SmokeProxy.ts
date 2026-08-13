@@ -1,33 +1,15 @@
-import {
-    lookupBundle,
-    type IResourceProvider,
-    type ResourceHandle,
-    type SceneFlow,
-    type SceneResources,
-    type SceneSwitchResult,
-    type UiLayer,
-} from "../../framework";
+import { lookupBundle, type IResourceProvider, type ResourceHandle, type SceneFlow, type SceneResources, type SceneSwitchResult, type UiLayer } from "../../framework";
 import { createFairyGuiViewHandle } from "../../framework/adapters/cocos/ui/FairyGuiViewHandle";
 import { createDynamicComponentViewHandle } from "../../framework/adapters/cocos/ui/DynamicComponentViewHandle";
 import type { GameLobbyHostImpl } from "../host/GameLobbyHostImpl";
 import type { UiHost } from "../host/UiHost";
-import {
-    createSmokeRouter,
-    type SmokeRouter,
-} from "../flow/SmokeRouter";
+import { createSmokeRouter, type SmokeRouter } from "../flow/SmokeRouter";
 import { runUiSmoke } from "./UiSmoke";
 import { runSceneFlowSmoke } from "./SceneSmoke";
-import {
-    clearModalClickHook,
-    runModalClickSmoke,
-} from "./ModalClick";
+import { clearModalClickHook, runModalClickSmoke } from "./ModalClick";
 import type { PerfSample } from "../../game/fixture/perf";
 import { sampleProfilerStats } from "../profiler";
-import {
-    BUNDLES,
-    getWindowSearch,
-    UNIT_MAPPING_KEYS,
-} from "../constants";
+import { BUNDLES, getWindowSearch, UNIT_MAPPING_KEYS } from "../constants";
 
 /** game bundle 冒烟模块的结构性子集（经全局注册桥读取，运行时经 lookupBundle）。 */
 interface GameSmokeModule {
@@ -40,11 +22,7 @@ interface GameSmokeModule {
 /** samples bundle 冒烟模块的结构性子集（cardBattle/autoBattle 宿主为 boot 侧 UiHost 结构）。 */
 interface SamplesSmokeModule {
     readonly smokes?: {
-        readonly cardBattle: (
-            host: unknown,
-            ensureSharedDependencies: () => Promise<void>,
-            options?: { readonly nodeResolver?: (view: unknown) => (name: string) => unknown },
-        ) => Promise<void>;
+        readonly cardBattle: (host: unknown, ensureSharedDependencies: () => Promise<void>, options?: { readonly nodeResolver?: (view: unknown) => (name: string) => unknown }) => Promise<void>;
         readonly autoBattle: (
             host: unknown,
             ensureSharedDependencies: () => Promise<void>,
@@ -110,10 +88,7 @@ export class SmokeProxy {
     }
 
     /** 场景冒烟触发：切换到目标场景（经 sceneFlow）。 */
-    smokeSwitchTo(
-        sceneId: string,
-        resources: SceneResources,
-    ): Promise<SceneSwitchResult> {
+    smokeSwitchTo(sceneId: string, resources: SceneResources): Promise<SceneSwitchResult> {
         return this.sceneFlow.switchTo(sceneId, resources);
     }
 
@@ -138,12 +113,7 @@ export class SmokeProxy {
     }
 
     /** UI 冒烟触发：打开页面。pageAdapter 未就绪时返回 false。 */
-    smokeUiOpenPage(
-        route: string,
-        layer: UiLayer,
-        packageName: string,
-        resName: string,
-    ): boolean {
+    smokeUiOpenPage(route: string, layer: UiLayer, packageName: string, resName: string): boolean {
         return this.uiHost.openPage(route, layer, packageName, resName);
     }
 
@@ -226,13 +196,7 @@ export class SmokeProxy {
             // 注入真实 fgui 渲染接缝：战场页动态单位按存活单位实例化 UnitSlot，
             // 命中反馈特效按单位实例化 UnitHitFeedbackCom
             {
-                nodeResolver: (view) =>
-                    unitMapping === undefined
-                        ? createFairyGuiViewHandle(view as never)
-                        : createDynamicComponentViewHandle(
-                              view as never,
-                              unitMapping as never,
-                          ),
+                nodeResolver: (view) => (unitMapping === undefined ? createFairyGuiViewHandle(view as never) : createDynamicComponentViewHandle(view as never, unitMapping as never)),
                 scale: Number.isFinite(scale) ? (scale as number) : undefined,
             },
         );

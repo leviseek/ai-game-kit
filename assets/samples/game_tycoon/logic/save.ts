@@ -8,10 +8,7 @@ export const TYCOON_SAVE_VERSION = 1;
 export interface TycoonSave {
     readonly currentVersion: number;
     save(namespace: string, key: string, data: unknown): Promise<void>;
-    load(
-        namespace: string,
-        key: string,
-    ): Promise<{ version: number; data: unknown } | null>;
+    load(namespace: string, key: string): Promise<{ version: number; data: unknown } | null>;
 }
 
 /**
@@ -21,8 +18,7 @@ export interface TycoonSave {
  * "版本化"语义，不依赖框架根入口白名单外的内部实现（design decision 4 边界）。
  */
 export function createTycoonSave(storage: PlatformStorage): TycoonSave {
-    const keyFor = (namespace: string, key: string): string =>
-        `tycoon:${encodeURIComponent(namespace)}:${encodeURIComponent(key)}`;
+    const keyFor = (namespace: string, key: string): string => `tycoon:${encodeURIComponent(namespace)}:${encodeURIComponent(key)}`;
 
     return {
         currentVersion: TYCOON_SAVE_VERSION,
@@ -33,10 +29,7 @@ export function createTycoonSave(storage: PlatformStorage): TycoonSave {
             });
             await storage.set(keyFor(namespace, key), record);
         },
-        async load(
-            namespace: string,
-            key: string,
-        ): Promise<{ version: number; data: unknown } | null> {
+        async load(namespace: string, key: string): Promise<{ version: number; data: unknown } | null> {
             const raw = await storage.get(keyFor(namespace, key));
             if (raw === null) {
                 return null;
@@ -51,10 +44,7 @@ export function createTycoonSave(storage: PlatformStorage): TycoonSave {
             }
 
             // 版本缺失或与当前版本不符的记录视为无效：夹具层不承载迁移
-            if (
-                typeof record.version !== "number" ||
-                record.version !== TYCOON_SAVE_VERSION
-            ) {
+            if (typeof record.version !== "number" || record.version !== TYCOON_SAVE_VERSION) {
                 return null;
             }
 
@@ -103,9 +93,7 @@ export function isTycoonEconomicState(value: unknown): value is TycoonEconomicSt
     }
 
     // 逐个校验库存计数（ES2015 兼容，不用 Object.values）
-    for (const productId of Object.keys(
-        record.inventory as Record<string, unknown>,
-    )) {
+    for (const productId of Object.keys(record.inventory as Record<string, unknown>)) {
         const count = (record.inventory as Record<string, unknown>)[productId];
         if (typeof count !== "number" || !Number.isFinite(count) || count < 0) {
             return false;

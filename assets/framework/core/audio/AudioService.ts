@@ -1,12 +1,4 @@
-import type {
-    AudioBackend,
-    AudioGroup,
-    AudioGroupState,
-    AudioPlayScope,
-    AudioService,
-    AudioServiceOptions,
-    AudioTrackRef,
-} from "../../contracts/audio/Audio";
+import type { AudioBackend, AudioGroup, AudioGroupState, AudioPlayScope, AudioService, AudioServiceOptions, AudioTrackRef } from "../../contracts/audio/Audio";
 import type { Logger } from "../../contracts/logging/Logger";
 import type { ApplicationVisibilityState } from "../../contracts/platform/Platform";
 
@@ -42,11 +34,14 @@ export function createAudioService(options: AudioServiceOptions): AudioService {
     const degraded = !backend.available;
 
     const groups = new Map<AudioGroup, GroupState>(
-        AUDIO_GROUPS.map((group) => [group, {
-            volume: DEFAULT_VOLUME,
-            muted: false,
-            current: undefined,
-        }]),
+        AUDIO_GROUPS.map((group) => [
+            group,
+            {
+                volume: DEFAULT_VOLUME,
+                muted: false,
+                current: undefined,
+            },
+        ]),
     );
 
     function stateOf(group: AudioGroup): GroupState {
@@ -169,44 +164,42 @@ export function createAudioService(options: AudioServiceOptions): AudioService {
         const visibility = options.visibility;
         const policy = options.backgroundPolicy;
 
-        unsubscribeVisibility = visibility.onVisibilityChange(
-            (state: ApplicationVisibilityState) => {
-                // 逐组处理并独立捕获：单组后端异常不中断其余分组的切换，
-                // 同时把错误隔离为结构化诊断，不向上抛破坏应用生命周期
-                const handleGroup = (group: AudioGroup): void => {
-                    try {
-                        if (state === "background") {
-                            if (stateOf(group).current !== undefined) {
-                                backend.pause(group);
-                                autoPaused.add(group);
-                            }
-                        } else {
-                            // 仅恢复仍在播放的分组：后台期间被显式停止的分组不复活
-                            if (stateOf(group).current !== undefined) {
-                                backend.resume(group);
-                            }
-                            autoPaused.delete(group);
+        unsubscribeVisibility = visibility.onVisibilityChange((state: ApplicationVisibilityState) => {
+            // 逐组处理并独立捕获：单组后端异常不中断其余分组的切换，
+            // 同时把错误隔离为结构化诊断，不向上抛破坏应用生命周期
+            const handleGroup = (group: AudioGroup): void => {
+                try {
+                    if (state === "background") {
+                        if (stateOf(group).current !== undefined) {
+                            backend.pause(group);
+                            autoPaused.add(group);
                         }
-                    } catch (error) {
-                        logger?.warn("audio visibility transition failed", {
-                            group,
-                            visibilityState: state,
-                            cause: error instanceof Error ? error.message : String(error),
-                        });
+                    } else {
+                        // 仅恢复仍在播放的分组：后台期间被显式停止的分组不复活
+                        if (stateOf(group).current !== undefined) {
+                            backend.resume(group);
+                        }
+                        autoPaused.delete(group);
                     }
-                };
-
-                if (state === "background") {
-                    for (const group of policy.pauseOnBackground) {
-                        handleGroup(group);
-                    }
-                } else {
-                    for (const group of Array.from(autoPaused)) {
-                        handleGroup(group);
-                    }
+                } catch (error) {
+                    logger?.warn("audio visibility transition failed", {
+                        group,
+                        visibilityState: state,
+                        cause: error instanceof Error ? error.message : String(error),
+                    });
                 }
-            },
-        );
+            };
+
+            if (state === "background") {
+                for (const group of policy.pauseOnBackground) {
+                    handleGroup(group);
+                }
+            } else {
+                for (const group of Array.from(autoPaused)) {
+                    handleGroup(group);
+                }
+            }
+        });
     }
 
     function dispose(): void {

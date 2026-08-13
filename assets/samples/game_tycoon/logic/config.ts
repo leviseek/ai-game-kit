@@ -1,10 +1,5 @@
 import type { Module } from "../../../framework";
-import {
-    configArray,
-    configNumber,
-    createConfigTable,
-    type ConfigTable,
-} from "../../../framework";
+import { configArray, configNumber, createConfigTable, type ConfigTable } from "../../../framework";
 import type { TycoonProduct } from "../models";
 
 /** 配置读取句柄：把不可变配置表解析为产品清单与初始现金。 */
@@ -41,9 +36,7 @@ function isTycoonProduct(value: unknown): value is TycoonProduct {
  * startCash 按 configNumber 读取并校验有限非负（缺省键走传入的缺省内容）。
  * 配置内容由组合根注入；本模块只负责解析，与生产/经济逻辑解耦（数值与来源分离）。
  */
-export function createTycoonConfig(
-    content: Record<string, unknown>,
-): TycoonConfigHandle {
+export function createTycoonConfig(content: Record<string, unknown>): TycoonConfigHandle {
     const table: ConfigTable = createConfigTable(content);
 
     const rawProducts = table.read("products", configArray, []);

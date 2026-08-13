@@ -1,16 +1,5 @@
-import type {
-    GameFixture,
-    IResourceProvider,
-    InputSample,
-    InputSource,
-    Module,
-    ResourceScope,
-} from "../../framework";
-import {
-    createGameFixture,
-    createInputMapper,
-    createResourceProvider,
-} from "../../framework";
+import type { GameFixture, IResourceProvider, InputSample, InputSource, Module, ResourceScope } from "../../framework";
+import { createGameFixture, createInputMapper, createResourceProvider } from "../../framework";
 import { createFightAudio, createFightAudioModule, type FightAudioHandle } from "./logic/audio";
 import { createFightBattle, createFightBattleModule, type FightBattleHandle } from "./logic/battle";
 import { createFightClock, createFightClockModule, type FightClock } from "./logic/clock";
@@ -79,7 +68,7 @@ export interface FightFixture extends GameFixture {
 function createDefaultProvider(): IResourceProvider {
     return createResourceProvider({
         loader: async (key) => key,
-        unloadBundle: () => { },
+        unloadBundle: () => {},
     });
 }
 
@@ -89,9 +78,7 @@ function createDefaultProvider(): IResourceProvider {
  * （design decision 3/4）。可控时钟、战斗、对象池、输入、资源、音频六类
  * 能力协作。
  */
-export function createFightFixture(
-    options: FightFixtureOptions = {},
-): FightFixture {
+export function createFightFixture(options: FightFixtureOptions = {}): FightFixture {
     const clock = options.clock ?? createFightClock();
     const provider = options.provider ?? createDefaultProvider();
     // 品类级资源作用域：暴露于 fixture.resource.scope，dispose 时释放

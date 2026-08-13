@@ -1,8 +1,5 @@
 import type { Module } from "../../../framework";
-import type {
-    AutoBattlePosition,
-    AutoBattleSide,
-} from "../models";
+import type { AutoBattlePosition, AutoBattleSide } from "../models";
 
 const SIDE_ORDER: Readonly<Record<AutoBattleSide, number>> = {
     ally: 0,
@@ -38,24 +35,15 @@ export function isAutoBattleAlive(unit: AutoBattleUnitView): boolean {
  * 速度稳定排序：按 speed 降序；同速以稳定次序（先己方后敌方、再队内阵列
  * 序号）保证确定性。每轮开始以存活单位快照调用一次，行动中不重排。
  */
-export function sortAutoBattleOrder(
-    units: readonly AutoBattleUnitView[],
-): readonly AutoBattleUnitView[] {
-    return [...units].sort(
-        (left, right) =>
-            right.speed - left.speed ||
-            SIDE_ORDER[left.side] - SIDE_ORDER[right.side] ||
-            left.index - right.index,
-    );
+export function sortAutoBattleOrder(units: readonly AutoBattleUnitView[]): readonly AutoBattleUnitView[] {
+    return [...units].sort((left, right) => right.speed - left.speed || SIDE_ORDER[left.side] - SIDE_ORDER[right.side] || left.index - right.index);
 }
 
 /**
  * 前排优先目标选择：在敌方存活单位中按站位优先级 front > mid > back 选择，
  * 同排取阵列最靠前者；敌方全灭返回 undefined（行动退化为 no-op）。
  */
-export function selectAutoBattleTarget(
-    enemies: readonly AutoBattleUnitView[],
-): AutoBattleUnitView | undefined {
+export function selectAutoBattleTarget(enemies: readonly AutoBattleUnitView[]): AutoBattleUnitView | undefined {
     const alive = enemies.filter(isAutoBattleAlive);
     if (alive.length === 0) {
         return undefined;
@@ -78,14 +66,9 @@ export function selectAutoBattleTarget(
  * 否则回退前排优先重选（无锁定 / 锁定目标已死亡）。敌方全灭返回 undefined。
  * 治疗目标选择不走此函数（治疗与攻击锁定解耦）。
  */
-export function resolveAutoBattleTarget(
-    enemies: readonly AutoBattleUnitView[],
-    lockedTargetId: string | null,
-): AutoBattleUnitView | undefined {
+export function resolveAutoBattleTarget(enemies: readonly AutoBattleUnitView[], lockedTargetId: string | null): AutoBattleUnitView | undefined {
     if (lockedTargetId !== null) {
-        const locked = enemies.find(
-            (unit) => unit.id === lockedTargetId && isAutoBattleAlive(unit),
-        );
+        const locked = enemies.find((unit) => unit.id === lockedTargetId && isAutoBattleAlive(unit));
         if (locked !== undefined) {
             return locked;
         }
@@ -96,9 +79,7 @@ export function resolveAutoBattleTarget(
 /**
  * 治疗目标选择：己方存活单位中 HP 比例最低者；无存活单位返回 undefined。
  */
-export function selectAutoBattleHealTarget(
-    allies: readonly AutoBattleUnitView[],
-): AutoBattleUnitView | undefined {
+export function selectAutoBattleHealTarget(allies: readonly AutoBattleUnitView[]): AutoBattleUnitView | undefined {
     const alive = allies.filter(isAutoBattleAlive);
     if (alive.length === 0) {
         return undefined;

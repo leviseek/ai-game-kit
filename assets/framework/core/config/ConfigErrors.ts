@@ -34,11 +34,7 @@ export class ConfigParseError extends FrameworkError {
     readonly key: ConfigKey;
     readonly detail: string;
 
-    constructor(
-        key: ConfigKey,
-        detail: string,
-        options?: { readonly cause?: unknown },
-    ) {
+    constructor(key: ConfigKey, detail: string, options?: { readonly cause?: unknown }) {
         super(`Config key "${key}" could not be parsed: ${detail}`, {
             component: "config",
             cause: options?.cause,
@@ -55,11 +51,7 @@ export class ConfigLoadError extends FrameworkError {
     readonly bundle: string;
     readonly path: string;
 
-    constructor(
-        bundle: string,
-        path: string,
-        options?: { readonly cause?: unknown },
-    ) {
+    constructor(bundle: string, path: string, options?: { readonly cause?: unknown }) {
         super(`Failed to load config "${bundle}:${path}"`, {
             component: "config",
             cause: options?.cause,
