@@ -46,7 +46,7 @@ export async function readSourceExcerpt(
     const absolute = resolve(projectRoot, file);
     toSafeRelativePath(projectRoot, absolute);
     const realFile = await safeRealpath(absolute, fileSystem);
-    const safeFile = toSafeRelativePath(projectRoot, realFile);
+    toSafeRelativePath(projectRoot, realFile);
     const source = await readSafeSource(realFile, fileSystem);
     const allLines = source.split(/\r?\n/);
     const targetLine = normalizeLine(line, allLines.length);
@@ -60,7 +60,7 @@ export async function readSourceExcerpt(
     const endLine = startLine + windowSize - 1;
 
     return {
-        location: { filePath: safeFile, line: targetLine },
+        location: { filePath: realFile, line: targetLine },
         startLine,
         endLine,
         lines: allLines.slice(startLine - 1, endLine).map((text, index) => ({ number: startLine + index, text })),

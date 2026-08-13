@@ -46,7 +46,7 @@ describe("architecture workbench integration", () => {
             expect(index).toContain("Architecture Workbench");
             expect(app).toContain("fake analyzer app");
             expect(views.map((view) => view.type)).toEqual(viewTypes);
-            expect(source.location).toEqual({ filePath: "src/entry.ts", line: 1 });
+            expect(source.location).toEqual({ filePath: resolve(fixture.projectRoot, "src/entry.ts"), line: 1 });
             expect(eventText).toContain("event: snapshot-ready");
             expect(eventText).toContain('"version":2');
             expect(projectAfterFailure.version).toBe(1);

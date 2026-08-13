@@ -50,7 +50,7 @@ describe("startArchServer", () => {
             expect(await group.json()).toEqual(expect.objectContaining({ rootGroupId: "entry" }));
             expect(await neighborhood.json()).toEqual(expect.objectContaining({ nodes: [expect.objectContaining({ id: "symbol:launch" })] }));
             expect(await source.json()).toEqual(expect.objectContaining({
-                location: { filePath: "src/large.ts", line: 60 },
+                location: { filePath: resolve(root, "src/large.ts"), line: 60 },
                 startLine: 20,
                 endLine: 99,
                 lines: expect.arrayContaining([expect.objectContaining({ number: 60, text: "export const line60 = 60;" })]),
@@ -71,7 +71,7 @@ describe("startArchServer", () => {
             expect(denied.status).toBe(403);
             expect(await denied.json()).toEqual({ error: "forbidden" });
             expect(await allowed.json()).toEqual(expect.objectContaining({
-                location: { filePath: "src/entry.ts", line: 1 },
+                location: { filePath: resolve(root, "src/entry.ts"), line: 1 },
                 lines: expect.arrayContaining([expect.objectContaining({ number: 1, text: "export function launch() { return true; }" })]),
             }));
         } finally {
@@ -194,7 +194,7 @@ describe("readSourceExcerpt", () => {
 
         const excerpt = await readSourceExcerpt(root, "src/large.ts", 60, 100);
 
-        expect(excerpt.location).toEqual({ filePath: "src/large.ts", line: 60 });
+        expect(excerpt.location).toEqual({ filePath: resolve(root, "src/large.ts"), line: 60 });
         expect(excerpt.lines).toHaveLength(80);
         expect(excerpt.startLine).toBe(20);
         expect(excerpt.endLine).toBe(99);
@@ -272,19 +272,8 @@ function snapshot(version = 1): GraphSnapshot {
     const calls = {
         type: "calls" as const,
         nodes: [
-            {
-                id: "symbol:launch",
-                kind: "function",
-                label: "launch",
-                qualifiedName: "createBootFlow::launch",
-                location: { filePath: "src/entry.ts", line: 1 },
-            },
-            {
-                id: "symbol:large",
-                kind: "module",
-                label: "large",
-                location: { filePath: "src/large.ts", line: 1 },
-            },
+            { id: "symbol:launch", kind: "function", label: "launch", qualifiedName: "createBootFlow::launch", location: { filePath: "src/entry.ts", line: 1 } },
+            { id: "symbol:large", kind: "module", label: "large", location: { filePath: "src/large.ts", line: 1 } },
         ],
         edges: [{ id: "symbol:launch:self", from: "symbol:launch", to: "symbol:launch", relation: "calls" }],
         groups: [{ id: "entry", label: "Entry", nodeIds: ["symbol:launch", "symbol:large"] }],
