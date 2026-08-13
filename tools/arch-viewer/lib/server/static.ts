@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { readFile, realpath, stat } from "node:fs/promises";
-import { extname, join, relative, resolve } from "node:path";
+import { extname, join, resolve } from "node:path";
 import path from "node:path";
 
 export interface StaticAssetOptions {
