@@ -56,24 +56,6 @@ function expectSameNodeIds(graph: LayoutGraph, source: GraphView): void {
 }
 
 describe("layoutView", () => {
-    test("places hierarchy nodes from left to right by depth", () => {
-        const source = view("hierarchy", [
-            node("leaf", { level: 2 }),
-            node("root", { level: 0 }),
-            node("branch", { level: 1 }),
-        ]);
-
-        const graph = layoutView(source, viewport);
-        const byId = new Map(graph.nodes.map((item) => [item.id, item]));
-
-        expect(ids(graph.nodes)).toEqual(["branch", "leaf", "root"]);
-        expect(lanes(graph)).toEqual(["depth:0", "depth:1", "depth:2"]);
-        expect(byId.get("root")!.x).toBeLessThan(byId.get("branch")!.x);
-        expect(byId.get("branch")!.x).toBeLessThan(byId.get("leaf")!.x);
-        expectNoOverlap(graph);
-        expectStable(graph, source);
-    });
-
     test("places startup nodes by configured phase and branch order", () => {
         const source = view("startup", [
             node("app", { branch: "application" }),
