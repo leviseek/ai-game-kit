@@ -1,5 +1,5 @@
-import type { GraphView } from "../lib/graph/types";
-import type { WorkbenchAction, WorkbenchFilters, WorkbenchState } from "./types";
+import type { GraphView } from "../lib/graph/types.js";
+import type { WorkbenchAction, WorkbenchFilters, WorkbenchState } from "./types.js";
 
 const defaultFilters: WorkbenchFilters = {
     query: "",

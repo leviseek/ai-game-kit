@@ -1,4 +1,4 @@
-import type { GraphNode, GraphView, ViewType } from "../lib/graph/types";
+import type { GraphNode, GraphView, ViewType } from "../lib/graph/types.js";
 
 export type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 

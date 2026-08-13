@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const root = resolve(import.meta.dir, "../../..");
@@ -27,4 +27,24 @@ describe("arch-viewer workspace", () => {
         expect(lockfile).toContain('"@types/node": "^26.1.2"');
         expect(lockfile).toContain('"typescript": "^5.9.0"');
     });
+
+    test("浏览器相对模块引用显式使用 .js 扩展名", () => {
+        const webRoot = resolve(root, "tools/arch-viewer/web");
+        const invalid = listTypeScriptFiles(webRoot).flatMap((file) => {
+            const source = readFileSync(file, "utf8");
+            return [...source.matchAll(/(?:from\s+|import\s*)["'](\.{1,2}\/[^"']+)["']/g)]
+                .map((match) => match[1]!)
+                .filter((specifier) => !specifier.endsWith(".js"))
+                .map((specifier) => `${file}:${specifier}`);
+        });
+        expect(invalid).toEqual([]);
+    });
 });
+
+function listTypeScriptFiles(directory: string): string[] {
+    return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+        const path = resolve(directory, entry.name);
+        if (entry.isDirectory()) return listTypeScriptFiles(path);
+        return entry.isFile() && entry.name.endsWith(".ts") ? [path] : [];
+    });
+}

@@ -1,6 +1,6 @@
-import type { GraphNode, GraphView } from "../../lib/graph/types";
-import { groupedLaneSpecs, layoutByLanes, metadataString } from "./shared";
-import type { LayoutGraph, Viewport } from "./types";
+import type { GraphNode, GraphView } from "../../lib/graph/types.js";
+import { groupedLaneSpecs, layoutByLanes, metadataString } from "./shared.js";
+import type { LayoutGraph, Viewport } from "./types.js";
 
 export function layoutStartup(view: GraphView, viewport: Viewport): LayoutGraph {
     const entries = view.nodes.some((node) => startupLaneValue(node) === "entry") ? ["entry"] : [];

@@ -1,4 +1,4 @@
-import type { GraphNode } from "../../lib/graph/types";
+import type { GraphNode } from "../../lib/graph/types.js";
 
 export interface SearchRendererOptions {
     readonly input: HTMLInputElement;

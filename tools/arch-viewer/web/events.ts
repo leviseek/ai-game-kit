@@ -1,6 +1,6 @@
-import type { ArchApiClient } from "./api";
-import { reduceWorkbench } from "./state";
-import type { SnapshotEvent, WorkbenchState } from "./types";
+import type { ArchApiClient } from "./api.js";
+import { reduceWorkbench } from "./state.js";
+import type { SnapshotEvent, WorkbenchState } from "./types.js";
 
 export interface SnapshotEventSource {
     addEventListener(type: string, listener: (event: MessageEvent<string>) => void): void;

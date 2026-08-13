@@ -1,13 +1,13 @@
-import { ArchApiClient } from "./api";
-import { connectSnapshotEvents } from "./events";
-import { fitTransform, renderSvgCanvas, updateCanvasTransform, type CanvasTransform } from "./render/svg";
-import { bindSearch } from "./render/search";
-import { renderInspector } from "./render/inspector";
-import { bindSidebar, renderSidebar } from "./render/sidebar";
-import { createWorkbenchState, reduceWorkbench } from "./state";
-import type { WorkbenchAction, WorkbenchState } from "./types";
-import type { LayoutGraph } from "./layout/types";
-import type { ViewType } from "../lib/graph/types";
+import { ArchApiClient } from "./api.js";
+import { connectSnapshotEvents } from "./events.js";
+import { fitTransform, renderSvgCanvas, updateCanvasTransform, type CanvasTransform } from "./render/svg.js";
+import { bindSearch } from "./render/search.js";
+import { renderInspector } from "./render/inspector.js";
+import { bindSidebar, renderSidebar } from "./render/sidebar.js";
+import { createWorkbenchState, reduceWorkbench } from "./state.js";
+import type { WorkbenchAction, WorkbenchState } from "./types.js";
+import type { LayoutGraph } from "./layout/types.js";
+import type { ViewType } from "../lib/graph/types.js";
 
 export interface WorkbenchApp {
     readonly dispose: () => void;

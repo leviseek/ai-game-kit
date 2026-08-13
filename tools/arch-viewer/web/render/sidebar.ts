@@ -1,4 +1,4 @@
-import type { ViewType } from "../../lib/graph/types";
+import type { ViewType } from "../../lib/graph/types.js";
 
 export const viewTypes: readonly ViewType[] = ["hierarchy", "startup", "dependencies", "data-flow", "calls", "resources"];
 

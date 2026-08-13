@@ -1,7 +1,7 @@
-import type { Diagnostic, GraphView } from "../../lib/graph/types";
-import { layoutView } from "../layout/shared";
-import type { LayoutEdge, LayoutGraph } from "../layout/types";
-import type { WorkbenchState } from "../types";
+import type { Diagnostic, GraphView } from "../../lib/graph/types.js";
+import { layoutView } from "../layout/shared.js";
+import type { LayoutEdge, LayoutGraph } from "../layout/types.js";
+import type { WorkbenchState } from "../types.js";
 
 const ns = ["http", "://www.w3.org/2000/svg"].join("");
 

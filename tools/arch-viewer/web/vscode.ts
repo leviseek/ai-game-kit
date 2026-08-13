@@ -1,4 +1,4 @@
-import type { SourceLocation } from "../lib/graph/types";
+import type { SourceLocation } from "../lib/graph/types.js";
 
 export function createVsCodeUrl(location: SourceLocation): string {
     const suffix = [location.line, location.column]

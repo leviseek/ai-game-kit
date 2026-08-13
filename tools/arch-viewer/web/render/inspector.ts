@@ -1,7 +1,7 @@
-import type { Evidence, GraphEdge, GraphNode, GraphView, SourceLocation } from "../../lib/graph/types";
-import type { ArchApiClient } from "../api";
-import type { WorkbenchState } from "../types";
-import { createVsCodeUrl } from "../vscode";
+import type { Evidence, GraphEdge, GraphNode, GraphView, SourceLocation } from "../../lib/graph/types.js";
+import type { ArchApiClient } from "../api.js";
+import type { WorkbenchState } from "../types.js";
+import { createVsCodeUrl } from "../vscode.js";
 
 type TabName = "Source" | "Relations" | "Evidence" | "Diagnostics";
 

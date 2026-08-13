@@ -1,6 +1,6 @@
-import type { GraphNode, GraphView } from "../../lib/graph/types";
-import { completeLayout, emptyLayout, estimateNodeSize, laneSpacing, metadataString } from "./shared";
-import type { LayoutGraph, LayoutLane, LayoutNode, Viewport } from "./types";
+import type { GraphNode, GraphView } from "../../lib/graph/types.js";
+import { completeLayout, emptyLayout, estimateNodeSize, laneSpacing, metadataString } from "./shared.js";
+import type { LayoutGraph, LayoutLane, LayoutNode, Viewport } from "./types.js";
 
 const callOrder = ["incoming", "focus", "outgoing", "affected", "test", "unknown"] as const;
 type CallRole = (typeof callOrder)[number];

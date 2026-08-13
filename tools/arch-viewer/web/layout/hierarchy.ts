@@ -1,6 +1,6 @@
-import type { GraphView } from "../../lib/graph/types";
-import { layoutByLanes, metadataNumber } from "./shared";
-import type { LayoutGraph, Viewport } from "./types";
+import type { GraphView } from "../../lib/graph/types.js";
+import { layoutByLanes, metadataNumber } from "./shared.js";
+import type { LayoutGraph, Viewport } from "./types.js";
 
 export function layoutHierarchy(view: GraphView, viewport: Viewport): LayoutGraph {
     const levels = [...new Set(view.nodes.map((node) => metadataNumber(node, "level") ?? 0))]

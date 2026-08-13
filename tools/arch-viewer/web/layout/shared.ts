@@ -1,11 +1,11 @@
-import type { Diagnostic, GraphEdge, GraphNode, GraphView } from "../../lib/graph/types";
-import { layoutCalls } from "./calls";
-import { layoutDataFlow } from "./data-flow";
-import { layoutDependencies } from "./dependencies";
-import { layoutHierarchy } from "./hierarchy";
-import { layoutResources } from "./resources";
-import { layoutStartup } from "./startup";
-import type { LayoutEdge, LayoutGraph, LayoutLane, LayoutNode, LayoutPoint, Viewport } from "./types";
+import type { Diagnostic, GraphEdge, GraphNode, GraphView } from "../../lib/graph/types.js";
+import { layoutCalls } from "./calls.js";
+import { layoutDataFlow } from "./data-flow.js";
+import { layoutDependencies } from "./dependencies.js";
+import { layoutHierarchy } from "./hierarchy.js";
+import { layoutResources } from "./resources.js";
+import { layoutStartup } from "./startup.js";
+import type { LayoutEdge, LayoutGraph, LayoutLane, LayoutNode, LayoutPoint, Viewport } from "./types.js";
 
 const minCanvasWidth = 320;
 const minCanvasHeight = 240;

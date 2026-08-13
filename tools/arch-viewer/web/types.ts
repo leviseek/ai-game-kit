@@ -1,4 +1,4 @@
-import type { GraphView, ViewType } from "../lib/graph/types";
+import type { GraphView, ViewType } from "../lib/graph/types.js";
 
 export interface WorkbenchFilters {
     readonly query: string;

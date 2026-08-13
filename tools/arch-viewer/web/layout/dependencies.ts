@@ -1,6 +1,6 @@
-import type { GraphEdge, GraphView } from "../../lib/graph/types";
-import { layoutByLanes } from "./shared";
-import type { LayoutGraph, Viewport } from "./types";
+import type { GraphEdge, GraphView } from "../../lib/graph/types.js";
+import { layoutByLanes } from "./shared.js";
+import type { LayoutGraph, Viewport } from "./types.js";
 
 export function layoutDependencies(view: GraphView, viewport: Viewport): LayoutGraph {
     const layers = topologicalLayers(view.nodes.map((node) => node.id), view.edges);

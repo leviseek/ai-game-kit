@@ -1,4 +1,4 @@
-import { startWorkbench } from "./app";
+import { startWorkbench } from "./app.js";
 
 void startWorkbench().catch((error) => {
     const status = document.getElementById("status");
