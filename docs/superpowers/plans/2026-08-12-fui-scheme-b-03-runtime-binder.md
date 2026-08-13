@@ -56,7 +56,7 @@ export interface FuiViewBindingRegistrar {
 }
 ```
 
-内部 resolver 的 `bindRequired(url, view, scope)` 在缺失、ctor 不匹配或 binder 抛错时抛类型化错误，但不 dispose scope；Host 是唯一回滚所有者。
+内部 resolver 的 `bindRequired(url, view, scope)` 在缺失或 ctor 不匹配时抛类型化错误；binder 抛错时原样传播（保持错误身份，Host 据此识别原始失败）。resolver 不 dispose scope；Host 是唯一回滚所有者。
 
 - [ ] **Step 4: 公共导出最小化**
 
