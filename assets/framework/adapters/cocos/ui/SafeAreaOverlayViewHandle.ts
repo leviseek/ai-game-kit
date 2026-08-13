@@ -55,6 +55,10 @@ export function createSafeAreaOverlayView(
     if (component instanceof GComponent) {
         frame = component;
         frame.visible = false;
+        // 虚线框全屏且 FGUI 组件默认 touchable，显示时会抢走悬浮球的 hover/拖拽
+        // 事件（hitTest 命中最上层全屏组件，导致球收不到 TOUCH/ROLL）；显式关闭
+        // touchable 让鼠标穿透到下层悬浮球
+        frame.touchable = false;
         options.root.addChild(component);
     }
 

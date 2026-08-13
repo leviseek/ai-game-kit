@@ -120,6 +120,19 @@ describe("createSafeAreaOverlayView", () => {
         view.dispose();
     });
 
+    test("创建时 touchable 设为 false：全屏虚线框不拦截鼠标，悬浮球 hover/拖拽可穿透", () => {
+        const root = createRoot();
+        const component = new GComponent();
+        // 真实 FGUI 组件默认 touchable=true，全屏覆盖 GRoot 时会抢走悬浮球事件
+        component.touchable = true;
+        const view = createSafeAreaOverlayView({
+            root,
+            createObject: () => component,
+        });
+        expect(component.touchable).toBe(false);
+        view.dispose();
+    });
+
     test("setVisible 控制组件显隐", () => {
         const { component, view } = setup();
         view.setVisible(true);
