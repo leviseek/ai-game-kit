@@ -4,7 +4,6 @@ import { join } from "node:path";
 import { createAnalysisScheduler } from "../lib/server/scheduler";
 import { watchProject, type WatchBackend } from "../lib/server/watcher";
 import { createGraphSnapshotStore } from "../lib/server/snapshot-store";
-import type { ArchitectureBuildInput } from "../lib/analysis/analyzer";
 import type { CodeGraphStatus } from "../lib/codegraph/types";
 import type { GraphSnapshot, ViewType } from "../lib/graph/types";
 

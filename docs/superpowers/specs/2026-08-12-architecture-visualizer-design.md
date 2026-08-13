@@ -28,7 +28,7 @@ CodeGraph 索引，但缺少从当前代码实时探索启动编排、架构层�
 ## 3. Chosen Approach
 
 新增 `tools/arch-viewer` workspace，包含可复用分析内核、Bun 本地服务和原生
-TypeScript/HTML/CSS/SVG 前端。符号调用只使用 CodeGraph 公共 CLI：`sync --quiet`，以及 JSON 输出的
+TypeScript/HTML/CSS/SVG 前端。启动分析前显式执行 CodeGraph 公共 CLI `sync --quiet`，符号调用只使用 JSON 输出的
 `status`、`files`、`query`、`callers`、`callees`、`impact`，不依赖数据库内部结构。由于公共 CLI 不提供
 全量依赖边和文件内符号导出，`SourceScanner` 另以 TypeScript Compiler API 解析静态 `import/export`
 与声明名称/kind/源码位置，用于模块依赖和层次 L5；它不推断函数调用。
@@ -60,7 +60,7 @@ CodeGraph CLI + TypeScript SourceScanner + architecture.config.ts
 - `GraphSnapshotStore`：持有最后一次成功的不可变快照，以分析代次拒绝旧结果覆盖新结果。
 - `ProjectWatcher`：监听相关代码、配置和架构文档，debounce 后等待 CodeGraph 同步；最多一个分析任务，
   后续变化合并为下一代。
-- `ArchServer`：使用 Node 内置 HTTP 与 Server-Sent Events（SSE），绑定 `127.0.0.1`，提供静态资源和只读 API。
+- `ArchServer`：使用 Node 内置 HTTP 与 Server-Sent Events（SSE）单向通道，绑定 `127.0.0.1`，提供静态资源和只读 API。
 - `WorkbenchFrontend`：统一维护图型、筛选、搜索、下钻、缩放和选中状态；只消费图模型，不解析源码。
 
 分析层不依赖 HTTP/SVG，服务端不计算布局，前端不执行 CodeGraph。未来 MCP 直接适配分析查询接口。
@@ -213,13 +213,13 @@ Inspector 显示源码、关系、证据和诊断，并通过经过服务端验�
 
 ## 9. Local API
 
-- `GET /api/project`：项目、CodeGraph/分析状态和快照版本。
+- `GET /api/project`：当前快照的项目摘要。
 - `GET /api/views/:type`：`hierarchy | startup | dependencies | data-flow | calls | resources`。
 - `GET /api/groups/:id`：展开 hierarchy/aggregation group。
 - `GET /api/symbols/search?q=`：搜索符号、文件和 group。
 - `GET /api/nodes/:id/neighborhood`：局部调用或 impact 子图。
-- `GET /api/source?file=&line=`：仓库内的有界源码片段。
-- `GET /api/events`（SSE）：`snapshot-ready`、`analysis-error`、`index-waiting`。
+- `GET /api/source?file=&line=&radius=`：仅允许读取当前快照节点 location allowlist 中的仓库内有界源码片段。
+- `GET /api/events`（SSE）：`state-changed`、`snapshot-ready`、`error`。
 
 传输类型直接使用可序列化图模型，不另建一套重复 schema。
 
@@ -229,8 +229,8 @@ Inspector 显示源码、关系、证据和诊断，并通过经过服务端验�
 最多一个分析任务，分析中发生的变化合并为下一代。前端刷新时保留图型、筛选、展开路径和焦点；焦点
 消失则退回最近父级并提示。失败保留旧快照并显示错误。
 
-服务只绑定 `127.0.0.1`；文件读取必须位于解析后的仓库根内，拒绝路径穿越。CodeGraph 使用
-`execFile`、超时和输出上限。未安装命令或缺少 `.codegraph` 时只显示补救信息，不自动 `init/index`。
+服务只绑定 `127.0.0.1`；文件读取必须位于解析后的仓库根内，拒绝路径穿越，并额外受快照 source allowlist 限制。CodeGraph 使用
+`execFile`、超时和输出上限。未安装命令、缺少 `.codegraph`、pendingChanges 非零或 worktree mismatch 时明确失败，不自动 `init/index`。
 分别诊断 executable、index、sync、JSON、config、analysis 错误。无写操作、命令执行、远程访问或源码编辑 API。
 
 ## 11. Testing And Gates
