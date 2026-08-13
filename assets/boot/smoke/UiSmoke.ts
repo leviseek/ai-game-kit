@@ -1,4 +1,5 @@
 import type { UiHost } from "../host/UiHost";
+import { BUNDLES, PACKAGE_PATHS } from "../constants";
 
 /**
  * FairyGUI UI 冒烟序列（引擎集成冒烟驱动）。覆盖 UI 根初始化、package 加载、
@@ -21,7 +22,7 @@ export async function runUiSmoke(host: UiHost): Promise<void> {
     // 2. 加载 Demo package（assets/ui/Demo/Demo.bin → bundle "ui" 路径 "Demo/Demo"）
     let packageLoaded = false;
     try {
-        const handle = await host.loadPackage("ui", "Demo/Demo");
+        const handle = await host.loadPackage(BUNDLES.ui, PACKAGE_PATHS.demo);
         packageLoaded = handle.state === "ready";
         report("package-load", packageLoaded, String(handle.state));
     } catch (error) {
@@ -57,13 +58,13 @@ export async function runUiSmoke(host: UiHost): Promise<void> {
 
     // 6. 资源释放闭环：释放作用域后 ui Bundle 应可卸载
     host.release();
-    const canUnload = host.canUnload("ui");
+    const canUnload = host.canUnload(BUNDLES.ui);
     report("resource-release", canUnload);
 
     // 7. 未加载 package：不存在的路径应保留失败标识（no-op 不崩溃）
     let noopFailed = true;
     try {
-        const handle = await host.loadPackage("ui", "NoSuchPackage/NoSuchView");
+        const handle = await host.loadPackage(BUNDLES.ui, "NoSuchPackage/NoSuchView");
         noopFailed = handle.state === "failed";
         report("missing-package-noop", noopFailed, String(handle.state));
     } catch (error) {

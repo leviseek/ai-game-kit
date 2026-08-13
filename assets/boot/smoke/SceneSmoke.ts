@@ -1,5 +1,6 @@
 import { director } from "cc";
 import type { SceneResources, SceneSwitchResult } from "../../framework";
+import { BUNDLES, SCENES, SENTINELS } from "../constants";
 
 /**
  * 场景流转冒烟的接入对象：由组合根把 sceneFlow 与资源提供者绑定为闭包。
@@ -27,14 +28,17 @@ export async function runSceneFlowSmoke(context: SceneSmokeContext): Promise<voi
 
     // 1. 入口：初始场景 startup，game Bundle 尚无持有（可卸载）
     const initialScene = director.getScene()?.name ?? "";
-    report("entry", initialScene === "startup", initialScene);
-    report("initial-can-unload-game", context.canUnload("game"));
+    report("entry", initialScene === SCENES.startup, initialScene);
+    report("initial-can-unload-game", context.canUnload(BUNDLES.game));
 
     // 2. 预加载：game 场景资源（game bundle）被流转作用域持有（不可卸载）
     let preloadHolds = false;
     try {
-        await context.preload("game", { bundle: "game", paths: ["game"] });
-        preloadHolds = !context.canUnload("game");
+        await context.preload(SCENES.game, {
+            bundle: BUNDLES.game,
+            paths: [SCENES.game],
+        });
+        preloadHolds = !context.canUnload(BUNDLES.game);
         report("preload", true);
         report("preload-holds-game", preloadHolds);
     } catch (error) {
@@ -46,11 +50,11 @@ export async function runSceneFlowSmoke(context: SceneSmokeContext): Promise<voi
     //    game 归零可卸载，common 被新流转作用域持有。
     let releaseLoop = false;
     try {
-        await context.preload("game", {
-            bundle: "common",
-            paths: ["placeholder"],
+        await context.preload(SCENES.game, {
+            bundle: BUNDLES.common,
+            paths: [SENTINELS.placeholder],
         });
-        releaseLoop = context.canUnload("game");
+        releaseLoop = context.canUnload(BUNDLES.game);
         report("release-loop", releaseLoop);
     } catch (error) {
         report("release-loop", false, error instanceof Error ? error.message : String(error));
@@ -61,18 +65,18 @@ export async function runSceneFlowSmoke(context: SceneSmokeContext): Promise<voi
     //    （仍不可卸载）
     let switched = false;
     try {
-        const result = await context.switchTo("game", {
-            bundle: "game",
-            paths: ["game"],
+        const result = await context.switchTo(SCENES.game, {
+            bundle: BUNDLES.game,
+            paths: [SCENES.game],
         });
-        switched = result.ok === true && result.sceneId === "game";
+        switched = result.ok === true && result.sceneId === SCENES.game;
         report("switch", switched, String(result.reason ?? ""));
         report(
             "switch-scene",
-            director.getScene()?.name === "game",
+            director.getScene()?.name === SCENES.game,
             director.getScene()?.name ?? "",
         );
-        report("switch-holds-game", !context.canUnload("game"));
+        report("switch-holds-game", !context.canUnload(BUNDLES.game));
     } catch (error) {
         report("switch", false, error instanceof Error ? error.message : String(error));
     }
@@ -80,9 +84,9 @@ export async function runSceneFlowSmoke(context: SceneSmokeContext): Promise<voi
     // 5. 资源链失败：不存在的 Bundle 加载失败，场景保留 game、可重试
     let failKeeps = false;
     try {
-        const result = await context.switchTo("game", {
+        const result = await context.switchTo(SCENES.game, {
             bundle: "no-such-bundle",
-            paths: ["placeholder"],
+            paths: [SENTINELS.placeholder],
         });
         failKeeps = result.ok === false;
         report("fail-keeps-scene", failKeeps, String(result.reason ?? ""));
@@ -93,11 +97,11 @@ export async function runSceneFlowSmoke(context: SceneSmokeContext): Promise<voi
     // 6. 失败后重试：切回 game bundle 资源再次成功
     let retried = false;
     try {
-        const result = await context.switchTo("game", {
-            bundle: "game",
-            paths: ["game"],
+        const result = await context.switchTo(SCENES.game, {
+            bundle: BUNDLES.game,
+            paths: [SCENES.game],
         });
-        retried = result.ok === true && result.sceneId === "game";
+        retried = result.ok === true && result.sceneId === SCENES.game;
         report("retry", retried, String(result.reason ?? ""));
     } catch (error) {
         report("retry", false, error instanceof Error ? error.message : String(error));

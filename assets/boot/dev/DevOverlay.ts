@@ -13,6 +13,7 @@ import {
     type DevInfoSampler,
 } from "./DevInfo";
 import { sampleProfilerStats } from "../profiler";
+import { BUNDLES, PACKAGE_PATHS } from "../constants";
 
 /** 交互事件桥：与 fgui 适配器的 DevOverlayView 形状同构（结构匹配）。 */
 export interface DevOverlayInteractionHandlers {
@@ -212,7 +213,10 @@ export function setupDevOverlay(options: DevOverlayHostSetupOptions): DevOverlay
 
         void (async () => {
             try {
-                const loadHandle = await options.host.loadPackage("ui", "DevOverlay/DevOverlay");
+                const loadHandle = await options.host.loadPackage(
+                    BUNDLES.ui,
+                    PACKAGE_PATHS.devOverlay,
+                );
                 if (disposed) {
                     return;
                 }

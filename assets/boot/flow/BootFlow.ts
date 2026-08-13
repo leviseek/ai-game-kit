@@ -4,13 +4,17 @@ import {
     type StateTransitionTable,
 } from "../../framework";
 import type { SmokeAction } from "./SmokeRouter";
+import { BUNDLES, SCENES } from "../constants";
 
 /**
  * 入口场景静态引导：main 必须知道首个 bundle 的入口场景才能加载它（配置非
- * 代码）。game bundle 加载后其场景资源经注册桥可扩展/覆盖本表。
+ * 代码）。game bundle 加载后其场景资源经注册桥可扩展/覆盖本表。场景映射双源
+ * （game/fixture/scene.ts 的 sceneMap）——本表只作静态引导，运行时以 game
+ * 侧声明为准（AppRoot getSceneMap 用 `{...BOOTSTRAP_SCENE, ...sceneResources}`
+ * 合并，game 侧覆盖同键）。
  */
 export const BOOTSTRAP_SCENE: Readonly<Record<string, SceneResources>> = Object.freeze({
-    game: Object.freeze({ bundle: "game", paths: ["game"] }),
+    game: Object.freeze({ bundle: BUNDLES.game, paths: [SCENES.game] }),
 });
 
 export type BootFlowState =
@@ -114,11 +118,11 @@ export function createBootFlow(deps: BootFlowDeps): BootFlow {
 
     /** L1 场景流转：game 场景资源经 SceneFlow.preload（单槽位）预加载，switchTo 复用。 */
     async function preloadGameScene(): Promise<void> {
-        const game = deps.getSceneMap()["game"];
+        const game = deps.getSceneMap()[SCENES.game];
         if (game === undefined) {
             return;
         }
-        await sceneFlow.preload("game", game);
+        await sceneFlow.preload(SCENES.game, game);
     }
 
     /** 热更阶段：仅原生平台启用，Web 静默跳过；占位进度 UI 不依赖 fgui/Common。 */
@@ -147,13 +151,13 @@ export function createBootFlow(deps: BootFlowDeps): BootFlow {
 
     /** 默认分支：单向 switchTo game，激活后首次初始化 UI 根并通知组合根装配列表流。 */
     async function runDefault(): Promise<void> {
-        const game = deps.getSceneMap()["game"];
+        const game = deps.getSceneMap()[SCENES.game];
         if (game === undefined) {
             logger.error('[boot] missing scene mapping for "game"');
             fsm.send("fail");
             return;
         }
-        const result = await sceneFlow.switchTo("game", game);
+        const result = await sceneFlow.switchTo(SCENES.game, game);
         if (result.ok !== true) {
             logger.error(
                 "[boot] switch to game scene failed",

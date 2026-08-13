@@ -23,6 +23,11 @@ import {
 } from "./ModalClick";
 import type { PerfSample } from "../../game/fixture/perf";
 import { sampleProfilerStats } from "../profiler";
+import {
+    BUNDLES,
+    getWindowSearch,
+    UNIT_MAPPING_KEYS,
+} from "../constants";
 
 /** game bundle 冒烟模块的结构性子集（经全局注册桥读取，运行时经 lookupBundle）。 */
 interface GameSmokeModule {
@@ -166,22 +171,20 @@ export class SmokeProxy {
         return runModalClickSmoke(this.uiHost);
     }
 
-    /** 加载 game bundle 使游戏模块注册就绪（bundle 内任一资源加载触发整包脚本执行）。 */
+    /** 加载 game bundle 使游戏模块注册就绪（复用宿主哨兵加载，语义等价）。 */
     private async loadGameBundle(): Promise<void> {
-        const handle = this.resourceProvider.load("game", "game");
-        await handle.done;
+        await this.lobbyHost.loadBundle(BUNDLES.game);
     }
 
-    /** 加载 samples bundle 使样本模块注册就绪。 */
+    /** 加载 samples bundle 使样本模块注册就绪（复用宿主哨兵加载，语义等价）。 */
     private async loadSamplesBundle(): Promise<void> {
-        const handle = this.resourceProvider.load("samples", "placeholder");
-        await handle.done;
+        await this.lobbyHost.loadBundle(BUNDLES.samples);
     }
 
     /** 卡牌对战真实可玩冒烟序列；先确保共享 UI 依赖（Common）已注册。 */
     async runCardBattleSmoke(): Promise<void> {
         await this.loadSamplesBundle();
-        const samplesModule = lookupBundle("samples") as SamplesSmokeModule | undefined;
+        const samplesModule = lookupBundle(BUNDLES.samples) as SamplesSmokeModule | undefined;
         const smoke = samplesModule?.smokes?.cardBattle;
         if (smoke === undefined) {
             throw new Error(`[smoke] samples module has no cardBattle smoke`);
@@ -200,23 +203,23 @@ export class SmokeProxy {
     /** 自动战斗真实可玩冒烟序列；先确保共享 UI 依赖（Common）已注册。 */
     async runAutoBattleSmoke(): Promise<void> {
         await this.loadSamplesBundle();
-        const samplesModule = lookupBundle("samples") as SamplesSmokeModule | undefined;
+        const samplesModule = lookupBundle(BUNDLES.samples) as SamplesSmokeModule | undefined;
         const smoke = samplesModule?.smokes?.autoBattle;
         if (smoke === undefined) {
             throw new Error(`[smoke] samples module has no autoBattle smoke`);
         }
         // 规模参数经 URL 注入（?smoke=auto-battle&scale=6v6）：缺省 3v3，
         // 传 6 走 6v6 全规模上限渲染验证
-        const search = typeof window === "undefined" ? "" : window.location.search;
+        const search = getWindowSearch();
         const rawScale = new URLSearchParams(search).get("scale");
         const scale = rawScale === null ? undefined : Number(rawScale);
         // 战场动态单位映射经 samples bundle 运行时读取（boot 不静态 import game bundle）
         // 映射为数组（单位 UnitSlot + 命中反馈特效实例），传给多映射动态解析器
         const unitMapping = (
-            lookupBundle("samples") as {
+            lookupBundle(BUNDLES.samples) as {
                 readonly unitNodeMappings?: Readonly<Record<string, unknown>>;
             }
-        )?.unitNodeMappings?.["auto_battle"];
+        )?.unitNodeMappings?.[UNIT_MAPPING_KEYS.autoBattle];
         await smoke(
             this.uiHost,
             () => this.lobbyHost.ensureSharedUiDependencies(),
@@ -240,7 +243,7 @@ export class SmokeProxy {
         // 冒烟分叉运行在 startup，未切 game 场景：先加载 game+samples 使注册就绪
         await this.loadGameBundle();
         await this.loadSamplesBundle();
-        const gameModule = lookupBundle("game") as GameSmokeModule | undefined;
+        const gameModule = lookupBundle(BUNDLES.game) as GameSmokeModule | undefined;
         const smoke = gameModule?.smokes?.fixture;
         if (smoke === undefined) {
             throw new Error(`[smoke] game module has no fixture smoke`);
@@ -252,7 +255,7 @@ export class SmokeProxy {
     async runFixturePerf(perfFixtureId: string): Promise<void> {
         await this.loadGameBundle();
         await this.loadSamplesBundle();
-        const gameModule = lookupBundle("game") as GameSmokeModule | undefined;
+        const gameModule = lookupBundle(BUNDLES.game) as GameSmokeModule | undefined;
         const smoke = gameModule?.smokes?.perf;
         if (smoke === undefined) {
             throw new Error(`[smoke] game module has no perf smoke`);

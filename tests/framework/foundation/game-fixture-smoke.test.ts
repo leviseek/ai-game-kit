@@ -157,7 +157,7 @@ describe("SmokeProxy fixture smoke forwarding", () => {
 
         // Task 7 后 SmokeProxy 不再静态 import game/fixture/smoke，改经注册桥执行
         expect(source).not.toMatch(/from\s*["'][^"']*game\/fixture\/smoke["']/);
-        expect(source).toMatch(/lookupBundle\("game"\)/);
+        expect(source).toMatch(/lookupBundle\(BUNDLES\.game\)/);
         expect(source).toMatch(/smokes\?\.fixture/);
         expect(source).toMatch(/runFixtureSmoke/);
     });

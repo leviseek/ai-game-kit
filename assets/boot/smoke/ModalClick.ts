@@ -1,6 +1,7 @@
 import { director, EventTouch, Node, Touch, Vec3 } from "cc";
 import { createClickableFairyGuiView } from "../../framework/adapters/cocos/ui/FairyGuiPageAdapter";
 import type { UiHost } from "../host/UiHost";
+import { BUNDLES, PACKAGE_PATHS } from "../constants";
 
 /**
  * 模态遮罩真实交互点击验证序列（引擎集成冒烟驱动）。挂载全屏可点击下层页面
@@ -24,7 +25,7 @@ export async function runModalClickSmoke(host: UiHost): Promise<void> {
     // 2. 加载 Demo package（复用资源作用域，验证 package 加载路径不受影响）
     let packageLoaded = false;
     try {
-        const handle = await host.loadPackage("ui", "Demo/Demo");
+        const handle = await host.loadPackage(BUNDLES.ui, PACKAGE_PATHS.demo);
         packageLoaded = handle.state === "ready";
         report("package-load", packageLoaded, String(handle.state));
     } catch (error) {

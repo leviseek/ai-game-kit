@@ -209,7 +209,7 @@ describe("boot fixture perf module", () => {
         // perf 采样器归置于 boot/profiler.ts（冒烟与 dev overlay 共用），boot 不再
         // 静态 import game/fixture/perf（仅类型），perf 运行器经注册桥读取
         expect(source).toMatch(/sampleProfilerStats/);
-        expect(source).toMatch(/lookupBundle\("game"\)/);
+        expect(source).toMatch(/lookupBundle\(BUNDLES\.game\)/);
         expect(source).toMatch(/smokes\?\.perf/);
 
         const profilerFile = resolve(projectRoot, "assets/boot/profiler.ts");
