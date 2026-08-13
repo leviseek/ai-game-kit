@@ -3,76 +3,17 @@ import { describe, expect, test } from "bun:test";
 import type { SymbolRef } from "../lib/config/types";
 import {
     createCodeGraphGateway,
-    type CodeGraphGateway,
 } from "../lib/codegraph/gateway";
 import { CodeGraphCommandError, CodeGraphJsonError, CodeGraphTimeoutError } from "../lib/codegraph/errors";
-import type { CommandResult, CommandRunner } from "../lib/codegraph/process";
-
-const projectRoot = "D:/repo";
-
-const launchNode = {
-    id: "function:launch",
-    kind: "function",
-    name: "launch",
-    qualifiedName: "createBootFlow::launch",
-    filePath: "assets/boot/flow/BootFlow.ts",
-    language: "typescript",
-    startLine: 173,
-    endLine: 192,
-    startColumn: 4,
-    endColumn: 5,
-    signature: "(): Promise<void>",
-    visibility: null,
-    isExported: true,
-    isAsync: true,
-    isStatic: false,
-    isAbstract: false,
-    updatedAt: 1786272393087,
-} as const;
-
-const duplicateLaunchResults = [
-    { node: launchNode, score: 109.4 },
-    {
-        node: {
-            ...launchNode,
-            id: "method:launch",
-            qualifiedName: "TestHarness::launch",
-            filePath: "tests/boot/BootFlow.test.ts",
-        },
-        score: 92.1,
-    },
-];
-
-function success(stdout: unknown): CommandResult {
-    return {
-        exitCode: 0,
-        stdout: typeof stdout === "string" ? stdout : JSON.stringify(stdout),
-        stderr: "",
-    };
-}
-
-function fakeRunner(
-    responses: Readonly<Record<string, CommandResult | Error>>,
-): CommandRunner {
-    return async (args) => {
-        const response = responses[args[0] ?? ""];
-        if (response instanceof Error) throw response;
-        if (!response) throw new Error(`Unexpected command: ${args.join(" ")}`);
-        return response;
-    };
-}
-
-function gatewayWith(
-    responses: Readonly<Record<string, CommandResult | Error>>,
-): CodeGraphGateway {
-    return createCodeGraphGateway({ projectRoot, runner: fakeRunner(responses) });
-}
-
-const errorDiagnostic = (message: string) => ({
-    severity: "error" as const,
-    source: "codegraph",
-    message,
-});
+import type { CommandRunner } from "../lib/codegraph/process";
+import {
+    duplicateLaunchResults,
+    errorDiagnostic,
+    gatewayWith,
+    launchNode,
+    projectRoot,
+    success,
+} from "./helpers/codegraph-gateway-fixtures";
 
 describe("CodeGraphGateway", () => {
     test("resolveSymbol 用 file 消歧 qualifiedName", async () => {

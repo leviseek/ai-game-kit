@@ -37,7 +37,7 @@ bun run arch                              # 启动本地架构图谱工作台
 | `bun run lint` | ESLint（typescript-eslint recommended，非 type-aware）全仓检查 | 否 |
 | `bun run test` | foundation、FGUI、FGUI MCP 与架构工作台测试 | 否 |
 | `bun run test:all` | 追加 `test:foundation:types`（framework 契约 + fairygui 接入类型检查） | 是 |
-| `bun run verify` | `typecheck` + `lint` + `test`，提交前完整门禁 | 否 |
+| `bun run verify` | `typecheck` + `lint` + `test`，提交前完整门禁 | 是 |
 | `bun run fgui <command>` | FGUI 确定性工具链（资源清单/校验/短 id 等） | 否 |
 | `bun run ccc <command>` | Creator 命令行工具（构建/smoke/性能检查等） | 是 |
 | `bun run arch` | 启动本地架构图谱工作台（需已初始化 `.codegraph`） | 否 |

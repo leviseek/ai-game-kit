@@ -1,10 +1,23 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { readFile, stat } from "node:fs/promises";
-import { extname, join, relative, resolve, sep } from "node:path";
+import { readFile, realpath, stat } from "node:fs/promises";
+import { extname, join, relative, resolve } from "node:path";
+import path from "node:path";
 
 export interface StaticAssetOptions {
     readonly webRoot: string;
     readonly compiledRoot: string;
+}
+
+export interface StaticAssetFileSystem {
+    readonly realpath: (path: string) => Promise<string>;
+}
+
+const nodeStaticFileSystem: StaticAssetFileSystem = { realpath };
+
+interface StaticPathApi {
+    readonly relative: (from: string, to: string) => string;
+    readonly sep: string;
+    readonly isAbsolute: (path: string) => boolean;
 }
 
 const MIME: Readonly<Record<string, string>> = Object.freeze({
@@ -41,7 +54,7 @@ export async function serveStaticAsset(
         ? resolve(options.compiledRoot)
         : resolve(options.webRoot);
     const filePath = resolve(root, route.replace(/^\/+/, ""));
-    if (!isInside(root, filePath)) {
+    if (!isInsideStaticRoot(root, filePath)) {
         response.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
         response.end("forbidden");
         return true;
@@ -51,6 +64,11 @@ export async function serveStaticAsset(
         let target = filePath;
         const info = await stat(target);
         if (info.isDirectory()) target = join(target, "index.html");
+        if (!await isRealPathInsideStaticRoot(root, target)) {
+            response.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
+            response.end("forbidden");
+            return true;
+        }
         const data = await readFile(target);
         response.writeHead(200, { "Content-Type": MIME[extname(target)] ?? "application/octet-stream" });
         if (request.method === "HEAD") response.end();
@@ -62,7 +80,17 @@ export async function serveStaticAsset(
     return true;
 }
 
-function isInside(root: string, path: string): boolean {
-    const rel = relative(root, path);
-    return rel === "" || (!rel.startsWith("..") && !rel.includes(`..${sep}`));
+export function isInsideStaticRoot(root: string, target: string, pathApi: StaticPathApi = path): boolean {
+    const rel = pathApi.relative(root, target);
+    return rel === "" || (!rel.startsWith("..") && !rel.includes(`..${pathApi.sep}`) && !pathApi.isAbsolute(rel));
+}
+
+export async function isRealPathInsideStaticRoot(
+    root: string,
+    target: string,
+    fileSystem: StaticAssetFileSystem = nodeStaticFileSystem,
+): Promise<boolean> {
+    const realRoot = await fileSystem.realpath(root);
+    const realTarget = await fileSystem.realpath(target);
+    return isInsideStaticRoot(realRoot, realTarget);
 }

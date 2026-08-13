@@ -1,11 +1,12 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, resolve, win32 } from "node:path";
 
 import { startArchServer } from "../lib/server/http-server";
 import { readSourceExcerpt, SourceReadError } from "../lib/server/source";
 import { createGraphSnapshotStore } from "../lib/server/snapshot-store";
+import { isInsideStaticRoot, isRealPathInsideStaticRoot } from "../lib/server/static";
 import type { GraphSnapshot, ViewType } from "../lib/graph/types";
 
 const roots: string[] = [];
@@ -134,6 +135,32 @@ describe("startArchServer", () => {
         }
     });
 
+    test("rejects static assets that resolve outside the static root", async () => {
+        const root = createFixtureRoot();
+        const webRoot = join(root, "web");
+        const compiledRoot = join(root, "compiled");
+        const externalRoot = createFixtureRoot();
+        const externalFile = resolve(externalRoot, "outside.css");
+        mkdirSync(webRoot, { recursive: true });
+        mkdirSync(compiledRoot, { recursive: true });
+        writeFileSync(join(webRoot, "index.html"), "<html></html>\n");
+        writeFileSync(externalFile, "body { color: red; }\n");
+        if (!tryCreateSymlink(externalFile, join(webRoot, "outside.css"))) return;
+        const server = await startArchServer({
+            projectRoot: root,
+            store: createGraphSnapshotStore(snapshot()),
+            static: { webRoot, compiledRoot },
+        });
+        try {
+            const response = await fetch(`${server.url}/outside.css`);
+
+            expect(response.status).toBe(403);
+            expect(await response.text()).toBe("forbidden");
+        } finally {
+            await server.close();
+        }
+    });
+
     test("streams snapshot-ready events over SSE and releases on close", async () => {
         const root = createFixtureRoot();
         const store = createGraphSnapshotStore(snapshot());
@@ -179,6 +206,20 @@ describe("readSourceExcerpt", () => {
         expect(excerpt.startLine).toBe(40);
         expect(excerpt.endLine).toBe(80);
         expect(excerpt.lines).toHaveLength(41);
+    });
+});
+
+describe("isInsideStaticRoot", () => {
+    test("rejects Windows paths when relative path is absolute", () => {
+        expect(isInsideStaticRoot("D:\\repo\\web", "C:\\Windows\\win.ini", win32)).toBe(false);
+    });
+
+    test("rejects targets whose realpath escapes the static root", async () => {
+        const allowed = await isRealPathInsideStaticRoot("/repo/web", "/repo/web/app.css", {
+            realpath: async (path) => path === "/repo/web/app.css" ? "/external/app.css" : path,
+        });
+
+        expect(allowed).toBe(false);
     });
 });
 
