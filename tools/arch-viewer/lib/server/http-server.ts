@@ -25,6 +25,11 @@ export async function startArchServer(options: ArchServerOptions): Promise<ArchS
     const sseConnections = new Set<() => void>();
     const server: Server = createServer((request, response) => {
         const url = new URL(request.url ?? "/", "http://127.0.0.1");
+        if (url.pathname === "/favicon.ico") {
+            response.writeHead(204);
+            response.end();
+            return;
+        }
         if (url.pathname === "/api/events" && request.method === "GET") {
             const closeSse = attachSse(response, options.store);
             const dispose = () => {

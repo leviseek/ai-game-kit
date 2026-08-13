@@ -48,6 +48,11 @@ export async function serveStaticAsset(
         return true;
     }
     if (pathname.startsWith("/api/")) return false;
+    if (pathname === "/favicon.ico") {
+        response.writeHead(204);
+        response.end();
+        return true;
+    }
 
     const route = pathname === "/" ? "/index.html" : pathname;
     const root = route.endsWith(".js") || route.endsWith(".mjs") || route.endsWith(".map")

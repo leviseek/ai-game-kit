@@ -24,12 +24,14 @@ describe("startArchServer", () => {
             const view = await jsonFetch(`${server.url}/api/views/calls`);
             const search = await jsonFetch(`${server.url}/api/symbols/search?q=launch`);
             const missing = await fetch(`${server.url}/api/views/unknown`);
+            const favicon = await fetch(`${server.url}/favicon.ico`);
 
             expect(project.headers.get("content-type")).toBe("application/json; charset=utf-8");
             expect(await project.json()).toEqual({ name: "fixture", fileCount: 2 });
             expect(await view.json()).toEqual(expect.objectContaining({ type: "calls", nodes: expect.any(Array) }));
             expect(await search.json()).toEqual([expect.objectContaining({ qualifiedName: "createBootFlow::launch" })]);
             expect(missing.status).toBe(404);
+            expect(favicon.status).toBe(204);
             expect(missing.headers.get("content-type")).toBe("application/json; charset=utf-8");
             expect(await missing.json()).toEqual({ error: "not_found" });
         } finally {
