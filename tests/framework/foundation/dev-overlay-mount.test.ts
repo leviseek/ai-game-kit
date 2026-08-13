@@ -400,6 +400,24 @@ function makeLogger(): {
 
 const noopDrive = (): { dispose(): void } => ({ dispose() { } });
 
+/**
+ * 条件等待：轮询 predicate 直到为真或超过 deadlineMs。替代固定 setTimeout
+ * 等待，避免批跑时事件循环繁忙导致定时器延迟造成的时序竞态。
+ */
+async function waitFor(
+    predicate: () => boolean,
+    deadlineMs: number,
+    intervalMs = 20,
+): Promise<void> {
+    const deadline = Date.now() + deadlineMs;
+    while (!predicate()) {
+        if (Date.now() >= deadline) {
+            return;
+        }
+        await new Promise((resolve) => setTimeout(resolve, intervalMs));
+    }
+}
+
 describe("setupDevOverlay", () => {
     test("dev 关闭：mounted false，不加载包", () => {
         const setupHost = makeSetupHost(() => createRoot(), "ready");
@@ -433,9 +451,10 @@ describe("setupDevOverlay", () => {
         });
         expect(handle.mounted).toBe(false);
 
-        // GRoot 就绪后，下一次重试（100ms 间隔）读到 root 并挂载
+        // GRoot 就绪后，下一次重试（100ms 间隔）读到 root 并挂载；
+        // 轮询等待挂载完成，不依赖固定时长（批跑定时器可能延迟）
         holder.root = createRoot();
-        await new Promise((resolve) => setTimeout(resolve, 120));
+        await waitFor(() => handle.mounted, 500);
 
         expect(handle.mounted).toBe(true);
         expect(setupHost.loads).toBe(1);

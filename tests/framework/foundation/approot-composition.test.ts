@@ -10,38 +10,13 @@ import {
     FuiViewBindingRegistrationError,
     FuiViewCreationError,
 } from "../../../assets/framework/core/fui/FuiErrors";
+import { createCcMock } from "./helpers/cc-mock";
 import { createFairyGuiMock } from "./helpers/fairygui-mock";
 
-mock.module("cc", () => ({
-    game: {
-        on(_event: string, _callback: () => void, _target: unknown) { },
-        off(_event: string, _callback: () => void, _target: unknown) { },
-    },
-    director: {
-        addPersistRootNode(_node: unknown) { },
-    },
-    Game: {
-        EVENT_HIDE: "game_hide",
-        EVENT_SHOW: "game_show",
-    },
-    _decorator: {
-        ccclass(_name: string) {
-            return <TFunction extends (...args: unknown[]) => unknown>(target: TFunction): TFunction =>
-                target;
-        },
-    },
-    Component: class {
-        // Cocos Component base class
-    },
-    Node: class {
-        static EventType: Record<string, string> = {};
-    },
-    EventTouch: class { },
-    Touch: class { },
-    Vec3: class { },
-    profiler: { stats: null },
-    sys: { isNative: false },
-}));
+// cc mock 统一用共享 fixture（bun mock.module 全局共享首个生效）：本文件缺符号
+// 的自定义桩会让全量运行中其它文件（如 dev-overlay-mount 的 viewport 装配）解析
+// 失败，必须与 createCcMock 保持一致（含 view/screen/getSafeAreaRect）。
+mock.module("cc", () => createCcMock());
 
 // AppRoot 经 createCocosUiRoot 工厂间接依赖 fairygui-cc；测试不加载真实运行时，
 // 统一使用共享 fixture（bun mock.module 全局共享首个生效，保证全量运行符号齐全）。

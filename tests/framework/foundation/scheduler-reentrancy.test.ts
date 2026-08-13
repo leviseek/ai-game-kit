@@ -77,7 +77,10 @@ describe("PassiveScheduler reentrancy", () => {
     test("reports task errors through the default console error boundary", () => {
         const clock = new SimulationClock({ initialTime: 0 });
         const scheduler = new PassiveScheduler(clock);
-        const errorSpy = spyOn(console, "error");
+        // mockImplementation 隔离原实现：bun 的 spyOn 默认 callThrough，会继续调用
+        // 原 console.error，把传入的 Error 上报给测试运行器；批跑大量文件时被判定为
+        // 失败（同 fsm/object-pool 的错误上报用例写法）
+        const errorSpy = spyOn(console, "error").mockImplementation(() => { });
 
         try {
             scheduler.schedule(() => {
