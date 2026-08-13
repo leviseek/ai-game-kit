@@ -1,38 +1,41 @@
 {
-  "name": "ai-game-kit",
-  "uuid": "19d7063b-ca20-465f-8dff-de141c0f4605",
-  "creator": {
-    "version": "3.8.8"
-  },
-  "workspaces": [
-    "tools/fgui",
-    "tools/fgui-mcp",
-    "tools/creator",
-    "tools/arch-viewer"
-  ],
-  "scripts": {
-    "test:foundation": "bun test ./tests/framework/foundation",
-    "test:foundation:types": "bun ./tests/scripts/check-foundation-contracts.ts",
-    "test:fgui": "bun test ./tools/fgui/test",
-    "test:fgui-mcp": "bun test ./tools/fgui-mcp/test",
-    "test": "bun run test:foundation && bun run test:fgui && bun run test:fgui-mcp && bun run test:arch",
-    "test:all": "bun run test:foundation && bun run test:fgui && bun run test:fgui-mcp && bun run test:foundation:types",
-    "lint": "eslint .",
-    "verify": "bun run typecheck && bun run lint && bun run test",
-    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tools/creator/tsconfig.json && tsc --noEmit -p tools/fgui/tsconfig.json && tsc --noEmit -p tools/fgui-mcp/tsconfig.json && tsc --noEmit -p tools/arch-viewer/tsconfig.json && tsc --noEmit -p tools/arch-viewer/tsconfig.web.json",
-    "typecheck:ci": "tsc --noEmit -p tsconfig.ci.json && tsc --noEmit -p tools/creator/tsconfig.json && tsc --noEmit -p tools/fgui/tsconfig.json && tsc --noEmit -p tools/fgui-mcp/tsconfig.json && tsc --noEmit -p tools/arch-viewer/tsconfig.json && tsc --noEmit -p tools/arch-viewer/tsconfig.web.json",
-    "ccc": "bun ./tools/creator/cli.ts",
-    "fgui": "bun ./tools/fgui/cli.ts",
-    "fgui-mcp": "bun ./tools/fgui-mcp/cli.ts",
-    "build:fairygui": "bun ./scripts/build-fairygui.ts",
-    "arch": "bun ./tools/arch-viewer/cli.ts",
-    "build:arch-web": "tsc -p tools/arch-viewer/tsconfig.web.json",
-    "test:arch": "bun test ./tools/arch-viewer/test"
-  },
-  "devDependencies": {
-    "@typescript/native": "npm:typescript@^7.0.2",
-    "eslint": "^10.8.1",
-    "typescript": "npm:typescript@6.0.2",
-    "typescript-eslint": "^8.66.0"
-  }
+    "name": "ai-game-kit",
+    "uuid": "19d7063b-ca20-465f-8dff-de141c0f4605",
+    "creator": {
+        "version": "3.8.8"
+    },
+    "workspaces": [
+        "tools/fgui",
+        "tools/fgui-mcp",
+        "tools/creator",
+        "tools/arch-viewer"
+    ],
+    "scripts": {
+        "test:foundation": "bun test ./tests/framework/foundation",
+        "test:foundation:types": "bun ./tests/scripts/check-foundation-contracts.ts",
+        "test:fgui": "bun test ./tools/fgui/test",
+        "test:fgui-mcp": "bun test ./tools/fgui-mcp/test",
+        "test": "bun run test:foundation && bun run test:fgui && bun run test:fgui-mcp && bun run test:arch",
+        "test:all": "bun run test:foundation && bun run test:fgui && bun run test:fgui-mcp && bun run test:foundation:types",
+        "lint": "eslint .",
+        "format": "prettier --write .",
+        "format:check": "prettier --check .",
+        "verify": "bun run typecheck && bun run lint && bun run test",
+        "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tools/creator/tsconfig.json && tsc --noEmit -p tools/fgui/tsconfig.json && tsc --noEmit -p tools/fgui-mcp/tsconfig.json && tsc --noEmit -p tools/arch-viewer/tsconfig.json && tsc --noEmit -p tools/arch-viewer/tsconfig.web.json",
+        "typecheck:ci": "tsc --noEmit -p tsconfig.ci.json && tsc --noEmit -p tools/creator/tsconfig.json && tsc --noEmit -p tools/fgui/tsconfig.json && tsc --noEmit -p tools/fgui-mcp/tsconfig.json && tsc --noEmit -p tools/arch-viewer/tsconfig.json && tsc --noEmit -p tools/arch-viewer/tsconfig.web.json",
+        "ccc": "bun ./tools/creator/cli.ts",
+        "fgui": "bun ./tools/fgui/cli.ts",
+        "fgui-mcp": "bun ./tools/fgui-mcp/cli.ts",
+        "build:fairygui": "bun ./scripts/build-fairygui.ts",
+        "arch": "bun ./tools/arch-viewer/cli.ts",
+        "build:arch-web": "tsc -p tools/arch-viewer/tsconfig.web.json",
+        "test:arch": "bun test ./tools/arch-viewer/test"
+    },
+    "devDependencies": {
+        "@typescript/native": "npm:typescript@^7.0.2",
+        "eslint": "^10.8.1",
+        "prettier": "^3.9.6",
+        "typescript": "npm:typescript@6.0.2",
+        "typescript-eslint": "^8.66.0"
+    }
 }
