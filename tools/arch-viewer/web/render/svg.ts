@@ -14,14 +14,32 @@ export interface CanvasTransform {
 export interface SvgRendererOptions {
     readonly state: WorkbenchState;
     readonly transform: CanvasTransform;
+    readonly getTransform: () => CanvasTransform;
     readonly onSelect: (id: string | undefined) => void;
     readonly onExpandGroup: (id: string) => void;
     readonly onTransform: (transform: CanvasTransform) => void;
 }
 
+export interface CanvasPoint {
+    readonly x: number;
+    readonly y: number;
+}
+
 export function updateCanvasTransform(container: HTMLElement, transform: CanvasTransform): void {
     const content = container.querySelector<SVGGElement>("[data-graph-content]");
     if (content !== null) content.setAttribute("transform", toTransform(transform));
+}
+
+export function wheelCanvasTransform(transform: CanvasTransform, deltaY: number): CanvasTransform {
+    return { ...transform, scale: clamp(0.25, 2.5, transform.scale * (deltaY > 0 ? 0.9 : 1.1)) };
+}
+
+export function dragCanvasTransform(transform: CanvasTransform, start: CanvasPoint, current: CanvasPoint): CanvasTransform {
+    return {
+        ...transform,
+        x: transform.x + current.x - start.x,
+        y: transform.y + current.y - start.y,
+    };
 }
 
 export function renderSvgCanvas(container: HTMLElement, options: SvgRendererOptions): LayoutGraph {
@@ -104,21 +122,16 @@ function wirePanZoom(svg: SVGSVGElement, options: SvgRendererOptions): void {
     svg.addEventListener("pointerdown", (event) => {
         if (event.button !== 0 || (event.target instanceof Element && event.target.closest(".node") !== null)) return;
         svg.setPointerCapture(event.pointerId);
-        dragStart = { x: event.clientX, y: event.clientY, transform: options.transform };
+        dragStart = { x: event.clientX, y: event.clientY, transform: options.getTransform() };
     });
     svg.addEventListener("pointermove", (event) => {
         if (dragStart === undefined) return;
-        options.onTransform({
-            ...dragStart.transform,
-            x: dragStart.transform.x + event.clientX - dragStart.x,
-            y: dragStart.transform.y + event.clientY - dragStart.y,
-        });
+        options.onTransform(dragCanvasTransform(dragStart.transform, dragStart, { x: event.clientX, y: event.clientY }));
     });
     svg.addEventListener("pointerup", () => { dragStart = undefined; });
     svg.addEventListener("wheel", (event) => {
         event.preventDefault();
-        const scale = clamp(0.25, 2.5, options.transform.scale * (event.deltaY > 0 ? 0.9 : 1.1));
-        options.onTransform({ ...options.transform, scale });
+        options.onTransform(wheelCanvasTransform(options.getTransform(), event.deltaY));
     }, { passive: false });
 }
 

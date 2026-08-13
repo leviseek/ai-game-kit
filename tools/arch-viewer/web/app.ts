@@ -58,6 +58,7 @@ export async function startWorkbench(root: Document = document): Promise<Workben
             lastLayout = renderSvgCanvas(elements.canvas, {
                 state,
                 transform,
+                getTransform: () => transform,
                 onSelect: (nodeId) => dispatch({ type: "select-node", nodeId }),
                 onExpandGroup: (id) => void loadGroup(id),
                 onTransform: (next) => {
