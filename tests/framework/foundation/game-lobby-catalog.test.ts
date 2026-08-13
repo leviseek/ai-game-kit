@@ -25,6 +25,7 @@ describe("game lobby catalog", () => {
     test("card entry matches the card-battle smoke contract", () => {
         const card = gameTypeCatalog.find((info) => info.id === "card");
         expect(card?.playable).toBe(true);
+        // CardBattleView 用普通视图解析器：resolver 缺省 "view"，不声明
         expect(card?.entry).toEqual({
             route: "card/battle",
             packageName: "CardGame",
@@ -35,17 +36,21 @@ describe("game lobby catalog", () => {
     test("auto_battle entry opens the lineup editor first, then the battle page", () => {
         const autoBattle = gameTypeCatalog.find((info) => info.id === "auto_battle");
         expect(autoBattle?.playable).toBe(true);
-        // 进入品类先落编队页编辑布阵
+        // 进入品类先落编队页编辑布阵：LineupEditorView 含候选 GList，声明列表解析器
         expect(autoBattle?.entry).toEqual({
             route: "auto_battle/lineup",
             packageName: "AutoBattle",
             resName: "LineupEditorView",
+            resolver: "list",
         });
-        // 编队页点"开始战斗"后切到战场页
+        // 编队页点"开始战斗"后切到战场页：AutoBattleView 按存活单位动态实例化，
+        // 声明 dynamic 解析器并携带 samples 注册桥映射键
         expect(AUTO_BATTLE_BATTLE_ENTRY).toEqual({
             route: "auto_battle/battle",
             packageName: "AutoBattle",
             resName: "AutoBattleView",
+            resolver: "dynamic",
+            mappingKey: "auto_battle",
         });
     });
 

@@ -9,6 +9,7 @@ import type {
     EntryPageHandle,
     GameLobbyHost,
 } from "../../game/lobby/host";
+import { BUNDLES, PACKAGE_PATHS, SENTINELS } from "../constants";
 import type { UiHost } from "./UiHost";
 
 /**
@@ -47,10 +48,13 @@ export class GameLobbyHostImpl implements GameLobbyHost {
      * 退出品类会话不受影响。重复调用幂等（加载协调器按 key 缓存终态）。
      */
     async ensureSharedUiDependencies(): Promise<void> {
-        const handle = await this.host.loadPackage("ui", "Common/Common");
+        const handle = await this.host.loadPackage(
+            BUNDLES.ui,
+            PACKAGE_PATHS.common,
+        );
         if (handle.state !== "ready") {
             throw new Error(
-                `lobby: shared ui dependency load failed for "Common/Common" (${handle.state})`,
+                `lobby: shared ui dependency load failed for "${PACKAGE_PATHS.common}" (${handle.state})`,
             );
         }
     }
@@ -77,7 +81,7 @@ export class GameLobbyHostImpl implements GameLobbyHost {
         // 列表包（全局 uiScope 常驻）。这是 MVP 单会话的必要隔离。
         const scope = this.resourceProvider.createScope();
         const pkgPath = `${entry.packageName}/${entry.packageName}`;
-        const pkgHandle = this.resourceProvider.loadPackage("ui", pkgPath);
+        const pkgHandle = this.resourceProvider.loadPackage(BUNDLES.ui, pkgPath);
         scope.retain(pkgHandle);
         const loaded = await pkgHandle.done;
         if (loaded.state !== "ready") {
@@ -103,27 +107,34 @@ export class GameLobbyHostImpl implements GameLobbyHost {
         const navPage = navResult?.ok === true ? navResult.page : undefined;
 
         // 节点解析器：渲染器与游戏层只消费 ViewModelNode 契约，fgui 类型不出
-        // 组合根（design decision 7 边界）。战场页（AutoBattleView）用品类动态
-        // 映射数组装配通用动态组件解析器——`unit_{id}` 系列运行时实例化 UnitSlot、
-        // `fx_*_{id}` 系列实例化命中反馈特效。映射配置经 samples bundle 运行时
-        // 读取（boot 不静态 import game bundle，维护 boot 边界）
-        const unitMapping = (
-            lookupBundle("samples") as {
-                readonly unitNodeMappings?: Readonly<Record<string, unknown>>;
-            }
-        )?.unitNodeMappings?.["auto_battle"];
+        // 组合根（design decision 7 边界）。装配方式由 game 侧 GameEntryInfo 声明：
+        // resolver "dynamic" 用品类动态映射数组装配通用动态组件解析器
+        // （`unit_{id}` 系列运行时实例化 UnitSlot、`fx_*_{id}` 系列实例化命中
+        // 反馈特效），映射经 samples 注册桥按 mappingKey 运行时读取（boot 不
+        // 静态 import game bundle，维护 boot 边界）；"list" 装配列表解析器
+        // （候选 GList 虚拟列表）；缺省普通视图解析器。新增品类页面只需在
+        // game 侧 catalog 声明，boot 装配层无需改动。
+        const resolver = entry.resolver ?? "view";
+        const unitMapping =
+            resolver === "dynamic"
+                ? (
+                      lookupBundle("samples") as {
+                          readonly unitNodeMappings?: Readonly<Record<string, unknown>>;
+                      }
+                  )?.unitNodeMappings?.[entry.mappingKey ?? ""]
+                : undefined;
         const node =
-            entry.resName === "AutoBattleView" && unitMapping !== undefined
+            resolver === "dynamic" && unitMapping !== undefined
                 ? createDynamicComponentViewHandle(
                       page.view as never,
                       unitMapping as never,
                   )
                 : createFairyGuiViewHandle(page.view as never);
 
-        // 编队页（LineupEditorView）含候选英雄 GList 虚拟列表：装配列表解析器，
-        // presenter 经 page.list 驱动候选渲染（对齐战场页动态单位映射装配路径）
+        // 列表解析器：presenter 经 page.list 驱动候选渲染（对齐战场页动态单位
+        // 映射装配路径）
         const list =
-            entry.resName === "LineupEditorView"
+            resolver === "list"
                 ? createFairyGuiListViewHandle(page.view as never)
                 : undefined;
 
@@ -211,7 +222,7 @@ export class GameLobbyHostImpl implements GameLobbyHost {
         await this.ensureSharedUiDependencies();
 
         const pkgPath = `${entry.packageName}/${entry.packageName}`;
-        const handle = await this.host.loadPackage("ui", pkgPath);
+        const handle = await this.host.loadPackage(BUNDLES.ui, pkgPath);
         if (handle.state !== "ready") {
             throw new Error(
                 `lobby host: global page package load failed for "${pkgPath}" (${handle.state})`,
@@ -256,7 +267,7 @@ export class GameLobbyHostImpl implements GameLobbyHost {
 
     /** bundle → 哨兵资源映射：game 用同名场景资源，其余 bundle 用 placeholder。 */
     private bundleSentinel(bundle: string): string {
-        return bundle === "game" ? "game" : "placeholder";
+        return bundle === BUNDLES.game ? BUNDLES.game : SENTINELS.placeholder;
     }
 
     /** GameLobbyHost.ensureUiReady：初始化 UI 根并返回是否就绪（GRoot 可用）。幂等。 */

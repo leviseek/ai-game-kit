@@ -15,19 +15,24 @@ mock.module("fairygui-cc", () => createFairyGuiMock());
 
 const projectRoot = resolve(import.meta.dir, "../../..");
 const lobbyHostFile = resolve(projectRoot, "assets/boot/host/GameLobbyHostImpl.ts");
+const bootConstantsFile = resolve(projectRoot, "assets/boot/constants.ts");
 
 describe("GameLobbyHostImpl source contract", () => {
     test("loads the shared ui dependency Common before opening any package page", () => {
         expect(existsSync(lobbyHostFile)).toBe(true);
+        expect(existsSync(bootConstantsFile)).toBe(true);
 
         const source = readFileSync(lobbyHostFile, "utf8");
+        const bootConstants = readFileSync(bootConstantsFile, "utf8");
 
         // Demo/CardGame 跨包引用通用资源包 Common（按钮/进度条组件）；fgui
         // loadPackage 不自动加载依赖包，若 Common 未先注册则组件退化为空、点击
         // 不触发。契约要求 ensureSharedUiDependencies（加载 Common）先于入口页
-        // /全局页 package 加载。
+        // /全局页 package 加载。字符串归口：宿主引用常量而非裸写（boot 侧
+        // constants.ts 锁定 "Common/Common" 契约值）。
         expect(source).toMatch(/ensureSharedUiDependencies/);
-        expect(source).toMatch(/Common\/Common/);
+        expect(source).toMatch(/PACKAGE_PATHS\.common/);
+        expect(bootConstants).toMatch(/"Common\/Common"/);
 
         // 调用点顺序：openEntryPage 与 openGlobalPage 内部都先调依赖再加载目标包，
         // 保证"依赖先注册"语义（源码顺序 = 执行顺序的强契约）
@@ -54,9 +59,10 @@ describe("GameLobbyHostImpl source contract", () => {
         expect(source).toMatch(/loadBundle/);
         // 哨兵资源映射：game 用同名场景资源（无 placeholder.json），其余 bundle 用
         // placeholder；loadBundle 不再恒加载 placeholder，经 bundleSentinel 分派
+        // （字符串归口：经 BUNDLES/SENTINELS 常量引用，值锁定于 boot constants.ts）
         expect(source).toMatch(/bundleSentinel\(bundle\)/);
         expect(source).toMatch(/resourceProvider\.load\(\s*bundle,\s*this\.bundleSentinel\(bundle\)\s*,\s*\)/);
-        expect(source).toMatch(/return bundle === "game" \? "game" : "placeholder";/);
+        expect(source).toMatch(/return bundle === BUNDLES\.game \? BUNDLES\.game : SENTINELS\.placeholder;/);
         // 列表编排不再残留在宿主
         expect(source).not.toMatch(/openListPageWithRetry/);
         expect(source).not.toMatch(/gameTypeCatalog/);
