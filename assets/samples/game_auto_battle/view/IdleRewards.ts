@@ -58,6 +58,16 @@ export function createIdleRewardsBindings(commands: IdleRewardsCommands): readon
             get: (vm) => String(vm.totalRewards),
         },
         {
+            kind: "visible",
+            node: "rewards_claim_glow",
+            get: (vm) => vm.canClaim,
+        },
+        {
+            kind: "enabled",
+            node: "btn_claim",
+            get: (vm) => vm.canClaim,
+        },
+        {
             kind: "command",
             node: "btn_claim",
             run: () => commands.claim(),

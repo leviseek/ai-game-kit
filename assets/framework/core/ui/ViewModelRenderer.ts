@@ -83,6 +83,7 @@ export function createViewModelRenderer<VM>(
     // 已注册命令的节点名集合：跨 setBindings 保留——避免动态重建绑定集时对同一
     // 节点重复注册 onClick（Adapter 的 onClick 通常是追加监听，重复注册会累积）
     const registeredCommandNodes = new Set<string>();
+    const enabledNodes = new Map<string, boolean>();
     let views: (IViewModelNode | undefined)[] = new Array(bindings.length);
     let vm: VM | undefined;
     let disposed = false;
@@ -125,7 +126,7 @@ export function createViewModelRenderer<VM>(
             if (!registeredCommandNodes.has(binding.node)) {
                 registeredCommandNodes.add(binding.node);
                 view.onClick(() => {
-                    if (!disposed && vm !== undefined) {
+                    if (!disposed && vm !== undefined && enabledNodes.get(binding.node) !== false) {
                         binding.run(vm as VM_);
                     }
                 });
@@ -155,6 +156,10 @@ export function createViewModelRenderer<VM>(
                 break;
             case "visible":
                 view.setVisible(next as boolean);
+                break;
+            case "enabled":
+                enabledNodes.set(binding.node, next as boolean);
+                view.setEnabled?.(next as boolean);
                 break;
             default:
                 // exhaustiveness 兜底：新增绑定 kind 未在此分发时，binding 收窄

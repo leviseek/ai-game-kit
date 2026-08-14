@@ -167,6 +167,10 @@ export function wrapFairyGuiObject(child: GObject): IViewModelNode {
         setVisible: (value: boolean) => {
             child.visible = value;
         },
+        setEnabled: (value: boolean) => {
+            child.touchable = value;
+            child.grayed = !value;
+        },
         setXY: (x: number, y: number) => {
             child.setPosition(x, y);
         },

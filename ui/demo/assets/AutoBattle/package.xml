@@ -1,6 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
 <packageDescription id="abpk0001">
   <resources>
+    <image id="px024" name="pixel_clean_panel.png" path="/img/" scale="9grid" scale9grid="2,2,4,4" qualityOption="source" duplicatePadding="true"/>
+    <image id="px023" name="pixel_double_arrow_mask.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="px022" name="pixel_star_mask.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="px021" name="pixel_block_cluster.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="px020" name="pixel_button_frame_mask.png" path="/img/" scale="9grid" scale9grid="10,6,12,8" qualityOption="source" duplicatePadding="true"/>
+    <image id="px019" name="pixel_button_glow_mask.png" path="/img/" scale="9grid" scale9grid="10,6,12,8" qualityOption="source" duplicatePadding="true"/>
+    <image id="px018" name="pixel_chevron_right.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="px017" name="pixel_chevron.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="px016" name="pixel_section_divider.png" path="/img/" scale="9grid" scale9grid="8,1,8,4" qualityOption="source" duplicatePadding="true"/>
+    <image id="px015" name="pixel_title_plate.png" path="/img/" scale="9grid" scale9grid="16,8,16,8" qualityOption="source" duplicatePadding="true"/>
+    <image id="px014" name="pixel_slot_nameplate.png" path="/img/" scale="9grid" scale9grid="8,4,16,8" qualityOption="source" duplicatePadding="true"/>
+    <image id="px013" name="pixel_slot_selected.png" path="/img/" scale="9grid" scale9grid="12,12,8,8" qualityOption="source" duplicatePadding="true"/>
+    <image id="px012" name="pixel_slot_frame.png" path="/img/" scale="9grid" scale9grid="8,8,8,8" qualityOption="source" duplicatePadding="true"/>
+    <image id="px011" name="pixel_slot_highlight.png" path="/img/" scale="9grid" scale9grid="10,0,12,4" qualityOption="source" duplicatePadding="true"/>
+    <image id="px010" name="pixel_slot_surface.png" path="/img/" scale="9grid" scale9grid="8,8,8,8" qualityOption="source" duplicatePadding="true"/>
+    <image id="px009" name="pixel_slot_shadow.png" path="/img/" scale="9grid" scale9grid="8,8,8,8" qualityOption="source" duplicatePadding="true"/>
+    <image id="px008" name="pixel_action_dock.png" path="/img/" scale="9grid" scale9grid="12,8,16,8" qualityOption="source" duplicatePadding="true"/>
+    <image id="px007" name="pixel_inner_surface.png" path="/img/" scale="9grid" scale9grid="10,10,12,12" qualityOption="source" duplicatePadding="true"/>
+    <image id="px006" name="pixel_panel_frame.png" path="/img/" scale="9grid" scale9grid="12,12,8,8" qualityOption="source" duplicatePadding="true"/>
+    <image id="px005" name="pixel_panel_material.png" path="/img/" scale="9grid" scale9grid="10,10,12,12" qualityOption="source" duplicatePadding="true"/>
+    <image id="px004" name="pixel_panel_shadow.png" path="/img/" scale="9grid" scale9grid="10,10,12,12" qualityOption="source" duplicatePadding="true"/>
+    <image id="px003" name="pixel_top_hud_light.png" path="/img/" scale="9grid" scale9grid="16,8,16,8" qualityOption="source" duplicatePadding="true"/>
+    <image id="px002" name="pixel_vignette.png" path="/img/" scale="9grid" scale9grid="16,16,16,16" qualityOption="source" duplicatePadding="true"/>
+    <image id="px001" name="pixel_bg_scanlines.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="px000" name="pixel_bg_tint.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="sk021" name="sakura_corner_sparkle.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="sk020" name="sakura_petal_small_b.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="sk019" name="sakura_petal_small_a.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="sk018" name="sakura_diamond_marker.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="sk017" name="sakura_button_frame.png" path="/img/" scale="9grid" scale9grid="8,4,15,7" qualityOption="source" duplicatePadding="true"/>
+    <image id="sk016" name="sakura_button_glow.png" path="/img/" scale="9grid" scale9grid="8,4,15,7" qualityOption="source" duplicatePadding="true"/>
+    <image id="sk015" name="sakura_section_divider.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="sk014" name="sakura_title_plate.png" path="/img/" scale="9grid" scale9grid="10,5,21,10" qualityOption="source" duplicatePadding="true"/>
+    <image id="sk013" name="sakura_slot_nameplate.png" path="/img/" scale="9grid" scale9grid="7,4,16,7" qualityOption="source" duplicatePadding="true"/>
+    <image id="sk012" name="sakura_slot_selected.png" path="/img/" scale="9grid" scale9grid="10,10,21,21" qualityOption="source" duplicatePadding="true"/>
+    <image id="sk011" name="sakura_slot_top_highlight.png" path="/img/" scale="9grid" scale9grid="10,1,21,2" qualityOption="source" duplicatePadding="true"/>
+    <image id="sk010" name="sakura_slot_frame.png" path="/img/" scale="9grid" scale9grid="7,7,16,16" qualityOption="source" duplicatePadding="true"/>
+    <image id="sk009" name="sakura_slot_glass.png" path="/img/" scale="9grid" scale9grid="7,7,16,16" qualityOption="source" duplicatePadding="true"/>
+    <image id="sk008" name="sakura_slot_shadow.png" path="/img/" scale="9grid" scale9grid="5,5,10,10" qualityOption="source" duplicatePadding="true"/>
+    <image id="sk007" name="sakura_action_dock.png" path="/img/" scale="9grid" scale9grid="8,8,15,15" qualityOption="source" duplicatePadding="true"/>
+    <image id="sk006" name="sakura_inner_surface.png" path="/img/" scale="9grid" scale9grid="5,5,10,10" qualityOption="source" duplicatePadding="true"/>
+    <image id="sk005" name="sakura_panel_frame.png" path="/img/" scale="9grid" scale9grid="8,8,15,15" qualityOption="source" duplicatePadding="true"/>
+    <image id="sk004" name="sakura_panel_glass.png" path="/img/" scale="9grid" scale9grid="8,8,15,15" qualityOption="source" duplicatePadding="true"/>
+    <image id="sk003" name="sakura_panel_shadow.png" path="/img/" scale="9grid" scale9grid="8,8,15,15" qualityOption="source" duplicatePadding="true"/>
+    <image id="sk002" name="sakura_top_softlight.png" path="/img/" scale="9grid" scale9grid="10,2,21,5" qualityOption="source" duplicatePadding="true"/>
+    <image id="sk001" name="sakura_vignette.png" path="/img/" scale="9grid" scale9grid="5,5,10,10" qualityOption="source" duplicatePadding="true"/>
+    <image id="sk000" name="sakura_bg_veil.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
     <component id="j5qwc" name="IdleRewardsView.xml" path="/" exported="true"/>
     <component id="ab004" name="UnitHitFeedbackCom.xml" path="/" exported="true"/>
     <image id="fx001" name="fx_explosion_00.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
@@ -11,6 +58,7 @@
     <component id="ab002" name="LineupEditorView.xml" path="/" exported="true"/>
     <component id="ab001" name="AutoBattleView.xml" path="/" exported="true"/>
     <image id="ab000" name="bg_battle.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="vshxd" name="debug_null_probe.png" path="/img/"/>
   </resources>
   <publish name=""/>
 </packageDescription>

@@ -540,6 +540,17 @@ describe("validateComponentSemantics", () => {
         expect(errors.some((i) => i.message.includes("name 重复"))).toBe(true);
     });
 
+    test("带 id 的 displayList 子元件缺少 name 报 error", () => {
+        const { project, pkg, comp } = setupFixture(`<?xml version="1.0" encoding="utf-8"?>
+<component size="10,10">
+  <displayList>
+    <image id="n1" src="bb22"/>
+  </displayList>
+</component>`);
+        const errors = validateComponentSemantics(project, pkg, comp).filter((i) => i.severity === "error");
+        expect(errors.some((i) => i.message.includes('缺少 name: "n1"'))).toBe(true);
+    });
+
     test("controller 空 page name 报 error", () => {
         const { project, pkg, comp } = setupFixture(`<?xml version="1.0" encoding="utf-8"?>
 <component size="10,10">

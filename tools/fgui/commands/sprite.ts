@@ -74,7 +74,7 @@ export async function run(argv: readonly string[]): Promise<number> {
     // 九宫格参数需在画布范围内
     if (scale9 !== undefined) {
         const grid = parseScale9grid(scale9);
-        if (grid.right >= rendered.width || grid.bottom >= rendered.height) {
+        if (grid.x + grid.width >= rendered.width || grid.y + grid.height >= rendered.height) {
             console.error(`[fgui:sprite] scale9grid ${scale9} 超出画布 ${rendered.width}x${rendered.height}（坐标从 0 起）`);
             return 2;
         }
@@ -92,7 +92,7 @@ export async function run(argv: readonly string[]): Promise<number> {
     if (scale9 !== undefined) {
         console.log(`[fgui:sprite] 已登记 scale9grid=${scale9}，请在 FGUI 编辑器中确认拉伸观感`);
     } else {
-        console.log(`[fgui:sprite] 未登记九宫格；如需可拉伸请加 --scale9grid left,top,right,bottom`);
+        console.log(`[fgui:sprite] 未登记九宫格；如需可拉伸请加 --scale9grid x,y,width,height`);
     }
     return 0;
 }

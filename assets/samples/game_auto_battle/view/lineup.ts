@@ -1,5 +1,6 @@
 import type { Binding } from "../../../framework";
 import { FORMATION_GRID_SIZE } from "../logic/grid";
+import { MAX_TEAM_SIZE } from "../logic/config";
 import type { AutoBattleHero, AutoBattleLineup } from "../models";
 
 /** 编队页布阵区格位呈现：占用英雄或空。 */
@@ -22,6 +23,10 @@ export interface LineupEditorViewModel {
     readonly slots: readonly LineupSlotView[];
     /** 当前选中的布阵格；null = 未选中。 */
     readonly selectedSlot: number | null;
+    /** 当前实际上阵数。 */
+    readonly deployedCount: number;
+    /** 至少上阵一个英雄后才允许开战。 */
+    readonly canStart: boolean;
 }
 
 /** 编队页命令：点击选择（D3），由调用方注入编辑/持久化/开战操作。 */
@@ -38,9 +43,14 @@ export interface LineupEditorCommands {
     openIdleRewards(): void;
 }
 
+function twoDigits(value: number): string {
+    return value < 10 ? `0${value}` : String(value);
+}
+
 /** 编队页 VM 派生：候选区 = 英雄池（含上阵态），布阵区 = 定长槽（含选中格）。 */
 export function createLineupEditorViewModel(heroes: readonly AutoBattleHero[], lineup: AutoBattleLineup, selectedSlot: number | null): LineupEditorViewModel {
     const deployed = new Set(lineup.slots.filter((heroId): heroId is string => heroId !== null));
+    const deployedCount = deployed.size;
 
     return {
         candidates: heroes.map((hero) => ({
@@ -53,6 +63,8 @@ export function createLineupEditorViewModel(heroes: readonly AutoBattleHero[], l
             return { slot, heroId, heroName: hero?.name ?? "" };
         }),
         selectedSlot,
+        deployedCount,
+        canStart: deployedCount > 0,
     };
 }
 
@@ -64,6 +76,12 @@ export function createLineupEditorViewModel(heroes: readonly AutoBattleHero[], l
  */
 export function createLineupEditorBindings(commands: LineupEditorCommands): readonly Binding<LineupEditorViewModel>[] {
     const bindings: Binding<LineupEditorViewModel>[] = [
+        {
+            kind: "text",
+            node: "txt_hud_status",
+            get: (vm) => `${vm.canStart ? "SQUAD READY" : "SQUAD EMPTY"}  ${twoDigits(vm.deployedCount)}/${twoDigits(MAX_TEAM_SIZE)}`,
+        },
+        { kind: "enabled", node: "btn_start", get: (vm) => vm.canStart },
         { kind: "command", node: "btn_start", run: () => commands.startBattle() },
         {
             kind: "command",

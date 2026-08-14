@@ -7,13 +7,14 @@ import { locateProject, readPackage } from "../lib/fgui";
 import { ensureResourceRegistered, parseScale9grid, registerComponent, registerGeneratedImage } from "../lib/sprite";
 
 describe("parseScale9grid", () => {
-    test("解析四元组", () => {
-        expect(parseScale9grid("11,8,192,115")).toEqual({ left: 11, top: 8, right: 192, bottom: 115 });
+    test("按 FairyGUI 的 x,y,width,height 解析四元组", () => {
+        expect(parseScale9grid("10,10,8,8")).toEqual({ x: 10, y: 10, width: 8, height: 8 });
     });
 
     test("非法格式报错", () => {
         expect(() => parseScale9grid("1,2,3")).toThrow();
         expect(() => parseScale9grid("a,b,c,d")).toThrow();
+        expect(() => parseScale9grid("1,2,0,4")).toThrow();
     });
 });
 

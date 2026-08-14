@@ -74,6 +74,7 @@ export { UI_LAYER_ORDER } from "./contracts/constants/UiLayer";
 export type { Binding } from "./contracts/interfaces/Binding";
 export type { IBindable } from "./contracts/interfaces/IBindable";
 export type { ICommandBinding } from "./contracts/interfaces/ICommandBinding";
+export type { IEnabledBinding } from "./contracts/interfaces/IEnabledBinding";
 export type { IPositionBinding } from "./contracts/interfaces/IPositionBinding";
 export type { IProgressBinding } from "./contracts/interfaces/IProgressBinding";
 export type { ITextBinding } from "./contracts/interfaces/ITextBinding";

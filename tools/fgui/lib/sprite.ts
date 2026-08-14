@@ -9,23 +9,23 @@ import { join } from "node:path";
 import { nextResourceId, type FguiPackage } from "./fgui";
 
 export interface Scale9Grid {
-    readonly left: number;
-    readonly top: number;
-    readonly right: number;
-    readonly bottom: number;
+    readonly x: number;
+    readonly y: number;
+    readonly width: number;
+    readonly height: number;
 }
 
-/** 解析 scale9grid 四元组 "left,top,right,bottom"（边界线坐标）。 */
+/** 解析 FairyGUI scale9grid 四元组 "x,y,width,height"。 */
 export function parseScale9grid(value: string): Scale9Grid {
     const parts = value.split(",").map((s) => Number.parseInt(s.trim(), 10));
     if (parts.length !== 4 || parts.some((n) => !Number.isFinite(n))) {
-        throw new Error(`scale9grid 格式应为 left,top,right,bottom，收到: "${value}"`);
+        throw new Error(`scale9grid 格式应为 x,y,width,height，收到: "${value}"`);
     }
-    const [left, top, right, bottom] = parts as [number, number, number, number];
-    if (left < 0 || top < 0 || right <= left || bottom <= top) {
-        throw new Error(`scale9grid 边界非法（right>left 且 bottom>top）: "${value}"`);
+    const [x, y, width, height] = parts as [number, number, number, number];
+    if (x < 0 || y < 0 || width <= 0 || height <= 0) {
+        throw new Error(`scale9grid 非法（x/y 非负且 width/height 为正数）: "${value}"`);
     }
-    return { left, top, right, bottom };
+    return { x, y, width, height };
 }
 
 /**

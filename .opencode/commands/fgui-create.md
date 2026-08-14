@@ -20,7 +20,7 @@ agent: fgui-designer
 ## 阶段 3：生成 XML
 
 5. 基于 spec 输出组件 XML。id 唯一；图片 src 必须是 package.xml 已登记资源 id（先跑 `list-resources` 确认，不得编造）。**禁止使用 `<graph>` 组件**。交互组件必须带完整结构（controller 骨架 + 命名约定子节点 + 扩展节点），参数从模板抄。**需要自适应的布局必须加 `<relation>`**（铺满/居中/贴底/随兄弟），不要只用死坐标；单个 relation 的 sidePair 最多 2 项，禁止凭相似性叠加第 3 项。**禁止手写 transition**。子元件 name 语义化（txt_/btn_/bg_/bar_ 前缀）。
-6. 若需新图片资源：给出 ASCII 画布 + 调色板，用 `bun run fgui sprite --package <包名> --name <文件.png> --palette <调色板> [--prefix <前缀>] --art <多行ASCII> [--scale9grid l,t,r,b] --path <目录>` 生成并登记。**颜色必须 ⊆ `ui/demo/palette.json` 允许集合**。
+6. 若需新图片资源：给出 ASCII 画布 + 调色板，用 `bun run fgui sprite --package <包名> --name <文件.png> --palette <调色板> [--prefix <前缀>] --art <多行ASCII> [--scale9grid x,y,width,height] --path <目录>` 生成并登记。**颜色必须 ⊆ `ui/demo/palette.json` 允许集合**。
 7. 新组件登记用 `bun run fgui register-component --package <包名> --name <组件文件.xml> [--path <子目录>] [--prefix <前缀>]`（幂等，已存在返回原 id），**禁止手改 package.xml 登记条目**。`--prefix` 决定登记 id 的前缀续编（如 `--prefix hp` → `hp000/hp001`）；sprite 与 register 都以登记的 id 为准（`next-id` 仅作预览）。
 8. 将组件 XML 写入 `ui/demo/assets/<包名>/` 下（可复用组件建议放 `component/`，整屏 View 放包根）。
 

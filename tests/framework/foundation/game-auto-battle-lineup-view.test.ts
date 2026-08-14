@@ -9,6 +9,7 @@ import type { AutoBattleHero, AutoBattleLineup } from "../../../assets/samples/g
 interface RecordingNode {
     text: string | undefined;
     visible: boolean | undefined;
+    enabled: boolean | undefined;
     clickHandler: (() => void) | undefined;
 }
 
@@ -23,6 +24,7 @@ function recordingView(): {
             recording = {
                 text: undefined,
                 visible: undefined,
+                enabled: undefined,
                 clickHandler: undefined,
             };
             nodes.set(name, recording);
@@ -40,6 +42,9 @@ function recordingView(): {
                 setProgress: () => {},
                 setVisible: (value: boolean) => {
                     recording.visible = value;
+                },
+                setEnabled: (value: boolean) => {
+                    recording.enabled = value;
                 },
                 onClick: (handler: () => void) => {
                     recording.clickHandler = handler;
@@ -93,6 +98,16 @@ describe("Auto-battle lineup editor view model", () => {
     test("selected slot is reflected on the view model", () => {
         const vm = createLineupEditorViewModel(HEROES, lineup(["a"]), 2);
         expect(vm.selectedSlot).toBe(2);
+    });
+
+    test("derives deployed count and start availability from occupied slots", () => {
+        const populated = createLineupEditorViewModel(HEROES, lineup(["a", null, "c"]), null);
+        expect(populated.deployedCount).toBe(2);
+        expect(populated.canStart).toBe(true);
+
+        const empty = createLineupEditorViewModel(HEROES, lineup([]), null);
+        expect(empty.deployedCount).toBe(0);
+        expect(empty.canStart).toBe(false);
     });
 });
 
@@ -201,5 +216,22 @@ describe("Auto-battle lineup editor bindings", () => {
         expect(view.nodes.get("slot_selected_1")?.visible).toBe(true);
         view.nodes.get("btn_start")?.clickHandler?.();
         expect(calls).toEqual(["start"]);
+    });
+
+    test("status text and start enabled state follow the deployed count", () => {
+        const commands: LineupEditorCommands = {
+            selectSlot: () => {},
+            selectHero: () => {},
+            removeFromSlot: () => {},
+            startBattle: () => {},
+        };
+
+        const populated = render(commands, createLineupEditorViewModel(HEROES, lineup(["a", null, "c"]), null));
+        expect(populated.view.nodes.get("txt_hud_status")?.text).toBe("SQUAD READY  02/06");
+        expect(populated.view.nodes.get("btn_start")?.enabled).toBe(true);
+
+        const empty = render(commands, createLineupEditorViewModel(HEROES, lineup([]), null));
+        expect(empty.view.nodes.get("txt_hud_status")?.text).toBe("SQUAD EMPTY  00/06");
+        expect(empty.view.nodes.get("btn_start")?.enabled).toBe(false);
     });
 });

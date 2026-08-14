@@ -9,6 +9,8 @@ import { projectHitFeedbackEvents } from "./effects";
 import { createEffectAnimator } from "./EffectAnimator";
 import { createUnitAnimator } from "./UnitAnimator";
 import { createVsEntranceTemplate } from "./VsEntrance";
+import { createPixelHudAnimator } from "./PixelHudAnimator";
+import { BATTLE_SCANLINES_NODE } from "./UiNodes";
 import { buildAutoBattleBindings, createAutoBattleViewModel, formatAutoBattleEvent, gridToXY, type AutoBattleCommands, type AutoBattleViewModel } from "./view";
 
 /** VS 阶段子时长（ms）：入场（武将向中心+淡入）→ 定格 → 淡出。 */
@@ -19,6 +21,11 @@ const VS_FADE_MS = 150;
 const VS_PHASE_MS = VS_ENTRANCE_MS + VS_HOLD_MS + VS_FADE_MS;
 /** 入场阶段时长（ms）：战斗开始后先展示单位入场，期间不推进战斗。 */
 const ENTRANCE_PHASE_MS = 750;
+
+/** 墙钟回拨时不向表现时钟传入负增量，下一 tick 仍以新的墙钟为基准恢复。 */
+export function clampPresentationElapsed(elapsed: number): number {
+    return Math.max(0, elapsed);
+}
 
 /**
  * 自动战斗战场呈现器：把 auto_battle 夹具战斗状态绑定到 BattleView 节点。
@@ -37,6 +44,11 @@ export function createAutoBattlePresenter(fixture: GameFixture, node: (name: str
     // 表现时间控制点：动画/阶段/驱动节拍的统一时间源（全局 rate/pause/jump 经它控制）。
     // 动画器只读 now()，倍速语义由 GameClock.rate 承担（动画跟随倍速，ADR-029 C-13）。
     const gameClock = new GameClock();
+    const hudAnimator = createPixelHudAnimator({
+        timeSource: gameClock,
+        node,
+        scanlineNode: BATTLE_SCANLINES_NODE,
+    });
     let lastWallTime = Date.now();
     let lastGameNow = gameClock.now();
     let timer: ReturnType<typeof setInterval> | undefined;
@@ -184,8 +196,9 @@ export function createAutoBattlePresenter(fixture: GameFixture, node: (name: str
     // 倍率），替代"每 interval 推多次"。
     timer = setInterval(() => {
         const wallNow = Date.now();
-        gameClock.advance(wallNow - lastWallTime);
+        gameClock.advance(clampPresentationElapsed(wallNow - lastWallTime));
         lastWallTime = wallNow;
+        hudAnimator.step();
         const now = gameClock.now();
         if (phase === "vs") {
             // VS 阶段：渲染初始状态 + 推进覆盖层动画，模拟时钟不前进、战斗不 tick
@@ -227,6 +240,7 @@ export function createAutoBattlePresenter(fixture: GameFixture, node: (name: str
                 clearInterval(timer);
                 timer = undefined;
             }
+            hudAnimator.dispose();
             effectAnimator.reset();
             unitAnimator.reset();
             vsTemplate.reset();

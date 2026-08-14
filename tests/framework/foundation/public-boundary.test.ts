@@ -462,6 +462,7 @@ describe("framework public boundary", () => {
             "IConfigReadType",
             "IConfigTable",
             "IDeviceInfo",
+            "IEnabledBinding",
             "IFairyGuiListHandle",
             "IFairyGuiListItemView",
             "IFuiClickMeta",

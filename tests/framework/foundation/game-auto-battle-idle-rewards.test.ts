@@ -6,6 +6,8 @@ import { createIdleRewardClock } from "../../../assets/samples/game_auto_battle/
 import { computeIdleRewards, createIdleRewardsHandle, DEFAULT_IDLE_RATE } from "../../../assets/samples/game_auto_battle/logic/IdleRewards";
 import { IDLE_REWARDS_STORAGE_KEY, IDLE_REWARDS_SAVE_VERSION, createIdleRewardsStore, isIdleRewardRecord } from "../../../assets/samples/game_auto_battle/logic/IdleRewardsStore";
 import type { IdleRewardState } from "../../../assets/samples/game_auto_battle/models";
+import { createIdleRewardsBindings, type IdleRewardsCommands, type IdleRewardsViewModel } from "../../../assets/samples/game_auto_battle/view/IdleRewards";
+import { createViewModelRenderer, type IViewModelNode } from "../../../assets/framework";
 
 const state = (overrides: Partial<IdleRewardState> = {}): IdleRewardState => ({
     lastSeenAtMs: 0,
@@ -49,6 +51,44 @@ describe("Idle rewards pure settlement", () => {
         expect(() => computeIdleRewards(0, Number.POSITIVE_INFINITY, 1)).toThrow(/finite/);
         expect(() => computeIdleRewards(0, 1_000, -1)).toThrow(/non-negative/);
         expect(() => computeIdleRewards(0, 1_000, Number.NaN)).toThrow(/finite/);
+    });
+});
+
+describe("Idle rewards view bindings", () => {
+    test("claim availability disables the button and hides its glow", () => {
+        const records = new Map<string, { enabled?: boolean; visible?: boolean; click?: () => void }>();
+        const node = (name: string): IViewModelNode => {
+            const record = records.get(name) ?? {};
+            records.set(name, record);
+            return {
+                setText: () => {},
+                setProgress: () => {},
+                setVisible: (value) => {
+                    record.visible = value;
+                },
+                setEnabled: (value) => {
+                    record.enabled = value;
+                },
+                onClick: (handler) => {
+                    record.click = handler;
+                },
+            };
+        };
+        let claims = 0;
+        const commands: IdleRewardsCommands = { claim: () => claims++, back: () => {} };
+        const renderer = createViewModelRenderer<IdleRewardsViewModel>({ node, bindings: createIdleRewardsBindings(commands) });
+
+        renderer.setViewModel({ offlineMinutes: 0, claimableRewards: 0, totalRewards: 0, canClaim: false });
+        expect(records.get("btn_claim")?.enabled).toBe(false);
+        expect(records.get("rewards_claim_glow")?.visible).toBe(false);
+        records.get("btn_claim")?.click?.();
+        expect(claims).toBe(0);
+
+        renderer.setViewModel({ offlineMinutes: 1, claimableRewards: 10, totalRewards: 0, canClaim: true });
+        expect(records.get("btn_claim")?.enabled).toBe(true);
+        expect(records.get("rewards_claim_glow")?.visible).toBe(true);
+        records.get("btn_claim")?.click?.();
+        expect(claims).toBe(1);
     });
 });
 

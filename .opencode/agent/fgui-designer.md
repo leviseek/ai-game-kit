@@ -101,7 +101,7 @@ FGUI 项目位于 `D:\ai-work\ai-game-kit\ui\demo\`：
 - `bun run fgui validate --package <包名> [--component <组件名>] [--strict]`：校验引用完整性 + 语义（controller 配对、gear 一致性、Slider/ProgressBar/ComboBox/Button 骨架、image 误用 fill、fileName 一致、transition 禁令、graph 禁令、资源 id 续编冲突）。**产出 XML 后必须跑它**，有 error 必须修正后重跑，直到通过。**Basic/Builder 为官方库默认豁免**，仅 `--strict` 全量检查。
 - `bun run fgui next-id --package <包名> --prefix <前缀>`：分配前缀续编资源短 id（如 `--prefix dm` → `dm000/dm001`…），新建资源登记时用它，**禁止随机手造 id**。
 - `bun run fgui register-component --package <包名> --name <组件文件.xml> [--path <子目录>]`：**幂等登记组件**（已存在返回原 id），新建组件登记时用它，禁止手改 package.xml。
-- `bun run fgui sprite --package <包名> --name <文件.png> --palette <调色板> --art <多行ASCII> [--scale9grid l,t,r,b] --path <目录>`：生成像素 PNG 并幂等登记。**调色板锁定**：所用颜色必须 ⊆ `ui/demo/palette.json` 允许集合，新色先加入该文件。
+- `bun run fgui sprite --package <包名> --name <文件.png> --palette <调色板> --art <多行ASCII> [--scale9grid x,y,width,height] --path <目录>`：生成像素 PNG 并幂等登记。**调色板锁定**：所用颜色必须 ⊆ `ui/demo/palette.json` 允许集合，新色先加入该文件。
 
 注意：`list-resources`/`read-component` 需要正确的项目目录参数；默认工程为 `ui/demo`，跨工程用 `--project <目录>`。跨包引用（带 `pkg` 属性的 src）validate 只报 warning，需自行在目标包确认。
 
@@ -197,7 +197,7 @@ relation 定义对象随父级/兄弟缩放时如何跟随。**需要自适应�
 1. **坐标推导**：不"凭感觉"给坐标。能锚定的先锚定（如"按钮 200x80 居中"→ `x=(1280-200)/2=540`），并在 spec 中写出推导；或优先用 `<relation>` 让布局自适应。
 2. **字号**：从档位表选取并注明；"标题大一点"按档位调整。
 3. **资源引用**：禁止编造 src id。必须先用 Read 读目标包 `package.xml` 确认真实资源 id；没有现成资源时，给出建议的真实文件路径 + 需登记的 package.xml 条目。
-4. **九宫格**：文字路径默认按无拉伸处理。需要纯色背景/按钮时**不得用 `<graph>`**（项目禁止），必须用 `bun run fgui sprite` 生成像素图并登记，再以 `<image>` 引用；需要 scale9grid 时，必须由用户显式给出 4 条边界线（`left,top,right,bottom`），否则列入"待确认项"。
+4. **九宫格**：文字路径默认按无拉伸处理。需要纯色背景/按钮时**不得用 `<graph>`**（项目禁止），必须用 `bun run fgui sprite` 生成像素图并登记，再以 `<image>` 引用；需要 scale9grid 时，必须由用户显式给出 FairyGUI 拉伸中心矩形（`x,y,width,height`），否则列入"待确认项"。
 5. **层级顺序**：spec 必须从底到顶排序，映射 XML 时复核 displayList 顺序。
 6. **controller/过渡/关联**：交互组件（Button/Slider/ComboBox/List 等）**必须**按"组件类型决策"表的骨架生成 controller 与扩展节点，参数从模板抄，禁止编造页面名/值。纯展示组件不加；过渡/关联仅在用户显式要求时生成，参数逐项列出。
 7. **待确认项必报**：任何缺失的视觉细节（字体、间距、颜色观感）都列入结尾的人工确认项，不得替用户决定。

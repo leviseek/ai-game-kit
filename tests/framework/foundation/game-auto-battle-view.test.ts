@@ -69,6 +69,25 @@ function vm(units: readonly AutoBattleUnitView[]): {
     return { round: 1, units, log: [], result: undefined, speed: 1 };
 }
 describe("Auto-battle gridToXY mapping table", () => {
+    test("all formation cells keep a 120x240 unit inside the battle safe area", () => {
+        const SAFE_LEFT = 32;
+        const SAFE_TOP = 108;
+        const SAFE_RIGHT = 1248;
+        const SAFE_BOTTOM = 508;
+        const UNIT_WIDTH = 120;
+        const UNIT_HEIGHT = 240;
+
+        for (let row = 0; row < 3; row += 1) {
+            for (let col = 0; col < 6; col += 1) {
+                const point = gridToXY(`${row}:${col}`);
+                expect(point.x).toBeGreaterThanOrEqual(SAFE_LEFT);
+                expect(point.y).toBeGreaterThanOrEqual(SAFE_TOP);
+                expect(point.x + UNIT_WIDTH).toBeLessThanOrEqual(SAFE_RIGHT);
+                expect(point.y + UNIT_HEIGHT).toBeLessThanOrEqual(SAFE_BOTTOM);
+            }
+        }
+    });
+
     test("enemy cells (left half) map left of ally cells", () => {
         const enemy = gridToXY("0:0");
         const ally = gridToXY("0:3");
@@ -166,6 +185,24 @@ describe("Auto-battle dynamic unit bindings", () => {
         expect(view.nodes.get("txt_round")?.text).toBe("第 1 回合");
         expect(view.nodes.get("btn_speed")?.text).toBe("x1");
         expect(view.nodes.get("txt_result")?.visible).toBe(false);
+        expect(view.nodes.get("result_plate")?.visible).toBe(false);
+    });
+
+    test("result plate follows the battle result visibility", () => {
+        const initial = vm([unit("a", "ally", 0, "0:3")]);
+        const view = recordingView();
+        const renderer = createViewModelRenderer<AutoBattleViewModel>({
+            node: view.node,
+            bindings: buildAutoBattleBindings(commands, initial),
+        });
+        renderer.setViewModel(initial);
+
+        const finished = { ...initial, result: "win" as const };
+        renderer.setBindings(buildAutoBattleBindings(commands, finished));
+        renderer.setViewModel(finished);
+
+        expect(view.nodes.get("txt_result")?.visible).toBe(true);
+        expect(view.nodes.get("result_plate")?.visible).toBe(true);
     });
 
     test("rebinding the unit set does not re-register command callbacks", () => {

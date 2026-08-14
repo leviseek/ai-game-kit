@@ -1,24 +1,52 @@
 <?xml version="1.0" encoding="utf-8"?>
 <component size="1280,720">
   <displayList>
-    <image id="idle_rewards_bg" name="bg_idle_rewards" src="ab000" fileName="img/bg_battle.png" xy="0,0" size="1280,720">
+    <image id="idle_rewards_bg" name="bg_idle_rewards" src="ab000" fileName="img/bg_battle.png" xy="0,0" size="1280,720" touchable="false">
       <relation target="" sidePair="width-width,height-height"/>
     </image>
-    <image id="idle_rewards_panel" name="bg_rewards_panel" src="pnl00" fileName="img/panel_lineup_bg.png" xy="230,100" size="820,500"/>
-    <text id="idle_rewards_title" name="txt_title" xy="390,28" size="500,48" fontSize="32" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="自动战斗 · 挂机收益">
+    <image id="rewards_bg_tint" name="rewards_bg_tint" src="fx000" fileName="img/hit_flash_white.png" color="#0B1830" xy="0,0" size="1280,720" touchable="false" alpha="0.92"/>
+    <image id="rewards_bg_scanlines" name="rewards_bg_scanlines" src="px001" fileName="img/pixel_bg_scanlines.png" xy="0,0" size="1280,720" touchable="false" alpha="0.26"/>
+    <image id="rewards_bg_vignette" name="rewards_bg_vignette" src="px002" fileName="img/pixel_vignette.png" xy="0,0" size="1280,720" touchable="false" alpha="0.72"/>
+
+    <image id="idle_rewards_panel_shadow" name="idle_rewards_panel_shadow" src="px004" fileName="img/pixel_panel_shadow.png" xy="250,106" size="780,468" touchable="false" alpha="0"/>
+    <image id="idle_rewards_panel_material" name="idle_rewards_panel_material" src="px024" fileName="img/pixel_clean_panel.png" xy="250,106" size="780,468" touchable="false" alpha="1"/>
+    <image id="idle_rewards_panel_frame" name="idle_rewards_panel_frame" src="px006" fileName="img/pixel_panel_frame.png" xy="250,106" size="780,468" touchable="false" alpha="0"/>
+    <image id="idle_rewards_panel" name="bg_rewards_panel" src="px007" fileName="img/pixel_inner_surface.png" xy="272,128" size="736,424" touchable="false" alpha="0"/>
+
+    <image id="rewards_hud_light" name="rewards_hud_light" src="px003" fileName="img/pixel_top_hud_light.png" xy="40,18" size="1200,72" touchable="false" alpha="0.8"/>
+    <image id="rewards_hud_plate" name="rewards_hud_plate" src="px015" fileName="img/pixel_title_plate.png" xy="344,18" size="592,72" touchable="false"/>
+    <text id="idle_rewards_title" name="txt_title" xy="390,30" size="500,48" touchable="false" fontSize="32" color="#EAFBFF" align="center" vAlign="middle" autoSize="none" singleLine="true" text="自动战斗 · 挂机档案">
       <relation target="" sidePair="center-center"/>
     </text>
-    <text id="idle_rewards_offline_label" name="txt_offline_label" xy="330,190" size="300,48" fontSize="24" color="#cccccc" vAlign="middle" autoSize="none" singleLine="true" text="离线时长（分钟）"/>
-    <text id="idle_rewards_offline_value" name="txt_offline_minutes" xy="650,190" size="300,48" fontSize="28" color="#ffffff" align="right" vAlign="middle" autoSize="none" singleLine="true" text="0"/>
-    <text id="idle_rewards_claimable_label" name="txt_claimable_label" xy="330,290" size="300,48" fontSize="24" color="#cccccc" vAlign="middle" autoSize="none" singleLine="true" text="可领收益"/>
-    <text id="idle_rewards_claimable_value" name="txt_claimable" xy="650,290" size="300,48" fontSize="28" color="#ffffff" align="right" vAlign="middle" autoSize="none" singleLine="true" text="0"/>
-    <text id="idle_rewards_total_label" name="txt_total_label" xy="330,390" size="300,48" fontSize="24" color="#cccccc" vAlign="middle" autoSize="none" singleLine="true" text="累计收益"/>
-    <text id="idle_rewards_total_value" name="txt_total_rewards" xy="650,390" size="300,48" fontSize="28" color="#ffffff" align="right" vAlign="middle" autoSize="none" singleLine="true" text="0"/>
-    <component id="idle_rewards_claim" name="btn_claim" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="410,520" size="200,52">
-      <Button title="领取" titleColor="#ffffff"/>
+    <text id="rewards_hud_meta" name="rewards_hud_meta" xy="72,36" size="260,28" touchable="false" fontSize="14" color="#9FC8D6" align="left" vAlign="middle" autoSize="none" singleLine="true" text="IDLE ARCHIVE // OFFLINE"/>
+    <text id="rewards_hud_status" name="rewards_hud_status" xy="960,36" size="220,28" touchable="false" fontSize="14" color="#FFF0A0" align="right" vAlign="middle" autoSize="none" singleLine="true" text="REWARD SYNC  READY"/>
+
+    <image id="rewards_panel_divider" name="rewards_panel_divider" src="px016" fileName="img/pixel_section_divider.png" xy="300,182" size="680,4" touchable="false" alpha="0"/>
+    <image id="rewards_claim_focus" name="rewards_claim_focus" src="px013" fileName="img/pixel_slot_selected.png" xy="300,322" size="680,82" touchable="false" alpha="0"/>
+    <image id="rewards_row_divider_0" name="rewards_row_divider_0" src="px016" fileName="img/pixel_section_divider.png" xy="300,282" size="680,4" touchable="false" alpha="0"/>
+    <image id="rewards_row_divider_1" name="rewards_row_divider_1" src="px016" fileName="img/pixel_section_divider.png" xy="300,402" size="680,4" touchable="false" alpha="0"/>
+    <image id="rewards_deco_chevron" name="rewards_deco_chevron" src="px017" fileName="img/pixel_chevron.png" xy="292,148" size="28,28" touchable="false" alpha="0"/>
+    <image id="rewards_deco_blocks" name="rewards_deco_blocks" src="px021" fileName="img/pixel_block_cluster.png" xy="904,142" size="64,32" touchable="false" alpha="0.8"/>
+
+    <text id="idle_rewards_offline_label" name="txt_offline_label" xy="322,210" size="340,48" touchable="false" fontSize="20" color="#9FC8D6" align="left" vAlign="middle" autoSize="none" singleLine="true" text="离线时长（分钟）"/>
+    <text id="idle_rewards_offline_value" name="txt_offline_minutes" xy="680,210" size="270,48" touchable="false" fontSize="28" color="#EAFBFF" align="right" vAlign="middle" autoSize="none" singleLine="true" text="0"/>
+    <text id="idle_rewards_claimable_label" name="txt_claimable_label" xy="322,330" size="340,48" touchable="false" fontSize="20" color="#9FC8D6" align="left" vAlign="middle" autoSize="none" singleLine="true" text="可领收益"/>
+    <text id="idle_rewards_claimable_value" name="txt_claimable" xy="680,330" size="270,48" touchable="false" fontSize="28" color="#FFF0A0" align="right" vAlign="middle" autoSize="none" singleLine="true" text="0"/>
+    <text id="idle_rewards_total_label" name="txt_total_label" xy="322,450" size="340,48" touchable="false" fontSize="20" color="#9FC8D6" align="left" vAlign="middle" autoSize="none" singleLine="true" text="累计收益"/>
+    <text id="idle_rewards_total_value" name="txt_total_rewards" xy="680,450" size="270,48" touchable="false" fontSize="28" color="#EAFBFF" align="right" vAlign="middle" autoSize="none" singleLine="true" text="0"/>
+
+    <image id="rewards_action_dock" name="rewards_action_dock" src="px024" fileName="img/pixel_clean_panel.png" xy="40,588" size="1200,96" touchable="false" alpha="1"/>
+    <image id="rewards_claim_glow" name="rewards_claim_glow" src="px019" fileName="img/pixel_button_glow_mask.png" xy="420,606" size="196,60" touchable="false" alpha="0.9"/>
+    <image id="rewards_claim_frame" name="rewards_claim_frame" src="px020" fileName="img/pixel_button_frame_mask.png" xy="424,610" size="188,52" touchable="false"/>
+    <image id="rewards_back_glow" name="rewards_back_glow" src="px019" fileName="img/pixel_button_glow_mask.png" xy="664,606" size="196,60" touchable="false" alpha="0.55"/>
+    <image id="rewards_back_frame" name="rewards_back_frame" src="px020" fileName="img/pixel_button_frame_mask.png" xy="668,610" size="188,52" touchable="false"/>
+    <component id="idle_rewards_claim" name="btn_claim" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="430,612" size="176,44">
+      <Button title="领取收益" titleColor="#FFF0A0"/>
     </component>
-    <component id="idle_rewards_back" name="btn_back" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="670,520" size="200,52">
-      <Button title="返回编队" titleColor="#ffffff"/>
+    <component id="idle_rewards_back" name="btn_back" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="674,612" size="176,44">
+      <Button title="返回编队" titleColor="#9FC8D6"/>
     </component>
+    <image id="rewards_deco_stars" name="rewards_deco_stars" src="px022" fileName="img/pixel_star_mask.png" xy="286,618" size="24,24" touchable="false" alpha="0.12"/>
+    <image id="rewards_deco_arrows" name="rewards_deco_arrows" src="px023" fileName="img/pixel_double_arrow_mask.png" xy="944,618" size="24,16" touchable="false" alpha="0"/>
   </displayList>
 </component>

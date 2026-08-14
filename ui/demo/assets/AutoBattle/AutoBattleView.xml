@@ -1,28 +1,61 @@
 <?xml version="1.0" encoding="utf-8"?>
 <component size="1280,720">
   <displayList>
-    <image id="ab_bg" name="bg_battle" src="ab000" fileName="img/bg_battle.png" xy="0,0" size="1280,720">
+    <image id="ab_bg" name="bg_battle" src="ab000" fileName="img/bg_battle.png" xy="0,0" size="1280,720" touchable="false">
       <relation target="" sidePair="width-width,height-height"/>
     </image>
+    <image id="battle_bg_tint" name="battle_bg_tint" src="fx000" fileName="img/hit_flash_white.png" color="#0B1830" xy="0,0" size="1280,720" touchable="false" alpha="0.92"/>
+    <image id="battle_bg_scanlines" name="battle_bg_scanlines" src="px001" fileName="img/pixel_bg_scanlines.png" xy="0,0" size="1280,720" touchable="false" alpha="0.24"/>
+    <image id="battle_bg_vignette" name="battle_bg_vignette" src="px002" fileName="img/pixel_vignette.png" xy="0,0" size="1280,720" touchable="false" alpha="0.72"/>
+    <image id="battle_hud_light" name="battle_hud_light" src="px003" fileName="img/pixel_top_hud_light.png" xy="40,18" size="1200,72" touchable="false" alpha="0.8"/>
+    <image id="battle_hud_plate" name="battle_hud_plate" src="px015" fileName="img/pixel_title_plate.png" xy="420,18" size="440,72" touchable="false"/>
+    <image id="battle_field_shadow" name="battle_field_shadow" src="px004" fileName="img/pixel_panel_shadow.png" xy="32,108" size="1216,400" touchable="false" alpha="0"/>
+    <image id="battle_field_material" name="battle_field_material" src="px024" fileName="img/pixel_clean_panel.png" xy="32,108" size="1216,400" touchable="false" alpha="1"/>
+    <image id="battle_field_frame" name="battle_field_frame" src="px006" fileName="img/pixel_panel_frame.png" xy="32,108" size="1216,400" touchable="false" alpha="0"/>
+    <image id="battle_field_surface" name="battle_field_surface" src="px007" fileName="img/pixel_inner_surface.png" xy="52,128" size="1176,360" touchable="false" alpha="0"/>
+    <image id="battle_field_divider" name="battle_field_divider" src="px016" fileName="img/pixel_section_divider.png" xy="640,154" size="4,300" touchable="false" rotation="90" alpha="0"/>
+    <image id="battle_deco_chevron_left" name="battle_deco_chevron_left" src="px017" fileName="img/pixel_chevron.png" xy="66,144" size="28,28" touchable="false" alpha="0"/>
+    <image id="battle_deco_chevron_right" name="battle_deco_chevron_right" src="px018" fileName="img/pixel_chevron_right.png" xy="1186,144" size="28,28" touchable="false" alpha="0"/>
+    <image id="battle_deco_blocks" name="battle_deco_blocks" src="px021" fileName="img/pixel_block_cluster.png" xy="1060,134" size="64,32" touchable="false" alpha="0.8"/>
+
     <component id="ab_units_container" name="container_units" src="ab003" fileName="BattlefieldUnitsCom.xml" xy="0,0" size="1280,500">
       <relation target="" sidePair="width-width"/>
     </component>
     <component id="ab_effects_container" name="container_effects" src="ab003" fileName="BattlefieldUnitsCom.xml" xy="0,0" size="1280,500" touchable="false">
       <relation target="" sidePair="width-width"/>
     </component>
-    <text id="ab_round" name="txt_round" xy="440,24" size="400,40" fontSize="28" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="第 1 回合">
+
+    <text id="battle_title" name="battle_title" xy="440,28" size="400,24" touchable="false" fontSize="20" color="#9FC8D6" align="center" vAlign="middle" autoSize="none" singleLine="true" text="自动战斗  //  实时观测"/>
+    <text id="ab_round" name="txt_round" xy="440,50" size="400,32" fontSize="28" color="#EAFBFF" align="center" vAlign="middle" autoSize="none" singleLine="true" text="第 1 回合">
       <relation target="" sidePair="center-center"/>
     </text>
-    <text id="ab_log" name="txt_log" xy="40,520" size="260,170" fontSize="16" color="#cccccc" autoSize="none" text="战斗开始&#xA;等待行动..."/>
-    <text id="ab_result" name="txt_result" xy="440,280" size="400,80" visible="false" fontSize="40" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="胜利"/>
-    <component id="ab_restart" name="btn_restart" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="540,376" size="200,52">
-      <Button title="重新开始" titleColor="#ffffff"/>
+    <image id="battle_log_shadow" name="battle_log_shadow" src="px004" fileName="img/pixel_panel_shadow.png" xy="32,526" size="532,164" touchable="false" alpha="0"/>
+    <image id="battle_log_panel" name="battle_log_panel" src="px024" fileName="img/pixel_clean_panel.png" xy="32,526" size="532,164" touchable="false" alpha="1"/>
+    <image id="battle_log_frame" name="battle_log_frame" src="px006" fileName="img/pixel_panel_frame.png" xy="32,526" size="532,164" touchable="false" alpha="0"/>
+    <image id="battle_log_surface" name="battle_log_surface" src="px007" fileName="img/pixel_inner_surface.png" xy="48,542" size="500,132" touchable="false" alpha="0"/>
+    <image id="battle_log_divider" name="battle_log_divider" src="px016" fileName="img/pixel_section_divider.png" xy="64,574" size="460,4" touchable="false" alpha="0"/>
+    <text id="battle_log_label" name="battle_log_label" xy="64,544" size="240,24" touchable="false" fontSize="16" color="#9FC8D6" align="left" vAlign="middle" autoSize="none" singleLine="true" text="日志档案  //  EVENT LOG"/>
+    <text id="ab_log" name="txt_log" xy="64,588" size="452,72" fontSize="16" color="#9FC8D6" autoSize="none" text="战斗开始&#xA;等待行动..."/>
+
+    <image id="battle_action_dock" name="battle_action_dock" src="px024" fileName="img/pixel_clean_panel.png" xy="816,526" size="432,164" touchable="false" alpha="1"/>
+    <image id="battle_speed_glow" name="battle_speed_glow" src="px019" fileName="img/pixel_button_glow_mask.png" xy="842,602" size="132,60" touchable="false" alpha="0.55"/>
+    <image id="battle_speed_frame" name="battle_speed_frame" src="px020" fileName="img/pixel_button_frame_mask.png" xy="846,606" size="124,52" touchable="false"/>
+    <image id="battle_restart_glow" name="battle_restart_glow" src="px019" fileName="img/pixel_button_glow_mask.png" xy="992,602" size="196,60" touchable="false" alpha="0.9"/>
+    <image id="battle_restart_frame" name="battle_restart_frame" src="px020" fileName="img/pixel_button_frame_mask.png" xy="996,606" size="188,52" touchable="false"/>
+    <text id="battle_action_label" name="battle_action_label" xy="842,544" size="350,24" touchable="false" fontSize="16" color="#9FC8D6" align="left" vAlign="middle" autoSize="none" singleLine="true" text="控制台  //  OBSERVER MODE"/>
+    <image id="battle_result_plate" name="result_plate" src="px015" fileName="img/pixel_title_plate.png" xy="500,278" size="280,96" visible="false" touchable="false" alpha="0.78"/>
+    <text id="ab_result" name="txt_result" xy="440,286" size="400,80" visible="false" alpha="1" touchable="false" fontSize="40" color="#FFF0A0" align="center" vAlign="middle" autoSize="none" singleLine="true" text="胜利"/>
+    <component id="ab_restart" name="btn_restart" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="1000,610" size="180,44">
+      <Button title="重新开始" titleColor="#FFF0A0"/>
     </component>
-    <component id="ab_btn_speed" name="btn_speed" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="580,448" size="120,48">
-      <Button title="x1" titleColor="#ffffff"/>
+    <component id="ab_btn_speed" name="btn_speed" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="850,610" size="116,44">
+      <Button title="x1" titleColor="#9FC8D6"/>
     </component>
-    <text id="ab_vs_left" name="vs_left" xy="100,360" size="200,64" pivot="0.5,0.5" anchor="true" alpha="0" touchable="false" fontSize="28" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="敌方队长"/>
-    <text id="ab_vs_right" name="vs_right" xy="980,360" size="200,64" pivot="0.5,0.5" anchor="true" alpha="0" touchable="false" fontSize="28" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" text="己方队长"/>
-    <text id="ab_vs_badge" name="vs_badge" xy="640,360" size="160,80" pivot="0.5,0.5" anchor="true" alpha="0" touchable="false" fontSize="40" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" strokeColor="#3a3a3a" text="VS"/>
+
+    <text id="ab_vs_left" name="vs_left" xy="100,360" size="200,64" pivot="0.5,0.5" anchor="true" alpha="0" touchable="false" fontSize="28" color="#A8F6FF" align="center" vAlign="middle" autoSize="none" singleLine="true" text="敌方队长"/>
+    <text id="ab_vs_right" name="vs_right" xy="980,360" size="200,64" pivot="0.5,0.5" anchor="true" alpha="0" touchable="false" fontSize="28" color="#A8F6FF" align="center" vAlign="middle" autoSize="none" singleLine="true" text="己方队长"/>
+    <text id="ab_vs_badge" name="vs_badge" xy="640,360" size="160,80" pivot="0.5,0.5" anchor="true" alpha="0" touchable="false" fontSize="40" color="#FFF0A0" align="center" vAlign="middle" autoSize="none" singleLine="true" strokeColor="#0B1830" text="VS"/>
+    <image id="battle_deco_stars" name="battle_deco_stars" src="px022" fileName="img/pixel_star_mask.png" xy="612,292" size="24,24" touchable="false" alpha="0"/>
+    <image id="battle_deco_arrows" name="battle_deco_arrows" src="px023" fileName="img/pixel_double_arrow_mask.png" xy="628,416" size="24,16" touchable="false" alpha="0"/>
   </displayList>
 </component>

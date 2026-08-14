@@ -437,10 +437,16 @@ export function validateComponentSemantics(project: FguiProject, pkg: FguiPackag
         }
     }
 
-    // 1b. displayList 子元件 name 重复
+    // 1b. displayList 子元件必须有唯一 name；编辑器创建无 name 对象时会得到空子对象并在 AddChildAt 崩溃
     const seenNames = new Map<string, string>();
     for (const obj of component.objects) {
-        if (!obj.name) continue;
+        if (!obj.name) {
+            issues.push({
+                severity: "error",
+                message: `displayList 子元件缺少 name: "${obj.id}"`,
+            });
+            continue;
+        }
         const existing = seenNames.get(obj.name);
         if (existing) {
             issues.push({

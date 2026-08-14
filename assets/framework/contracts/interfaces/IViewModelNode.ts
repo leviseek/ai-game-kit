@@ -6,6 +6,8 @@ export interface IViewModelNode {
     setText(value: string): void;
     setProgress(value: number): void;
     setVisible(value: boolean): void;
+    /** 可选交互态写入：禁用时 Adapter 同步关闭点击并显示灰化。 */
+    setEnabled?(value: boolean): void;
     /** 注册点击回调；渲染器在绑定建立时调用一次。 */
     onClick(handler: () => void): void;
     /**

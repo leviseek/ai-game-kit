@@ -12,10 +12,20 @@ export const ROUND_TEXT_NODE = "txt_round";
 export const LOG_TEXT_NODE = "txt_log";
 /** 战斗结果（胜利/战败）文本节点。 */
 export const RESULT_TEXT_NODE = "txt_result";
+/** 战斗结果像素承托节点，与结果文本同步显隐。 */
+export const RESULT_PLATE_NODE = "result_plate";
 /** 重开按钮节点。 */
 export const RESTART_BUTTON_NODE = "btn_restart";
 /** 观战加速挡位按钮节点。 */
 export const SPEED_BUTTON_NODE = "btn_speed";
+
+// ---- 像素 HUD 动态视觉节点 ----
+/** 编队页背景扫描线节点。 */
+export const LINEUP_SCANLINES_NODE = "lineup_bg_scanlines";
+/** 战斗页背景扫描线节点。 */
+export const BATTLE_SCANLINES_NODE = "battle_bg_scanlines";
+/** 收益页背景扫描线节点。 */
+export const REWARDS_SCANLINES_NODE = "rewards_bg_scanlines";
 
 // ---- 战场动态容器 ----
 /** 动态单位实例容器节点名（UnitSlot 实例按 unit_{id} 挂载）。 */

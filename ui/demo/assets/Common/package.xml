@@ -3,17 +3,17 @@
   <resources>
     <component id="com04" name="CandidateItem.xml" path="/" exported="true"/>
     <component id="com03" name="UnitSlot.xml" path="/" exported="true"/>
-    <image id="w0100" name="warrior_spritesheet.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
-    <image id="w0000" name="warrior_f_idle_00.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="w0100" name="warrior_spritesheet.png" path="/img/" exported="true" qualityOption="source" duplicatePadding="true"/>
+    <image id="w0000" name="warrior_f_idle_00.png" path="/img/" exported="true" qualityOption="source" duplicatePadding="true"/>
     <component id="com02" name="CommonProgressBarHp.xml" path="/" exported="true"/>
-    <image id="pb002" name="progress_fill_hp.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="pb002" name="progress_fill_hp.png" path="/img/" exported="true" qualityOption="source" duplicatePadding="true"/>
     <component id="com01" name="CommonProgressBar.xml" path="/" exported="true"/>
     <component id="com00" name="CommonButton.xml" path="/" exported="true"/>
-    <image id="pb001" name="progress_fill.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
-    <image id="pb000" name="progress_track.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
-    <image id="btn02" name="btn_common_over.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
-    <image id="btn01" name="btn_common_down.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
-    <image id="btn00" name="btn_common_up.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="pb001" name="progress_fill.png" path="/img/" exported="true" qualityOption="source" duplicatePadding="true"/>
+    <image id="pb000" name="progress_track.png" path="/img/" exported="true" qualityOption="source" duplicatePadding="true"/>
+    <image id="btn02" name="btn_common_over.png" path="/img/" exported="true" qualityOption="source" duplicatePadding="true"/>
+    <image id="btn01" name="btn_common_down.png" path="/img/" exported="true" qualityOption="source" duplicatePadding="true"/>
+    <image id="btn00" name="btn_common_up.png" path="/img/" exported="true" qualityOption="source" duplicatePadding="true"/>
   </resources>
   <publish name=""/>
 </packageDescription>

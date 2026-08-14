@@ -1,13 +1,13 @@
 import type { Binding } from "../../../framework";
 import type { AutoBattleEvent, AutoBattleSide, AutoBattleState, AutoBattleUnitState } from "../models";
-import { LOG_TEXT_NODE, RESTART_BUTTON_NODE, RESULT_TEXT_NODE, ROUND_TEXT_NODE, SPEED_BUTTON_NODE } from "./UiNodes";
+import { LOG_TEXT_NODE, RESTART_BUTTON_NODE, RESULT_PLATE_NODE, RESULT_TEXT_NODE, ROUND_TEXT_NODE, SPEED_BUTTON_NODE } from "./UiNodes";
 
 /** 战场网格屏幕布局（1280×720）：敌左 3 列、己右 3 列、3 行（与 AutoBattleView 容器化对齐）。 */
 const GRID_COL_STRIDE = 140;
 /** 紧凑行距：单位组件 240 高，相邻行轻微重叠（角色居中缩放，视觉可接受）。 */
-const GRID_ROW_STRIDE = 130;
-const GRID_TOP = 20;
-const ENEMY_LEFT = 20;
+const GRID_ROW_STRIDE = 80;
+const GRID_TOP = 108;
+const ENEMY_LEFT = 32;
 const ALLY_LEFT = 840;
 /** 战场网格列数：敌左半 3 列、己右半 3 列（对齐逻辑层 BATTLEFIELD_COLS）。 */
 const GRID_COLS_PER_SIDE = 3;
@@ -139,6 +139,11 @@ export function createAutoBattleBindings(commands: AutoBattleCommands): readonly
         {
             kind: "visible",
             node: RESULT_TEXT_NODE,
+            get: (vm) => vm.result !== undefined,
+        },
+        {
+            kind: "visible",
+            node: RESULT_PLATE_NODE,
             get: (vm) => vm.result !== undefined,
         },
         {

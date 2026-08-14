@@ -9,6 +9,7 @@ interface RecordingNode {
     text: string | undefined;
     progress: number | undefined;
     visible: boolean | undefined;
+    enabled: boolean | undefined;
     /** 最近一次坐标写入（position 绑定经 setXY 记录）。 */
     xy: { x: number; y: number } | undefined;
     /** 最近一次注册的点击回调（onClick 注册语义）。 */
@@ -20,6 +21,7 @@ function recordNode(): RecordingNode {
         text: undefined,
         progress: undefined,
         visible: undefined,
+        enabled: undefined,
         xy: undefined,
         clickHandler: undefined,
     };
@@ -36,6 +38,9 @@ function toNode(recording: RecordingNode): IViewModelNode {
         },
         setVisible: (value: boolean) => {
             recording.visible = value;
+        },
+        setEnabled: (value: boolean) => {
+            recording.enabled = value;
         },
         setXY: (x: number, y: number) => {
             recording.xy = { x, y };
@@ -133,6 +138,21 @@ describe("ViewModelRenderer binding declarations", () => {
         });
         renderer.setViewModel({ hp: 10, name: "Hero", showResult: true });
         expect(resultNode.visible).toBe(true);
+    });
+
+    test("enabled binding toggles node interaction state", () => {
+        const view = makeView();
+        const actionNode = recordNode();
+        view.nodes.set("btn_action", actionNode);
+        const renderer: ViewModelRenderer<DemoViewModel> = createViewModelRenderer({
+            node: view.node,
+            bindings: [{ kind: "enabled", node: "btn_action", get: (vm) => vm.hp > 0 }],
+        });
+
+        renderer.setViewModel({ hp: 0, name: "Hero", showResult: false });
+        expect(actionNode.enabled).toBe(false);
+        renderer.setViewModel({ hp: 1, name: "Hero", showResult: false });
+        expect(actionNode.enabled).toBe(true);
     });
 
     test("position binding writes coordinates to the node", () => {

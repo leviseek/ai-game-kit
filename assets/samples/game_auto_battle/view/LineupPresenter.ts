@@ -1,15 +1,17 @@
 import type { IViewModelNode } from "../../../framework";
 import type { IFairyGuiListHandle } from "../../../framework";
-import { createViewModelRenderer } from "../../../framework";
+import { createViewModelRenderer, GameClock } from "../../../framework";
 import type { GamePresenter } from "../../../game/lobby/presenter";
 import type { GameSessionNavigator } from "../../../game/lobby/presenter";
 import type { GameFixture } from "../../../game/fixture/GameFixture";
 import { AUTO_BATTLE_BATTLE_ENTRY } from "../../../game/lobby/catalog";
 import type { AutoBattleFixture } from "../assembly";
 import { createLineupEditorBindings, createLineupEditorViewModel, type LineupCandidateView, type LineupEditorViewModel } from "./lineup";
-import { createAutoBattlePresenter } from "./presenter";
+import { clampPresentationElapsed, createAutoBattlePresenter } from "./presenter";
 import { createIdleRewardsPresenter } from "./IdleRewardsPresenter";
 import { AUTO_BATTLE_IDLE_REWARDS_ENTRY } from "../../../game/lobby/catalog";
+import { createPixelHudAnimator } from "./PixelHudAnimator";
+import { LINEUP_SCANLINES_NODE } from "./UiNodes";
 
 /**
  * 编队页呈现器：把玩家编队（fixture.lineup）+ 候选英雄区渲染到
@@ -17,7 +19,7 @@ import { AUTO_BATTLE_IDLE_REWARDS_ENTRY } from "../../../game/lobby/catalog";
  * 固定阵容不可选）；候选区为 GList 虚拟列表，经注入的 list 解析器装配句柄在
  * render 时 setItems 驱动，点击候选经列表点击回调接线编辑编队并持久化（fixture
  * 内触发）。布阵区/开始按钮仍走预置绑定。startBattle 经会话导航切换到战场页
- * 并装配战场呈现器。dispose 清理渲染器。
+ * 并装配战场呈现器。dispose 清理 HUD 动画定时器、动画器与渲染器。
  */
 export function createLineupEditorPresenter(
     fixture: GameFixture,
@@ -26,6 +28,19 @@ export function createLineupEditorPresenter(
     list?: (name: string) => IFairyGuiListHandle<unknown> | undefined,
 ): GamePresenter {
     const autoBattle = fixture as AutoBattleFixture;
+    const gameClock = new GameClock();
+    const hudAnimator = createPixelHudAnimator({
+        timeSource: gameClock,
+        node,
+        scanlineNode: LINEUP_SCANLINES_NODE,
+    });
+    let lastWallTime = Date.now();
+    const hudTimer = setInterval(() => {
+        const wallNow = Date.now();
+        gameClock.advance(clampPresentationElapsed(wallNow - lastWallTime));
+        lastWallTime = wallNow;
+        hudAnimator.step();
+    }, 100);
 
     // 候选英雄 GList 句柄：编队页候选区为虚拟列表，presenter 在 render 时
     // setItems 驱动；节点不存在（内存测试/非真实页面）时退化，候选不渲染
@@ -91,6 +106,8 @@ export function createLineupEditorPresenter(
     return {
         render,
         dispose: () => {
+            clearInterval(hudTimer);
+            hudAnimator.dispose();
             renderer.dispose();
         },
     };
