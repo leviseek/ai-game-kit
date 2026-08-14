@@ -76,3 +76,17 @@ Cocos 运行环境 SHALL 提供 `?smoke=card-battle` 冒烟入口，装配渲染
 
 - **WHEN** 以 `?smoke=card-battle` 启动 Cocos 预览
 - **THEN** 装配成功、输出 `[card-battle]` 标记、页面可打开并驱动出牌到终局
+
+### Requirement: 呈现器时间源可注入
+
+`createCardBattlePresenter` SHALL 提供可选 `now`（墙钟读数，缺省 `Date.now`）与 `drive`（驱动循环，缺省 100ms `setInterval`）注入接缝；呈现层墙钟读数 SHALL 经注入的 `now` 取得，SHALL NOT 在实现内直接调用 `Date.now`；模拟时钟 SHALL 以原始墙钟增量推进（1x，无倍率叠加），墙钟回拨的负增量 SHALL 收敛为 0（时间单调）；`drive` 返回释放句柄，dispose 时清理。
+
+#### Scenario: 注入驱动确定性推进
+
+- **WHEN** 测试注入自增墙钟与手动驱动回调，并推进固定墙钟增量
+- **THEN** 模拟时钟按该增量精确推进（如 250ms → +250），无需等待真实定时器
+
+#### Scenario: 墙钟回拨不倒退
+
+- **WHEN** 注入墙钟读数回拨
+- **THEN** 模拟时钟不倒退（负增量收敛为 0），时间保持单调
