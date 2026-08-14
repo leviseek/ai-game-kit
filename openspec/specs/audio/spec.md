@@ -69,3 +69,12 @@
 
 - **WHEN** 应用切到后台且策略声明后台暂停 music 分组
 - **THEN** music 分组停止/暂停播放；应用回到前台后按策略恢复
+
+### Requirement: 音频适配器销毁后 no-op
+
+`CocosAudioAdapter.dispose` SHALL 释放全部持有并销毁引擎侧 AudioSource，之后任何操作（`play`/`stop`/`pause`/`resume`/`setVolume`）SHALL 为 no-op，SHALL NOT 重建 AudioSource 或发起新资源加载；重复调用 dispose SHALL 幂等。
+
+#### Scenario: 销毁后调用不复活
+
+- **WHEN** 适配器销毁后调用 `play`/`stop`/`pause`/`resume`/`setVolume`
+- **THEN** 全部为 no-op：不创建新 AudioSource（原实例仍为唯一实例）、不触发播放/停止/音量变化、不发起资源加载
