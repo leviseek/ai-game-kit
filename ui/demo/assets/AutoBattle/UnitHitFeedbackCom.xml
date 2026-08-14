@@ -4,6 +4,7 @@
     <image id="fx_feedback_flash" name="fx_flash" src="fx000" fileName="img/hit_flash_white.png" xy="0,0" size="140,110" alpha="0" touchable="false">
       <relation target="" sidePair="width-width,height-height"/>
     </image>
+    <loader id="fx_feedback_explosion" name="loader_effect" url="ui://abpk0001fx001" clearOnPublish="true" xy="22,7" size="96,96" alpha="0" touchable="false" align="center" vAlign="middle" fill="scale" shrinkOnly="true"/>
     <text id="fx_feedback_float" name="fx_float" xy="0,8" size="140,36" alpha="0" fontSize="24" color="#ffffff" align="center" vAlign="middle" autoSize="none" singleLine="true" ubb="true" strokeColor="#000000" text="[color=#d95f59]-0[/color]">
       <relation target="" sidePair="width-width"/>
     </text>

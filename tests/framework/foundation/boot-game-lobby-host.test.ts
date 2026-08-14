@@ -39,6 +39,16 @@ describe("GameLobbyHostImpl source contract", () => {
         const ensureCall = source.indexOf("ensureSharedUiDependencies()");
         expect(ensureCall).toBeGreaterThan(-1);
 
+        // 动画专属 bundle 预加载：自动战斗战场页 loader 序列帧经
+        // GLoader.setUrlWithBundle 从 animations bundle 加载 spriteFrame，GLoader
+        // 只认 assetManager.bundles 已注册 bundle；ensureSharedUiDependencies 在
+        // 加载 Common 后预加载 animations（loadBundle 哨兵 placeholder，纯资源
+        // bundle 无脚本副作用），真实路径与冒烟路径统一覆盖。字符串归口：经
+        // BUNDLES.animations 常量引用（boot constants.ts 锁定 "animations"）。
+        expect(source).toMatch(/BUNDLES\.animations/);
+        expect(source).toMatch(/loadBundle\(BUNDLES\.animations\)/);
+        expect(bootConstants).toMatch(/"animations"/);
+
         // 入口页与全局页共用通用包加载路径（`${entry.packageName}/...`），各一次
         const pkgLoads = [...source.matchAll(/const pkgPath = `\$\{entry\.packageName\}/g)].map((match) => match.index ?? -1);
         expect(pkgLoads.length).toBe(2);

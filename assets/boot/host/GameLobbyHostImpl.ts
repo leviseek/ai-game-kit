@@ -43,12 +43,17 @@ export class GameLobbyHostImpl implements GameLobbyHost {
      * 加载依赖包：若 Common 未注册，跨包组件解析失败退化为空组件，按钮无命中、
      * 点击事件不触发。本方法先加载 Common 使引用可解析；Common 常驻全局作用域，
      * 退出品类会话不受影响。重复调用幂等（加载协调器按 key 缓存终态）。
+     * 同时预加载动画专属 bundle（animations）：自动战斗战场页的 loader 序列帧
+     * （爆炸/单位形象）经 GLoader.setUrlWithBundle 从该 bundle 加载 spriteFrame，
+     * GLoader 只认 assetManager.bundles 已注册的 bundle，未预加载时 fallback 到
+     * resources 报 "Bundle resources doesn't contain ..."；与 Common 一并常驻全局。
      */
     async ensureSharedUiDependencies(): Promise<void> {
         const handle = await this.host.loadPackage(BUNDLES.ui, PACKAGE_PATHS.common);
         if (handle.state !== "ready") {
             throw new Error(`lobby: shared ui dependency load failed for "${PACKAGE_PATHS.common}" (${handle.state})`);
         }
+        await this.loadBundle(BUNDLES.animations);
     }
 
     /**

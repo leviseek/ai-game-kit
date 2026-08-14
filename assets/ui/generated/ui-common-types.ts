@@ -3,6 +3,7 @@
 
 import type {
     ITypedButtonNode,
+    ITypedComponentNode,
     ITypedImageNode,
     ITypedProgressNode,
     ITypedTextNode,
@@ -49,19 +50,21 @@ export interface ICommonProgressBarHp {
 }
 
 export const UnitSlotFields = {
+    loader_unit: "component",
     txt_name: "text",
-    txt_hp: "text",
     bar_hp: "progress",
     bar_energy: "progress",
+    txt_hp: "text",
 } as const;
 
 export type UnitSlotNodes = keyof typeof UnitSlotFields;
 
 export interface IUnitSlot {
+    readonly _loader_unit: ITypedComponentNode;
     readonly _txt_name: ITypedTextNode;
-    readonly _txt_hp: ITypedTextNode;
     readonly _bar_hp: ITypedProgressNode;
     readonly _bar_energy: ITypedProgressNode;
+    readonly _txt_hp: ITypedTextNode;
 }
 
 export const CandidateItemFields = {

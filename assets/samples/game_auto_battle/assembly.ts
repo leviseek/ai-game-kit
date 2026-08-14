@@ -86,6 +86,8 @@ export interface AutoBattleViewNode {
     xy: { x: number; y: number } | undefined;
     /** 最近一次透明度写入（特效动画经 setAlpha 记录）。 */
     alpha: number | undefined;
+    /** 最近一次图片 URL 写入（loader 序列帧经 setUrl 记录）。 */
+    url: string | undefined;
     clickHandler: (() => void) | undefined;
 }
 
@@ -110,6 +112,9 @@ export function toViewModelNode(recording: AutoBattleViewNode): IViewModelNode {
         },
         setAlpha: (value: number) => {
             recording.alpha = value;
+        },
+        setUrl: (value: string) => {
+            recording.url = value;
         },
         onClick: (handler: () => void) => {
             recording.clickHandler = handler;
@@ -346,6 +351,7 @@ export function createAutoBattleFixture(options: AutoBattleFixtureOptions = {}):
                 visible: undefined,
                 xy: undefined,
                 alpha: undefined,
+                url: undefined,
                 clickHandler: undefined,
             };
             viewNodes.set(name, recording);

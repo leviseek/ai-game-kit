@@ -19,4 +19,10 @@ export interface IViewModelNode {
      * 节点未实现时动画器跳过该操作。
      */
     setAlpha?(value: number): void;
+    /**
+     * 可选图片 URL 写入：供演示层序列帧动画（如爆炸帧/单位形象逐帧切换）经
+     * loader 切图。不在绑定 kind 之列——动画器直接写节点。向后兼容扩展，
+     * 节点未实现时动画器跳过该操作（静态 image 节点无 loader 能力）。
+     */
+    setUrl?(value: string): void;
 }

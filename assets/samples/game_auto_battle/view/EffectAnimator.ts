@@ -1,10 +1,13 @@
 import type { HitFeedbackEffect } from "./effects";
+import { EXPLOSION_FRAME_URLS } from "./animUrls";
 
-/** 特效节点接缝：动画器只消费 alpha/xy 写入，与渲染器绑定分离。 */
+/** 特效节点接缝：动画器只消费 alpha/xy/url 写入，与渲染器绑定分离。 */
 export interface EffectNode {
     setText?(value: string): void;
     setAlpha?(value: number): void;
     setXY?(x: number, y: number): void;
+    /** 可选图片 URL 写入：loader 序列帧切图（爆炸帧）；未实现时动画器跳过。 */
+    setUrl?(value: string): void;
 }
 
 /** 飘字动画参数：时长、上升高度、起始/终态透明度。 */
@@ -19,10 +22,12 @@ const SHAKE_OFFSET = 4;
 const MOVE_DURATION_MS = 300;
 const ENTRANCE_DURATION_MS = 750;
 const ENTRANCE_RISE = 80;
+/** 爆炸序列帧参数：每帧展示时长（12 帧总时长约 480ms，短促爆炸）。 */
+const EXPLOSION_FRAME_MS = 40;
 
 /** 进行中的单个动画：按开始时间与时长插值 alpha/xy。 */
 interface ActiveAnimation {
-    readonly kind: "float" | "flash" | "shake" | "move" | "teleport" | "entrance";
+    readonly kind: "float" | "flash" | "shake" | "move" | "teleport" | "entrance" | "explosion";
     readonly unitId: string;
     readonly start: number;
     readonly end: number;
@@ -33,6 +38,8 @@ interface ActiveAnimation {
     /** 位移起点/终点坐标（move 用）：from→to 插值。 */
     readonly fromXY?: { readonly x: number; readonly y: number };
     readonly toXY?: { readonly x: number; readonly y: number };
+    /** 爆炸帧 URL 序列（explosion 用）：逐帧 setUrl。 */
+    readonly urls?: readonly string[];
 }
 
 /** 动画器句柄：消费特效意图并驱动节点；时间源注入保证测试可控。 */
@@ -58,7 +65,7 @@ function lerp(from: number, to: number, t: number): number {
 }
 
 /**
- * 命中反馈与位移动画器：TS 驱动的飘字/闪白/抖动/位移/入场，不经渲染器绑定
+ * 命中反馈与位移动画器：TS 驱动的飘字/闪白/抖动/位移/入场/爆炸，不经渲染器绑定
  * （动画中间帧不进入 state diff）。时间源为注入的毫秒时间戳函数；测试注入
  * 自增源确定性推进。
  * - 飘字：`fx_float_{unitId}` 文本上浮 + 淡出（alpha 1→0）
@@ -68,7 +75,9 @@ function lerp(from: number, to: number, t: number): number {
  * - 移动（move 事件）：`unit_{unitId}` 从 `gridXYOf(from)` 到 `gridXYOf(to)` 插值
  * - 瞬移（teleport 事件）：直接跳变到 `gridXYOf(to)`
  * - 入场（round-start 首轮）：`unit_{unitId}` 从当前位置淡入到位（alpha 0→1）
- * 飘字/闪白/抖动/位移终态统一回到 state 快照姿态（alpha 或坐标对齐 state）。
+ * - 爆炸（unit-dead 事件）：`fx_effect_{unitId}` loader 逐帧 setUrl 播放爆炸序列
+ * 飘字/闪白/抖动/位移/爆炸终态统一回到 state 快照姿态（alpha 或坐标对齐 state）。
+ * 单位形象动画（idle/attack/death 循环）由 UnitAnimator 单独驱动，不经本动画器。
  */
 export function createEffectAnimator(options: {
     node: (name: string) => EffectNode | undefined;
@@ -101,6 +110,11 @@ export function createEffectAnimator(options: {
     function writeText(name: string, value: string): void {
         const view = resolve(name);
         view?.setText?.(value);
+    }
+
+    function writeUrl(name: string, value: string): void {
+        const view = resolve(name);
+        view?.setUrl?.(value);
     }
 
     /** 飘字文本：伤害用鲜红（-value）、治疗用亮绿（+value），UBB 颜色嵌入。 */
@@ -175,6 +189,20 @@ export function createEffectAnimator(options: {
                     end: now + ENTRANCE_DURATION_MS,
                     base,
                 });
+            } else if (effect.kind === "explosion") {
+                // 爆炸：定位到目标单位坐标 + 播放首帧 + 淡入；后续 step 逐帧 setUrl
+                replace(effect.unitId, "explosion");
+                const base = homeXYOf(effect.unitId);
+                writeXY(`fx_effect_${effect.unitId}`, base.x, base.y);
+                writeUrl(`fx_effect_${effect.unitId}`, EXPLOSION_FRAME_URLS[0]!);
+                writeAlpha(`fx_effect_${effect.unitId}`, 1);
+                activeAnimations.push({
+                    kind: "explosion",
+                    unitId: effect.unitId,
+                    start: now,
+                    end: now + EXPLOSION_FRAME_URLS.length * EXPLOSION_FRAME_MS,
+                    urls: EXPLOSION_FRAME_URLS,
+                });
             }
         }
     }
@@ -213,12 +241,19 @@ export function createEffectAnimator(options: {
                 const base = anim.base ?? homeXYOf(anim.unitId);
                 writeXY(`unit_${anim.unitId}`, base.x, base.y + ENTRANCE_RISE * (1 - progress));
                 writeAlpha(`unit_${anim.unitId}`, progress);
+            } else if (anim.kind === "explosion") {
+                // 爆炸：按进度推进帧索引逐帧 setUrl（帧索引取 clamp 防越界）
+                const urls = anim.urls ?? EXPLOSION_FRAME_URLS;
+                const frame = Math.min(urls.length - 1, Math.floor(progress * urls.length));
+                writeUrl(`fx_effect_${anim.unitId}`, urls[frame]!);
             }
 
             if (now >= anim.end) {
-                // 终态回位：飘字/闪白 alpha=0；位移/入场对齐 state 坐标与 alpha=1
+                // 终态回位：飘字/闪白/爆炸 alpha=0；位移/入场对齐 state 坐标与 alpha=1
                 if (anim.kind === "float" || anim.kind === "flash") {
                     writeAlpha(anim.kind === "float" ? `fx_float_${anim.unitId}` : `fx_flash_${anim.unitId}`, 0);
+                } else if (anim.kind === "explosion") {
+                    writeAlpha(`fx_effect_${anim.unitId}`, 0);
                 } else if (anim.kind === "shake") {
                     const base = anim.base ?? homeXYOf(anim.unitId);
                     writeXY(`unit_${anim.unitId}`, base.x, base.y);
@@ -237,6 +272,8 @@ export function createEffectAnimator(options: {
         for (const anim of activeAnimations) {
             if (anim.kind === "float" || anim.kind === "flash") {
                 writeAlpha(anim.kind === "float" ? `fx_float_${anim.unitId}` : `fx_flash_${anim.unitId}`, 0);
+            } else if (anim.kind === "explosion") {
+                writeAlpha(`fx_effect_${anim.unitId}`, 0);
             } else if (anim.kind === "shake") {
                 const base = anim.base ?? homeXYOf(anim.unitId);
                 writeXY(`unit_${anim.unitId}`, base.x, base.y);

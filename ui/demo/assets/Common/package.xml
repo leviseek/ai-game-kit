@@ -3,6 +3,8 @@
   <resources>
     <component id="com04" name="CandidateItem.xml" path="/" exported="true"/>
     <component id="com03" name="UnitSlot.xml" path="/" exported="true"/>
+    <image id="w0100" name="warrior_spritesheet.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="w0000" name="warrior_f_idle_00.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
     <component id="com02" name="CommonProgressBarHp.xml" path="/" exported="true"/>
     <image id="pb002" name="progress_fill_hp.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
     <component id="com01" name="CommonProgressBar.xml" path="/" exported="true"/>

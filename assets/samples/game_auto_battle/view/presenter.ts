@@ -4,8 +4,10 @@ import type { GameFixture } from "../../../game/fixture/GameFixture";
 import type { GamePresenter } from "../../../game/lobby/presenter";
 import type { AutoBattleFixture } from "../assembly";
 import type { AutoBattleSide } from "../models";
+import { WARRIOR_VARIANT_BY_SIDE } from "./animUrls";
 import { projectHitFeedbackEvents } from "./effects";
 import { createEffectAnimator } from "./EffectAnimator";
+import { createUnitAnimator } from "./UnitAnimator";
 import { createVsEntranceTemplate } from "./VsEntrance";
 import { buildAutoBattleBindings, createAutoBattleViewModel, formatAutoBattleEvent, gridToXY, type AutoBattleCommands, type AutoBattleViewModel } from "./view";
 
@@ -65,6 +67,17 @@ export function createAutoBattlePresenter(fixture: GameFixture, node: (name: str
         },
         gridXYOf: (gridKey: string) => gridToXY(gridKey),
     });
+    // 单位形象动画器：存活单位持续循环 idle，attack/death 意图一次性切换后转场。
+    // 变体按单位阵营映射（己方 f / 敌方 m）；存活集合从 state 每帧派生
+    const unitAnimator = createUnitAnimator({
+        node: (name: string) => node(name),
+        timeSource: () => gameClock.now(),
+        variantOf: (unitId: string) => {
+            const unit = autoBattle.battle.state.units.find((candidate) => candidate.id === unitId);
+            return unit === undefined ? "f" : (WARRIOR_VARIANT_BY_SIDE[unit.side] ?? "f");
+        },
+        liveUnitIds: () => autoBattle.battle.state.units.filter((unit) => unit.hp > 0).map((unit) => unit.id),
+    });
 
     /** 每方队长：index 最小存活单位（VS 覆盖层展示用，纯读取 state）。 */
     function leaderOf(side: AutoBattleSide): string {
@@ -104,6 +117,7 @@ export function createAutoBattlePresenter(fixture: GameFixture, node: (name: str
             // 重开即新对局：特效游标重置、进行中动画清空，避免旧对局动画残留
             effectCursor = -1;
             effectAnimator.reset();
+            unitAnimator.reset();
             // 重置回 VS 阶段：覆盖层清空重放，阶段时间戳重新计时
             vsTemplate.reset();
             phase = "vs";
@@ -139,8 +153,12 @@ export function createAutoBattlePresenter(fixture: GameFixture, node: (name: str
     function stepEffects(): void {
         const { effects, cursor } = projectHitFeedbackEvents(autoBattle.battle.events, effectCursor);
         effectCursor = cursor;
+        // 一次性反馈特效（飘字/闪白/爆炸）走 EffectAnimator；单位形象动画意图
+        // 经 UnitAnimator 消费（idle 由 step 持续循环，attack/death 一次性切换）
         effectAnimator.play(effects);
         effectAnimator.step();
+        unitAnimator.play(effects);
+        unitAnimator.step();
     }
 
     // 固定节拍按阶段分发：VS/入场阶段只推进对应表现动画，不推进模拟时钟与
@@ -194,6 +212,7 @@ export function createAutoBattlePresenter(fixture: GameFixture, node: (name: str
                 timer = undefined;
             }
             effectAnimator.reset();
+            unitAnimator.reset();
             vsTemplate.reset();
             renderer.dispose();
         },

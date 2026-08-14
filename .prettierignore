@@ -16,6 +16,7 @@ history
 ui
 assets/framework/libs/fairygui
 third-party
+arts
 **/*.d.ts
 package-lock.json
 bun.lock

@@ -16,11 +16,12 @@ function event(seq: number, type: AutoBattleEvent["type"], overrides: Partial<Au
     };
 }
 
-/** 记录型特效节点：记录 setText/setAlpha/setXY 写入，供动画器测试断言。 */
+/** 记录型特效节点：记录 setText/setAlpha/setXY/setUrl 写入，供动画器测试断言。 */
 interface RecordingEffectNode extends EffectNode {
     readonly text: string | undefined;
     readonly alpha: number | undefined;
     readonly xy: { x: number; y: number } | undefined;
+    readonly url: string | undefined;
 }
 
 function recordNode(): RecordingEffectNode {
@@ -28,6 +29,7 @@ function recordNode(): RecordingEffectNode {
         text: undefined,
         alpha: undefined,
         xy: undefined,
+        url: undefined,
         setText: (value: string) => {
             recording.text = value;
         },
@@ -37,35 +39,51 @@ function recordNode(): RecordingEffectNode {
         setXY: (x: number, y: number) => {
             recording.xy = { x, y };
         },
+        setUrl: (value: string) => {
+            recording.url = value;
+        },
     };
     return recording;
 }
 
 describe("Auto-battle hit feedback projection", () => {
-    test("attack event projects damage float and hit flash", () => {
-        const { effects, cursor } = projectHitFeedbackEvents([event(0, "attack", { targetId: "e", value: 12 })], -1);
+    test("attack event projects damage float, hit flash, and attacker anim", () => {
+        const { effects, cursor } = projectHitFeedbackEvents([event(0, "attack", { sourceId: "a", targetId: "e", value: 12 })], -1);
         expect(cursor).toBe(0);
         expect(effects).toEqual([
             { kind: "damage-float", unitId: "e", value: 12, seq: 0 },
             { kind: "hit-flash", unitId: "e", seq: 0 },
+            { kind: "unit-anim", unitId: "a", anim: "attack", seq: 0 },
         ]);
     });
 
     test("skill-damage event projects damage float and hit flash", () => {
-        const { effects } = projectHitFeedbackEvents([event(1, "skill-damage", { targetId: "e", value: 40 })], -1);
+        const { effects } = projectHitFeedbackEvents([event(1, "skill-damage", { sourceId: "a", targetId: "e", value: 40 })], -1);
         expect(effects).toEqual([
             { kind: "damage-float", unitId: "e", value: 40, seq: 1 },
             { kind: "hit-flash", unitId: "e", seq: 1 },
+            { kind: "unit-anim", unitId: "a", anim: "attack", seq: 1 },
         ]);
     });
 
-    test("skill-heal event projects heal float without flash", () => {
-        const { effects } = projectHitFeedbackEvents([event(2, "skill-heal", { targetId: "a", value: 30 })], -1);
-        expect(effects).toEqual([{ kind: "heal-float", unitId: "a", value: 30, seq: 2 }]);
+    test("skill-heal event projects heal float with caster anim", () => {
+        const { effects } = projectHitFeedbackEvents([event(2, "skill-heal", { sourceId: "a", targetId: "a", value: 30 })], -1);
+        expect(effects).toEqual([
+            { kind: "heal-float", unitId: "a", value: 30, seq: 2 },
+            { kind: "unit-anim", unitId: "a", anim: "attack", seq: 2 },
+        ]);
     });
 
-    test("unit-dead and other events are ignored", () => {
-        const { effects } = projectHitFeedbackEvents([event(0, "round-start"), event(1, "unit-dead", { targetId: "e" }), event(2, "battle-over", { result: "win" })], -1);
+    test("unit-dead projects death explosion and target death anim", () => {
+        const { effects } = projectHitFeedbackEvents([event(1, "unit-dead", { targetId: "e" })], -1);
+        expect(effects).toEqual([
+            { kind: "explosion", unitId: "e", seq: 1 },
+            { kind: "unit-anim", unitId: "e", anim: "death", seq: 1 },
+        ]);
+    });
+
+    test("battle-over and other ignored events project nothing", () => {
+        const { effects } = projectHitFeedbackEvents([event(0, "round-start"), event(2, "battle-over", { result: "win" })], -1);
         expect(effects).toEqual([]);
     });
 
@@ -280,6 +298,45 @@ describe("Auto-battle effect animator", () => {
         // 结束：到位（y=100）、alpha=1、active 清空
         expect(unitNode.alpha).toBe(1);
         expect(unitNode.xy).toEqual({ x: 840, y: 100 });
+        expect(animator.active()).toBe(0);
+    });
+
+    test("explosion positions to unit coordinate and advances frames via setUrl", () => {
+        const { animator, ensureNode, advance } = makeAnimator();
+        const fxNode = ensureNode("fx_effect_a");
+        animator.play([{ kind: "explosion", unitId: "a", seq: 0 }]);
+        // 播放即定位 + 首帧 + alpha=1
+        expect(fxNode.xy).toEqual({ x: 840, y: 100 });
+        expect(fxNode.url).toContain("fx_explosion_00");
+        expect(fxNode.alpha).toBe(1);
+
+        // 推进约 1/4（12 帧 × 40ms = 480ms）：帧索引前进到非首帧
+        advance(120);
+        animator.step();
+        expect(fxNode.url).not.toBeUndefined();
+        expect(fxNode.url).not.toContain("fx_explosion_00");
+
+        // 播完：alpha=0、active 清空
+        advance(480);
+        animator.step();
+        expect(fxNode.alpha).toBe(0);
+        expect(animator.active()).toBe(0);
+    });
+
+    test("explosion without setUrl node is skipped without interrupting", () => {
+        const nodes = new Map<string, EffectNode>();
+        const time = makeTime();
+        const animator = createEffectAnimator({
+            node: (name: string) => nodes.get(name),
+            timeSource: time.timeSource,
+            homeXYOf: () => ({ x: 0, y: 0 }),
+            gridXYOf: () => ({ x: 0, y: 0 }),
+        });
+        // 节点只实现 setXY 不实现 setUrl/setAlpha：爆炸写入被跳过不中断
+        nodes.set("fx_effect_a", { setXY: () => {} });
+        animator.play([{ kind: "explosion", unitId: "a", seq: 0 }]);
+        time.advance(480);
+        animator.step();
         expect(animator.active()).toBe(0);
     });
 });

@@ -32,9 +32,13 @@ export const UNIT_HP_TEXT_NODE = "txt_hp";
 export const UNIT_HP_BAR_NODE = "bar_hp";
 /** 单位能量进度条节点。 */
 export const UNIT_ENERGY_BAR_NODE = "bar_energy";
+/** 单位形象 loader 节点（精灵表逐帧动画；名称与 UnitSlot.xml loader_unit 对齐）。 */
+export const UNIT_IMAGE_NODE = "loader_unit";
 
 // ---- UnitHitFeedbackCom 组件内子节点 ----
 /** 命中反馈飘字文本节点。 */
 export const FX_FLOAT_NODE = "fx_float";
 /** 命中反馈闪白遮罩节点。 */
 export const FX_FLASH_NODE = "fx_flash";
+/** 命中/死亡爆炸序列帧 loader 节点（12 帧逐帧 setUrl；名称与 UnitHitFeedbackCom.xml loader_effect 对齐）。 */
+export const FX_EXPLOSION_NODE = "loader_effect";

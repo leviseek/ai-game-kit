@@ -7,7 +7,18 @@
 
 import { UiAutoBattleUnitHitFeedbackCom } from "../../../ui/generated/ui-autobattle";
 import { UiCommonUnitSlot } from "../../../ui/generated/ui-common";
-import { FX_CONTAINER, FX_FLASH_NODE, FX_FLOAT_NODE, UNIT_ENERGY_BAR_NODE, UNIT_HP_BAR_NODE, UNIT_HP_TEXT_NODE, UNIT_NAME_NODE, UNIT_SLOT_CONTAINER } from "./UiNodes";
+import {
+    FX_CONTAINER,
+    FX_EXPLOSION_NODE,
+    FX_FLASH_NODE,
+    FX_FLOAT_NODE,
+    UNIT_ENERGY_BAR_NODE,
+    UNIT_HP_BAR_NODE,
+    UNIT_HP_TEXT_NODE,
+    UNIT_IMAGE_NODE,
+    UNIT_NAME_NODE,
+    UNIT_SLOT_CONTAINER,
+} from "./UiNodes";
 
 export interface AutoBattleUnitNodeMapping {
     readonly containerName: string;
@@ -25,6 +36,7 @@ const UNIT_NODE_PATTERNS: ReadonlyArray<readonly [RegExp, string | null]> = [
     [/^txt_unit_(.+)_hp$/, UNIT_HP_TEXT_NODE],
     [/^bar_unit_(.+)_hp$/, UNIT_HP_BAR_NODE],
     [/^bar_unit_(.+)_energy$/, UNIT_ENERGY_BAR_NODE],
+    [/^loader_unit_(.+)$/, UNIT_IMAGE_NODE],
 ];
 
 /** 战场页动态单位映射：`unit_{id}` 系列节点运行时实例化 Common/UnitSlot 组件。 */
@@ -46,6 +58,7 @@ export const AUTO_BATTLE_UNIT_NODE_MAPPING: AutoBattleUnitNodeMapping = {
 const FX_NODE_PATTERNS: ReadonlyArray<readonly [RegExp, string]> = [
     [/^fx_float_(.+)$/, FX_FLOAT_NODE],
     [/^fx_flash_(.+)$/, FX_FLASH_NODE],
+    [/^fx_effect_(.+)$/, FX_EXPLOSION_NODE],
 ];
 
 /**

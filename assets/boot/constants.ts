@@ -15,6 +15,8 @@ export const BUNDLES = {
     samples: "samples",
     /** common bundle：场景流转冒烟用目标（release-loop 验证）。 */
     common: "common",
+    /** animations bundle：自动战斗动画帧（爆炸/单位形象序列图，assets/animations）。 */
+    animations: "animations",
 } as const;
 export type BundleName = (typeof BUNDLES)[keyof typeof BUNDLES];
 

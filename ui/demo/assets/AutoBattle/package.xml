@@ -3,6 +3,7 @@
   <resources>
     <component id="j5qwc" name="IdleRewardsView.xml" path="/" exported="true"/>
     <component id="ab004" name="UnitHitFeedbackCom.xml" path="/" exported="true"/>
+    <image id="fx001" name="fx_explosion_00.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
     <image id="fx000" name="hit_flash_white.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
     <component id="ab003" name="BattlefieldUnitsCom.xml" path="/" exported="true"/>
     <image id="slt00" name="formation_slot.png" path="/img/" qualityOption="source" duplicatePadding="true"/>

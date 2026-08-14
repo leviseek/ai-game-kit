@@ -3,7 +3,8 @@ import type { AutoBattleEvent } from "../models";
 
 /**
  * 命中反馈与位移动画意图：由战斗事件投影（event projection）派生，是引擎无关的
- * 纯数据——presenter/动画器据此驱动飘字、闪白、抖动、位移、入场，不进入逻辑层。
+ * 纯数据——presenter/动画器据此驱动飘字、闪白、抖动、位移、入场、爆炸、单位形象，
+ * 不进入逻辑层。
  */
 export type HitFeedbackEffect =
     | { readonly kind: "damage-float"; readonly unitId: string; readonly value: number; readonly seq: number }
@@ -11,7 +12,9 @@ export type HitFeedbackEffect =
     | { readonly kind: "hit-flash"; readonly unitId: string; readonly seq: number }
     | { readonly kind: "move"; readonly unitId: string; readonly fromGrid: string; readonly toGrid: string; readonly seq: number }
     | { readonly kind: "teleport"; readonly unitId: string; readonly toGrid: string; readonly seq: number }
-    | { readonly kind: "entrance"; readonly unitId: string; readonly seq: number };
+    | { readonly kind: "entrance"; readonly unitId: string; readonly seq: number }
+    | { readonly kind: "explosion"; readonly unitId: string; readonly seq: number }
+    | { readonly kind: "unit-anim"; readonly unitId: string; readonly anim: "attack" | "death"; readonly seq: number };
 
 /**
  * 事件 → 特效投影：把战斗事件映射为特效意图列表。
@@ -20,7 +23,9 @@ export type HitFeedbackEffect =
  * - move → 位移插值意图（from→to 网格）
  * - teleport → 瞬移意图（跳变到 to 网格）
  * - round-start → 入场意图（开战/每轮首事件，单位淡入到位）
- * - unit-dead 及其它事件 → 不产生特效
+ * - attack / skill-damage / skill-heal → 攻击/施法者播放攻击帧（unit-anim attack）
+ * - unit-dead → 死亡爆炸（explosion）+ 目标播放死亡帧（unit-anim death）
+ * - 其它事件 → 不产生特效
  * 纯函数无副作用，返回新游标；调用方（presenter）保存游标以增量消费。
  */
 export function projectHitFeedbackEvents(events: readonly AutoBattleEvent[], cursor: number): { readonly effects: readonly HitFeedbackEffect[]; readonly cursor: number } {
@@ -65,6 +70,14 @@ export function projectHitFeedbackEvents(events: readonly AutoBattleEvent[], cur
             }
             continue;
         }
+        if (event.type === "unit-dead") {
+            // 阵亡：目标位播放爆炸序列帧 + 目标播放死亡动画（播完隐去）
+            if (event.targetId !== undefined) {
+                effects.push({ kind: "explosion", unitId: event.targetId, seq: event.seq });
+                effects.push({ kind: "unit-anim", unitId: event.targetId, anim: "death", seq: event.seq });
+            }
+            continue;
+        }
         if (event.targetId === undefined) {
             continue;
         }
@@ -80,6 +93,10 @@ export function projectHitFeedbackEvents(events: readonly AutoBattleEvent[], cur
                 unitId: event.targetId,
                 seq: event.seq,
             });
+            if (event.sourceId !== "") {
+                // 攻击/施法者播放一次攻击帧（播完回 idle）
+                effects.push({ kind: "unit-anim", unitId: event.sourceId, anim: "attack", seq: event.seq });
+            }
         } else if (event.type === "skill-heal") {
             effects.push({
                 kind: "heal-float",
@@ -87,6 +104,9 @@ export function projectHitFeedbackEvents(events: readonly AutoBattleEvent[], cur
                 value: event.value ?? 0,
                 seq: event.seq,
             });
+            if (event.sourceId !== "") {
+                effects.push({ kind: "unit-anim", unitId: event.sourceId, anim: "attack", seq: event.seq });
+            }
         }
     }
 

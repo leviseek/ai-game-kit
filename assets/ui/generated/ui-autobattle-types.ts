@@ -139,6 +139,7 @@ export interface ILineupEditorView {
 
 export const UnitHitFeedbackComFields = {
     fx_flash: "image",
+    loader_effect: "component",
     fx_float: "text",
 } as const;
 
@@ -146,6 +147,7 @@ export type UnitHitFeedbackComNodes = keyof typeof UnitHitFeedbackComFields;
 
 export interface IUnitHitFeedbackCom {
     readonly _fx_flash: ITypedImageNode;
+    readonly _loader_effect: ITypedComponentNode;
     readonly _fx_float: ITypedTextNode;
 }
 

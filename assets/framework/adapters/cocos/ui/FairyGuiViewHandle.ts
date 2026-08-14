@@ -29,6 +29,27 @@ function isClickable(obj: GObject): obj is GObject & { on: GObject["on"] } {
     return typeof (obj as { on?: unknown }).on === "function";
 }
 
+/** 图片 URL 可写能力探测：GLoader 具备 url 属性（loader 序列帧切图）。 */
+function hasUrl(obj: GObject): obj is GObject & { url: string | null } {
+    return "url" in obj;
+}
+
+/**
+ * 设置 loader 图片 URL。支持两种格式：
+ * - `ui://<包>/<资源名>`（或任意普通路径）：FGUI 包内/默认加载（GLoader url setter）
+ * - `bundle://<bundle名>/<包内相对路径>`：从指定 Cocos AssetBundle 加载 spriteFrame
+ *   （GLoader.setUrlWithBundle，内部 `bundle.load(path + "/spriteFrame")`）
+ * 供演示层动画（爆炸帧/单位形象）从独立动画 bundle 逐帧切图。
+ */
+function writeLoaderUrl(obj: GObject & { url: string | null; setUrlWithBundle?(url: string, bundle?: string): void }, value: string): void {
+    const match = /^bundle:\/\/([^/]+)\/(.+)$/.exec(value);
+    if (match !== null && obj.setUrlWithBundle !== undefined) {
+        obj.setUrlWithBundle(match[2]!, match[1]!);
+        return;
+    }
+    obj.url = value;
+}
+
 /**
  * 把单个 fgui 对象按能力 kind 包装为引擎无关的能力接口。
  * kind 来自 gen-types（XML 静态事实），各操作经运行时能力探测实现
@@ -151,6 +172,11 @@ export function wrapFairyGuiObject(child: GObject): IViewModelNode {
         },
         setAlpha: (value: number) => {
             child.alpha = value;
+        },
+        setUrl: (value: string) => {
+            if (hasUrl(child)) {
+                writeLoaderUrl(child, value);
+            }
         },
         onClick: (handler: () => void) => {
             child.on(Event.CLICK, () => {
