@@ -179,7 +179,8 @@ export class UiHost {
     }
 
     /**
-     * 释放：退订 resize、销毁页面适配器与导航器、释放全局 uiScope。
+     * 释放：退订 resize、销毁页面适配器与导航器、释放 UI 根宿主（退订其
+     * window resize 监听并清空 GRoot 引用）、释放全局 uiScope。
      * 单步失败不阻断其余步骤；全部失败聚合为 FuiViewCleanupError。幂等。
      */
     dispose(): void {
@@ -196,6 +197,13 @@ export class UiHost {
             errors.push(error);
         }
         this.adapter = undefined;
+        // UI 根宿主随 UiHost 释放：退订其持有的 window resize 监听并清空 GRoot
+        // 引用（此前遗漏导致 AppRoot 重建后残留 window 监听，见 ADR-035 P1-3）
+        try {
+            this.uiRoot.dispose();
+        } catch (error) {
+            errors.push(error);
+        }
         try {
             this.nav?.dispose();
         } catch (error) {

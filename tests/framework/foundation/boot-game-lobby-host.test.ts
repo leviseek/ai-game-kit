@@ -371,3 +371,96 @@ describe("UiHost.dispose cleanup failure isolation", () => {
         expect(unloaded).toContain("ui");
     });
 });
+
+describe("GameLobbyHostImpl P1 fixes", () => {
+    test("switchEntryPage reuses closeActiveSession without a fake handle cast (P1-1)", () => {
+        const source = readFileSync(lobbyHostFile, "utf8");
+
+        // 旧实现 `closeEntryPage(undefined as unknown as EntryPageHandle)` 是签名谎言：
+        // closeEntryPage 一旦消费参数即静默失效。修复后 switchEntryPage 与
+        // closeEntryPage 共用私有 closeActiveSession，不传占位句柄。
+        expect(source).not.toMatch(/closeEntryPage\(undefined/);
+        // closeActiveSession 出现于：定义 + switchEntryPage 调用 + closeEntryPage 委托
+        const sessionRefs = [...source.matchAll(/closeActiveSession/g)].length;
+        expect(sessionRefs).toBeGreaterThanOrEqual(3);
+    });
+
+    test("UiHost.dispose releases the ui root (P1-3)", async () => {
+        // 回归：UiHost.dispose 此前不调 uiRoot.dispose，CocosUiRoot 构造时订阅的
+        // window resize 监听在 AppRoot 重建后残留；修复后随 UiHost 释放接线
+        let uiRootDisposed = false;
+        const uiHostModule = (await import(pathToFileURL(resolve(projectRoot, "assets/boot/host/UiHost.ts")).href)) as {
+            createUiHost: (deps: { uiRoot: unknown; resourceProvider: IResourceProvider; logger: MemoryLogger }) => {
+                dispose(): void;
+            };
+        };
+        const host = uiHostModule.createUiHost({
+            uiRoot: {
+                ...(makeUiRoot() as object),
+                dispose: () => {
+                    uiRootDisposed = true;
+                },
+            },
+            resourceProvider: createMemoryResourceProvider(),
+            logger: new MemoryLogger(),
+        });
+
+        host.dispose();
+        expect(uiRootDisposed).toBe(true);
+    });
+
+    test("package load failure invalidates the failed cache so retry re-attempts the load (P1-5)", async () => {
+        // 回归：openEntryPage 包加载失败后须失效 LoadCoordinator 的 failed 终态缓存，
+        // 否则瞬时失败被永久记忆、重试直接复用失败结果。以状态性 loader 断言：
+        // 第二次进入重新触发底层加载（attempts 递增）即证明失效生效。
+        let packageLoadAttempts = 0;
+        const provider = createMemoryResourceProvider({
+            loader: async (key) => {
+                if (key.kind === "fairygui-package" && key.path === "AutoBattle/AutoBattle") {
+                    packageLoadAttempts += 1;
+                    if (packageLoadAttempts === 1) {
+                        throw new Error("transient package load failure");
+                    }
+                }
+                return { bundle: key.bundle, path: key.path };
+            },
+        });
+        const uiHostModule = (await import(pathToFileURL(resolve(projectRoot, "assets/boot/host/UiHost.ts")).href)) as {
+            createUiHost: (deps: { uiRoot: unknown; resourceProvider: IResourceProvider; logger: MemoryLogger }) => TestUiHostLike;
+        };
+        const host = uiHostModule.createUiHost({
+            uiRoot: makeUiRoot(),
+            resourceProvider: provider,
+            logger: new MemoryLogger(),
+        });
+        const lobbyHostModule = (await import(pathToFileURL(lobbyHostFile).href)) as {
+            createGameLobbyHost: (deps: { host: unknown; resourceProvider: IResourceProvider; logger: MemoryLogger }) => {
+                openEntryPage(entry: { packageName: string; resName: string; route: string }): Promise<unknown>;
+            };
+        };
+        const lobby = lobbyHostModule.createGameLobbyHost({
+            host,
+            resourceProvider: provider,
+            logger: new MemoryLogger(),
+        });
+        const entry = { route: "auto_battle/lineup", packageName: "AutoBattle", resName: "LineupEditorView" };
+
+        let firstError: unknown;
+        try {
+            await lobby.openEntryPage(entry);
+        } catch (error) {
+            firstError = error;
+        }
+        expect(String((firstError as Error | undefined)?.message)).toMatch(/package load failed/);
+        expect(packageLoadAttempts).toBe(1);
+
+        // 重试：失效后重新加载（第二次调用在页面创建阶段可能失败——mock
+        // createObject 返回 null——但 loader 已被再次调用即证明 failed 缓存失效）
+        try {
+            await lobby.openEntryPage(entry);
+        } catch {
+            // 页面创建失败属测试环境预期，不在此断言
+        }
+        expect(packageLoadAttempts).toBe(2);
+    });
+});

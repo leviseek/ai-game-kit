@@ -83,6 +83,9 @@ export class GameLobbyHostImpl implements GameLobbyHost {
         const loaded = await pkgHandle.done;
         if (loaded.state !== "ready") {
             scope.release();
+            // 失效 failed 终态缓存：瞬时失败（网络/资源缺失）下次进入可重新加载，
+            // 不被 LoadCoordinator 的 failed 终态永久记忆（对齐 SceneFlow invalidate 语义）
+            this.resourceProvider.invalidatePackage(BUNDLES.ui, pkgPath);
             throw new Error(`lobby host: package load failed for "${pkgPath}" (${loaded.state})`);
         }
 
@@ -143,16 +146,17 @@ export class GameLobbyHostImpl implements GameLobbyHost {
      * 新作用域。供多页面品类（auto_battle 编队页 → 战场页）切换使用。
      */
     async switchEntryPage(entry: GameEntryInfo): Promise<EntryPageHandle> {
-        await this.closeEntryPage(undefined as unknown as EntryPageHandle);
+        await this.closeActiveSession();
         return this.openEntryPage(entry);
     }
 
     /**
-     * GameLobbyHost.closeEntryPage：关闭导航页（触发登记的退出回调，幂等）、
-     * 销毁入口页、释放会话资源作用域。导航关闭/页面销毁失败不阻断会话作用域
-     * 释放；全部失败聚合为 FuiViewCleanupError。重复关闭幂等。
+     * 关闭当前活动会话（导航页 + 入口页 + 会话作用域），幂等：无活动会话时
+     * no-op。switchEntryPage 与 closeEntryPage 共用本内部实现，避免向
+     * closeEntryPage 传占位句柄（旧实现 `undefined as unknown as EntryPageHandle`
+     * 是签名谎言，closeEntryPage 一旦消费参数即静默失效）。
      */
-    async closeEntryPage(_handle: EntryPageHandle): Promise<void> {
+    private async closeActiveSession(): Promise<void> {
         const page = this.lobbyPage;
         const scope = this.lobbyScope;
         this.lobbyPage = undefined;
@@ -191,6 +195,14 @@ export class GameLobbyHostImpl implements GameLobbyHost {
     }
 
     /**
+     * GameLobbyHost.closeEntryPage：关闭当前活动会话（幂等）。句柄参数为
+     * 契约兼容保留（外部按句柄语义调用），实际会话状态由本宿主持有。
+     */
+    async closeEntryPage(_handle: EntryPageHandle): Promise<void> {
+        await this.closeActiveSession();
+    }
+
+    /**
      * GameLobbyHost.openGlobalPage：打开全局常驻页（列表页）。包经全局 uiScope
      * 加载常驻、不建立会话资源作用域（不占用会话槽位），返回句柄供游戏层列表
      * 流装配列表项点击；页面关闭/释放由组合根与全局作用域管理。
@@ -210,6 +222,8 @@ export class GameLobbyHostImpl implements GameLobbyHost {
         const pkgPath = `${entry.packageName}/${entry.packageName}`;
         const handle = await this.host.loadPackage(BUNDLES.ui, pkgPath);
         if (handle.state !== "ready") {
+            // 失效 failed 终态缓存：全局页包加载瞬时失败可重试（同 openEntryPage）
+            this.resourceProvider.invalidatePackage(BUNDLES.ui, pkgPath);
             throw new Error(`lobby host: global page package load failed for "${pkgPath}" (${handle.state})`);
         }
 
@@ -238,6 +252,8 @@ export class GameLobbyHostImpl implements GameLobbyHost {
         const handle = this.resourceProvider.load(bundle, this.bundleSentinel(bundle));
         const loaded = await handle.done;
         if (loaded.state !== "ready") {
+            // 失效 failed 终态缓存：bundle 脚本加载瞬时失败可重试
+            this.resourceProvider.invalidate(bundle, this.bundleSentinel(bundle));
             throw new Error(`lobby host: bundle load failed for "${bundle}" (${loaded.state})`);
         }
     }
