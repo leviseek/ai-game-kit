@@ -1,0 +1,8 @@
+{
+    "lineups": {
+        "ally": ["ally-tank", "ally-mage", "ally-priest"],
+        "enemy": ["enemy-tank", "enemy-mage", "enemy-shaman"]
+    },
+    "energyGainAttacker": 10,
+    "energyGainTarget": 5
+}

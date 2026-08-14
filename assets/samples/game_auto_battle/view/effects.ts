@@ -1,5 +1,5 @@
 import type { IModule } from "../../../framework";
-import type { AutoBattleEvent } from "../models";
+import type { AutoBattleEvent, AutoBattleSkillEffectDef } from "../models";
 
 /**
  * 命中反馈与位移动画意图：由战斗事件投影（event projection）派生，是引擎无关的
@@ -26,11 +26,35 @@ export type HitFeedbackEffect =
  * - attack / skill-damage / skill-heal → 攻击/施法者播放攻击帧（unit-anim attack）
  * - unit-dead → 死亡爆炸（explosion）+ 目标播放死亡帧（unit-anim death）
  * - 其它事件 → 不产生特效
+ * 可选动效表解析器（resolveSkillEffect）：事件携带 effectId 且表能解析出条目时，
+ * 按表条目追加专属动效（表驱动增量；缺省不传保持旧投影行为，向后兼容）。
  * 纯函数无副作用，返回新游标；调用方（presenter）保存游标以增量消费。
  */
-export function projectHitFeedbackEvents(events: readonly AutoBattleEvent[], cursor: number): { readonly effects: readonly HitFeedbackEffect[]; readonly cursor: number } {
+export function projectHitFeedbackEvents(
+    events: readonly AutoBattleEvent[],
+    cursor: number,
+    resolveSkillEffect?: (effectId: string) => AutoBattleSkillEffectDef | undefined,
+): { readonly effects: readonly HitFeedbackEffect[]; readonly cursor: number } {
     const effects: HitFeedbackEffect[] = [];
     let next = cursor;
+
+    /** 技能专属动效投影：按动效表条目向目标追加视觉意图。 */
+    function projectSkillEffect(event: AutoBattleEvent, targetId: string): void {
+        if (event.effectId === undefined || resolveSkillEffect === undefined) {
+            return;
+        }
+        const effectDef = resolveSkillEffect(event.effectId);
+        if (effectDef === undefined) {
+            return;
+        }
+        if (effectDef.kind === "explosion") {
+            effects.push({ kind: "explosion", unitId: targetId, seq: event.seq });
+        } else if (effectDef.kind === "flash") {
+            effects.push({ kind: "hit-flash", unitId: targetId, seq: event.seq });
+        } else if (effectDef.kind === "float") {
+            effects.push({ kind: "damage-float", unitId: targetId, value: event.value ?? 0, seq: event.seq });
+        }
+    }
 
     for (const event of events) {
         if (event.seq <= cursor) {
@@ -97,6 +121,8 @@ export function projectHitFeedbackEvents(events: readonly AutoBattleEvent[], cur
                 // 攻击/施法者播放一次攻击帧（播完回 idle）
                 effects.push({ kind: "unit-anim", unitId: event.sourceId, anim: "attack", seq: event.seq });
             }
+            // 技能专属动效：按动效表增量追加（表驱动）
+            projectSkillEffect(event, event.targetId);
         } else if (event.type === "skill-heal") {
             effects.push({
                 kind: "heal-float",
@@ -107,6 +133,7 @@ export function projectHitFeedbackEvents(events: readonly AutoBattleEvent[], cur
             if (event.sourceId !== "") {
                 effects.push({ kind: "unit-anim", unitId: event.sourceId, anim: "attack", seq: event.seq });
             }
+            projectSkillEffect(event, event.targetId);
         }
     }
 

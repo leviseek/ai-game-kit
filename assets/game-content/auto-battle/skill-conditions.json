@@ -1,0 +1,3 @@
+[
+    { "id": "self-hp-below-half", "kind": "self-hp-ratio", "value": 0.5 }
+]

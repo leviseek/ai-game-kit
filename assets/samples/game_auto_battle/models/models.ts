@@ -9,25 +9,115 @@ export type AutoBattleSide = "ally" | "enemy";
 /** 站位：前排 > 中排 > 后排，决定目标选择优先级。 */
 export type AutoBattlePosition = "front" | "mid" | "back";
 
-/** 技能类型：伤害技能打击敌方前排目标，治疗技能恢复己方最低血量单位。 */
+/** 技能类型：兼容旧格式单效果技能的主类型（新格式技能以 effects 多效果为准）。 */
 export type AutoBattleSkillKind = "damage" | "heal";
+
+/** 技能目标选择：敌方前排 / 己方最低 HP 比例 / 自身。 */
+export type AutoBattleSkillTarget = "enemy-front" | "ally-lowest-hp" | "self";
+
+/** 技能效果类型：伤害 / 治疗 / 挂载 buff。 */
+export type AutoBattleSkillEffectKind = "damage" | "heal" | "buff";
 
 /** 战斗阶段：进行中与终局；终局后 tick 不再推进。 */
 export type AutoBattlePhase = "fighting" | "over";
+
+/** 技能单条效果：kind 决定结算语义，buffId 在 kind=buff 时引用 buff 表。 */
+export interface AutoBattleSkillEffect {
+    readonly kind: AutoBattleSkillEffectKind;
+    readonly value: number;
+    /** buff 效果引用的 buff 表 id（kind=buff 时必填）。 */
+    readonly buffId?: string;
+}
 
 /** 技能配置：由配置表驱动，energyCost 是满能量释放阈值。 */
 export interface AutoBattleSkill {
     readonly id: string;
     readonly name: string;
+    /** 主效果类型：单效果快捷（effects 缺省时等价于 [{kind, value}]）。 */
     readonly kind: AutoBattleSkillKind;
-    /** 伤害或治疗量。 */
+    /** 伤害或治疗量（单效果快捷值）。 */
     readonly value: number;
     readonly energyCost: number;
+    /**
+     * 多效果列表：缺省为单效果 [{kind, value}]；提供时逐条结算（含 buff 挂载），
+     * 主效果字段仅作向后兼容的快捷形态。
+     */
+    readonly effects?: readonly AutoBattleSkillEffect[];
+    /** 目标选择：缺省按 kind 推导（damage→enemy-front，heal→ally-lowest-hp）。 */
+    readonly target?: AutoBattleSkillTarget;
+    /** 技能条件表 id：释放前判定，不满足则本轮退化为普攻。 */
+    readonly conditionId?: string;
+    /** 技能动效表 id：视图层投影专属动效（如爆炸）。 */
+    readonly effectId?: string;
     /**
      * 可选换位目标格（伤害技能）：结算后把目标换位到其所在侧布阵区的相对格
      * （`row:col`，行列 0..布阵区-1）；目标格被占用则换位失败不执行。
      */
     readonly teleportTo?: string;
+}
+
+/** 基础属性表条目：数值中心，单位按 id 引用（maxHp/attack/speed/attackRange）。 */
+export interface AutoBattleBaseAttributes {
+    readonly id: string;
+    readonly maxHp: number;
+    readonly attack: number;
+    readonly speed: number;
+    /** 攻击射程：缺省 1（配置表可调）。 */
+    readonly attackRange: number;
+}
+
+/** 单位动画表条目：帧 URL 生成参数（bundle://<bundle>/<dir>/<prefix>_<两位序号>）。 */
+export interface AutoBattleUnitAnimation {
+    readonly id: string;
+    /** 动画专属 bundle 名。 */
+    readonly bundle: string;
+    /** bundle 内目录前缀。 */
+    readonly dir: string;
+    /** 每种动画的帧数（生成帧 URL 序列长度）。 */
+    readonly frameCount: number;
+    /** 动画名 → 帧名前缀（如 warrior_f_idle）。 */
+    readonly prefixByAnim: Readonly<Record<AutoBattleAnimName, string>>;
+}
+
+/** 单位动画名集合（精灵表行序：idle/gesture/walk/attack/death）。 */
+export type AutoBattleAnimName = "idle" | "gesture" | "walk" | "attack" | "death";
+
+/** buff 类型：攻击加成 / 防御加成 / 持续伤害 / 持续治疗。 */
+export type AutoBattleBuffKind = "attack-up" | "defense-up" | "damage-over-time" | "heal";
+
+/** buff 表条目：数值与持续回合数（回合结束时递减，归零移除）。 */
+export interface AutoBattleBuff {
+    readonly id: string;
+    readonly name: string;
+    readonly kind: AutoBattleBuffKind;
+    readonly value: number;
+    readonly duration: number;
+}
+
+/** 战斗内挂载的 buff 实例：定义 + 剩余回合数。 */
+export interface AutoBattleBuffInstance {
+    readonly def: AutoBattleBuff;
+    readonly remaining: number;
+}
+
+/** 技能动效表条目：对接视图层 HitFeedbackEffect 的视觉意图类型。 */
+export interface AutoBattleSkillEffectDef {
+    readonly id: string;
+    /** 视觉意图类型：爆炸（explosion）/ 闪白（flash）/ 飘字（float）。 */
+    readonly kind: "explosion" | "flash" | "float";
+}
+
+/** 技能条件表条目：释放/目标选择判定规则。 */
+export interface AutoBattleSkillCondition {
+    readonly id: string;
+    /**
+     * 条件类型：
+     * - self-hp-ratio：施法者 HP 比例低于阈值 value（0..1）时满足
+     * - target-position：目标位于指定站位 position 时满足（value 为站位名）
+     * - always：恒满足（无条件技能的显式形态）
+     */
+    readonly kind: "self-hp-ratio" | "target-position" | "always";
+    readonly value?: number | string;
 }
 
 /** 单位静态配置：属性与技能来自配置表，side/index 由配置读取器推导。 */
@@ -45,6 +135,8 @@ export interface AutoBattleUnit {
     readonly attackRange: number;
     readonly energyMax: number;
     readonly skill: AutoBattleSkill;
+    /** 单位动画表 id：视图层按此查 unitAnimations 表生成帧 URL（缺省走变体回退）。 */
+    readonly animationId?: string;
 }
 
 /** 英雄静态配置：英雄池条目（编队引用对象），形状为 AutoBattleUnit 去掉 side/index（开战实例化时推导）。 */
@@ -59,6 +151,8 @@ export interface AutoBattleHero {
     readonly attackRange: number;
     readonly energyMax: number;
     readonly skill: AutoBattleSkill;
+    /** 单位动画表 id：视图层按此查 unitAnimations 表生成帧 URL（缺省走变体回退）。 */
+    readonly animationId?: string;
 }
 
 /** 玩家编队：定长布阵区容量槽位序列（slot 0..FORMATION_GRID_SIZE-1 → 英雄 id），非空数受上阵上限 MAX_TEAM_SIZE 约束；空槽为 null；可变、可持久化。 */
@@ -74,6 +168,8 @@ export interface AutoBattleUnitState extends AutoBattleUnit {
     readonly gridKey: string;
     /** 当前锁定攻击目标，null 表示未锁定；目标死亡后由下一行动重选。 */
     readonly lockedTargetId: string | null;
+    /** 当前挂载的 buff 列表（含剩余回合），供测试与表现层断言/消费。 */
+    readonly buffs: readonly AutoBattleBuffInstance[];
 }
 
 /** 战斗事件类型：日志回放与冒烟断言依赖的判别维度。 */
@@ -94,6 +190,8 @@ export interface AutoBattleEvent {
     readonly toGridKey?: string;
     /** round-start 事件：当前存活单位 id 列表（入场动画消费）。 */
     readonly unitIds?: readonly string[];
+    /** skill-damage/skill-heal 事件：技能动效表 id（视图层按此投影专属动效）。 */
+    readonly effectId?: string;
 }
 
 /** 战斗状态：轮次/行动序列快照/胜负，供渲染与断言消费。 */

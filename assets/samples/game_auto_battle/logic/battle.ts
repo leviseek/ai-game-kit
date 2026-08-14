@@ -5,10 +5,12 @@ import { FORMATION_GRID_COLS } from "./grid";
 import type { AutoBattleConfigHandle } from "./config";
 import { applyAutoBattleDamage, growAutoBattleEnergy, resolveAutoBattleSkill } from "./skills";
 import { isAutoBattleAlive, resolveAutoBattleTarget, selectAutoBattleHealTarget, sortAutoBattleOrder } from "./formation";
+import { applyAutoBattleBuffTick, autoBattleBuffAttackBonus, autoBattleBuffDefenseBonus, createAutoBattleBuffInstance, tickAutoBattleBuffs } from "./buffs";
+import { resolveAutoBattleSkillCondition } from "./conditions";
 import { createMutableUnit, snapshotUnits, type MutableUnit } from "./units";
 import { createMapGrid } from "./grid";
 import { resolveMovePath } from "./move";
-import type { AutoBattleEvent, AutoBattlePhase, AutoBattleSide, AutoBattleState } from "../models";
+import type { AutoBattleEvent, AutoBattlePhase, AutoBattleSide, AutoBattleState, AutoBattleSkillTarget } from "../models";
 
 /** 开战编队单位：slot = 布阵区格位（0..FORMATION_GRID_SIZE-1），heroId 引用英雄池。 */
 export interface AutoBattlePlacedUnit {
@@ -153,9 +155,15 @@ export function createAutoBattleBattle(options: AutoBattleBattleOptions): AutoBa
         return phase === "over";
     }
 
-    /** 开始一轮：轮次 +1、按存活单位速度降序快照行动序列并广播 round-start。 */
+    /** 开始一轮：轮次 +1、先结算挂载 buff（DoT/HoT 与到期），按存活单位速度降序快照行动序列并广播 round-start。 */
     function beginRound(nextRound: number): void {
         round = nextRound;
+        // 回合开始结算挂载 buff：持续伤害/治疗先结算 HP，再递减剩余回合并移除到期 buff
+        tickRoundBuffs();
+        // buff 结算可能致死并触发终局：终局后不再开启回合（对齐"终局后 tick 不推进"契约）
+        if (isOver()) {
+            return;
+        }
         order = sortAutoBattleOrder(snapshotUnits(units).filter(isAutoBattleAlive)).map((unit) => unit.id);
         actionIndex = 0;
         emit({
@@ -167,6 +175,28 @@ export function createAutoBattleBattle(options: AutoBattleBattleOptions): AutoBa
                 .filter(isAutoBattleAlive)
                 .map((unit) => unit.id),
         });
+    }
+
+    /** 回合开始 buff 结算：对全部单位执行 DoT/HoT 并递减/移除到期 buff。 */
+    function tickRoundBuffs(): void {
+        for (const unit of units) {
+            if (unit.hp <= 0 || unit.buffs.length === 0) {
+                continue;
+            }
+            let hp = unit.hp;
+            for (const instance of unit.buffs) {
+                const outcome = applyAutoBattleBuffTick(instance.def, hp, unit.maxHp);
+                hp = outcome.hp;
+            }
+            unit.hp = hp;
+            unit.buffs = [...tickAutoBattleBuffs(unit.buffs)];
+            if (unit.hp <= 0) {
+                emit({ type: "unit-dead", sourceId: "", targetId: unit.id, round });
+            }
+        }
+        if (units.some((unit) => unit.hp <= 0)) {
+            checkGameOver();
+        }
     }
 
     /**
@@ -219,7 +249,7 @@ export function createAutoBattleBattle(options: AutoBattleBattleOptions): AutoBa
         return false;
     }
 
-    /** 普攻：对锁定目标（无锁定时前排优先）造成自身攻击力伤害，双方按配置增长能量。 */
+    /** 普攻：对锁定目标（无锁定时前排优先）造成自身攻击力伤害（含攻击/防御 buff 修正），双方按配置增长能量。 */
     function basicAttack(actor: MutableUnit): void {
         const opposingSide: AutoBattleSide = actor.side === "ally" ? "enemy" : "ally";
         const target = resolveAutoBattleTarget(sideUnits(opposingSide), actor.lockedTargetId) as MutableUnit | undefined;
@@ -233,7 +263,11 @@ export function createAutoBattleBattle(options: AutoBattleBattleOptions): AutoBa
         // 移动 + 普攻两阶段：超射程先前移再结算（移动不改变行动次序）
         moveTowardTarget(actor, target);
 
-        const outcome = applyAutoBattleDamage(target.hp, actor.def.attack);
+        // 攻击 buff 加成施法者攻击、防御 buff 减免受击伤害（下限 0）
+        const attack = actor.def.attack + autoBattleBuffAttackBonus(actor.buffs);
+        const defense = autoBattleBuffDefenseBonus(target.buffs);
+        const damage = Math.max(0, attack - defense);
+        const outcome = applyAutoBattleDamage(target.hp, damage);
         target.hp = outcome.hp;
         actor.energy = growAutoBattleEnergy(actor.energy, actor.def.energyMax, config.energyGainAttacker);
         // 阵亡目标不再累计受击能量（实现收窄，测试锁定其行为）
@@ -255,59 +289,104 @@ export function createAutoBattleBattle(options: AutoBattleBattleOptions): AutoBa
         }
     }
 
-    /** 满能量释放技能：结算统一走 resolveAutoBattleSkill，避免规则多实现。 */
+    /** 技能目标解析：按技能 target 字段选择目标；缺省按主效果 kind 推导（damage → 敌方前排、heal → 己方最低 HP）。 */
+    function resolveSkillTarget(actor: MutableUnit, target: AutoBattleSkillTarget | undefined, kind: "damage" | "heal"): MutableUnit | undefined {
+        if (target === "self") {
+            return actor;
+        }
+        if (target === "ally-lowest-hp" || (target === undefined && kind === "heal")) {
+            return selectAutoBattleHealTarget(sideUnits(actor.side)) as MutableUnit | undefined;
+        }
+        // enemy-front（显式或缺省伤害类）：锁定优先的前排目标；与普攻共用锁定语义，
+        // 目标死亡后该行动即重选并锁定（"目标死亡后顺延"在一个行动内完成）
+        const opposingSide: AutoBattleSide = actor.side === "ally" ? "enemy" : "ally";
+        const selected = resolveAutoBattleTarget(sideUnits(opposingSide), actor.lockedTargetId) as MutableUnit | undefined;
+        actor.lockedTargetId = selected?.id ?? null;
+        return selected;
+    }
+
+    /**
+     * 满能量释放技能：统一走 resolveAutoBattleSkill 多效果结算，避免规则多实现。
+     * 技能可携带 conditionId（条件不满足时退化为普攻）、target（目标选择）、
+     * effects（多效果：伤害/治疗/buff 挂载）与 effectId（视图动效引用）。
+     */
     function castSkill(actor: MutableUnit): void {
         const skill = actor.def.skill;
-        if (skill.kind === "damage") {
-            const opposingSide: AutoBattleSide = actor.side === "ally" ? "enemy" : "ally";
-            const target = resolveAutoBattleTarget(sideUnits(opposingSide), actor.lockedTargetId) as MutableUnit | undefined;
-            // 伤害技能与普攻共用锁定语义：目标死亡后该行动即重选并锁定
-            actor.lockedTargetId = target?.id ?? null;
-            if (target === undefined) {
+
+        // 条件判定：引用 skillConditions 表，不满足则本行动退化为普攻（不消耗能量）
+        if (skill.conditionId !== undefined) {
+            const condition = config.skillConditions.find((entry) => entry.id === skill.conditionId);
+            if (condition === undefined || !resolveAutoBattleSkillCondition(condition, actor)) {
+                basicAttack(actor);
                 return;
             }
-
-            // 技能也受射程约束：超射程先移动再结算（与普攻两阶段一致）
-            moveTowardTarget(actor, target);
-
-            const effect = resolveAutoBattleSkill(skill, target.hp, target.maxHp);
-            if (effect.kind === "damage") {
-                target.hp = effect.hp;
-                actor.energy = 0;
-                emit({
-                    type: "skill-damage",
-                    sourceId: actor.id,
-                    targetId: target.id,
-                    value: effect.applied,
-                    round,
-                });
-                // 技能可选换位：把目标换位到其侧布阵区相对格（占用则失败不执行）
-                if (skill.teleportTo !== undefined) {
-                    teleportTarget(target, skill.teleportTo);
-                }
-                if (effect.kills) {
-                    emit({ type: "unit-dead", sourceId: actor.id, targetId: target.id, round });
-                    checkGameOver();
-                }
-            }
-            return;
         }
 
-        const target = selectAutoBattleHealTarget(sideUnits(actor.side)) as MutableUnit | undefined;
+        const target = resolveSkillTarget(actor, skill.target, skill.kind);
         if (target === undefined) {
             return;
         }
-        const effect = resolveAutoBattleSkill(skill, target.hp, target.maxHp);
-        if (effect.kind === "heal") {
-            target.hp = effect.hp;
+        if (target !== actor) {
+            // 技能也受射程约束：超射程先移动再结算（与普攻两阶段一致）；自目标不移动
+            moveTowardTarget(actor, target);
+        }
+
+        // 多效果结算：逐条结算伤害/治疗/buff，HP 累积到目标
+        const buffById = (buffId: string) => config.buffs.find((entry) => entry.id === buffId);
+        const effects = resolveAutoBattleSkill(skill, target.hp, target.maxHp, buffById);
+        let hp = target.hp;
+        let appliedDamage = 0;
+        let appliedHeal = 0;
+        let kills = false;
+        for (const effect of effects) {
+            hp = effect.hp;
+            if (effect.kind === "damage") {
+                appliedDamage += effect.applied;
+                kills = kills || effect.kills;
+            } else if (effect.kind === "heal") {
+                appliedHeal += effect.applied;
+            } else {
+                // buff 效果：挂载到目标（定义来自 buff 表）
+                target.buffs.push(createAutoBattleBuffInstance(effect.buff));
+            }
+        }
+        target.hp = hp;
+
+        // 伤害/治疗事件（主效果聚合），施法者能量清零
+        if (appliedDamage > 0) {
+            actor.energy = 0;
+            emit({
+                type: "skill-damage",
+                sourceId: actor.id,
+                targetId: target.id,
+                value: appliedDamage,
+                round,
+                effectId: skill.effectId,
+            });
+            if (kills) {
+                emit({ type: "unit-dead", sourceId: actor.id, targetId: target.id, round });
+                checkGameOver();
+            }
+        }
+        if (appliedHeal > 0) {
             actor.energy = 0;
             emit({
                 type: "skill-heal",
                 sourceId: actor.id,
                 targetId: target.id,
-                value: effect.applied,
+                value: appliedHeal,
                 round,
+                effectId: skill.effectId,
             });
+        }
+        // 纯 buff 技能（无伤害/治疗数值）也消耗能量并清空
+        if (appliedDamage === 0 && appliedHeal === 0) {
+            actor.energy = 0;
+        }
+
+        // 技能可选换位：把目标换位到其侧布阵区相对格（占用则失败不执行）
+        if (skill.teleportTo !== undefined && target !== actor) {
+            teleportTarget(target, skill.teleportTo);
         }
     }
 

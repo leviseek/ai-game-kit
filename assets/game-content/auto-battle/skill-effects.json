@@ -1,0 +1,5 @@
+[
+    { "id": "smash-hit", "kind": "explosion" },
+    { "id": "fireball-explosion", "kind": "explosion" },
+    { "id": "shadow-explosion", "kind": "explosion" }
+]

@@ -4,7 +4,7 @@ import type { GameFixture } from "../../../game/fixture/GameFixture";
 import type { GamePresenter } from "../../../game/lobby/presenter";
 import type { AutoBattleFixture } from "../assembly";
 import type { AutoBattleSide } from "../models";
-import { WARRIOR_VARIANT_BY_SIDE } from "./animUrls";
+import { buildUnitAnimationFrames, WARRIOR_VARIANT_BY_SIDE, type WarriorAnim } from "./animUrls";
 import { projectHitFeedbackEvents } from "./effects";
 import { createEffectAnimator } from "./EffectAnimator";
 import { createUnitAnimator } from "./UnitAnimator";
@@ -68,7 +68,10 @@ export function createAutoBattlePresenter(fixture: GameFixture, node: (name: str
         gridXYOf: (gridKey: string) => gridToXY(gridKey),
     });
     // 单位形象动画器：存活单位持续循环 idle，attack/death 意图一次性切换后转场。
-    // 变体按单位阵营映射（己方 f / 敌方 m）；存活集合从 state 每帧派生
+    // 变体按单位阵营映射（己方 f / 敌方 m，向后兼容无表配置）；当配置提供
+    // unitAnimations 表且单位有 animationId 时，帧 URL 走表驱动（buildUnitAnimationFrames）。
+    // 存活集合从 state 每帧派生
+    const animationsById = new Map(autoBattle.config.unitAnimations.map((entry) => [entry.id, entry]));
     const unitAnimator = createUnitAnimator({
         node: (name: string) => node(name),
         timeSource: () => gameClock.now(),
@@ -77,6 +80,16 @@ export function createAutoBattlePresenter(fixture: GameFixture, node: (name: str
             return unit === undefined ? "f" : (WARRIOR_VARIANT_BY_SIDE[unit.side] ?? "f");
         },
         liveUnitIds: () => autoBattle.battle.state.units.filter((unit) => unit.hp > 0).map((unit) => unit.id),
+        // 表驱动帧解析：单位 animationId → unitAnimations 表条目 → 帧 URL 序列
+        frameUrlsOf: (unitId: string): Readonly<Record<WarriorAnim, readonly string[]>> | undefined => {
+            const unit = autoBattle.battle.state.units.find((candidate) => candidate.id === unitId);
+            const animationId = unit?.animationId;
+            if (animationId === undefined) {
+                return undefined;
+            }
+            const animation = animationsById.get(animationId);
+            return animation === undefined ? undefined : buildUnitAnimationFrames(animation);
+        },
     });
 
     /** 每方队长：index 最小存活单位（VS 覆盖层展示用，纯读取 state）。 */
@@ -151,7 +164,10 @@ export function createAutoBattlePresenter(fixture: GameFixture, node: (name: str
 
     /** 每帧推进命中反馈：投影新事件为特效意图并推进动画。 */
     function stepEffects(): void {
-        const { effects, cursor } = projectHitFeedbackEvents(autoBattle.battle.events, effectCursor);
+        // 技能专属动效表：effectId → 动效定义（表驱动投影，缺省表为空则回退旧投影）
+        const skillEffectsById = new Map(autoBattle.config.skillEffects.map((entry) => [entry.id, entry]));
+        const resolveSkillEffect = (effectId: string) => skillEffectsById.get(effectId);
+        const { effects, cursor } = projectHitFeedbackEvents(autoBattle.battle.events, effectCursor, resolveSkillEffect);
         effectCursor = cursor;
         // 一次性反馈特效（飘字/闪白/爆炸）走 EffectAnimator；单位形象动画意图
         // 经 UnitAnimator 消费（idle 由 step 持续循环，attack/death 一次性切换）

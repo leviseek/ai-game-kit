@@ -35,6 +35,8 @@ function frameMs(anim: WarriorAnim): number {
  * - 存活单位持续播放 idle（循环）；attack 意图播完自动回 idle
  * - death 意图播放死亡帧序列，播完隐去（alpha=0，单位即将随绑定回收）
  * - 时间源为注入的毫秒时间戳函数（测试注入自增源确定性推进）
+ * - 帧 URL 支持表驱动：注入 frameUrlsOf（按单位查 unitAnimations 表）时优先使用，
+ *   否则回退变体帧表（WARRIOR_FRAME_URLS，向后兼容无表配置）
  * 纯引擎无关：经注入 node 解析器写 setUrl/setAlpha，不接触 fgui 类型。
  */
 export function createUnitAnimator(options: {
@@ -44,6 +46,8 @@ export function createUnitAnimator(options: {
     variantOf: (unitId: string) => WarriorVariant;
     /** 当前存活单位集合：presenter 每帧注入（用于 idle 循环与回收失效状态）。 */
     liveUnitIds: () => readonly string[];
+    /** 可选表驱动帧解析器：按单位 id 返回动画帧表；返回 undefined 时回退变体帧表。 */
+    frameUrlsOf?: (unitId: string) => Readonly<Record<WarriorAnim, readonly string[]>> | undefined;
 }): {
     /** 消费单位动画意图（unit-anim attack/death）；其它意图忽略。 */
     play(effects: readonly HitFeedbackEffect[]): void;
@@ -55,6 +59,7 @@ export function createUnitAnimator(options: {
     reset(): void;
 } {
     const { node, timeSource, variantOf, liveUnitIds } = options;
+    const frameUrlsOf = options.frameUrlsOf;
     const states = new Map<string, UnitAnimState>();
 
     function resolve(id: string): EffectNode | undefined {
@@ -69,11 +74,19 @@ export function createUnitAnimator(options: {
         resolve(id)?.setAlpha?.(value);
     }
 
+    /** 解析单位动画帧表：注入表驱动解析器优先，否则按变体回退缺省帧表。 */
+    function urlsOf(id: string, anim: WarriorAnim): readonly string[] {
+        const frameUrls = frameUrlsOf?.(id);
+        if (frameUrls !== undefined) {
+            return frameUrls[anim];
+        }
+        return WARRIOR_FRAME_URLS[variantOf(id)][anim];
+    }
     /** 把单位切到指定动画并写首帧（alpha 恢复 1，死亡开始也保持可见）。 */
     function switchTo(id: string, anim: WarriorAnim, now: number): void {
         const variant = variantOf(id);
         states.set(id, { anim, variant, start: now, frame: -1 });
-        writeUrl(id, WARRIOR_FRAME_URLS[variant][anim][0]!);
+        writeUrl(id, urlsOf(id, anim)[0]!);
         writeAlpha(id, 1);
     }
 
@@ -119,7 +132,7 @@ export function createUnitAnimator(options: {
             if (state === undefined) {
                 continue;
             }
-            const urls = WARRIOR_FRAME_URLS[state.variant][state.anim];
+            const urls = urlsOf(id, state.anim);
             const elapsed = now - state.start;
             const frame = Math.floor(elapsed / frameMs(state.anim));
 

@@ -1,6 +1,6 @@
 import type { GameFixture, IModule, IPlatformStorage, UiNavigator } from "../../framework";
 import { createGameFixture, createUiNavigator, createViewModelRenderer, type IViewModelNode } from "../../framework";
-import type { AutoBattleEvent, AutoBattleHero, AutoBattleLineup, AutoBattleState, AutoBattleUnit } from "./models";
+import type { AutoBattleBaseAttributes, AutoBattleBuff, AutoBattleEvent, AutoBattleHero, AutoBattleLineup, AutoBattleSkill, AutoBattleSkillCondition, AutoBattleSkillEffectDef, AutoBattleState, AutoBattleUnit, AutoBattleUnitAnimation } from "./models";
 import { createAutoBattleClock, createAutoBattleClockModule, createIdleRewardClock, createIdleRewardClockModule, type AutoBattleClock, type IdleRewardClock } from "./logic/clock";
 import { createAutoBattleConfig, createAutoBattleConfigModule, type AutoBattleConfigHandle } from "./logic/config";
 import { createAutoBattleSkillsModule } from "./logic/skills";
@@ -18,45 +18,17 @@ import { buildAutoBattleBindings, createAutoBattleViewModel, formatAutoBattleEve
 import { createAutoBattleEffectsModule, projectHitFeedbackEvents, type HitFeedbackEffect } from "./view/effects";
 import { createEffectAnimator, type AutoBattleEffectAnimator } from "./view/EffectAnimator";
 import type { LineupEditorCommands } from "./view/lineup";
+import { createDefaultAutoBattleConfigContent } from "./content/autoBattleTables";
 
 /** 挡位循环次序：1x → 2x → 3x → 1x（与 presenter 共用同一循环语义）。 */
 const SPEED_CYCLE: readonly AutoBattleSpeed[] = [1, 2, 3];
 
-/** 缺省自动战斗配置：3v3 阵列（heroes 池 + lineup）与能量规则在夹具层内建，测试可注入覆盖。 */
-const DEFAULT_AUTO_BATTLE_CONFIG_CONTENT: Record<string, unknown> = {
-    heroes: [
-        { id: "ally-tank", name: "坦克", position: "front", maxHp: 60, attack: 6, speed: 8, energyMax: 20, skill: { id: "ally-tank-skill", name: "重击", kind: "damage", value: 12, energyCost: 20 } },
-        { id: "ally-mage", name: "法师", position: "mid", maxHp: 45, attack: 11, speed: 7, energyMax: 20, skill: { id: "ally-mage-skill", name: "火球", kind: "damage", value: 15, energyCost: 20 } },
-        { id: "ally-priest", name: "牧师", position: "back", maxHp: 40, attack: 4, speed: 6, energyMax: 20, skill: { id: "ally-priest-skill", name: "治疗", kind: "heal", value: 10, energyCost: 20 } },
-        {
-            id: "enemy-tank",
-            name: "骷髅",
-            position: "front",
-            maxHp: 60,
-            attack: 6,
-            speed: 8,
-            energyMax: 20,
-            skill: { id: "enemy-tank-skill", name: "爪击", kind: "damage", value: 12, energyCost: 20 },
-        },
-        { id: "enemy-mage", name: "巫妖", position: "mid", maxHp: 45, attack: 9, speed: 7, energyMax: 20, skill: { id: "enemy-mage-skill", name: "暗影", kind: "damage", value: 15, energyCost: 20 } },
-        {
-            id: "enemy-shaman",
-            name: "萨满",
-            position: "back",
-            maxHp: 40,
-            attack: 4,
-            speed: 6,
-            energyMax: 20,
-            skill: { id: "enemy-shaman-skill", name: "妖术", kind: "damage", value: 8, energyCost: 20 },
-        },
-    ],
-    lineups: {
-        ally: ["ally-tank", "ally-mage", "ally-priest"],
-        enemy: ["enemy-tank", "enemy-mage", "enemy-shaman"],
-    },
-    energyGainAttacker: 10,
-    energyGainTarget: 5,
-};
+/**
+ * 缺省自动战斗配置：由 7 张配置表（baseAttributes/heroes/unitAnimations/skills/
+ * buffs/skillEffects/skillConditions）驱动，数据源为 assets/game-content/auto-battle/
+ * JSON（TS 镜像经 createDefaultAutoBattleConfigContent 加载，一致性由测试锁定）。
+ */
+const DEFAULT_AUTO_BATTLE_CONFIG_CONTENT: Record<string, unknown> = createDefaultAutoBattleConfigContent();
 
 /**
  * 自动战斗组合夹具的注入选项：测试可注入受控替身驱动协作行为；
@@ -139,6 +111,13 @@ export interface AutoBattleFixture extends GameFixture {
         readonly enemy: readonly AutoBattleUnit[];
         /** 英雄池（编队页候选来源）。 */
         readonly heroes: readonly AutoBattleHero[];
+        /** 7 张表：基础属性/单位动画/技能/buff/动效/条件（视图层按 id 查表）。 */
+        readonly baseAttributes: readonly AutoBattleBaseAttributes[];
+        readonly unitAnimations: readonly AutoBattleUnitAnimation[];
+        readonly skills: readonly AutoBattleSkill[];
+        readonly buffs: readonly AutoBattleBuff[];
+        readonly skillEffects: readonly AutoBattleSkillEffectDef[];
+        readonly skillConditions: readonly AutoBattleSkillCondition[];
     };
     /** 当前观战加速挡位（1x/2x/3x），只改变驱动节拍。闭包方法而非 getter： */
     /** Cocos 转译 `...base` 展开时经 Object.assign 固化顶层 getter 为 data 值， */
@@ -403,6 +382,12 @@ export function createAutoBattleFixture(options: AutoBattleFixtureOptions = {}):
             ally: config.ally,
             enemy: config.enemy,
             heroes: config.heroes,
+            baseAttributes: config.baseAttributes,
+            unitAnimations: config.unitAnimations,
+            skills: config.skills,
+            buffs: config.buffs,
+            skillEffects: config.skillEffects,
+            skillConditions: config.skillConditions,
         },
         getSpeed: (): AutoBattleSpeed => speed,
         cycleSpeed,

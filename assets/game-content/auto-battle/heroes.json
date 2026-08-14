@@ -1,0 +1,8 @@
+[
+    { "id": "ally-tank", "name": "坦克", "position": "front", "baseAttributeId": "tank", "energyMax": 20, "skillId": "ally-tank-skill", "animationId": "warrior-f" },
+    { "id": "ally-mage", "name": "法师", "position": "mid", "baseAttributeId": "mage", "energyMax": 20, "skillId": "ally-mage-skill", "animationId": "warrior-f" },
+    { "id": "ally-priest", "name": "牧师", "position": "back", "baseAttributeId": "priest", "energyMax": 20, "skillId": "ally-priest-skill", "animationId": "warrior-f" },
+    { "id": "enemy-tank", "name": "骷髅", "position": "front", "baseAttributeId": "skeleton", "energyMax": 20, "skillId": "enemy-tank-skill", "animationId": "warrior-m" },
+    { "id": "enemy-mage", "name": "巫妖", "position": "mid", "baseAttributeId": "lich", "energyMax": 20, "skillId": "enemy-mage-skill", "animationId": "warrior-m" },
+    { "id": "enemy-shaman", "name": "萨满", "position": "back", "baseAttributeId": "shaman", "energyMax": 20, "skillId": "enemy-shaman-skill", "animationId": "warrior-m" }
+]

@@ -1,4 +1,4 @@
-import type { AutoBattleUnit, AutoBattleUnitState } from "../models";
+import type { AutoBattleBuffInstance, AutoBattleUnit, AutoBattleUnitState } from "../models";
 import type { AutoBattleUnitView } from "./formation";
 
 /** 战斗内部可变单位：静态定义 + 可变 HP/能量 + 所在网格格，实现阵列查询视图结构。 */
@@ -14,9 +14,11 @@ export interface MutableUnit extends AutoBattleUnitView {
     energy: number;
     /** 可变锁定攻击目标：覆盖视图只读声明，普攻/伤害技能行动解析后写回。 */
     lockedTargetId: string | null;
+    /** 可变挂载 buff 列表：技能 buff 效果写入，每回合开始 tick 递减/到期移除。 */
+    buffs: AutoBattleBuffInstance[];
 }
 
-/** 从静态定义构造战斗初始单位：满血零能量，只读字段委托 def 读取。 */
+/** 从静态定义构造战斗初始单位：满血零能量无 buff，只读字段委托 def 读取。 */
 export function createMutableUnit(def: AutoBattleUnit, gridKey: string): MutableUnit {
     return {
         get id() {
@@ -42,6 +44,7 @@ export function createMutableUnit(def: AutoBattleUnit, gridKey: string): Mutable
         hp: def.maxHp,
         energy: 0,
         lockedTargetId: null,
+        buffs: [],
     };
 }
 
@@ -53,5 +56,6 @@ export function snapshotUnits(units: readonly MutableUnit[]): readonly AutoBattl
         energy: unit.energy,
         gridKey: unit.gridKey,
         lockedTargetId: unit.lockedTargetId,
+        buffs: unit.buffs.map((instance) => ({ def: instance.def, remaining: instance.remaining })),
     }));
 }

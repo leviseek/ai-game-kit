@@ -1,6 +1,16 @@
 import type { IConfigKey, IModule } from "../../../framework";
 import { configArray, configNumber, configObject, createConfigTable, type IConfigTable } from "../../../framework";
-import type { AutoBattleHero, AutoBattleSide, AutoBattleSkill, AutoBattleUnit } from "../models";
+import type {
+    AutoBattleBaseAttributes,
+    AutoBattleBuff,
+    AutoBattleHero,
+    AutoBattleSide,
+    AutoBattleSkill,
+    AutoBattleSkillCondition,
+    AutoBattleSkillEffectDef,
+    AutoBattleUnit,
+    AutoBattleUnitAnimation,
+} from "../models";
 
 // branded 键无运行期值：读取前把配置键字符串收窄为品牌类型
 function keyOf(key: string): IConfigKey {
@@ -13,7 +23,7 @@ function keyOf(key: string): IConfigKey {
  */
 export const MAX_TEAM_SIZE = 6;
 
-/** 配置读取句柄：把不可变配置表解析为双方单位清单、英雄池、初始编队与能量规则。 */
+/** 配置读取句柄：把不可变配置表解析为双方单位清单、英雄池、初始编队、能量规则与 7 张表。 */
 export interface AutoBattleConfigHandle {
     readonly ally: readonly AutoBattleUnit[];
     readonly enemy: readonly AutoBattleUnit[];
@@ -28,15 +38,64 @@ export interface AutoBattleConfigHandle {
     readonly energyGainAttacker: number;
     /** 受击者每次受普攻增长的能量。 */
     readonly energyGainTarget: number;
+    /** 1. 基础属性表：数值中心，单位按 baseAttributeId 引用。 */
+    readonly baseAttributes: readonly AutoBattleBaseAttributes[];
+    /** 2. 武将单位表：英雄池的原始静态定义（含表引用字段），供视图按 animationId 查动画。 */
+    readonly heroDefinitions: readonly AutoBattleHeroDefinition[];
+    /** 3. 单位动画表：animationId → 帧 URL 生成参数（视图层消费）。 */
+    readonly unitAnimations: readonly AutoBattleUnitAnimation[];
+    /** 4. 技能表：技能 id → 定义（含多效果/条件/动效引用）。 */
+    readonly skills: readonly AutoBattleSkill[];
+    /** 5. buff 表：buff id → 定义（战斗挂载与结算消费）。 */
+    readonly buffs: readonly AutoBattleBuff[];
+    /** 6. 技能动效表：effectId → 视觉意图（视图层投影消费）。 */
+    readonly skillEffects: readonly AutoBattleSkillEffectDef[];
+    /** 7. 技能条件表：conditionId → 判定规则（战斗流程消费）。 */
+    readonly skillConditions: readonly AutoBattleSkillCondition[];
 }
 
-/** 类型守卫：校验配置条目是合法的技能定义。 */
+/** 英雄原始定义：与 AutoBattleHero 同形状但 skill 可能为 id 引用（解析时归一化展开）。 */
+export interface AutoBattleHeroDefinition {
+    readonly id: string;
+    readonly name: string;
+    readonly position: "front" | "mid" | "back";
+    readonly maxHp?: number;
+    readonly attack?: number;
+    readonly speed?: number;
+    readonly attackRange?: number;
+    readonly energyMax: number;
+    readonly skill?: AutoBattleSkill;
+    readonly skillId?: string;
+    readonly baseAttributeId?: string;
+    readonly animationId?: string;
+}
+
+/** 类型守卫：校验技能效果条目（damage/heal/buff）。 */
+function isSkillEffectConfig(value: unknown): value is { readonly kind: "damage" | "heal" | "buff"; readonly value: number; readonly buffId?: string } {
+    if (value === null || typeof value !== "object") {
+        return false;
+    }
+    const record = value as Record<string, unknown>;
+    return (
+        (record.kind === "damage" || record.kind === "heal" || record.kind === "buff") &&
+        typeof record.value === "number" &&
+        Number.isFinite(record.value) &&
+        record.value >= 0 &&
+        (record.buffId === undefined || (typeof record.buffId === "string" && record.buffId.length > 0))
+    );
+}
+
+/** 类型守卫：校验配置条目是合法的技能定义（含多效果/目标/条件/动效引用）。 */
 function isSkillConfig(value: unknown): value is AutoBattleSkill {
     if (value === null || typeof value !== "object") {
         return false;
     }
 
     const record = value as Record<string, unknown>;
+
+    const validEffects =
+        record.effects === undefined ||
+        (Array.isArray(record.effects) && record.effects.every((effect) => isSkillEffectConfig(effect)));
 
     return (
         typeof record.id === "string" &&
@@ -50,12 +109,25 @@ function isSkillConfig(value: unknown): value is AutoBattleSkill {
         typeof record.energyCost === "number" &&
         Number.isFinite(record.energyCost) &&
         record.energyCost > 0 &&
+        validEffects &&
+        (record.target === undefined || record.target === "enemy-front" || record.target === "ally-lowest-hp" || record.target === "self") &&
+        (record.conditionId === undefined || (typeof record.conditionId === "string" && record.conditionId.length > 0)) &&
+        (record.effectId === undefined || (typeof record.effectId === "string" && record.effectId.length > 0)) &&
         (record.teleportTo === undefined || (typeof record.teleportTo === "string" && /^\d+:\d+$/.test(record.teleportTo)))
     );
 }
 
-/** 类型守卫：校验配置条目是合法的英雄条目（不包含 side/index，由队推导）。 */
-function isHeroConfig(value: unknown): value is AutoBattleHero {
+/** 类型守卫：校验英雄条目是新表引用格式（baseAttributeId/skillId）。 */
+function isHeroTableReference(value: unknown): value is { readonly baseAttributeId: string; readonly skillId: string } {
+    if (value === null || typeof value !== "object") {
+        return false;
+    }
+    const record = value as Record<string, unknown>;
+    return typeof record.baseAttributeId === "string" && record.baseAttributeId.length > 0 && typeof record.skillId === "string" && record.skillId.length > 0;
+}
+
+/** 类型守卫：校验英雄条目是旧内联格式（直接携带属性与技能对象）。 */
+function isHeroInlineConfig(value: unknown): value is AutoBattleHeroDefinition {
     if (value === null || typeof value !== "object") {
         return false;
     }
@@ -91,6 +163,213 @@ function readHeroAttackRange(record: { readonly attackRange?: number }): number 
     return range === undefined ? 1 : range;
 }
 
+/** 读取基础属性表：校验 id 唯一与数值合法。 */
+function readBaseAttributes(table: IConfigTable): readonly AutoBattleBaseAttributes[] {
+    const raw = table.read(keyOf("baseAttributes"), configArray, []);
+    const entries = raw.map((entry, index) => {
+        if (entry === null || typeof entry !== "object") {
+            throw new Error(`auto-battle config: baseAttributes entry at index ${index} must be an object`);
+        }
+        const record = entry as Record<string, unknown>;
+        if (
+            typeof record.id !== "string" ||
+            record.id.length === 0 ||
+            typeof record.maxHp !== "number" ||
+            !Number.isFinite(record.maxHp) ||
+            record.maxHp <= 0 ||
+            typeof record.attack !== "number" ||
+            !Number.isFinite(record.attack) ||
+            record.attack < 0 ||
+            typeof record.speed !== "number" ||
+            !Number.isFinite(record.speed) ||
+            record.speed < 0 ||
+            (record.attackRange !== undefined && (typeof record.attackRange !== "number" || !Number.isFinite(record.attackRange) || record.attackRange < 0))
+        ) {
+            throw new Error(`auto-battle config: baseAttributes entry at index ${index} has an invalid shape`);
+        }
+        return {
+            id: record.id as string,
+            maxHp: record.maxHp as number,
+            attack: record.attack as number,
+            speed: record.speed as number,
+            attackRange: record.attackRange === undefined ? 1 : (record.attackRange as number),
+        };
+    });
+    const seen = new Set<string>();
+    for (const entry of entries) {
+        if (seen.has(entry.id)) {
+            throw new Error(`auto-battle config: duplicate base attribute id "${entry.id}"`);
+        }
+        seen.add(entry.id);
+    }
+    return entries;
+}
+
+/** 读取技能表：校验条目合法且 id 唯一。 */
+function readSkills(table: IConfigTable): readonly AutoBattleSkill[] {
+    const raw = table.read(keyOf("skills"), configArray, []);
+    const entries = raw.map((entry, index) => {
+        if (!isSkillConfig(entry)) {
+            throw new Error(`auto-battle config: skills entry at index ${index} has an invalid shape`);
+        }
+        return entry;
+    });
+    const seen = new Set<string>();
+    for (const entry of entries) {
+        if (seen.has(entry.id)) {
+            throw new Error(`auto-battle config: duplicate skill id "${entry.id}"`);
+        }
+        seen.add(entry.id);
+    }
+    return entries;
+}
+
+/** 读取 buff 表：校验 kind/value/duration 合法且 id 唯一。 */
+function readBuffs(table: IConfigTable): readonly AutoBattleBuff[] {
+    const raw = table.read(keyOf("buffs"), configArray, []);
+    const entries = raw.map((entry, index) => {
+        if (entry === null || typeof entry !== "object") {
+            throw new Error(`auto-battle config: buffs entry at index ${index} must be an object`);
+        }
+        const record = entry as Record<string, unknown>;
+        if (
+            typeof record.id !== "string" ||
+            record.id.length === 0 ||
+            typeof record.name !== "string" ||
+            record.name.length === 0 ||
+            (record.kind !== "attack-up" && record.kind !== "defense-up" && record.kind !== "damage-over-time" && record.kind !== "heal") ||
+            typeof record.value !== "number" ||
+            !Number.isFinite(record.value) ||
+            record.value < 0 ||
+            typeof record.duration !== "number" ||
+            !Number.isFinite(record.duration) ||
+            record.duration <= 0
+        ) {
+            throw new Error(`auto-battle config: buffs entry at index ${index} has an invalid shape`);
+        }
+        return {
+            id: record.id as string,
+            name: record.name as string,
+            kind: record.kind as AutoBattleBuff["kind"],
+            value: record.value as number,
+            duration: record.duration as number,
+        };
+    });
+    const seen = new Set<string>();
+    for (const entry of entries) {
+        if (seen.has(entry.id)) {
+            throw new Error(`auto-battle config: duplicate buff id "${entry.id}"`);
+        }
+        seen.add(entry.id);
+    }
+    return entries;
+}
+
+/** 读取单位动画表：校验生成参数合法且 id 唯一。 */
+function readUnitAnimations(table: IConfigTable): readonly AutoBattleUnitAnimation[] {
+    const raw = table.read(keyOf("unitAnimations"), configArray, []);
+    const entries = raw.map((entry, index) => {
+        if (entry === null || typeof entry !== "object") {
+            throw new Error(`auto-battle config: unitAnimations entry at index ${index} must be an object`);
+        }
+        const record = entry as Record<string, unknown>;
+        const prefixByAnim = record.prefixByAnim;
+        const validPrefixes =
+            prefixByAnim !== null &&
+            typeof prefixByAnim === "object" &&
+            typeof (prefixByAnim as Record<string, unknown>).idle === "string" &&
+            typeof (prefixByAnim as Record<string, unknown>).gesture === "string" &&
+            typeof (prefixByAnim as Record<string, unknown>).walk === "string" &&
+            typeof (prefixByAnim as Record<string, unknown>).attack === "string" &&
+            typeof (prefixByAnim as Record<string, unknown>).death === "string";
+        if (
+            typeof record.id !== "string" ||
+            record.id.length === 0 ||
+            typeof record.bundle !== "string" ||
+            record.bundle.length === 0 ||
+            typeof record.dir !== "string" ||
+            record.dir.length === 0 ||
+            typeof record.frameCount !== "number" ||
+            !Number.isFinite(record.frameCount) ||
+            record.frameCount <= 0 ||
+            !validPrefixes
+        ) {
+            throw new Error(`auto-battle config: unitAnimations entry at index ${index} has an invalid shape`);
+        }
+        return {
+            id: record.id as string,
+            bundle: record.bundle as string,
+            dir: record.dir as string,
+            frameCount: record.frameCount as number,
+            prefixByAnim: {
+                idle: (prefixByAnim as Record<string, unknown>).idle as string,
+                gesture: (prefixByAnim as Record<string, unknown>).gesture as string,
+                walk: (prefixByAnim as Record<string, unknown>).walk as string,
+                attack: (prefixByAnim as Record<string, unknown>).attack as string,
+                death: (prefixByAnim as Record<string, unknown>).death as string,
+            },
+        };
+    });
+    const seen = new Set<string>();
+    for (const entry of entries) {
+        if (seen.has(entry.id)) {
+            throw new Error(`auto-battle config: duplicate unit animation id "${entry.id}"`);
+        }
+        seen.add(entry.id);
+    }
+    return entries;
+}
+
+/** 读取技能动效表：校验 kind 合法且 id 唯一。 */
+function readSkillEffects(table: IConfigTable): readonly AutoBattleSkillEffectDef[] {
+    const raw = table.read(keyOf("skillEffects"), configArray, []);
+    const entries = raw.map((entry, index) => {
+        if (entry === null || typeof entry !== "object") {
+            throw new Error(`auto-battle config: skillEffects entry at index ${index} must be an object`);
+        }
+        const record = entry as Record<string, unknown>;
+        if (typeof record.id !== "string" || record.id.length === 0 || (record.kind !== "explosion" && record.kind !== "flash" && record.kind !== "float")) {
+            throw new Error(`auto-battle config: skillEffects entry at index ${index} has an invalid shape`);
+        }
+        return { id: record.id as string, kind: record.kind as AutoBattleSkillEffectDef["kind"] };
+    });
+    const seen = new Set<string>();
+    for (const entry of entries) {
+        if (seen.has(entry.id)) {
+            throw new Error(`auto-battle config: duplicate skill effect id "${entry.id}"`);
+        }
+        seen.add(entry.id);
+    }
+    return entries;
+}
+
+/** 读取技能条件表：校验 kind/value 合法且 id 唯一。 */
+function readSkillConditions(table: IConfigTable): readonly AutoBattleSkillCondition[] {
+    const raw = table.read(keyOf("skillConditions"), configArray, []);
+    const entries = raw.map((entry, index) => {
+        if (entry === null || typeof entry !== "object") {
+            throw new Error(`auto-battle config: skillConditions entry at index ${index} must be an object`);
+        }
+        const record = entry as Record<string, unknown>;
+        const validValue =
+            record.value === undefined ||
+            (typeof record.value === "number" && Number.isFinite(record.value)) ||
+            (typeof record.value === "string" && record.value.length > 0);
+        if (typeof record.id !== "string" || record.id.length === 0 || (record.kind !== "self-hp-ratio" && record.kind !== "target-position" && record.kind !== "always") || !validValue) {
+            throw new Error(`auto-battle config: skillConditions entry at index ${index} has an invalid shape`);
+        }
+        return { id: record.id as string, kind: record.kind as AutoBattleSkillCondition["kind"], value: record.value as number | string | undefined };
+    });
+    const seen = new Set<string>();
+    for (const entry of entries) {
+        if (seen.has(entry.id)) {
+            throw new Error(`auto-battle config: duplicate skill condition id "${entry.id}"`);
+        }
+        seen.add(entry.id);
+    }
+    return entries;
+}
+
 /** 读取一队单位清单：逐项校验，非法条目抛错并给出序号定位。 */
 function readTeam(table: IConfigTable, key: string, side: AutoBattleSide): readonly AutoBattleUnit[] {
     const raw = table.read(keyOf(key), configArray, []);
@@ -102,12 +381,16 @@ function readTeam(table: IConfigTable, key: string, side: AutoBattleSide): reado
         throw new Error(`auto-battle config: team "${key}" must have at most ${MAX_TEAM_SIZE} units`);
     }
     return raw.map((entry, index) => {
-        if (!isHeroConfig(entry)) {
+        if (!isHeroInlineConfig(entry)) {
             throw new Error(`auto-battle config: team "${key}" entry at index ${index} has an invalid shape`);
         }
         return {
             ...entry,
+            maxHp: entry.maxHp!,
+            attack: entry.attack!,
+            speed: entry.speed!,
             attackRange: readHeroAttackRange(entry),
+            skill: entry.skill!,
             side,
             index,
         };
@@ -125,17 +408,85 @@ function assertUniqueHeroIds(heroes: readonly AutoBattleHero[]): void {
     }
 }
 
-/** 读取英雄池：逐项校验合法（复用英雄条目形状校验），池内 id 唯一。 */
-function readHeroes(table: IConfigTable): readonly AutoBattleHero[] {
+/** 把英雄原始定义展开为 AutoBattleHero：新表引用格式从基础属性/技能表解析，旧内联格式原样补充。 */
+function expandHero(definition: AutoBattleHeroDefinition, baseAttributes: readonly AutoBattleBaseAttributes[], skills: readonly AutoBattleSkill[]): AutoBattleHero {
+    if (isHeroTableReference(definition)) {
+        const attrs = baseAttributes.find((entry) => entry.id === definition.baseAttributeId);
+        if (attrs === undefined) {
+            throw new Error(`auto-battle config: hero "${definition.id}" references unknown base attribute "${definition.baseAttributeId}"`);
+        }
+        const skill = skills.find((entry) => entry.id === definition.skillId);
+        if (skill === undefined) {
+            throw new Error(`auto-battle config: hero "${definition.id}" references unknown skill "${definition.skillId}"`);
+        }
+        return {
+            id: definition.id,
+            name: definition.name,
+            position: definition.position,
+            maxHp: attrs.maxHp,
+            attack: attrs.attack,
+            speed: attrs.speed,
+            attackRange: readHeroAttackRange({ attackRange: attrs.attackRange }),
+            energyMax: definition.energyMax,
+            skill,
+            animationId: definition.animationId,
+        };
+    }
+    // 旧内联格式：技能/属性随条目携带
+    return {
+        id: definition.id,
+        name: definition.name,
+        position: definition.position,
+        maxHp: definition.maxHp ?? 1,
+        attack: definition.attack ?? 0,
+        speed: definition.speed ?? 0,
+        attackRange: readHeroAttackRange(definition),
+        energyMax: definition.energyMax,
+        skill: definition.skill!,
+        animationId: definition.animationId,
+    };
+}
+
+/** 读取英雄池：逐项校验合法（新表引用或旧内联），池内 id 唯一，返回展开后的英雄与原始定义。 */
+function readHeroes(
+    table: IConfigTable,
+    baseAttributes: readonly AutoBattleBaseAttributes[],
+    skills: readonly AutoBattleSkill[],
+): { readonly heroes: readonly AutoBattleHero[]; readonly definitions: readonly AutoBattleHeroDefinition[] } {
     const raw = table.read(keyOf("heroes"), configArray, []);
-    const heroes = raw.map((entry, index) => {
-        if (!isHeroConfig(entry)) {
+    const definitions = raw.map((entry, index) => {
+        if (isHeroTableReference(entry)) {
+            const record = entry as Record<string, unknown>;
+            if (
+                typeof record.id !== "string" ||
+                record.id.length === 0 ||
+                typeof record.name !== "string" ||
+                record.name.length === 0 ||
+                (record.position !== "front" && record.position !== "mid" && record.position !== "back") ||
+                typeof record.energyMax !== "number" ||
+                !Number.isFinite(record.energyMax) ||
+                record.energyMax <= 0
+            ) {
+                throw new Error(`auto-battle config: heroes entry at index ${index} has an invalid shape`);
+            }
+            return {
+                id: record.id as string,
+                name: record.name as string,
+                position: record.position as "front" | "mid" | "back",
+                energyMax: record.energyMax as number,
+                baseAttributeId: (record.baseAttributeId as string) ?? "",
+                skillId: (record.skillId as string) ?? "",
+                animationId: typeof record.animationId === "string" && record.animationId.length > 0 ? (record.animationId as string) : undefined,
+            };
+        }
+        if (!isHeroInlineConfig(entry)) {
             throw new Error(`auto-battle config: heroes entry at index ${index} has an invalid shape`);
         }
-        return { ...entry, attackRange: readHeroAttackRange(entry) };
+        return entry;
     });
+    const heroes = definitions.map((definition) => expandHero(definition, baseAttributes, skills));
     assertUniqueHeroIds(heroes);
-    return heroes;
+    return { heroes, definitions };
 }
 
 /**
@@ -192,6 +543,11 @@ function readEnergyGain(table: IConfigTable, key: string, fallback: number): num
  * 会被唯一性校验拒绝（旧版同 id 单位本就令 unitById 撞车）。能量增长规则按
  * configNumber 读取（缺省键走传入的缺省内容）。配置内容由组合根注入；本模块
  * 只负责解析，不承载业务数值的默认值来源之外逻辑。
+ *
+ * 7 张表（baseAttributes/heroes/unitAnimations/skills/buffs/skillEffects/
+ * skillConditions）为可选键：提供时 heroes 可走表引用格式（baseAttributeId/
+ * skillId/animationId），缺失时回退旧内联格式（heroes 直接携带属性与技能对象），
+ * 保证既有配置与测试无需改造即可开战。
  */
 export function createAutoBattleConfig(content: Record<string, unknown>): AutoBattleConfigHandle {
     const table: IConfigTable = createConfigTable(content);
@@ -199,9 +555,17 @@ export function createAutoBattleConfig(content: Record<string, unknown>): AutoBa
     const energyGainAttacker = readEnergyGain(table, "energyGainAttacker", 10);
     const energyGainTarget = readEnergyGain(table, "energyGainTarget", 5);
 
+    // 7 张表：可选键，缺省为空数组（旧格式配置不提供）
+    const baseAttributes = readBaseAttributes(table);
+    const skills = readSkills(table);
+    const buffs = readBuffs(table);
+    const unitAnimations = readUnitAnimations(table);
+    const skillEffects = readSkillEffects(table);
+    const skillConditions = readSkillConditions(table);
+
     // 新格式：heroes 池 + lineups
     if (Object.prototype.hasOwnProperty.call(content, "heroes")) {
-        const heroes = readHeroes(table);
+        const { heroes, definitions } = readHeroes(table, baseAttributes, skills);
         const heroById = new Map(heroes.map((hero) => [hero.id, hero]));
         const lineupsTable: IConfigTable = createConfigTable(table.read(keyOf("lineups"), configObject, {}));
         const ally = readLineup(lineupsTable, "ally", "ally", heroById);
@@ -213,6 +577,13 @@ export function createAutoBattleConfig(content: Record<string, unknown>): AutoBa
             lineups: { ally: ally.ids, enemy: enemy.ids },
             energyGainAttacker,
             energyGainTarget,
+            baseAttributes,
+            heroDefinitions: definitions,
+            unitAnimations,
+            skills,
+            buffs,
+            skillEffects,
+            skillConditions,
         };
     }
 
@@ -231,6 +602,7 @@ export function createAutoBattleConfig(content: Record<string, unknown>): AutoBa
         attackRange: unit.attackRange,
         energyMax: unit.energyMax,
         skill: unit.skill,
+        animationId: unit.animationId,
     }));
     assertUniqueHeroIds(heroes);
 
@@ -244,6 +616,13 @@ export function createAutoBattleConfig(content: Record<string, unknown>): AutoBa
         },
         energyGainAttacker,
         energyGainTarget,
+        baseAttributes,
+        heroDefinitions: heroes,
+        unitAnimations,
+        skills,
+        buffs,
+        skillEffects,
+        skillConditions,
     };
 }
 
