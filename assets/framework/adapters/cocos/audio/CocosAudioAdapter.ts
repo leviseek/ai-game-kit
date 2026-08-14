@@ -97,6 +97,8 @@ export function createCocosAudioAdapter(options: CocosAudioAdapterOptions): IAud
     const heldScopes = new Map<EnumAudioGroup, IResourceScope>();
     // 每组加载版本号：更新的 play/stop 使旧加载结果失效
     const versions = new Map<EnumAudioGroup, number>();
+    // dispose 后守卫：销毁态服务调用为 no-op，不重建 AudioSource（避免"废弃服务复活"）
+    let disposed = false;
 
     function sourceFor(group: EnumAudioGroup): CocosAudioSourceLike {
         let source = sources.get(group);
@@ -122,8 +124,13 @@ export function createCocosAudioAdapter(options: CocosAudioAdapterOptions): IAud
         return next;
     }
 
-    // 释放全部资源作用域并销毁引擎侧 AudioSource/Node，供服务销毁时调用
+    // 释放全部资源作用域并销毁引擎侧 AudioSource/Node，供服务销毁时调用；
+    // 销毁后任何操作 no-op（不重建 source，服务生命周期契约：销毁即不可用）
     function dispose(): void {
+        if (disposed) {
+            return;
+        }
+        disposed = true;
         for (const group of Array.from(heldScopes.keys())) {
             releaseHeld(group);
         }
@@ -136,6 +143,9 @@ export function createCocosAudioAdapter(options: CocosAudioAdapterOptions): IAud
     return {
         available: true,
         play(group, track) {
+            if (disposed) {
+                return;
+            }
             const version = nextVersion(group);
             releaseHeld(group);
             const source = sourceFor(group);
@@ -159,17 +169,29 @@ export function createCocosAudioAdapter(options: CocosAudioAdapterOptions): IAud
             });
         },
         stop(group) {
+            if (disposed) {
+                return;
+            }
             nextVersion(group);
             releaseHeld(group);
             sources.get(group)?.stop();
         },
         pause(group) {
+            if (disposed) {
+                return;
+            }
             sources.get(group)?.pause();
         },
         resume(group) {
+            if (disposed) {
+                return;
+            }
             sources.get(group)?.resume();
         },
         setVolume(group, volume) {
+            if (disposed) {
+                return;
+            }
             volumes.set(group, volume);
             const source = sources.get(group);
             if (source !== undefined) {

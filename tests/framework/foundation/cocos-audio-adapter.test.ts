@@ -335,4 +335,41 @@ describe("CocosAudioAdapter", () => {
         expect(controlled.provider.canUnload("audio")).toBe(true);
         scope.release();
     });
+
+    test("dispose 后调用为 no-op，不重建 AudioSource（P2-7）", async () => {
+        const createAdapter = await loadAdapter();
+        const controlled = createControlledProvider();
+        const seam = createSourceSeam();
+        const adapter = createAdapter({
+            provider: controlled.provider,
+            createSource: seam.createSource,
+        }) as import("../../../assets/framework/contracts/interfaces/IAudioBackend").IAudioBackend;
+
+        adapter.play("music", TRACKS.musicMain);
+        controlled.resolveNext({ name: "main" });
+        await flush();
+        const original = seam.sourceOf("music");
+
+        adapter.dispose();
+        expect(original.destroyCalls).toBe(1);
+        // 基线：初始 play 产生 1 次 stop（source.stop 先停再播）
+        const baselineStopCalls = original.stopCalls;
+        expect(baselineStopCalls).toBe(1);
+
+        // 销毁后 play/stop/pause/resume/setVolume 均为 no-op：
+        // 不重建 AudioSource（sourceOf 仍返回原实例）、不新增播放/停止、不发起加载
+        const callsBefore = controlled.calls.length;
+        adapter.play("music", TRACKS.musicBattle);
+        adapter.stop("music");
+        adapter.pause("music");
+        adapter.resume("music");
+        adapter.setVolume("music", 0.5);
+        await flush();
+
+        expect(seam.sourceOf("music")).toBe(original);
+        expect(original.playCalls).toBe(1);
+        expect(original.stopCalls).toBe(baselineStopCalls);
+        expect(original.volume).toBe(1);
+        expect(controlled.calls.length).toBe(callsBefore);
+    });
 });

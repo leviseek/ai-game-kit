@@ -124,8 +124,10 @@ export interface CocosInputAdapter extends IInputSource {
 export function createCocosInputAdapter(options: CocosInputAdapterOptions = {}): CocosInputAdapter {
     const input = options.input ?? (cc.input as unknown as CocosInputLike);
 
-    let listener: ((event: IInputEvent) => void) | undefined;
-    let bound = false;
+    // 多订阅者：Set 去重，全部订阅者收到同一事件流；引擎监听在首个订阅者
+    // 加入时绑定、最后一个退订时解绑（引用计数），避免单消费者假设限制
+    // 未来多消费方（如 GM 面板）并存
+    const listeners = new Set<(event: IInputEvent) => void>();
     // 注册用的 handler 引用：首次订阅时解析并缓存，退订复用同一引用，
     // 引擎按 callback 引用匹配退订，每次新建会导致 off 失效
     let resolvedHandlers: ReadonlyArray<readonly [string, (event: unknown) => void]> | undefined;
@@ -155,7 +157,25 @@ export function createCocosInputAdapter(options: CocosInputAdapterOptions = {}):
     }
 
     function emit(event: IInputEvent): void {
-        listener?.(event);
+        // 快照遍历：订阅者退订发生在 emit 期间不破坏本次迭代
+        for (const listener of Array.from(listeners)) {
+            listener(event);
+        }
+    }
+
+    /** 绑定引擎监听（首个订阅者）：注册全部事件 handler。 */
+    function bindEngine(): void {
+        for (const [eventType, handler] of handlers()) {
+            input.on(eventType, handler, target);
+        }
+    }
+
+    /** 解绑引擎监听（最后一个退订）：按引用移除全部 handler 并清空设备状态。 */
+    function unbindEngine(): void {
+        for (const [eventType, handler] of handlers()) {
+            input.off(eventType, handler, target);
+        }
+        lastState.clear();
     }
 
     function handleTouch(event: unknown, pressed: boolean): void {
@@ -235,24 +255,22 @@ export function createCocosInputAdapter(options: CocosInputAdapterOptions = {}):
     return {
         id: toSourceId("cocos-input"),
         subscribe(callback) {
-            if (bound) {
-                // 重复订阅返回空退订，避免引擎监听重复注册
+            // 同一回调重复订阅去重（Set 语义）；不同订阅者并存，各自退订互不影响
+            if (listeners.has(callback)) {
                 return () => {};
             }
-            listener = callback;
-            bound = true;
-            for (const [eventType, handler] of handlers()) {
-                input.on(eventType, handler, target);
+            const firstSubscriber = listeners.size === 0;
+            listeners.add(callback);
+            if (firstSubscriber) {
+                bindEngine();
             }
             return () => {
-                if (!bound) {
+                if (!listeners.delete(callback)) {
                     return;
                 }
-                bound = false;
-                listener = undefined;
-                lastState.clear();
-                for (const [eventType, handler] of handlers()) {
-                    input.off(eventType, handler, target);
+                // 最后一个订阅者退订时解绑引擎监听
+                if (listeners.size === 0) {
+                    unbindEngine();
                 }
             };
         },

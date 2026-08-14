@@ -294,13 +294,45 @@ describe("CocosInputAdapter translation", () => {
         expect(mockInput.registrations).toHaveLength(0);
     });
 
-    test("double subscribe returns a no-op handle without double registration", async () => {
+    test("multiple subscribers coexist; engine binds once and unbinds when the last leaves (P2-1)", async () => {
+        const { createCocosInputAdapter } = await loadFactory();
+        const mockInput = createMockInput();
+        const adapter = createCocosInputAdapter({ input: mockInput, eventTypes: EVENT_TYPES });
+        const a: IInputEvent[] = [];
+        const b: IInputEvent[] = [];
+
+        const unsubscribeA = adapter.subscribe((event) => a.push(event));
+        expect(mockInput.registrations).toHaveLength(9);
+        const unsubscribeB = adapter.subscribe((event) => b.push(event));
+        // 第二个订阅者不重复绑定引擎监听
+        expect(mockInput.registrations).toHaveLength(9);
+
+        mockInput.emit(EVENT_TYPES.keyDown, { keyCode: 32 });
+        expect(a).toHaveLength(1);
+        expect(b).toHaveLength(1);
+
+        // 退订 B：B 不再收到事件，A 继续（引擎监听保持绑定）
+        unsubscribeB();
+        mockInput.emit(EVENT_TYPES.keyDown, { keyCode: 32 });
+        expect(b).toHaveLength(1);
+        expect(a).toHaveLength(2);
+        expect(mockInput.unregistrations).toHaveLength(0);
+
+        // 最后一个订阅者退订：引擎监听全部解绑
+        unsubscribeA();
+        expect(mockInput.unregistrations).toHaveLength(9);
+        mockInput.emit(EVENT_TYPES.keyDown, { keyCode: 32 });
+        expect(a).toHaveLength(2);
+    });
+
+    test("same callback re-subscribes as a no-op (Set dedup)", async () => {
         const { createCocosInputAdapter } = await loadFactory();
         const mockInput = createMockInput();
         const adapter = createCocosInputAdapter({ input: mockInput, eventTypes: EVENT_TYPES });
 
-        const unsubscribeA = adapter.subscribe(() => {});
-        const unsubscribeB = adapter.subscribe(() => {});
+        const callback = () => {};
+        const unsubscribeA = adapter.subscribe(callback);
+        const unsubscribeB = adapter.subscribe(callback);
 
         expect(mockInput.registrations).toHaveLength(9);
 
