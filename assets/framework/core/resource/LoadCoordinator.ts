@@ -12,6 +12,12 @@ export type { EnumResourceLoadState } from "../../contracts/enums/EnumResourceLo
 
 export interface LoadCoordinatorOptions {
     readonly loader: (key: IResourceKey) => Promise<unknown>;
+    /**
+     * 可选终态缓存上限：超过该数时按插入序驱逐最早进入终态（ready/failed）的
+     * 条目，使长生命周期 Provider 的缓存有界；loading 中条目永不驱逐（共享
+     * 加载语义）。缺省不设上限（与既有行为一致）。
+     */
+    readonly maxEntries?: number;
 }
 
 export interface LoadCoordinator {
@@ -53,6 +59,25 @@ function createLoadFailure(key: IResourceKey, cause: unknown): unknown {
 export function createLoadCoordinator(options: LoadCoordinatorOptions): LoadCoordinator {
     const entries = new Map<string, LoadEntry>();
 
+    // 终态缓存上限：Map 按插入序迭代，从头驱逐最早的终态条目（loading 不可驱逐）。
+    // 已 resolved 的 handle 持有其资源引用，驱逐只影响未来 load（重新触发底层加载）。
+    function enforceCap(): void {
+        const cap = options.maxEntries;
+        if (cap === undefined || entries.size <= cap) {
+            return;
+        }
+        let evicted = 0;
+        for (const [keyId, entry] of entries) {
+            if (entries.size - evicted <= cap) {
+                break;
+            }
+            if (entry.state !== EnumResourceLoadState.Loading) {
+                entries.delete(keyId);
+                evicted += 1;
+            }
+        }
+    }
+
     function settleEntry(entry: LoadEntry, nextState: EnumResourceLoadState.Ready | EnumResourceLoadState.Failed, value: unknown, error: unknown): void {
         if (entry.state !== EnumResourceLoadState.Loading) {
             return;
@@ -70,6 +95,7 @@ export function createLoadCoordinator(options: LoadCoordinatorOptions): LoadCoor
         for (const finish of waiters) {
             finish();
         }
+        enforceCap();
     }
 
     function createHandle<T>(key: IResourceKey, entry: LoadEntry): IResourceHandle<T> {

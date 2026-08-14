@@ -27,6 +27,8 @@ export interface CocosResourceProviderOptions {
     readonly assetManager?: CocosAssetManagerLike;
     /** FairyGUI UIPackage；缺省使用 fairygui-cc 静态 API，测试可注入 mock。 */
     readonly uiPackage?: UIPackageLike;
+    /** 加载协调器终态缓存上限；缺省不设上限。 */
+    readonly maxCoordinatorEntries?: number;
 }
 
 function defaultUiPackage(): UIPackageLike {
@@ -160,5 +162,6 @@ export function createCocosResourceProvider(options: CocosResourceProviderOption
         loader: createCocosLoader(manager, uiPackage, registeredPackages),
         unloadBundle: createCocosUnloadBundle(manager, uiPackage, registeredPackages),
         unloadPackage: createCocosUnloadPackage(uiPackage, registeredPackages),
+        maxCoordinatorEntries: options.maxCoordinatorEntries,
     });
 }

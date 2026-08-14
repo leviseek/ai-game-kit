@@ -293,3 +293,49 @@ describe("LoadCoordinator shared underlying resource", () => {
         expect((callerA.error as ErrorWithCause).cause).toBe(original);
     });
 });
+
+describe("LoadCoordinator terminal cache cap (P2-2)", () => {
+    test("evicts the oldest terminal entries beyond maxEntries and re-loads fresh", async () => {
+        const { loader, calls, pending } = createControlledLoader();
+        const coordinator = createLoadCoordinator({ loader, maxEntries: 2 });
+
+        const a = coordinator.load(assetKey("a.png"));
+        pending[0].resolve({ id: "a" });
+        await a.done;
+        const b = coordinator.load(assetKey("b.png"));
+        pending[1].resolve({ id: "b" });
+        await b.done;
+        // 第三条终态：{a,b,c} 超上限 2，驱逐最早进入终态的 a
+        const c = coordinator.load(assetKey("c.png"));
+        pending[2].resolve({ id: "c" });
+        await c.done;
+
+        // a 的终态缓存已被驱逐：再次 load 重新触发底层加载（非陈旧缓存）
+        const a2 = coordinator.load(assetKey("a.png"));
+        expect(a2.state).toBe("loading");
+        pending[3].resolve({ id: "a2" });
+        await a2.done;
+        expect(a2.resource).toEqual({ id: "a2" });
+        expect(calls).toHaveLength(4);
+    });
+
+    test("loading entries are never evicted even beyond the cap", async () => {
+        const { loader, calls, pending } = createControlledLoader();
+        const coordinator = createLoadCoordinator({ loader, maxEntries: 1 });
+
+        const a = coordinator.load(assetKey("a.png"));
+        const b = coordinator.load(assetKey("b.png"));
+        expect(a.state).toBe("loading");
+        expect(b.state).toBe("loading");
+
+        // 两个 loading 条目超上限：不驱逐（无终态可驱逐）、不抛错，共享加载不受影响
+        pending[0].resolve({ id: "a" });
+        await a.done;
+        pending[1].resolve({ id: "b" });
+        await b.done;
+
+        expect(a.resource).toEqual({ id: "a" });
+        expect(b.resource).toEqual({ id: "b" });
+        expect(calls).toHaveLength(2);
+    });
+});

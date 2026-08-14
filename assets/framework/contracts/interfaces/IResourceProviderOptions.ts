@@ -12,4 +12,9 @@ export interface IResourceProviderOptions {
      * 移除；缺省不提供时包随 Bundle 卸载路径清理。
      */
     readonly unloadPackage?: (bundle: string, path: string) => void;
+    /**
+     * 可选：加载协调器终态缓存上限（见 LoadCoordinator.maxEntries）。
+     * 缺省不设上限；供长生命周期 Provider 控制缓存有界增长。
+     */
+    readonly maxCoordinatorEntries?: number;
 }

@@ -15,7 +15,7 @@ function key(kind: EnumResourceKind, bundle: string, path: string): IResourceKey
  * loader/unloadBundle 上，契约与组装逻辑不依赖任何引擎。
  */
 export function createResourceProvider(options: IResourceProviderOptions): IResourceProvider {
-    const coordinator = createLoadCoordinator({ loader: options.loader });
+    const coordinator = createLoadCoordinator({ loader: options.loader, maxEntries: options.maxCoordinatorEntries });
     const registry = createResourceScopeRegistry({
         unloadBundle: options.unloadBundle,
         // 包级移除后同步失效协调器缓存：同 key 下次 loadPackage 重新触发底层

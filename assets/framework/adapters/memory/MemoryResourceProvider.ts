@@ -9,6 +9,8 @@ export interface MemoryResourceProviderOptions {
     readonly unloadBundle?: (bundle: string) => void;
     /** 包级卸载执行器；缺省为无操作（内存环境无引擎注册表）。 */
     readonly unloadPackage?: (bundle: string, path: string) => void;
+    /** 加载协调器终态缓存上限；缺省不设上限。 */
+    readonly maxCoordinatorEntries?: number;
 }
 
 /**
@@ -20,5 +22,6 @@ export function createMemoryResourceProvider(options: MemoryResourceProviderOpti
         loader: options.loader ?? (async (key: IResourceKey) => ({ bundle: key.bundle, path: key.path })),
         unloadBundle: options.unloadBundle ?? (() => undefined),
         unloadPackage: options.unloadPackage,
+        maxCoordinatorEntries: options.maxCoordinatorEntries,
     });
 }
