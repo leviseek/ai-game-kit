@@ -1,6 +1,6 @@
 import { Application } from "./Application";
+import { createApplicationContext } from "./ApplicationContext";
 import type { IApplicationContext } from "../contracts/interfaces/IApplicationContext";
-import { EnumApplicationState } from "../contracts/enums/EnumApplicationState";
 import type { ILogger } from "../contracts/interfaces/ILogger";
 import type { IModule } from "../contracts/interfaces/IModule";
 import type { IResourceScope } from "../contracts/interfaces/IResourceScope";
@@ -62,15 +62,10 @@ function createQuietLogger(): ILogger {
     return logger;
 }
 
-// 与框架 createApplicationContext 一致：context.state 始终为 "created"，
-// 应用自身的状态由 Application 内部维护，不写入 context。
+// 夹具上下文复用框架 createApplicationContext：context.state 随探针/夹具自身
+// Application 的状态转移真实更新（P1-2 修复后不再硬编码 created）。
 function createFixtureContext(logger: ILogger): IApplicationContext {
-    return {
-        logger,
-        get state(): EnumApplicationState {
-            return EnumApplicationState.Created;
-        },
-    };
+    return createApplicationContext(logger);
 }
 
 /**

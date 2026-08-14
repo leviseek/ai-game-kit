@@ -4,6 +4,7 @@ import type { IModule } from "../contracts/interfaces/IModule";
 import { ApplicationStateError } from "./ApplicationStateError";
 import { ModuleGraph } from "./ModuleGraph";
 import { ModuleRunner } from "./ModuleRunner";
+import { applyApplicationState } from "./ApplicationContext";
 
 /**
  * 应用生命周期编排器。状态机路径为 created -> initializing -> running
@@ -185,6 +186,9 @@ export class Application {
 
     private setState(next: EnumApplicationState): void {
         this.currentState = next;
+        // 反向同步到组合根提供的 context（Symbol 写入器；mock/外部实现 no-op），
+        // 使模块经 IApplicationContext.state 读到与 Application.state 一致的状态
+        applyApplicationState(this.context, next);
     }
 
     private enqueue(task: () => Promise<void>): Promise<void> {

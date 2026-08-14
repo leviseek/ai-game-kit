@@ -4,6 +4,7 @@ import { pathToFileURL } from "node:url";
 import { describe, expect, test } from "bun:test";
 
 import type { IApplicationContext, ILogger } from "../../../assets/framework";
+import { Application } from "../../../assets/framework/application/Application";
 import { MemoryLogger } from "../support/MemoryLogger";
 
 interface CreateApplicationContextFn {
@@ -47,6 +48,28 @@ describe("IApplicationContext implementation", () => {
         const context = createApplicationContext(new MemoryLogger());
 
         expect(context.state).toBe("created");
+    });
+
+    test("state reflects the Application lifecycle when wired", async () => {
+        const createApplicationContext = await loadFactory();
+        const context = createApplicationContext(new MemoryLogger());
+
+        // P1-2 回归：context.state 随 Application 状态转移真实更新（不再恒为
+        // "created"）。Symbol 写入器对模块不可见，模块侧仍是只读状态。
+        const app = new Application([], context);
+        expect(context.state).toBe("created");
+
+        await app.start();
+        expect(context.state).toBe("running");
+
+        await app.pause();
+        expect(context.state).toBe("paused");
+
+        await app.resume();
+        expect(context.state).toBe("running");
+
+        await app.dispose();
+        expect(context.state).toBe("disposed");
     });
 
     test("has no service locator", async () => {
