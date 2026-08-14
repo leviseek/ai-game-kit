@@ -418,4 +418,61 @@ describe("CocosResourceProvider", () => {
         // 同 bundle 两 package：后加载的 b 先移除，再移除 a（逆序）
         expect(pkg.state.removeCalls).toEqual(["b", "a"]);
     });
+
+    test("session package is removed from the FGUI registry when released while the shared bundle stays owned", async () => {
+        const { createCocosResourceProvider } = await loadFactory();
+        const cocos = createCocosMock();
+        const pkg = createUIPackageMock();
+        const provider = createCocosResourceProvider({
+            assetManager: cocos.manager,
+            uiPackage: pkg.uiPackage,
+        });
+
+        // 全局常驻包（Common）与会话包（AutoBattle）共处同一 "ui" bundle
+        const globalScope = provider.createScope();
+        const sessionScope = provider.createScope();
+
+        const common = provider.loadPackage("ui", "Common/Common");
+        cocos.resolveBundle("ui");
+        pkg.resolvePackage("Common");
+        cocos.resolveAsset({ name: "Common" });
+        await common.done;
+        globalScope.retain(common);
+
+        const session = provider.loadPackage("ui", "AutoBattle/AutoBattle");
+        cocos.resolveBundle("ui");
+        pkg.resolvePackage("AutoBattle");
+        cocos.resolveAsset({ name: "AutoBattle" });
+        await session.done;
+        sessionScope.retain(session);
+
+        expect(provider.canUnload("ui")).toBe(false);
+
+        // 会话释放：包级移除触发 removePackage，bundle 不卸载（常驻包仍持有）
+        sessionScope.release();
+        expect(pkg.state.removeCalls).toEqual(["AutoBattle"]);
+        expect(cocos.state.releaseAllCalls).toEqual([]);
+        expect(cocos.state.removeBundleCalls).toEqual([]);
+        expect(provider.canUnload("ui")).toBe(false);
+
+        // 同 key 重新加载：协调器缓存已被包级移除同步失效，
+        // 重新触发底层加载并重新登记（不会返回已移除包的陈旧 ready 结果）
+        const reload = provider.loadPackage("ui", "AutoBattle/AutoBattle");
+        cocos.resolveBundle("ui");
+        pkg.resolvePackage("AutoBattle");
+        cocos.resolveAsset({ name: "AutoBattle" });
+        await reload.done;
+        expect(reload.state).toBe("ready");
+        // 会话包共加载两次（首次 + 重载），常驻包一次
+        expect(pkg.state.packageLoads.length).toBe(3);
+        expect(pkg.state.removeCalls).toEqual(["AutoBattle"]);
+
+        // 常驻包释放后 bundle 才整体卸载。包级接缝先触发（Common 引用归零即移除），
+        // 随后整 bundle 卸载路径清掉仍注册的包（重载后 AutoBattle 重新在册）——
+        // 移除顺序：会话释放的 AutoBattle → 包级 Common → 整 bundle 的 AutoBattle
+        globalScope.release();
+        expect(provider.canUnload("ui")).toBe(true);
+        expect(cocos.state.unloadSequence).toEqual(["releaseAll", "removeBundle"]);
+        expect(pkg.state.removeCalls).toEqual(["AutoBattle", "Common", "AutoBattle"]);
+    });
 });

@@ -44,7 +44,7 @@ function defaultUiPackage(): UIPackageLike {
     };
 }
 
-function createCocosLoader(manager: CocosAssetManagerLike, uiPackage: UIPackageLike, registeredPackages: Map<string, string[]>): (key: IResourceKey) => Promise<unknown> {
+function createCocosLoader(manager: CocosAssetManagerLike, uiPackage: UIPackageLike, registeredPackages: Map<string, Map<string, string>>): (key: IResourceKey) => Promise<unknown> {
     return (key: IResourceKey) =>
         new Promise((resolve, reject) => {
             manager.loadBundle(key.bundle, (bundleError, bundle) => {
@@ -60,7 +60,8 @@ function createCocosLoader(manager: CocosAssetManagerLike, uiPackage: UIPackageL
                 }
 
                 if (key.kind === "fairygui-package") {
-                    // package 走 FairyGUI 注册表：加载成功后记录注册名，供卸载路径清理
+                    // package 走 FairyGUI 注册表：加载成功后记录 路径→注册名 映射，
+                    // 供卸载路径（包级/整 bundle）按注册名清理
                     uiPackage.loadPackage(bundle, key.path, (error, pkg) => {
                         if (error) {
                             reject(error);
@@ -70,11 +71,12 @@ function createCocosLoader(manager: CocosAssetManagerLike, uiPackage: UIPackageL
                             reject(new Error(`Cocos package "${key.path}" in bundle "${key.bundle}" was not loaded`));
                             return;
                         }
-                        const names = registeredPackages.get(key.bundle) ?? [];
-                        if (names.indexOf(pkg.name) === -1) {
-                            names.push(pkg.name);
-                            registeredPackages.set(key.bundle, names);
+                        let byBundle = registeredPackages.get(key.bundle);
+                        if (byBundle === undefined) {
+                            byBundle = new Map();
+                            registeredPackages.set(key.bundle, byBundle);
                         }
+                        byBundle.set(key.path, pkg.name);
                         resolve(pkg);
                     });
                     return;
@@ -92,7 +94,7 @@ function createCocosLoader(manager: CocosAssetManagerLike, uiPackage: UIPackageL
         });
 }
 
-function createCocosUnloadBundle(manager: CocosAssetManagerLike, uiPackage: UIPackageLike, registeredPackages: Map<string, string[]>): (bundle: string) => void {
+function createCocosUnloadBundle(manager: CocosAssetManagerLike, uiPackage: UIPackageLike, registeredPackages: Map<string, Map<string, string>>): (bundle: string) => void {
     return (bundleName: string) => {
         const bundle = manager.getBundle(bundleName);
 
@@ -106,14 +108,37 @@ function createCocosUnloadBundle(manager: CocosAssetManagerLike, uiPackage: UIPa
         // 先移除该 Bundle 下注册的全部 package，再 releaseAll + removeBundle。
         // 同 bundle 多 package 按注册逆序移除（后加载的依赖先卸载），对齐逆序释放契约；
         // 跨 bundle 依赖排序是已知限制，待 4.x 依赖拓扑成立后处理。
-        const names = registeredPackages.get(bundleName) ?? [];
-        for (const name of [...names].reverse()) {
-            uiPackage.removePackage(name);
+        const byBundle = registeredPackages.get(bundleName);
+        if (byBundle !== undefined) {
+            // Array.from 而非展开运算符：Creator 构建会把 `[...iterable]` 转译成
+            // `[].concat(iterable)`，concat 不展开 Map values 迭代器导致迭代失效
+            for (const name of Array.from(byBundle.values()).reverse()) {
+                uiPackage.removePackage(name);
+            }
         }
         registeredPackages.delete(bundleName);
 
         bundle.releaseAll();
         manager.removeBundle(bundle);
+    };
+}
+
+/**
+ * 包级卸载执行器：FGUI package 引用归零（即使 bundle 仍被其它包持有）时从
+ * FairyGUI 注册表移除该包。按 路径→注册名 映射定位；未注册/已移除时幂等 no-op。
+ */
+function createCocosUnloadPackage(uiPackage: UIPackageLike, registeredPackages: Map<string, Map<string, string>>): (bundle: string, path: string) => void {
+    return (bundleName: string, path: string): void => {
+        const byBundle = registeredPackages.get(bundleName);
+        const name = byBundle?.get(path);
+        if (name === undefined || byBundle === undefined) {
+            return;
+        }
+        uiPackage.removePackage(name);
+        byBundle.delete(path);
+        if (byBundle.size === 0) {
+            registeredPackages.delete(bundleName);
+        }
     };
 }
 
@@ -127,11 +152,13 @@ export function createCocosResourceProvider(options: CocosResourceProviderOption
     // 惰性读取 cc.assetManager：未注入时才使用引擎默认实例
     const manager = options.assetManager ?? cc.assetManager;
     const uiPackage = options.uiPackage ?? defaultUiPackage();
-    // 按 Bundle 记录已注册的 package 名，供卸载路径调用 UIPackage.removePackage
-    const registeredPackages = new Map<string, string[]>();
+    // 按 Bundle 记录 加载路径→注册名 映射，供卸载路径（包级/整 bundle）调用
+    // UIPackage.removePackage 清理 FairyGUI 注册表
+    const registeredPackages = new Map<string, Map<string, string>>();
 
     return createResourceProvider({
         loader: createCocosLoader(manager, uiPackage, registeredPackages),
         unloadBundle: createCocosUnloadBundle(manager, uiPackage, registeredPackages),
+        unloadPackage: createCocosUnloadPackage(uiPackage, registeredPackages),
     });
 }

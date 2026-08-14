@@ -7,6 +7,8 @@ export interface MemoryResourceProviderOptions {
     readonly loader?: (key: IResourceKey) => Promise<unknown>;
     /** 卸载执行器；缺省为无操作。 */
     readonly unloadBundle?: (bundle: string) => void;
+    /** 包级卸载执行器；缺省为无操作（内存环境无引擎注册表）。 */
+    readonly unloadPackage?: (bundle: string, path: string) => void;
 }
 
 /**
@@ -17,5 +19,6 @@ export function createMemoryResourceProvider(options: MemoryResourceProviderOpti
     return createResourceProvider({
         loader: options.loader ?? (async (key: IResourceKey) => ({ bundle: key.bundle, path: key.path })),
         unloadBundle: options.unloadBundle ?? (() => undefined),
+        unloadPackage: options.unloadPackage,
     });
 }

@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
+import { EnumResourceKind } from "../../../assets/framework/contracts/enums/EnumResourceKind";
 import { createLoadCoordinator, type IResourceHandle, type IResourceKey } from "../../../assets/framework/core/resource/LoadCoordinator";
 import { createResourceScopeRegistry, type ResourceScopeRegistry } from "../../../assets/framework/core/resource/ResourceScope";
 
@@ -421,5 +422,68 @@ describe("IResourceScope failure isolation", () => {
         scope.release();
         expect(unloaded).toEqual(["common"]);
         expect(registry.canUnload("common")).toBe(true);
+    });
+});
+
+describe("FGUI package release invokes the package-level unload seam", () => {
+    test("releasing the last package reference removes the package even when the bundle stays owned", async () => {
+        const { loader, pending } = createControlledLoader();
+        const coordinator = createLoadCoordinator({ loader });
+        const unloadedBundles: string[] = [];
+        const unloadedPackages: Array<{ bundle: string; path: string }> = [];
+        const registry = createResourceScopeRegistry({
+            unloadBundle: (bundle) => {
+                unloadedBundles.push(bundle);
+            },
+            unloadPackage: (bundle, path) => {
+                unloadedPackages.push({ bundle, path });
+            },
+        });
+
+        const globalScope = registry.createScope();
+        const sessionScope = registry.createScope();
+
+        const common = await settleReady(coordinator, pending, { kind: EnumResourceKind.FairyGuiPackage, bundle: "ui", path: "Common/Common" });
+        const session = await settleReady(coordinator, pending, { kind: EnumResourceKind.FairyGuiPackage, bundle: "ui", path: "AutoBattle/AutoBattle" });
+
+        globalScope.retain(common);
+        sessionScope.retain(session);
+
+        // 共享 bundle：常驻包持有下 bundle 不可卸载
+        expect(registry.canUnload("ui")).toBe(false);
+
+        // 会话释放：包级接缝触发（引用归零即移除包），bundle 仍被常驻包持有故不卸载
+        sessionScope.release();
+        expect(unloadedPackages).toEqual([{ bundle: "ui", path: "AutoBattle/AutoBattle" }]);
+        expect(unloadedBundles).toEqual([]);
+        expect(registry.canUnload("ui")).toBe(false);
+
+        // 常驻包释放：包级接缝再次触发，bundle 此时才真正卸载
+        globalScope.release();
+        expect(unloadedPackages).toEqual([
+            { bundle: "ui", path: "AutoBattle/AutoBattle" },
+            { bundle: "ui", path: "Common/Common" },
+        ]);
+        expect(unloadedBundles).toEqual(["ui"]);
+        expect(registry.canUnload("ui")).toBe(true);
+    });
+
+    test("releasing an asset key does not trigger the package seam", async () => {
+        const { loader, pending } = createControlledLoader();
+        const coordinator = createLoadCoordinator({ loader });
+        const unloadedPackages: Array<{ bundle: string; path: string }> = [];
+        const registry = createResourceScopeRegistry({
+            unloadBundle: () => undefined,
+            unloadPackage: (bundle, path) => {
+                unloadedPackages.push({ bundle, path });
+            },
+        });
+
+        const scope = registry.createScope();
+        const handle = await settleReady(coordinator, pending, assetKey("config.json"));
+        scope.retain(handle);
+        scope.release();
+
+        expect(unloadedPackages).toEqual([]);
     });
 });

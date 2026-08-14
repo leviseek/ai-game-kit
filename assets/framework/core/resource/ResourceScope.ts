@@ -1,6 +1,7 @@
 import type { IResourceHandle } from "../../contracts/interfaces/IResourceHandle";
 import type { IResourceKey } from "../../contracts/interfaces/IResourceKey";
 import type { IResourceScope } from "../../contracts/interfaces/IResourceScope";
+import { EnumResourceKind } from "../../contracts/enums/EnumResourceKind";
 
 // 类型定义提升至 contracts/resource，此处 re-export 保持既有导入路径兼容
 export type { IResourceScope } from "../../contracts/interfaces/IResourceScope";
@@ -20,6 +21,12 @@ export interface ResourceScopeRegistryOptions {
      * 由 Cocos Asset Bundle 适配器注入（参见 design.md 决策 3 的接缝）。
      */
     readonly unloadBundle: (bundle: string) => void;
+    /**
+     * 可选包级卸载执行器：FGUI package 键引用归零时调用一次（即使 bundle 仍被
+     * 其它包持有，如共享 bundle 中的常驻通用包）。用于引擎侧包注册表移除；
+     * 调用方（Provider）负责同步失效加载缓存使同 key 可重新加载。
+     */
+    readonly unloadPackage?: (bundle: string, path: string) => void;
 }
 
 interface CountedResource {
@@ -116,7 +123,20 @@ export function createResourceScopeRegistry(options: ResourceScopeRegistryOption
             bundleKeys.delete(key.bundle);
         }
 
-        return maybeUnloadIfNotOwned(key.bundle);
+        // 包级卸载先于 bundle 级判定：FGUI package 引用归零即从引擎注册表移除，
+        // 即使 bundle 仍被其它包持有（共享 bundle 场景）。卸载执行器失败被隔离，
+        // 不阻断 bundle 级判定（与 maybeUnloadIfNotOwned 同语义）。
+        let firstError: unknown = undefined;
+        if (key.kind === EnumResourceKind.FairyGuiPackage) {
+            try {
+                options.unloadPackage?.(key.bundle, key.path);
+            } catch (error) {
+                firstError = error;
+            }
+        }
+
+        const unloadError = maybeUnloadIfNotOwned(key.bundle);
+        return firstError ?? unloadError;
     }
 
     function createScope(): IResourceScope {

@@ -18,6 +18,15 @@ export function createResourceProvider(options: IResourceProviderOptions): IReso
     const coordinator = createLoadCoordinator({ loader: options.loader });
     const registry = createResourceScopeRegistry({
         unloadBundle: options.unloadBundle,
+        // 包级移除后同步失效协调器缓存：同 key 下次 loadPackage 重新触发底层
+        // 加载并重新登记，避免返回"已从引擎注册表移除"的陈旧 ready 结果
+        unloadPackage:
+            options.unloadPackage === undefined
+                ? undefined
+                : (bundle, path) => {
+                      options.unloadPackage?.(bundle, path);
+                      coordinator.invalidate(key(EnumResourceKind.FairyGuiPackage, bundle, path));
+                  },
     });
     const scopes = new Set<ReturnType<typeof registry.createScope>>();
 
