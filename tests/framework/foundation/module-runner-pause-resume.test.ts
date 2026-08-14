@@ -2,7 +2,7 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, test } from "bun:test";
 
-import type { ApplicationContext, Module, ModuleRuntimeState } from "../../../assets/framework";
+import type { IApplicationContext, IModule, EnumModuleRuntimeState } from "../../../assets/framework";
 import { MemoryLogger } from "../support/MemoryLogger";
 
 interface ModuleRunnerInstance {
@@ -10,10 +10,10 @@ interface ModuleRunnerInstance {
     start(): Promise<void>;
     pause(): Promise<void>;
     resume(): Promise<void>;
-    getState(moduleId: string): ModuleRuntimeState | undefined;
+    getState(moduleId: string): EnumModuleRuntimeState | undefined;
 }
 
-type ModuleRunnerConstructor = new (modules: readonly Module[], context: ApplicationContext) => ModuleRunnerInstance;
+type ModuleRunnerConstructor = new (modules: readonly IModule[], context: IApplicationContext) => ModuleRunnerInstance;
 
 interface ModuleRunnerExports {
     readonly ModuleRunner: ModuleRunnerConstructor;
@@ -21,7 +21,7 @@ interface ModuleRunnerExports {
 
 const projectRoot = resolve(import.meta.dir, "../../..");
 const moduleRunnerFile = resolve(projectRoot, "assets/framework/application/ModuleRunner.ts");
-const context: ApplicationContext = {
+const context: IApplicationContext = {
     logger: new MemoryLogger(),
     state: "created",
 };
@@ -32,7 +32,7 @@ async function loadModuleRunner(): Promise<ModuleRunnerConstructor> {
     return exports.ModuleRunner;
 }
 
-function createModule(id: string, calls: string[], dependencies: readonly string[] = []): Module {
+function createModule(id: string, calls: string[], dependencies: readonly string[] = []): IModule {
     return {
         id,
         dependencies,
@@ -97,7 +97,7 @@ describe("ModuleRunner pause and resume smoke behavior", () => {
         const ModuleRunner = await loadModuleRunner();
         const calls: string[] = [];
         const logging = createModule("logging", calls);
-        const headless: Module = {
+        const headless: IModule = {
             id: "headless",
             dependencies: [logging.id],
             initialize: async () => {

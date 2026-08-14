@@ -1,4 +1,4 @@
-import type { GameFixture, Module, PlatformStorage, UiNavigator } from "../../framework";
+import type { GameFixture, IModule, IPlatformStorage, UiNavigator } from "../../framework";
 import { createGameFixture, createUiNavigator } from "../../framework";
 import { createTycoonClock, createTycoonClockModule, type TycoonClock } from "./logic/clock";
 import { createTycoonConfig, createTycoonConfigModule, type TycoonConfigHandle } from "./logic/config";
@@ -29,7 +29,7 @@ export interface TycoonFixtureOptions {
     /** 配置内容：驱动产品数值与初始现金；缺省为内建缺省配置。 */
     readonly configContent?: Record<string, unknown>;
     /** 平台存储后端：缺省为内存存储；观察版本化存档写入/读取。 */
-    readonly storage?: PlatformStorage;
+    readonly storage?: IPlatformStorage;
 }
 
 /** 经营组合夹具：在 GameFixture 生命周期接缝之上暴露各能力钩子。 */
@@ -92,8 +92,8 @@ export interface TycoonFixture extends GameFixture {
     };
 }
 
-/** 缺省内存平台存储：实现 PlatformStorage，供测试与非 Cocos 环境使用。 */
-class MemoryStorage implements PlatformStorage {
+/** 缺省内存平台存储：实现 IPlatformStorage，供测试与非 Cocos 环境使用。 */
+class MemoryStorage implements IPlatformStorage {
     private readonly entries = new Map<string, string>();
 
     async get(key: string): Promise<string | null> {
@@ -134,7 +134,7 @@ export function createTycoonFixture(options: TycoonFixtureOptions = {}): TycoonF
         repeat: true,
     });
 
-    const modules: Module[] = [
+    const modules: IModule[] = [
         createTycoonClockModule(clock),
         createTycoonSchedulerModule(scheduler),
         createTycoonConfigModule(config),

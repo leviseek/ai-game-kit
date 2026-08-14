@@ -1,6 +1,6 @@
-import type { IResourceProvider } from "../../contracts/resource/ResourceProvider";
-import type { ResourceHandle } from "../../contracts/resource/Resource";
-import type { ResourceScope } from "../../contracts/resource/ResourceScope";
+import type { IResourceProvider } from "../../contracts/interfaces/IResourceProvider";
+import type { IResourceHandle } from "../../contracts/interfaces/IResourceHandle";
+import type { IResourceScope } from "../../contracts/interfaces/IResourceScope";
 import { createStateMachine, type StateTransitionTable } from "../fsm/StateMachine";
 import type { DisposeHandle } from "../scheduling/DisposeHandle";
 
@@ -79,17 +79,17 @@ export function createSceneFlow(options: SceneFlowOptions): SceneFlow {
     });
 
     let disposed = false;
-    let flowScope: ResourceScope | undefined;
-    let sceneScope: ResourceScope | undefined;
+    let flowScope: IResourceScope | undefined;
+    let sceneScope: IResourceScope | undefined;
     let cancelSwitch: (() => void) | undefined;
     let cancelPreload: (() => void) | undefined;
     // 已完成预加载且可被 switchTo 复用的场景资源（handle 仍 retain 在 flowScope 中）；
     // 是否可复用由 switchTo 的判定（sceneId + bundle/paths 一致 + 全部 ready）决定。
     let preloadedSceneId: string | undefined;
     let preloadedResourcesKey: string | undefined;
-    let preloadedHandles: ResourceHandle[] = [];
+    let preloadedHandles: IResourceHandle[] = [];
 
-    function currentFlowScope(): ResourceScope {
+    function currentFlowScope(): IResourceScope {
         try {
             flowScope?.release();
         } catch {
@@ -120,11 +120,11 @@ export function createSceneFlow(options: SceneFlowOptions): SceneFlow {
             const resourcesKey = JSON.stringify([resources.bundle, resources.paths]);
             const reusable = preloadedSceneId === sceneId && preloadedResourcesKey === resourcesKey && preloadedHandles.every((handle) => handle.state === "ready");
 
-            let scope: ResourceScope;
-            let handles: ResourceHandle[];
+            let scope: IResourceScope;
+            let handles: IResourceHandle[];
 
             if (reusable) {
-                scope = flowScope as ResourceScope;
+                scope = flowScope as IResourceScope;
                 handles = preloadedHandles;
                 preloadedSceneId = undefined;
                 preloadedResourcesKey = undefined;
@@ -272,7 +272,7 @@ export function createSceneFlow(options: SceneFlowOptions): SceneFlow {
             }
 
             const scope = currentFlowScope();
-            const handles: ResourceHandle[] = [];
+            const handles: IResourceHandle[] = [];
             fsm.send("start");
 
             for (const path of resources.paths) {

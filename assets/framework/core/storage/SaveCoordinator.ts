@@ -1,10 +1,11 @@
-import type { ApplicationVisibility, ApplicationVisibilityState } from "../../contracts/platform/Platform";
+import type { IApplicationVisibility } from "../../contracts/interfaces/IApplicationVisibility";
+import { EnumApplicationVisibilityState } from "../../contracts/enums/EnumApplicationVisibilityState";
 
 export interface SaveCoordinatorOptions {
     /** 可见性源：暂停（background）/退出与恢复（foreground）经它触发保存。 */
-    readonly visibility: ApplicationVisibility;
+    readonly visibility: IApplicationVisibility;
     /** 触发保存的可见性状态集合；缺省 ["background"]（对应暂停与退出）。 */
-    readonly triggerStates?: readonly ApplicationVisibilityState[];
+    readonly triggerStates?: readonly EnumApplicationVisibilityState[];
     /**
      * 执行一次保存：读取当前状态并写入存档仓库。协调器保证同一时刻至多一个
      * 保存执行，生命周期窗口内的多次触发收敛到最后一次有效状态（合并写）。
@@ -23,10 +24,10 @@ export interface SaveCoordinator {
 }
 
 // target ES2015 无 Array.prototype.includes，且模块级常量避免每次调用重建
-const DEFAULT_TRIGGER_STATES = ["background"] as const;
+const DEFAULT_TRIGGER_STATES: readonly EnumApplicationVisibilityState[] = [EnumApplicationVisibilityState.Background];
 
 /**
- * 生命周期保存协调器：订阅 ApplicationVisibility，在触发状态变化时调度保存，
+ * 生命周期保存协调器：订阅 IApplicationVisibility，在触发状态变化时调度保存，
  * 并保证保存串行执行、窗口内多次触发合并到最近一次有效状态，避免并发交错
  * 覆盖或丢失最后一次有效状态（7.6 保存收敛策略）。
  */

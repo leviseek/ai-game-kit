@@ -3,7 +3,7 @@ import { pathToFileURL } from "node:url";
 import { describe, expect, mock, test } from "bun:test";
 
 import { createFairyGuiMock } from "./helpers/fairygui-mock";
-import { UI_LAYER_ORDER } from "../../../assets/framework/contracts/ui/Navigation";
+import { UI_LAYER_ORDER } from "../../../assets/framework/contracts/constants/UiLayer";
 
 // CocosUiRoot 与 FairyGuiPageAdapter 均经工厂间接依赖 fairygui-cc；测试不加载
 // 真实运行时，统一使用共享 fixture（bun mock.module 全局共享首个生效）。

@@ -1,4 +1,4 @@
-import type { Logger, SceneFlow, SceneResources } from "../../framework";
+import type { ILogger, SceneFlow, SceneResources } from "../../framework";
 import { createStateMachine, type StateTransitionTable } from "../../framework";
 import type { SmokeAction } from "./SmokeRouter";
 import { BUNDLES, SCENES } from "../constants";
@@ -44,7 +44,7 @@ export interface BootFlowDeps {
     readonly smokeRouter: BootFlowSmokeRouter;
     /** 场景映射清单动态源：game 场景资源（bundle/paths），供 preload 与 switchTo 复用。 */
     readonly getSceneMap: () => Readonly<Record<string, SceneResources>>;
-    readonly logger: Logger;
+    readonly logger: ILogger;
     /** 原生平台探测：Web 返回 false（热更阶段静默跳过）。 */
     readonly isNative: () => boolean;
     /** 当前 URL 查询串：冒烟分派依据；非浏览器环境返回空串。 */

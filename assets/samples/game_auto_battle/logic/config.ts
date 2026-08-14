@@ -1,6 +1,11 @@
-import type { Module } from "../../../framework";
-import { configArray, configNumber, configObject, createConfigTable, type ConfigTable } from "../../../framework";
+import type { IConfigKey, IModule } from "../../../framework";
+import { configArray, configNumber, configObject, createConfigTable, type IConfigTable } from "../../../framework";
 import type { AutoBattleHero, AutoBattleSide, AutoBattleSkill, AutoBattleUnit } from "../models";
+
+// branded 键无运行期值：读取前把配置键字符串收窄为品牌类型
+function keyOf(key: string): IConfigKey {
+    return key as unknown as IConfigKey;
+}
 
 /**
  * 每队单位数量上限：战斗规模可配置为 1..MAX_TEAM_SIZE（首版 1v1..6v6）。
@@ -87,8 +92,8 @@ function readHeroAttackRange(record: { readonly attackRange?: number }): number 
 }
 
 /** 读取一队单位清单：逐项校验，非法条目抛错并给出序号定位。 */
-function readTeam(table: ConfigTable, key: string, side: AutoBattleSide): readonly AutoBattleUnit[] {
-    const raw = table.read(key, configArray, []);
+function readTeam(table: IConfigTable, key: string, side: AutoBattleSide): readonly AutoBattleUnit[] {
+    const raw = table.read(keyOf(key), configArray, []);
     if (raw.length === 0) {
         throw new Error(`auto-battle config: team "${key}" must not be empty`);
     }
@@ -121,8 +126,8 @@ function assertUniqueHeroIds(heroes: readonly AutoBattleHero[]): void {
 }
 
 /** 读取英雄池：逐项校验合法（复用英雄条目形状校验），池内 id 唯一。 */
-function readHeroes(table: ConfigTable): readonly AutoBattleHero[] {
-    const raw = table.read("heroes", configArray, []);
+function readHeroes(table: IConfigTable): readonly AutoBattleHero[] {
+    const raw = table.read(keyOf("heroes"), configArray, []);
     const heroes = raw.map((entry, index) => {
         if (!isHeroConfig(entry)) {
             throw new Error(`auto-battle config: heroes entry at index ${index} has an invalid shape`);
@@ -139,12 +144,12 @@ function readHeroes(table: ConfigTable): readonly AutoBattleHero[] {
  * 供开战实例化与编队持久化复用。
  */
 function readLineup(
-    table: ConfigTable,
+    table: IConfigTable,
     key: string,
     side: AutoBattleSide,
     heroById: ReadonlyMap<string, AutoBattleHero>,
 ): { readonly units: readonly AutoBattleUnit[]; readonly ids: readonly string[] } {
-    const raw = table.read(key, configArray, []);
+    const raw = table.read(keyOf(key), configArray, []);
     if (raw.length === 0) {
         throw new Error(`auto-battle config: lineups.${key} must not be empty`);
     }
@@ -171,8 +176,8 @@ function readLineup(
     return { units, ids };
 }
 
-function readEnergyGain(table: ConfigTable, key: string, fallback: number): number {
-    const value = table.read(key, configNumber, fallback);
+function readEnergyGain(table: IConfigTable, key: string, fallback: number): number {
+    const value = table.read(keyOf(key), configNumber, fallback);
     if (value < 0) {
         throw new Error(`auto-battle config: ${key} must not be negative`);
     }
@@ -189,7 +194,7 @@ function readEnergyGain(table: ConfigTable, key: string, fallback: number): numb
  * 只负责解析，不承载业务数值的默认值来源之外逻辑。
  */
 export function createAutoBattleConfig(content: Record<string, unknown>): AutoBattleConfigHandle {
-    const table: ConfigTable = createConfigTable(content);
+    const table: IConfigTable = createConfigTable(content);
 
     const energyGainAttacker = readEnergyGain(table, "energyGainAttacker", 10);
     const energyGainTarget = readEnergyGain(table, "energyGainTarget", 5);
@@ -198,7 +203,7 @@ export function createAutoBattleConfig(content: Record<string, unknown>): AutoBa
     if (Object.prototype.hasOwnProperty.call(content, "heroes")) {
         const heroes = readHeroes(table);
         const heroById = new Map(heroes.map((hero) => [hero.id, hero]));
-        const lineupsTable: ConfigTable = createConfigTable(table.read("lineups", configObject, {}));
+        const lineupsTable: IConfigTable = createConfigTable(table.read(keyOf("lineups"), configObject, {}));
         const ally = readLineup(lineupsTable, "ally", "ally", heroById);
         const enemy = readLineup(lineupsTable, "enemy", "enemy", heroById);
         return {
@@ -212,8 +217,8 @@ export function createAutoBattleConfig(content: Record<string, unknown>): AutoBa
     }
 
     // 兼容格式（deprecated）：teams 直接提供双方单位清单
-    const teams = table.read("teams", configObject, {});
-    const teamTable: ConfigTable = createConfigTable(teams);
+    const teams = table.read(keyOf("teams"), configObject, {});
+    const teamTable: IConfigTable = createConfigTable(teams);
     const ally = readTeam(teamTable, "ally", "ally");
     const enemy = readTeam(teamTable, "enemy", "enemy");
     const heroes = [...ally, ...enemy].map((unit) => ({
@@ -246,7 +251,7 @@ export function createAutoBattleConfig(content: Record<string, unknown>): AutoBa
  * 配置模块：组合根创建配置句柄并注入；模块只登记引用，配置表为不可变数据，
  * 生命周期无副作用，不在此释放共享配置。
  */
-export function createAutoBattleConfigModule(config: AutoBattleConfigHandle): Module {
+export function createAutoBattleConfigModule(config: AutoBattleConfigHandle): IModule {
     return {
         id: "auto_battle.config",
         dependencies: [],

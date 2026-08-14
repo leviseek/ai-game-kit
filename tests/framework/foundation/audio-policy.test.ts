@@ -2,38 +2,40 @@ import { describe, expect, test } from "bun:test";
 
 import { MemoryPlatform } from "../../../assets/framework/adapters/memory/MemoryPlatform";
 import { createAudioService } from "../../../assets/framework/core/audio/AudioService";
-import type { AudioBackend, AudioGroup, AudioTrackRef } from "../../../assets/framework/contracts/audio/Audio";
+import type { IAudioBackend } from "../../../assets/framework/contracts/interfaces/IAudioBackend";
+import type { EnumAudioGroup } from "../../../assets/framework/contracts/interfaces/EnumAudioGroup";
+import type { IAudioTrackRef } from "../../../assets/framework/contracts/interfaces/IAudioTrackRef";
 
 const TRACKS = {
-    musicMain: { bundle: "audio", path: "music/main" } as AudioTrackRef,
-    sfxAttack: { bundle: "audio", path: "sfx/attack" } as AudioTrackRef,
+    musicMain: { bundle: "audio", path: "music/main" } as IAudioTrackRef,
+    sfxAttack: { bundle: "audio", path: "sfx/attack" } as IAudioTrackRef,
 };
 
-class RecordingBackend implements AudioBackend {
+class RecordingBackend implements IAudioBackend {
     public readonly available = true;
-    public readonly playCalls: Array<{ group: AudioGroup; track: AudioTrackRef }> = [];
-    public readonly stopCalls: AudioGroup[] = [];
-    public readonly pauseCalls: AudioGroup[] = [];
-    public readonly resumeCalls: AudioGroup[] = [];
-    public readonly volumeCalls: Array<{ group: AudioGroup; volume: number }> = [];
+    public readonly playCalls: Array<{ group: EnumAudioGroup; track: IAudioTrackRef }> = [];
+    public readonly stopCalls: EnumAudioGroup[] = [];
+    public readonly pauseCalls: EnumAudioGroup[] = [];
+    public readonly resumeCalls: EnumAudioGroup[] = [];
+    public readonly volumeCalls: Array<{ group: EnumAudioGroup; volume: number }> = [];
 
-    play(group: AudioGroup, track: AudioTrackRef): void {
+    play(group: EnumAudioGroup, track: IAudioTrackRef): void {
         this.playCalls.push({ group, track });
     }
 
-    stop(group: AudioGroup): void {
+    stop(group: EnumAudioGroup): void {
         this.stopCalls.push(group);
     }
 
-    pause(group: AudioGroup): void {
+    pause(group: EnumAudioGroup): void {
         this.pauseCalls.push(group);
     }
 
-    resume(group: AudioGroup): void {
+    resume(group: EnumAudioGroup): void {
         this.resumeCalls.push(group);
     }
 
-    setVolume(group: AudioGroup, volume: number): void {
+    setVolume(group: EnumAudioGroup, volume: number): void {
         this.volumeCalls.push({ group, volume });
     }
 }
@@ -114,7 +116,7 @@ describe("前后台切换策略", () => {
         const records: Array<{ message: string; context?: Record<string, unknown> }> = [];
         const backend = new RecordingBackend();
         // 仅 sfx 分组 pause 抛错：验证异常被隔离，music 仍正常处理
-        const throwingPauseBackend: AudioBackend = {
+        const throwingPauseBackend: IAudioBackend = {
             available: true,
             play: (group, track) => backend.play(group, track),
             stop: (group) => backend.stop(group),

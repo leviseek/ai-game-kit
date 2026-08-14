@@ -1,10 +1,10 @@
-import type { ViewModelNode } from "../../framework";
-import type { FairyGuiListHandle } from "../../framework";
+import type { IViewModelNode } from "../../framework";
+import type { IFairyGuiListHandle } from "../../framework";
 import type { GameFixture } from "../fixture/GameFixture";
 import type { GameEntryInfo } from "./catalog";
 
 /**
- * 品类呈现器：把夹具状态渲染到真实页面节点。引擎无关——消费 ViewModelNode
+ * 品类呈现器：把夹具状态渲染到真实页面节点。引擎无关——消费 IViewModelNode
  * 契约，不依赖 fgui/cc；节点解析器（FairyGuiViewHandle）由宿主注入。
  */
 export interface GamePresenter {
@@ -24,7 +24,7 @@ export interface GameSessionNavigator {
 /** 呈现器工厂：按品类装配 ViewModelRenderer 到注入的节点解析器；可选注入列表解析器。 */
 export type GamePresenterFactory = (
     fixture: GameFixture,
-    node: (name: string) => ViewModelNode | undefined,
+    node: (name: string) => IViewModelNode | undefined,
     session?: GameSessionNavigator,
-    list?: (name: string) => FairyGuiListHandle<unknown> | undefined,
+    list?: (name: string) => IFairyGuiListHandle<unknown> | undefined,
 ) => GamePresenter;

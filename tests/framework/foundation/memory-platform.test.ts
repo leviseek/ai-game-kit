@@ -1,7 +1,8 @@
 import { describe, expect, test } from "bun:test";
 
-import type { ApplicationVisibilityState, DeviceInfo } from "../../../assets/framework/contracts/platform/Platform";
-import type { TimeSource } from "../../../assets/framework/contracts/time/TimeSource";
+import type { EnumApplicationVisibilityState } from "../../../assets/framework/contracts/interfaces/EnumApplicationVisibilityState";
+import type { IDeviceInfo } from "../../../assets/framework/contracts/interfaces/IDeviceInfo";
+import type { ITimeSource } from "../../../assets/framework/contracts/interfaces/ITimeSource";
 import { MemoryPlatform } from "../../../assets/framework/adapters/memory/MemoryPlatform";
 
 describe("MemoryPlatform", () => {
@@ -13,7 +14,7 @@ describe("MemoryPlatform", () => {
 
     test("changes visibility and notifies registered listeners", () => {
         const platform = new MemoryPlatform();
-        const seen: ApplicationVisibilityState[] = [];
+        const seen: EnumApplicationVisibilityState[] = [];
 
         platform.onVisibilityChange((state) => {
             seen.push(state);
@@ -37,7 +38,7 @@ describe("MemoryPlatform", () => {
 
     test("does not notify listeners when visibility is set to the same state", () => {
         const platform = new MemoryPlatform();
-        const seen: ApplicationVisibilityState[] = [];
+        const seen: EnumApplicationVisibilityState[] = [];
 
         platform.onVisibilityChange((state) => {
             seen.push(state);
@@ -52,7 +53,7 @@ describe("MemoryPlatform", () => {
 
     test("does not notify a listener after its handle is disposed", () => {
         const platform = new MemoryPlatform();
-        const seen: ApplicationVisibilityState[] = [];
+        const seen: EnumApplicationVisibilityState[] = [];
         const unsubscribe = platform.onVisibilityChange((state) => {
             seen.push(state);
         });
@@ -65,7 +66,7 @@ describe("MemoryPlatform", () => {
 
     test("ignores repeated disposal of a visibility listener", () => {
         const platform = new MemoryPlatform();
-        const seen: ApplicationVisibilityState[] = [];
+        const seen: EnumApplicationVisibilityState[] = [];
         const unsubscribe = platform.onVisibilityChange((state) => {
             seen.push(state);
         });
@@ -79,7 +80,7 @@ describe("MemoryPlatform", () => {
 
     test("isolates a failing listener so other listeners still run", () => {
         const platform = new MemoryPlatform();
-        const seen: ApplicationVisibilityState[] = [];
+        const seen: EnumApplicationVisibilityState[] = [];
 
         platform.onVisibilityChange(() => {
             throw new Error("listener failed");
@@ -123,7 +124,7 @@ describe("MemoryPlatform", () => {
     });
 
     test("accepts injected device information", () => {
-        const deviceInfo: DeviceInfo = {
+        const deviceInfo: IDeviceInfo = {
             platform: "web-desktop",
             model: "test-model",
             language: "zh-CN",
@@ -140,7 +141,7 @@ describe("MemoryPlatform", () => {
         let current = 1_000;
         const now = () => current;
         const platform = new MemoryPlatform({ now });
-        const timeSource: TimeSource = platform.timeSource;
+        const timeSource: ITimeSource = platform.timeSource;
 
         expect(timeSource.now()).toBe(1_000);
 

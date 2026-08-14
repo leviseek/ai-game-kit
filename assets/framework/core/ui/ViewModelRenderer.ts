@@ -1,16 +1,14 @@
-import type {
-    Bindable,
-    Binding,
-    PositionBinding,
-    ViewModelNode,
-} from "../../contracts/ui/ViewModel";
+import type { IBindable } from "../../contracts/interfaces/IBindable";
+import type { Binding } from "../../contracts/interfaces/Binding";
+import type { IPositionBinding } from "../../contracts/interfaces/IPositionBinding";
+import type { IViewModelNode } from "../../contracts/interfaces/IViewModelNode";
 
 /**
  * 渲染器选项：视图节点解析器 + 绑定声明。节点解析按名返回节点实现，
  * 节点不存在时返回 undefined（渲染时跳过该绑定，不中断其它绑定）。
  */
 export interface ViewModelRendererOptions<VM> {
-    readonly node: (name: string) => ViewModelNode | undefined;
+    readonly node: (name: string) => IViewModelNode | undefined;
     readonly bindings: readonly Binding<VM>[];
 }
 
@@ -43,7 +41,7 @@ export interface ViewModelNodeResolverPrune {
  * 可观察状态容器：写入相同值不触发订阅（幂等），订阅返回释放句柄。
  * 渲染器用它桥接 VM 变化自动刷新；本工厂为独立可复用状态原语。
  */
-export function createBindable<T>(initial: T): Bindable<T> {
+export function createBindable<T>(initial: T): IBindable<T> {
     let current = initial;
     const listeners = new Set<(value: T) => void>();
 
@@ -85,7 +83,7 @@ export function createViewModelRenderer<VM>(
     // 已注册命令的节点名集合：跨 setBindings 保留——避免动态重建绑定集时对同一
     // 节点重复注册 onClick（Adapter 的 onClick 通常是追加监听，重复注册会累积）
     const registeredCommandNodes = new Set<string>();
-    let views: (ViewModelNode | undefined)[] = new Array(bindings.length);
+    let views: (IViewModelNode | undefined)[] = new Array(bindings.length);
     let vm: VM | undefined;
     let disposed = false;
 
@@ -108,7 +106,7 @@ export function createViewModelRenderer<VM>(
     }
 
     // 惰性解析视图节点并缓存，避免每次渲染重复查找；节点不存在返回 undefined
-    function resolveView(index: number, name: string): ViewModelNode | undefined {
+    function resolveView(index: number, name: string): IViewModelNode | undefined {
         const cached = views[index];
         if (cached !== undefined) {
             return cached;
@@ -122,7 +120,7 @@ export function createViewModelRenderer<VM>(
     }
 
     // 按绑定类型写入节点并记录上次值；命令绑定只注册一次点击回调（按节点名去重）
-    function applyBinding<VM_>(index: number, binding: Binding<VM_>, view: ViewModelNode): void {
+    function applyBinding<VM_>(index: number, binding: Binding<VM_>, view: IViewModelNode): void {
         if (binding.kind === "command") {
             if (!registeredCommandNodes.has(binding.node)) {
                 registeredCommandNodes.add(binding.node);
@@ -170,8 +168,8 @@ export function createViewModelRenderer<VM>(
     // 分量与上次值做结构比较，坐标未变不重复写入；节点未实现 setXY 时忽略不中断
     function applyPositionBinding<VM_>(
         index: number,
-        binding: PositionBinding<VM_>,
-        view: ViewModelNode,
+        binding: IPositionBinding<VM_>,
+        view: IViewModelNode,
     ): void {
         const next = binding.get(vm as VM_);
         const last = lastValues[index] as { x: number; y: number } | undefined;

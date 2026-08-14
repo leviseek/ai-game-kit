@@ -1,4 +1,4 @@
-import type { TimeSource } from "../../contracts/time/TimeSource";
+import type { ITimeSource } from "../../contracts/interfaces/ITimeSource";
 
 export interface SimulationClockOptions {
     readonly initialTime?: number;
@@ -13,7 +13,7 @@ function isValidRate(rate: number): boolean {
  * 模拟时钟：now() 不随真实时间推进，时间只能通过 advance 显式推进，
  * 并受暂停与倍率影响；倍率必须为有限正数（不允许 0 或负数）。
  */
-export class SimulationClock implements TimeSource {
+export class SimulationClock implements ITimeSource {
     private currentTime: number;
     private rate: number;
     private paused: boolean;

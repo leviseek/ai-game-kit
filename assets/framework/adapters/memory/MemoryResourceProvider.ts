@@ -1,10 +1,10 @@
 import { createResourceProvider } from "../../core/resource/ResourceProvider";
-import type { IResourceProvider } from "../../contracts/resource/ResourceProvider";
-import type { ResourceKey } from "../../contracts/resource/Resource";
+import type { IResourceProvider } from "../../contracts/interfaces/IResourceProvider";
+import type { IResourceKey } from "../../contracts/interfaces/IResourceKey";
 
 export interface MemoryResourceProviderOptions {
     /** 内存加载器；缺省返回资源键字面量。可注入受控 loader 用于测试。 */
-    readonly loader?: (key: ResourceKey) => Promise<unknown>;
+    readonly loader?: (key: IResourceKey) => Promise<unknown>;
     /** 卸载执行器；缺省为无操作。 */
     readonly unloadBundle?: (bundle: string) => void;
 }
@@ -15,7 +15,7 @@ export interface MemoryResourceProviderOptions {
  */
 export function createMemoryResourceProvider(options: MemoryResourceProviderOptions = {}): IResourceProvider {
     return createResourceProvider({
-        loader: options.loader ?? (async (key: ResourceKey) => ({ bundle: key.bundle, path: key.path })),
+        loader: options.loader ?? (async (key: IResourceKey) => ({ bundle: key.bundle, path: key.path })),
         unloadBundle: options.unloadBundle ?? (() => undefined),
     });
 }

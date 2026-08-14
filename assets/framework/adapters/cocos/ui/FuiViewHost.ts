@@ -15,11 +15,12 @@ import {
     type FuiViewBindingResolver,
     type FuiViewBindingScope,
 } from "../../../core/fui/FuiViewBinderRegistry";
-import type { FuiView, FuiViewSeam } from "../../../contracts/ui/FuiView";
+import type { IFuiView } from "../../../contracts/interfaces/IFuiView";
+import type { IFuiViewSeam } from "../../../contracts/interfaces/IFuiViewSeam";
 import { wrapFairyGuiObjectTyped, type FuiElementKind } from "./FairyGuiViewHandle";
 import { createFairyGuiView, type FairyGuiViewLike } from "./FairyGuiPageAdapter";
 
-/** 挂载在 GComponent 上的 FuiView 实例：dispose 时级联释放绑定视图。 */
+/** 挂载在 GComponent 上的 IFuiView 实例：dispose 时级联释放绑定视图。 */
 const BOUND_VIEW_KEY = "__fuiBoundView__";
 
 /**
@@ -33,11 +34,11 @@ export type FuiObjectFactory = (
 ) => unknown | null;
 
 /**
- * 把 GComponent 包装为 FuiViewSeam：按名取子元件（能力 kind 分派），注册点击。
+ * 把 GComponent 包装为 IFuiViewSeam：按名取子元件（能力 kind 分派），注册点击。
  * 缺失检测下沉到本 seam：字段/点击节点不存在时抛 FuiBindingError（fail-fast），
- * 使 FuiView.__attach 消费非可选返回值。fgui 类型只存在于本 Adapter 边界。
+ * 使 IFuiView.__attach 消费非可选返回值。fgui 类型只存在于本 Adapter 边界。
  */
-function createSeam(url: FuiComponentUrl, component: GComponent): FuiViewSeam {
+function createSeam(url: FuiComponentUrl, component: GComponent): IFuiViewSeam {
     return {
         child(name: string, kind: string): ReturnType<typeof wrapFairyGuiObjectTyped> {
             const child = component.getChild(name);
@@ -70,7 +71,7 @@ function createSeam(url: FuiComponentUrl, component: GComponent): FuiViewSeam {
 function throwWithRollback(
     url: FuiComponentUrl,
     primary: unknown,
-    view: FuiView<unknown, unknown> | undefined,
+    view: IFuiView<unknown, unknown> | undefined,
     component: GObject | null,
     flushScopeHandles: (errors: unknown[]) => void = () => {},
 ): never {
@@ -94,10 +95,10 @@ function throwWithRollback(
 }
 
 /**
- * 创建绑定视图：查注册表，命中则创建 GComponent、实例化 FuiView 并 __attach 注入字段
+ * 创建绑定视图：查注册表，命中则创建 GComponent、实例化 IFuiView 并 __attach 注入字段
  * 与点击，返回挂载视图；未命中返回 null（调用方回退既有 createFairyGuiView 路径）。
- * 返回的视图是 GComponent 本身（可被 GRoot.addChild 挂载），其 dispose 级联释放 FuiView
- * 绑定（退订 Store/移除监听），再走引擎 dispose——两者独立 try/catch，任一失败不阻断
+ * 返回的视图是 GComponent 本身（可被 GRoot.addChild 挂载），其 dispose 级联释放 IFuiView
+ * 绑定（退订 IStore/移除监听），再走引擎 dispose——两者独立 try/catch，任一失败不阻断
  * 另一方，全部失败聚合为 FuiViewCleanupError（幂等）。fgui 类型只存在于本 Adapter 边界。
  * createObject 为创建接缝（缺省 UIPackage.createObject），测试可注入记录型 mock。
  * bindingResolver 为内部运行时 binder 解析器（缺省 undefined）：`runtimeBinding: "required"`
@@ -128,9 +129,9 @@ export function createBoundView(
         );
     }
 
-    // 包装器模式：业务类 extends 引擎无关 FuiView，不 extends GComponent；
-    // 这里创建 FuiView 实例并绑定到引擎组件（字段注入/点击注册发生在 __attach）
-    let view: FuiView<unknown, unknown>;
+    // 包装器模式：业务类 extends 引擎无关 IFuiView，不 extends GComponent；
+    // 这里创建 IFuiView 实例并绑定到引擎组件（字段注入/点击注册发生在 __attach）
+    let view: IFuiView<unknown, unknown>;
     try {
         view = new entry.ctor();
     } catch (cause) {

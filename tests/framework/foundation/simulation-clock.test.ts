@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import type { TimeSource } from "../../../assets/framework/contracts/time/TimeSource";
+import type { ITimeSource } from "../../../assets/framework/contracts/interfaces/ITimeSource";
 import { SimulationClock } from "../../../assets/framework/core/time/SimulationClock";
 
 describe("SimulationClock", () => {
@@ -78,9 +78,9 @@ describe("SimulationClock", () => {
         expect(clock.timeScale).toBe(2);
     });
 
-    test("satisfies the TimeSource contract shape", () => {
+    test("satisfies the ITimeSource contract shape", () => {
         const clock = new SimulationClock();
-        const timeSource: TimeSource = clock;
+        const timeSource: ITimeSource = clock;
 
         expect(typeof timeSource.now).toBe("function");
     });

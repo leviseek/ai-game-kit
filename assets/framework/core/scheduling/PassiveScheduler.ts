@@ -1,4 +1,4 @@
-import type { TimeSource } from "../../contracts/time/TimeSource";
+import type { ITimeSource } from "../../contracts/interfaces/ITimeSource";
 import type { DisposeHandle } from "./DisposeHandle";
 
 export interface ScheduleOptions {
@@ -23,12 +23,12 @@ interface ScheduledTask {
  * 任务回调异常隔离到 onTaskError，不中断同一批其他到期任务。
  */
 export class PassiveScheduler {
-    private readonly timeSource: TimeSource;
+    private readonly timeSource: ITimeSource;
     private readonly onTaskError: (error: unknown) => void;
     private tasks: ScheduledTask[] = [];
     private disposed = false;
 
-    constructor(timeSource: TimeSource, options: PassiveSchedulerOptions = {}) {
+    constructor(timeSource: ITimeSource, options: PassiveSchedulerOptions = {}) {
         this.timeSource = timeSource;
         this.onTaskError = options.onTaskError ?? ((error) => console.error(error));
     }

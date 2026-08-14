@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { MemoryPlatform } from "../../../assets/framework/adapters/memory/MemoryPlatform";
-import type { PlatformStorage } from "../../../assets/framework/contracts/platform/Platform";
+import type { IPlatformStorage } from "../../../assets/framework/contracts/interfaces/IPlatformStorage";
 import { MAX_TEAM_SIZE } from "../../../assets/samples/game_auto_battle/logic/config";
 import { FORMATION_GRID_SIZE } from "../../../assets/samples/game_auto_battle/logic/grid";
 import { LINEUP_STORAGE_KEY, LINEUP_SAVE_VERSION, createLineupStore } from "../../../assets/samples/game_auto_battle/logic/LineupStore";
@@ -17,7 +17,7 @@ function lineup(occupied: Readonly<Record<number, string>> = {}): AutoBattleLine
 }
 
 /** 直接把一条原始记录写入底层存储键（模拟旧版本/损坏存档）。 */
-function seed(storage: PlatformStorage, raw: string): Promise<void> {
+function seed(storage: IPlatformStorage, raw: string): Promise<void> {
     return storage.set(LINEUP_STORAGE_KEY, raw);
 }
 

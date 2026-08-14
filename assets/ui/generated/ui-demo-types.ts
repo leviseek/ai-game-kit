@@ -2,12 +2,12 @@
 // 包: Demo (id=4q9x2uij)
 
 import type {
-    TypedButtonNode,
-    TypedComponentNode,
-    TypedImageNode,
-    TypedListNode,
-    TypedProgressNode,
-    TypedTextNode,
+    ITypedButtonNode,
+    ITypedComponentNode,
+    ITypedImageNode,
+    ITypedListNode,
+    ITypedProgressNode,
+    ITypedTextNode,
 } from "../../framework";
 
 export const LobbyViewFields = {
@@ -30,20 +30,20 @@ export const LobbyViewFields = {
 export type LobbyViewNodes = keyof typeof LobbyViewFields;
 
 export interface ILobbyView {
-    readonly _img_bg: TypedImageNode;
-    readonly _txt_title: TypedTextNode;
-    readonly _btn_card: TypedButtonNode;
-    readonly _txt_card_name: TypedTextNode;
-    readonly _btn_fight: TypedButtonNode;
-    readonly _txt_fight_name: TypedTextNode;
-    readonly _btn_idle: TypedButtonNode;
-    readonly _txt_idle_name: TypedTextNode;
-    readonly _btn_rpg: TypedButtonNode;
-    readonly _txt_rpg_name: TypedTextNode;
-    readonly _btn_tycoon: TypedButtonNode;
-    readonly _txt_tycoon_name: TypedTextNode;
-    readonly _btn_auto_battle: TypedButtonNode;
-    readonly _txt_auto_battle_name: TypedTextNode;
+    readonly _img_bg: ITypedImageNode;
+    readonly _txt_title: ITypedTextNode;
+    readonly _btn_card: ITypedButtonNode;
+    readonly _txt_card_name: ITypedTextNode;
+    readonly _btn_fight: ITypedButtonNode;
+    readonly _txt_fight_name: ITypedTextNode;
+    readonly _btn_idle: ITypedButtonNode;
+    readonly _txt_idle_name: ITypedTextNode;
+    readonly _btn_rpg: ITypedButtonNode;
+    readonly _txt_rpg_name: ITypedTextNode;
+    readonly _btn_tycoon: ITypedButtonNode;
+    readonly _txt_tycoon_name: ITypedTextNode;
+    readonly _btn_auto_battle: ITypedButtonNode;
+    readonly _txt_auto_battle_name: ITypedTextNode;
 }
 
 export const SettingsPanel2Fields = {
@@ -64,18 +64,18 @@ export const SettingsPanel2Fields = {
 export type SettingsPanel2Nodes = keyof typeof SettingsPanel2Fields;
 
 export interface ISettingsPanel2 {
-    readonly _img_mask: TypedImageNode;
-    readonly _bg_panel: TypedImageNode;
-    readonly _title: TypedTextNode;
-    readonly _txt_music: TypedTextNode;
-    readonly _sld_music: TypedComponentNode;
-    readonly _txt_sfx: TypedTextNode;
-    readonly _bar_sfx: TypedProgressNode;
-    readonly _txt_quality: TypedTextNode;
-    readonly _cbx_quality: TypedComponentNode;
-    readonly _txt_players: TypedTextNode;
-    readonly _list_players: TypedListNode;
-    readonly _btn_return: TypedButtonNode;
+    readonly _img_mask: ITypedImageNode;
+    readonly _bg_panel: ITypedImageNode;
+    readonly _title: ITypedTextNode;
+    readonly _txt_music: ITypedTextNode;
+    readonly _sld_music: ITypedComponentNode;
+    readonly _txt_sfx: ITypedTextNode;
+    readonly _bar_sfx: ITypedProgressNode;
+    readonly _txt_quality: ITypedTextNode;
+    readonly _cbx_quality: ITypedComponentNode;
+    readonly _txt_players: ITypedTextNode;
+    readonly _list_players: ITypedListNode;
+    readonly _btn_return: ITypedButtonNode;
 }
 
 export const SettingsSliderGrip2Fields = {
@@ -86,8 +86,8 @@ export const SettingsSliderGrip2Fields = {
 export type SettingsSliderGrip2Nodes = keyof typeof SettingsSliderGrip2Fields;
 
 export interface ISettingsSliderGrip2 {
-    readonly _img_up: TypedImageNode;
-    readonly _img_down: TypedImageNode;
+    readonly _img_up: ITypedImageNode;
+    readonly _img_down: ITypedImageNode;
 }
 
 export const CloseDialogFields = {
@@ -104,14 +104,14 @@ export const CloseDialogFields = {
 export type CloseDialogNodes = keyof typeof CloseDialogFields;
 
 export interface ICloseDialog {
-    readonly _img_mask: TypedImageNode;
-    readonly _img_panel: TypedImageNode;
-    readonly _txt_title: TypedTextNode;
-    readonly _txt_content: TypedTextNode;
-    readonly _btn_cancel_bg: TypedImageNode;
-    readonly _txt_cancel: TypedTextNode;
-    readonly _btn_confirm_bg: TypedImageNode;
-    readonly _txt_confirm: TypedTextNode;
+    readonly _img_mask: ITypedImageNode;
+    readonly _img_panel: ITypedImageNode;
+    readonly _txt_title: ITypedTextNode;
+    readonly _txt_content: ITypedTextNode;
+    readonly _btn_cancel_bg: ITypedImageNode;
+    readonly _txt_cancel: ITypedTextNode;
+    readonly _btn_confirm_bg: ITypedImageNode;
+    readonly _txt_confirm: ITypedTextNode;
 }
 
 export const SettingsComboItem2Fields = {
@@ -123,9 +123,9 @@ export const SettingsComboItem2Fields = {
 export type SettingsComboItem2Nodes = keyof typeof SettingsComboItem2Fields;
 
 export interface ISettingsComboItem2 {
-    readonly _img_hover: TypedImageNode;
-    readonly _img_selected: TypedImageNode;
-    readonly _title: TypedTextNode;
+    readonly _img_hover: ITypedImageNode;
+    readonly _img_selected: ITypedImageNode;
+    readonly _title: ITypedTextNode;
 }
 
 export const HealthBarComFields = {
@@ -137,9 +137,9 @@ export const HealthBarComFields = {
 export type HealthBarComNodes = keyof typeof HealthBarComFields;
 
 export interface IHealthBarCom {
-    readonly _txt_label: TypedTextNode;
-    readonly _hp_track: TypedImageNode;
-    readonly _bar: TypedImageNode;
+    readonly _txt_label: ITypedTextNode;
+    readonly _hp_track: ITypedImageNode;
+    readonly _bar: ITypedImageNode;
 }
 
 export const DemoViewFields = {
@@ -150,8 +150,8 @@ export const DemoViewFields = {
 export type DemoViewNodes = keyof typeof DemoViewFields;
 
 export interface IDemoView {
-    readonly _img_bg: TypedImageNode;
-    readonly _txt_title: TypedTextNode;
+    readonly _img_bg: ITypedImageNode;
+    readonly _txt_title: ITypedTextNode;
 }
 
 export const SettingsReturnButton2Fields = {
@@ -163,9 +163,9 @@ export const SettingsReturnButton2Fields = {
 export type SettingsReturnButton2Nodes = keyof typeof SettingsReturnButton2Fields;
 
 export interface ISettingsReturnButton2 {
-    readonly _img_up: TypedImageNode;
-    readonly _img_down: TypedImageNode;
-    readonly _title: TypedTextNode;
+    readonly _img_up: ITypedImageNode;
+    readonly _img_down: ITypedImageNode;
+    readonly _title: ITypedTextNode;
 }
 
 export const SettingsComboPopup2Fields = {
@@ -176,8 +176,8 @@ export const SettingsComboPopup2Fields = {
 export type SettingsComboPopup2Nodes = keyof typeof SettingsComboPopup2Fields;
 
 export interface ISettingsComboPopup2 {
-    readonly _bg_panel: TypedImageNode;
-    readonly _list_items: TypedListNode;
+    readonly _bg_panel: ITypedImageNode;
+    readonly _list_items: ITypedListNode;
 }
 
 export const SettingsSlider2Fields = {
@@ -189,9 +189,9 @@ export const SettingsSlider2Fields = {
 export type SettingsSlider2Nodes = keyof typeof SettingsSlider2Fields;
 
 export interface ISettingsSlider2 {
-    readonly _bg: TypedImageNode;
-    readonly _bar: TypedImageNode;
-    readonly _grip: TypedComponentNode;
+    readonly _bg: ITypedImageNode;
+    readonly _bar: ITypedImageNode;
+    readonly _grip: ITypedComponentNode;
 }
 
 export const SettingsComboBox2Fields = {
@@ -204,10 +204,10 @@ export const SettingsComboBox2Fields = {
 export type SettingsComboBox2Nodes = keyof typeof SettingsComboBox2Fields;
 
 export interface ISettingsComboBox2 {
-    readonly _img_up: TypedImageNode;
-    readonly _img_down: TypedImageNode;
-    readonly _title: TypedTextNode;
-    readonly _img_arrow: TypedTextNode;
+    readonly _img_up: ITypedImageNode;
+    readonly _img_down: ITypedImageNode;
+    readonly _title: ITypedTextNode;
+    readonly _img_arrow: ITypedTextNode;
 }
 
 export const SettingsProgress2Fields = {
@@ -218,8 +218,8 @@ export const SettingsProgress2Fields = {
 export type SettingsProgress2Nodes = keyof typeof SettingsProgress2Fields;
 
 export interface ISettingsProgress2 {
-    readonly _bg_track: TypedImageNode;
-    readonly _bar: TypedImageNode;
+    readonly _bg_track: ITypedImageNode;
+    readonly _bar: ITypedImageNode;
 }
 
 export const SettingsPlayerItem2Fields = {
@@ -231,9 +231,9 @@ export const SettingsPlayerItem2Fields = {
 export type SettingsPlayerItem2Nodes = keyof typeof SettingsPlayerItem2Fields;
 
 export interface ISettingsPlayerItem2 {
-    readonly _img_hover: TypedImageNode;
-    readonly _img_selected: TypedImageNode;
-    readonly _title: TypedTextNode;
+    readonly _img_hover: ITypedImageNode;
+    readonly _img_selected: ITypedImageNode;
+    readonly _title: ITypedTextNode;
 }
 
 export const StartButtonFields = {
@@ -245,8 +245,8 @@ export const StartButtonFields = {
 export type StartButtonNodes = keyof typeof StartButtonFields;
 
 export interface IStartButton {
-    readonly _img_up: TypedImageNode;
-    readonly _img_down: TypedImageNode;
-    readonly _txt_start: TypedTextNode;
+    readonly _img_up: ITypedImageNode;
+    readonly _img_down: ITypedImageNode;
+    readonly _txt_start: ITypedTextNode;
 }
 

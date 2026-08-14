@@ -4,7 +4,7 @@ import { describe, expect, mock, test } from "bun:test";
 
 import { createFairyGuiMock } from "./helpers/fairygui-mock";
 import { createUiNavigator, type UiNavigator } from "../../../assets/framework/core/ui/UiNavigator";
-import type { UiLayer } from "../../../assets/framework/contracts/ui/Navigation";
+import type { EnumUiLayer } from "../../../assets/framework/contracts/enums/EnumUiLayer";
 
 // 适配器经 createFairyGuiPageAdapter 工厂间接依赖 fairygui-cc；测试不加载真实
 // 运行时，统一使用共享 fixture（bun mock.module 全局共享首个生效）。
@@ -41,7 +41,7 @@ interface FairyGuiPageAdapterOptions {
 
 interface FairyGuiPageAdapter {
     init(): void;
-    createPage(route: string, layer: UiLayer, options?: { packageName?: string; resName?: string }): unknown;
+    createPage(route: string, layer: EnumUiLayer, options?: { packageName?: string; resName?: string }): unknown;
     mount(page: unknown): void;
     destroy(page: unknown): void;
     setModal(modal: boolean): void;

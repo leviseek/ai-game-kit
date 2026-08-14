@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { createViewModelRenderer, type ViewModelNode } from "../../../assets/framework";
+import { createViewModelRenderer, type IViewModelNode } from "../../../assets/framework";
 import { createLineupEditorBindings, createLineupEditorViewModel, type LineupEditorCommands, type LineupEditorViewModel } from "../../../assets/samples/game_auto_battle/view/lineup";
 import { FORMATION_GRID_SIZE } from "../../../assets/samples/game_auto_battle/logic/grid";
 import type { AutoBattleHero, AutoBattleLineup } from "../../../assets/samples/game_auto_battle/models";
@@ -14,7 +14,7 @@ interface RecordingNode {
 
 function recordingView(): {
     nodes: Map<string, RecordingNode>;
-    node: (name: string) => ViewModelNode | undefined;
+    node: (name: string) => IViewModelNode | undefined;
 } {
     const nodes = new Map<string, RecordingNode>();
     const ensure = (name: string): RecordingNode => {

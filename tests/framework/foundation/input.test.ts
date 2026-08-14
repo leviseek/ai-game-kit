@@ -1,20 +1,23 @@
 import { describe, expect, test } from "bun:test";
 
-import type { TimeSource } from "../../../assets/framework/contracts/time/TimeSource";
+import type { ITimeSource } from "../../../assets/framework/contracts/interfaces/ITimeSource";
 import { MonotonicClock } from "../../../assets/framework/core/time/MonotonicClock";
-import type { InputEvent, InputSample, InputSource, InputSourceId } from "../../../assets/framework/contracts/input/Input";
+import type { IInputEvent } from "../../../assets/framework/contracts/interfaces/IInputEvent";
+import type { IInputSample } from "../../../assets/framework/contracts/interfaces/IInputSample";
+import type { IInputSource } from "../../../assets/framework/contracts/interfaces/IInputSource";
+import type { IInputSourceId } from "../../../assets/framework/contracts/interfaces/IInputSourceId";
 import { createInputMapper, type InputMapper, type InputMapperOptions } from "../../../assets/framework/core/input/InputMapper";
 
 type TestAction = "jump" | "confirm" | "move";
 
-interface FakeInputSource extends InputSource {
-    emit(event: InputEvent): void;
+interface FakeInputSource extends IInputSource {
+    emit(event: IInputEvent): void;
     readonly listenerCount: number;
 }
 
 // 可注入事件的测试输入源；内核替换输入源时应退订旧源、订阅新源
-function createFakeSource(id: InputSourceId): FakeInputSource {
-    const listeners = new Set<(event: InputEvent) => void>();
+function createFakeSource(id: IInputSourceId): FakeInputSource {
+    const listeners = new Set<(event: IInputEvent) => void>();
 
     return {
         id,
@@ -36,7 +39,7 @@ function createFakeSource(id: InputSourceId): FakeInputSource {
 }
 
 interface ControllableClock {
-    readonly timeSource: TimeSource;
+    readonly timeSource: ITimeSource;
     advance(ms: number): number;
 }
 
@@ -52,7 +55,7 @@ function createControllableClock(): ControllableClock {
     };
 }
 
-function createMapper(options: Omit<InputMapperOptions<TestAction>, "onSample">, samples: InputSample<TestAction>[]): InputMapper<TestAction> {
+function createMapper(options: Omit<InputMapperOptions<TestAction>, "onSample">, samples: IInputSample<TestAction>[]): InputMapper<TestAction> {
     return createInputMapper<TestAction>({
         ...options,
         onSample: (sample) => samples.push(sample),
@@ -63,7 +66,7 @@ describe("input mapping", () => {
     test("a bound source emits its mapped action", () => {
         const clock = createControllableClock();
         const source = createFakeSource("keyboard");
-        const samples: InputSample<TestAction>[] = [];
+        const samples: IInputSample<TestAction>[] = [];
 
         createMapper(
             {
@@ -86,7 +89,7 @@ describe("input mapping", () => {
     test("an unbound source produces no sample", () => {
         const clock = createControllableClock();
         const source = createFakeSource("keyboard");
-        const samples: InputSample<TestAction>[] = [];
+        const samples: IInputSample<TestAction>[] = [];
 
         createMapper(
             {
@@ -107,7 +110,7 @@ describe("input mapping", () => {
     test("the same input maps to a different action after remapping", () => {
         const clock = createControllableClock();
         const source = createFakeSource("keyboard");
-        const samples: InputSample<TestAction>[] = [];
+        const samples: IInputSample<TestAction>[] = [];
 
         const mapper = createMapper(
             {
@@ -135,7 +138,7 @@ describe("input context switching", () => {
 
     test("an inactive context suppresses mapped inputs", () => {
         const source = createFakeSource("keyboard");
-        const samples: InputSample<TestAction>[] = [];
+        const samples: IInputSample<TestAction>[] = [];
 
         createMapper(
             {
@@ -154,7 +157,7 @@ describe("input context switching", () => {
 
     test("switching context takes effect immediately", () => {
         const source = createFakeSource("keyboard");
-        const samples: InputSample<TestAction>[] = [];
+        const samples: IInputSample<TestAction>[] = [];
 
         const mapper = createMapper(
             {
@@ -175,7 +178,7 @@ describe("input context switching", () => {
 
     test("stale samples from the previous context are not dispatched", () => {
         const source = createFakeSource("keyboard");
-        const samples: InputSample<TestAction>[] = [];
+        const samples: IInputSample<TestAction>[] = [];
 
         const mapper = createMapper(
             {
@@ -202,7 +205,7 @@ describe("input context switching", () => {
 describe("input sampling", () => {
     test("press and release produce distinguishable samples", () => {
         const source = createFakeSource("keyboard");
-        const samples: InputSample<TestAction>[] = [];
+        const samples: IInputSample<TestAction>[] = [];
 
         createMapper(
             {
@@ -225,7 +228,7 @@ describe("input sampling", () => {
     test("analog input carries its continuous value", () => {
         const clock = createControllableClock();
         const source = createFakeSource("gamepad");
-        const samples: InputSample<TestAction>[] = [];
+        const samples: IInputSample<TestAction>[] = [];
 
         createMapper(
             {
@@ -253,7 +256,7 @@ describe("input sampling", () => {
         const readings = [100, 160];
         const clock = new MonotonicClock(() => readings.shift() ?? 0);
         const source = createFakeSource("keyboard");
-        const samples: InputSample<TestAction>[] = [];
+        const samples: IInputSample<TestAction>[] = [];
 
         createMapper(
             {
@@ -277,7 +280,7 @@ describe("input source replacement", () => {
     test("replacing the source stops events from the old source", () => {
         const oldSource = createFakeSource("real-device");
         const newSource = createFakeSource("test-double");
-        const samples: InputSample<TestAction>[] = [];
+        const samples: IInputSample<TestAction>[] = [];
 
         const mapper = createMapper(
             {
@@ -301,7 +304,7 @@ describe("input source replacement", () => {
 
     test("the new source keeps the mapping and active context semantics", () => {
         const newSource = createFakeSource("test-double");
-        const samples: InputSample<TestAction>[] = [];
+        const samples: IInputSample<TestAction>[] = [];
 
         const mapper = createMapper(
             {
@@ -326,7 +329,7 @@ describe("input source replacement", () => {
 
     test("dispose unsubscribes the current source", () => {
         const source = createFakeSource("keyboard");
-        const samples: InputSample<TestAction>[] = [];
+        const samples: IInputSample<TestAction>[] = [];
 
         const mapper = createMapper(
             {
@@ -346,7 +349,7 @@ describe("input source replacement", () => {
     test("dispose makes mutators no-op without re-subscribing", () => {
         const source = createFakeSource("keyboard");
         const replacement = createFakeSource("test-double");
-        const samples: InputSample<TestAction>[] = [];
+        const samples: IInputSample<TestAction>[] = [];
 
         const mapper = createMapper(
             {
@@ -386,7 +389,7 @@ describe("input UI blocking", () => {
             },
         };
         const source = createFakeSource("keyboard");
-        const samples: InputSample<TestAction>[] = [];
+        const samples: IInputSample<TestAction>[] = [];
 
         createMapper(
             {
@@ -411,7 +414,7 @@ describe("input UI blocking", () => {
     test("an explicit isBlocked callback overrides the navigator", () => {
         const navigator = { modal: false };
         const source = createFakeSource("keyboard");
-        const samples: InputSample<TestAction>[] = [];
+        const samples: IInputSample<TestAction>[] = [];
 
         createMapper(
             {
@@ -432,7 +435,7 @@ describe("input UI blocking", () => {
 
     test("a single input produces exactly one sample across contexts", () => {
         const source = createFakeSource("keyboard");
-        const samples: InputSample<TestAction>[] = [];
+        const samples: IInputSample<TestAction>[] = [];
 
         // 同一输入在 ui 与 gameplay 上下文均有映射，且均激活时
         // 只按激活上下文产生一次采样，不重复派发

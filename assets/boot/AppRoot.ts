@@ -1,6 +1,6 @@
 import { _decorator, Component, director, sys } from "cc";
 import { DEBUG } from "cc/env";
-import { Application, lookupBundle, ServiceResolutionError, type IResourceProvider, type Logger, type SceneFlow } from "../framework";
+import { Application, lookupBundle, ServiceResolutionError, type IResourceProvider, type ILogger, type SceneFlow } from "../framework";
 import { CocosApplicationAdapter } from "../framework/adapters/cocos/application/CocosApplicationAdapter";
 import { createSafeAreaOverlayView } from "../framework/adapters/cocos/ui/SafeAreaOverlayViewHandle";
 import type { GameEntryInfo } from "../game/lobby/catalog";
@@ -34,7 +34,7 @@ export class AppRoot extends Component {
     private listFlow?: GameListFlow;
     private smoke?: SmokeProxy;
     private bootFlow?: BootFlow;
-    private logger?: Logger;
+    private logger?: ILogger;
     private validateAssembly?: () => void;
     private isDevEnabled?: () => boolean;
     private devOverlay?: DevOverlaySetupHandle;

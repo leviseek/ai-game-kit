@@ -2,14 +2,14 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, isAbsolute, relative, resolve } from "node:path";
 import { describe, expect, test } from "bun:test";
 
-import type { ApplicationContext, Module } from "../../../assets/framework";
+import type { IApplicationContext, IModule } from "../../../assets/framework";
 
 const projectRoot = resolve(import.meta.dir, "../../..");
 const frameworkRoot = resolve(projectRoot, "assets/framework");
 const frameworkEntry = resolve(frameworkRoot, "index.ts");
-const moduleContractRoot = resolve(frameworkRoot, "contracts/module");
-const moduleContractFile = resolve(moduleContractRoot, "Module.ts");
-const applicationContractRoot = resolve(frameworkRoot, "contracts/application");
+const moduleContractRoot = resolve(frameworkRoot, "contracts/interfaces");
+const moduleContractFile = resolve(moduleContractRoot, "IModule.ts");
+const applicationContractRoot = resolve(frameworkRoot, "contracts/interfaces");
 const runtimeImportScanner = new Bun.Transpiler({ loader: "ts" });
 
 function isWithin(path: string, directory: string): boolean {
@@ -62,12 +62,12 @@ function readModuleContractSources(): readonly {
     }));
 }
 
-const metadataOnlyModule: Module = {
+const metadataOnlyModule: IModule = {
     id: "metadata-only",
     dependencies: ["logging"],
 };
 
-function createSynchronousModule(calls: string[]): Module {
+function createSynchronousModule(calls: string[]): IModule {
     return {
         id: "synchronous",
         dependencies: [],
@@ -92,7 +92,7 @@ function createSynchronousModule(calls: string[]): Module {
     };
 }
 
-function createAsynchronousModule(calls: string[]): Module {
+function createAsynchronousModule(calls: string[]): IModule {
     return {
         id: "asynchronous",
         dependencies: [metadataOnlyModule.id],
@@ -117,7 +117,7 @@ function createAsynchronousModule(calls: string[]): Module {
     };
 }
 
-describe("Module contract", () => {
+describe("IModule contract", () => {
     test("is exposed as a composition contract instead of a base class or singleton", () => {
         expect(existsSync(moduleContractFile)).toBe(true);
 
@@ -131,8 +131,8 @@ describe("Module contract", () => {
             .join("\n");
         const frameworkSource = readFileSync(frameworkEntry, "utf8");
 
-        expect(moduleSource).toMatch(/\bexport\s+interface\s+Module\b/);
-        expect(frameworkSource).toMatch(/export\s+type\s*\{[\s\S]*?\bModule\b[\s\S]*?\}\s*from\s*["']\.\/contracts\/module\/Module["']/);
+        expect(moduleSource).toMatch(/\bexport\s+interface\s+IModule\b/);
+        expect(frameworkSource).toMatch(/export\s+type\s*\{[\s\S]*?\bIModule\b[\s\S]*?\}\s*from\s*["']\.\/contracts\/interfaces\/IModule["']/);
         expect(allModuleSources).not.toMatch(/\bextends\s+(?:BaseModule|Component)\b/);
         expect(allModuleSources).not.toMatch(/\b(?:globalThis|registerSingleton|registerModule)\b/);
         expect(allModuleSources).not.toMatch(/\bstatic\s+(?:readonly\s+)?(?:instance|shared)\b/);
@@ -144,7 +144,7 @@ describe("Module contract", () => {
         expect(typeof metadataOnlyModule.dependencies[0]).toBe("string");
     });
 
-    test("erases contracts/module completely from runtime output", () => {
+    test("erases contracts/interfaces Module contract completely from runtime output", () => {
         const runtimeFiles = readModuleContractSources().flatMap(({ file, source }) =>
             runtimeImportScanner.transformSync(source).trim().length === 0 ? [] : [relative(moduleContractRoot, file).replaceAll("\\", "/")],
         );
@@ -164,7 +164,7 @@ describe("Module contract", () => {
     test("allows synchronous lifecycle hooks", () => {
         const calls: string[] = [];
         const module = createSynchronousModule(calls);
-        const context = {} as ApplicationContext;
+        const context = {} as IApplicationContext;
 
         expect(module.initialize?.(context)).toBeUndefined();
         expect(module.start?.(context)).toBeUndefined();
@@ -178,7 +178,7 @@ describe("Module contract", () => {
     test("allows asynchronous lifecycle hooks", async () => {
         const calls: string[] = [];
         const module = createAsynchronousModule(calls);
-        const context = {} as ApplicationContext;
+        const context = {} as IApplicationContext;
 
         await module.initialize?.(context);
         await module.start?.(context);
@@ -190,7 +190,7 @@ describe("Module contract", () => {
         expect(calls).toEqual(["initialize", "start", "pause", "resume", "stop", "dispose"]);
     });
 
-    test("imports ApplicationContext only as a type from contracts/application", () => {
+    test("imports IApplicationContext only as a type from contracts/interfaces", () => {
         if (!existsSync(moduleContractFile)) {
             return;
         }

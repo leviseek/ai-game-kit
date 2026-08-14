@@ -1,4 +1,4 @@
-import { lookupBundle, type IResourceProvider, type ResourceHandle, type SceneFlow, type SceneResources, type SceneSwitchResult, type UiLayer } from "../../framework";
+import { EnumUiLayer, lookupBundle, type IResourceProvider, type IResourceHandle, type SceneFlow, type SceneResources, type SceneSwitchResult } from "../../framework";
 import { createFairyGuiViewHandle } from "../../framework/adapters/cocos/ui/FairyGuiViewHandle";
 import { createDynamicComponentViewHandle } from "../../framework/adapters/cocos/ui/DynamicComponentViewHandle";
 import type { GameLobbyHostImpl } from "../host/GameLobbyHostImpl";
@@ -108,12 +108,12 @@ export class SmokeProxy {
     }
 
     /** UI 冒烟触发：加载 FairyGUI package 并登记到全局常驻 uiScope。 */
-    smokeUiLoadPackage(bundle: string, path: string): Promise<ResourceHandle> {
+    smokeUiLoadPackage(bundle: string, path: string): Promise<IResourceHandle> {
         return this.uiHost.loadPackage(bundle, path);
     }
 
     /** UI 冒烟触发：打开页面。pageAdapter 未就绪时返回 false。 */
-    smokeUiOpenPage(route: string, layer: UiLayer, packageName: string, resName: string): boolean {
+    smokeUiOpenPage(route: string, layer: EnumUiLayer, packageName: string, resName: string): boolean {
         return this.uiHost.openPage(route, layer, packageName, resName);
     }
 

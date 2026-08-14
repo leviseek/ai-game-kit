@@ -2,11 +2,11 @@
 // 包: AutoBattle (id=abpk0001)
 
 import type {
-    TypedButtonNode,
-    TypedComponentNode,
-    TypedImageNode,
-    TypedListNode,
-    TypedTextNode,
+    ITypedButtonNode,
+    ITypedComponentNode,
+    ITypedImageNode,
+    ITypedListNode,
+    ITypedTextNode,
 } from "../../framework";
 
 export const AutoBattleViewFields = {
@@ -26,17 +26,17 @@ export const AutoBattleViewFields = {
 export type AutoBattleViewNodes = keyof typeof AutoBattleViewFields;
 
 export interface IAutoBattleView {
-    readonly _bg_battle: TypedImageNode;
-    readonly _container_units: TypedComponentNode;
-    readonly _container_effects: TypedComponentNode;
-    readonly _txt_round: TypedTextNode;
-    readonly _txt_log: TypedTextNode;
-    readonly _txt_result: TypedTextNode;
-    readonly _btn_restart: TypedButtonNode;
-    readonly _btn_speed: TypedButtonNode;
-    readonly _vs_left: TypedTextNode;
-    readonly _vs_right: TypedTextNode;
-    readonly _vs_badge: TypedTextNode;
+    readonly _bg_battle: ITypedImageNode;
+    readonly _container_units: ITypedComponentNode;
+    readonly _container_effects: ITypedComponentNode;
+    readonly _txt_round: ITypedTextNode;
+    readonly _txt_log: ITypedTextNode;
+    readonly _txt_result: ITypedTextNode;
+    readonly _btn_restart: ITypedButtonNode;
+    readonly _btn_speed: ITypedButtonNode;
+    readonly _vs_left: ITypedTextNode;
+    readonly _vs_right: ITypedTextNode;
+    readonly _vs_badge: ITypedTextNode;
 }
 
 export const LineupEditorViewFields = {
@@ -90,51 +90,51 @@ export const LineupEditorViewFields = {
 export type LineupEditorViewNodes = keyof typeof LineupEditorViewFields;
 
 export interface ILineupEditorView {
-    readonly _bg_lineup: TypedImageNode;
-    readonly _bg_formation_panel: TypedImageNode;
-    readonly _img_slot_0: TypedImageNode;
-    readonly _img_slot_1: TypedImageNode;
-    readonly _img_slot_2: TypedImageNode;
-    readonly _img_slot_3: TypedImageNode;
-    readonly _img_slot_4: TypedImageNode;
-    readonly _img_slot_5: TypedImageNode;
-    readonly _img_slot_6: TypedImageNode;
-    readonly _img_slot_7: TypedImageNode;
-    readonly _img_slot_8: TypedImageNode;
-    readonly _bg_candidates_panel: TypedImageNode;
-    readonly _slot_0: TypedButtonNode;
-    readonly _slot_1: TypedButtonNode;
-    readonly _slot_2: TypedButtonNode;
-    readonly _slot_3: TypedButtonNode;
-    readonly _slot_4: TypedButtonNode;
-    readonly _slot_5: TypedButtonNode;
-    readonly _slot_6: TypedButtonNode;
-    readonly _slot_7: TypedButtonNode;
-    readonly _slot_8: TypedButtonNode;
-    readonly _slot_selected_0: TypedImageNode;
-    readonly _slot_selected_1: TypedImageNode;
-    readonly _slot_selected_2: TypedImageNode;
-    readonly _slot_selected_3: TypedImageNode;
-    readonly _slot_selected_4: TypedImageNode;
-    readonly _slot_selected_5: TypedImageNode;
-    readonly _slot_selected_6: TypedImageNode;
-    readonly _slot_selected_7: TypedImageNode;
-    readonly _slot_selected_8: TypedImageNode;
-    readonly _txt_slot_0_name: TypedTextNode;
-    readonly _txt_slot_1_name: TypedTextNode;
-    readonly _txt_slot_2_name: TypedTextNode;
-    readonly _txt_slot_3_name: TypedTextNode;
-    readonly _txt_slot_4_name: TypedTextNode;
-    readonly _txt_slot_5_name: TypedTextNode;
-    readonly _txt_slot_6_name: TypedTextNode;
-    readonly _txt_slot_7_name: TypedTextNode;
-    readonly _txt_slot_8_name: TypedTextNode;
-    readonly _candidate_list: TypedListNode;
-    readonly _txt_title: TypedTextNode;
-    readonly _txt_formation_title: TypedTextNode;
-    readonly _txt_candidates_title: TypedTextNode;
-    readonly _btn_idle_rewards: TypedButtonNode;
-    readonly _btn_start: TypedButtonNode;
+    readonly _bg_lineup: ITypedImageNode;
+    readonly _bg_formation_panel: ITypedImageNode;
+    readonly _img_slot_0: ITypedImageNode;
+    readonly _img_slot_1: ITypedImageNode;
+    readonly _img_slot_2: ITypedImageNode;
+    readonly _img_slot_3: ITypedImageNode;
+    readonly _img_slot_4: ITypedImageNode;
+    readonly _img_slot_5: ITypedImageNode;
+    readonly _img_slot_6: ITypedImageNode;
+    readonly _img_slot_7: ITypedImageNode;
+    readonly _img_slot_8: ITypedImageNode;
+    readonly _bg_candidates_panel: ITypedImageNode;
+    readonly _slot_0: ITypedButtonNode;
+    readonly _slot_1: ITypedButtonNode;
+    readonly _slot_2: ITypedButtonNode;
+    readonly _slot_3: ITypedButtonNode;
+    readonly _slot_4: ITypedButtonNode;
+    readonly _slot_5: ITypedButtonNode;
+    readonly _slot_6: ITypedButtonNode;
+    readonly _slot_7: ITypedButtonNode;
+    readonly _slot_8: ITypedButtonNode;
+    readonly _slot_selected_0: ITypedImageNode;
+    readonly _slot_selected_1: ITypedImageNode;
+    readonly _slot_selected_2: ITypedImageNode;
+    readonly _slot_selected_3: ITypedImageNode;
+    readonly _slot_selected_4: ITypedImageNode;
+    readonly _slot_selected_5: ITypedImageNode;
+    readonly _slot_selected_6: ITypedImageNode;
+    readonly _slot_selected_7: ITypedImageNode;
+    readonly _slot_selected_8: ITypedImageNode;
+    readonly _txt_slot_0_name: ITypedTextNode;
+    readonly _txt_slot_1_name: ITypedTextNode;
+    readonly _txt_slot_2_name: ITypedTextNode;
+    readonly _txt_slot_3_name: ITypedTextNode;
+    readonly _txt_slot_4_name: ITypedTextNode;
+    readonly _txt_slot_5_name: ITypedTextNode;
+    readonly _txt_slot_6_name: ITypedTextNode;
+    readonly _txt_slot_7_name: ITypedTextNode;
+    readonly _txt_slot_8_name: ITypedTextNode;
+    readonly _candidate_list: ITypedListNode;
+    readonly _txt_title: ITypedTextNode;
+    readonly _txt_formation_title: ITypedTextNode;
+    readonly _txt_candidates_title: ITypedTextNode;
+    readonly _btn_idle_rewards: ITypedButtonNode;
+    readonly _btn_start: ITypedButtonNode;
 }
 
 export const UnitHitFeedbackComFields = {
@@ -145,8 +145,8 @@ export const UnitHitFeedbackComFields = {
 export type UnitHitFeedbackComNodes = keyof typeof UnitHitFeedbackComFields;
 
 export interface IUnitHitFeedbackCom {
-    readonly _fx_flash: TypedImageNode;
-    readonly _fx_float: TypedTextNode;
+    readonly _fx_flash: ITypedImageNode;
+    readonly _fx_float: ITypedTextNode;
 }
 
 export const IdleRewardsViewFields = {
@@ -166,16 +166,16 @@ export const IdleRewardsViewFields = {
 export type IdleRewardsViewNodes = keyof typeof IdleRewardsViewFields;
 
 export interface IIdleRewardsView {
-    readonly _bg_idle_rewards: TypedImageNode;
-    readonly _bg_rewards_panel: TypedImageNode;
-    readonly _txt_title: TypedTextNode;
-    readonly _txt_offline_label: TypedTextNode;
-    readonly _txt_offline_minutes: TypedTextNode;
-    readonly _txt_claimable_label: TypedTextNode;
-    readonly _txt_claimable: TypedTextNode;
-    readonly _txt_total_label: TypedTextNode;
-    readonly _txt_total_rewards: TypedTextNode;
-    readonly _btn_claim: TypedButtonNode;
-    readonly _btn_back: TypedButtonNode;
+    readonly _bg_idle_rewards: ITypedImageNode;
+    readonly _bg_rewards_panel: ITypedImageNode;
+    readonly _txt_title: ITypedTextNode;
+    readonly _txt_offline_label: ITypedTextNode;
+    readonly _txt_offline_minutes: ITypedTextNode;
+    readonly _txt_claimable_label: ITypedTextNode;
+    readonly _txt_claimable: ITypedTextNode;
+    readonly _txt_total_label: ITypedTextNode;
+    readonly _txt_total_rewards: ITypedTextNode;
+    readonly _btn_claim: ITypedButtonNode;
+    readonly _btn_back: ITypedButtonNode;
 }
 

@@ -4,13 +4,13 @@ import {
     createServiceRegistry,
     createServiceToken,
     type IResourceProvider,
-    type Logger,
-    type Module,
+    type ILogger,
+    type IModule,
     type SceneFlow,
     type SceneResources,
     type ServiceRegistry,
     type ServiceToken,
-    type TimeSource,
+    type ITimeSource,
     type FuiViewBindingRegistrar,
 } from "../framework";
 import { createApplicationContext } from "../framework/application/ApplicationContext";
@@ -38,10 +38,10 @@ import { createUiHost, type UiHost } from "./host/UiHost";
  */
 export interface GameModule {
     readonly sceneResources?: Readonly<Record<string, SceneResources>>;
-    readonly createListFlow?: (host: GameLobbyHost, logger: Logger) => GameListFlow;
+    readonly createListFlow?: (host: GameLobbyHost, logger: ILogger) => GameListFlow;
 }
 
-export function createModules(): readonly Module[] {
+export function createModules(): readonly IModule[] {
     return [];
 }
 
@@ -62,7 +62,7 @@ export interface AppAssembly {
     /** UI 根宿主：封装 FairyGUI GRoot 获取与运行时初始化时机。 */
     readonly uiRoot: CocosUiRoot;
     /** 组合根日志：供 UI 根初始化失败上报等场景使用。 */
-    readonly logger: Logger;
+    readonly logger: ILogger;
     /** 组合根显式创建的服务注册表：供装配前 token 校验与业务对象经构造注入服务契约。 */
     readonly registry: ServiceRegistry;
     /** 装配前 token 校验：缺失/循环在此同步抛错，失败走既有 app.start().catch 路径。 */
@@ -83,13 +83,13 @@ export function assembleApp(options: { fuiObjectFactory?: FuiObjectFactory } = {
     // 服务注册表由组合根显式创建；注册一个无副作用的墙钟时间源作为最小接入演示，
     // 后续业务服务在此以类型化 token 注册。注册表不进 Context、不做全局单例。
     const registry = createServiceRegistry();
-    const appTimeSourceToken = createServiceToken<TimeSource>("app.time");
-    registry.register(appTimeSourceToken, new WallClock());
+    const appITimeSourceToken = createServiceToken<ITimeSource>("app.time");
+    registry.register(appITimeSourceToken, new WallClock());
 
     // 装配前 token 校验：模块声明依赖的 token 在此逐个 resolve（缺失/循环同步抛错）。
     // 闭包在 AppRoot.start 先于 app.start 调用，失败走既有 app.start().catch 失败路径。
     const validateAssembly = (): void => {
-        validateRequiredTokens(registry, [appTimeSourceToken]);
+        validateRequiredTokens(registry, [appITimeSourceToken]);
     };
 
     // 场景流转冒烟组合：真实引擎接缝（cc.assetManager / cc.director）的整链路组装点。

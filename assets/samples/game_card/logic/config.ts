@@ -1,6 +1,11 @@
-import type { Module } from "../../../framework";
-import { configArray, configNumber, createConfigTable, type ConfigTable } from "../../../framework";
+import type { IConfigKey, IModule } from "../../../framework";
+import { configArray, configNumber, createConfigTable, type IConfigTable } from "../../../framework";
 import type { CardConfig } from "../models";
+
+// branded 键无运行期值：读取前把配置键字符串收窄为品牌类型
+function keyOf(key: string): IConfigKey {
+    return key as unknown as IConfigKey;
+}
 
 /** 配置读取句柄：把不可变配置表解析为卡牌数值与回合时长。 */
 export interface CardConfigHandle {
@@ -42,9 +47,9 @@ function isCardConfig(value: unknown): value is CardConfig {
  * 由组合根注入；本模块只负责解析，不承载业务数值的默认值来源之外逻辑。
  */
 export function createCardConfig(content: Record<string, unknown>): CardConfigHandle {
-    const table: ConfigTable = createConfigTable(content);
+    const table: IConfigTable = createConfigTable(content);
 
-    const rawCards = table.read("cards", configArray, []);
+    const rawCards = table.read(keyOf("cards"), configArray, []);
     const cards = rawCards.map((entry, index) => {
         if (!isCardConfig(entry)) {
             throw new Error(`card config entry at index ${index} has an invalid shape`);
@@ -54,12 +59,12 @@ export function createCardConfig(content: Record<string, unknown>): CardConfigHa
 
     return {
         cards,
-        turnDurationMs: table.read("turnDurationMs", configNumber, 1000),
-        playerHp: table.read("playerHp", configNumber, 10),
-        enemyHp: table.read("enemyHp", configNumber, 8),
-        startMana: table.read("startMana", configNumber, 3),
-        enemyAttackIntervalMs: table.read("enemyAttackIntervalMs", configNumber, 500),
-        enemyDamage: table.read("enemyDamage", configNumber, 2),
+        turnDurationMs: table.read(keyOf("turnDurationMs"), configNumber, 1000),
+        playerHp: table.read(keyOf("playerHp"), configNumber, 10),
+        enemyHp: table.read(keyOf("enemyHp"), configNumber, 8),
+        startMana: table.read(keyOf("startMana"), configNumber, 3),
+        enemyAttackIntervalMs: table.read(keyOf("enemyAttackIntervalMs"), configNumber, 500),
+        enemyDamage: table.read(keyOf("enemyDamage"), configNumber, 2),
     };
 }
 
@@ -67,7 +72,7 @@ export function createCardConfig(content: Record<string, unknown>): CardConfigHa
  * 配置模块：组合根创建配置句柄并注入；模块只登记引用，配置表为不可变数据，
  * 生命周期无副作用，不在此释放共享配置。
  */
-export function createCardConfigModule(config: CardConfigHandle): Module {
+export function createCardConfigModule(config: CardConfigHandle): IModule {
     return {
         id: "card.config",
         dependencies: [],

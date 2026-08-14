@@ -4,7 +4,7 @@ import { pathToFileURL } from "node:url";
 import { describe, expect, test } from "bun:test";
 
 import type { GameFixture } from "../../../assets/game/fixture/GameFixture";
-import type { PlatformStorage, TimeSource } from "../../../assets/framework";
+import type { IPlatformStorage, ITimeSource } from "../../../assets/framework";
 import { MemoryPlatform } from "../../../assets/framework/adapters/memory/MemoryPlatform";
 
 const projectRoot = resolve(import.meta.dir, "../../..");
@@ -23,7 +23,7 @@ interface IdleProgressState {
 }
 
 /** 可控墙钟：now() 返回当前墙钟时间，只经 advance 推进，模拟离线时长。 */
-interface IdleClock extends TimeSource {
+interface IdleClock extends ITimeSource {
     advance(milliseconds: number): void;
 }
 
@@ -35,7 +35,7 @@ interface IdleFixtureOptions {
     /** 可控墙钟：缺省为内建时钟（从 0 开始，测试经 fixture.clock.advance 推进）。 */
     readonly clock?: IdleClock;
     /** 平台存储后端：缺省为内存存储；观察版本化存档写入/读取。 */
-    readonly storage?: PlatformStorage;
+    readonly storage?: IPlatformStorage;
 }
 
 /** 夹具暴露的协作钩子：测试驱动墙钟、调度、成长进度与版本化存档。 */
@@ -359,7 +359,7 @@ describe.skipIf(!assemblyExists)("Idle fixture composition capabilities", () => 
         // 但金币已在内存结算、离线起点已消费；后续成功 resume 重写存档补齐，
         // 不产生重复累计。
         let failWrites = true;
-        const failingStorage: PlatformStorage = {
+        const failingStorage: IPlatformStorage = {
             async get(_key: string): Promise<string | null> {
                 return null;
             },

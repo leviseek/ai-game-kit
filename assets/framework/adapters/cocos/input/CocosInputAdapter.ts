@@ -1,5 +1,12 @@
 import * as cc from "cc";
-import type { InputEvent, InputSource, InputSourceId } from "../../../contracts/input/Input";
+import type { IInputEvent } from "../../../contracts/interfaces/IInputEvent";
+import type { IInputSource } from "../../../contracts/interfaces/IInputSource";
+import type { IInputSourceId } from "../../../contracts/interfaces/IInputSourceId";
+
+// branded 字符串无运行期值：适配器内部按模板字面量构造后在边界收窄为品牌类型
+function toSourceId(value: string): IInputSourceId {
+    return value as unknown as IInputSourceId;
+}
 
 // 结构化的引擎接缝：只依赖本适配器用到的能力，便于测试注入 mock
 export interface CocosInputEventTypes {
@@ -104,20 +111,20 @@ function defaultEventTypes(): CocosInputEventTypes {
     };
 }
 
-export interface CocosInputAdapter extends InputSource {
-    readonly id: InputSourceId;
+export interface CocosInputAdapter extends IInputSource {
+    readonly id: IInputSourceId;
 }
 
 /**
  * Cocos 输入适配器：把 cc.input 的触摸/鼠标/键盘/可用手柄事件翻译为内核
- * 可接收的 InputEvent。sourceId 约定：`touch:<touchId>`、`mouse:<button>`、
+ * 可接收的 IInputEvent。sourceId 约定：`touch:<touchId>`、`mouse:<button>`、
  * `key:<keyCode>`、`gamepad:<deviceId>:<控件名>`（控件名见 GAMEPAD_BUTTONS/AXES）。
  * 引擎 API 走可注入接缝；手柄缺失或未连接时降级为无输入而非报错。
  */
 export function createCocosInputAdapter(options: CocosInputAdapterOptions = {}): CocosInputAdapter {
     const input = options.input ?? (cc.input as unknown as CocosInputLike);
 
-    let listener: ((event: InputEvent) => void) | undefined;
+    let listener: ((event: IInputEvent) => void) | undefined;
     let bound = false;
     // 注册用的 handler 引用：首次订阅时解析并缓存，退订复用同一引用，
     // 引擎按 callback 引用匹配退订，每次新建会导致 off 失效
@@ -147,7 +154,7 @@ export function createCocosInputAdapter(options: CocosInputAdapterOptions = {}):
         return resolvedHandlers;
     }
 
-    function emit(event: InputEvent): void {
+    function emit(event: IInputEvent): void {
         listener?.(event);
     }
 
@@ -156,7 +163,7 @@ export function createCocosInputAdapter(options: CocosInputAdapterOptions = {}):
         if (touchId === undefined || touchId === null) {
             return;
         }
-        emit({ sourceId: `touch:${touchId}`, pressed });
+        emit({ sourceId: toSourceId(`touch:${touchId}`), pressed });
     }
 
     function handleMouse(event: unknown, pressed: boolean): void {
@@ -164,7 +171,7 @@ export function createCocosInputAdapter(options: CocosInputAdapterOptions = {}):
         if (button === undefined) {
             return;
         }
-        emit({ sourceId: `mouse:${button}`, pressed });
+        emit({ sourceId: toSourceId(`mouse:${button}`), pressed });
     }
 
     function handleKey(event: unknown, pressed: boolean): void {
@@ -172,7 +179,7 @@ export function createCocosInputAdapter(options: CocosInputAdapterOptions = {}):
         if (keyCode === undefined) {
             return;
         }
-        emit({ sourceId: `key:${keyCode}`, pressed });
+        emit({ sourceId: toSourceId(`key:${keyCode}`), pressed });
     }
 
     function syncControl(gamepad: CocosGamepadLike, name: string, control: CocosGamepadButtonLike, analog: boolean): void {
@@ -186,7 +193,7 @@ export function createCocosInputAdapter(options: CocosInputAdapterOptions = {}):
             return;
         }
         lastState.set(stateKey, { pressed, value });
-        emit({ sourceId: `gamepad:${gamepad.deviceId}:${name}`, pressed, value });
+        emit({ sourceId: toSourceId(`gamepad:${gamepad.deviceId}:${name}`), pressed, value });
     }
 
     // 手柄断开时清空该设备控件状态，避免重连后旧状态被误判为未变化。
@@ -226,7 +233,7 @@ export function createCocosInputAdapter(options: CocosInputAdapterOptions = {}):
     }
 
     return {
-        id: "cocos-input",
+        id: toSourceId("cocos-input"),
         subscribe(callback) {
             if (bound) {
                 // 重复订阅返回空退订，避免引擎监听重复注册

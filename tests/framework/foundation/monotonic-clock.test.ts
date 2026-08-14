@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import type { TimeSource } from "../../../assets/framework/contracts/time/TimeSource";
+import type { ITimeSource } from "../../../assets/framework/contracts/interfaces/ITimeSource";
 import { MonotonicClock } from "../../../assets/framework/core/time/MonotonicClock";
 
 describe("MonotonicClock", () => {
@@ -32,9 +32,9 @@ describe("MonotonicClock", () => {
         expect(clock.now()).toBe(8);
     });
 
-    test("satisfies the TimeSource contract shape", () => {
+    test("satisfies the ITimeSource contract shape", () => {
         const clock = new MonotonicClock();
-        const timeSource: TimeSource = clock;
+        const timeSource: ITimeSource = clock;
 
         expect(typeof timeSource.now).toBe("function");
     });

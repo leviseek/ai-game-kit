@@ -1,10 +1,15 @@
-import type { InputEvent, InputSource, Module } from "../../../framework";
+import type { IInputEvent, IInputSource, IInputSourceId, IModule } from "../../../framework";
 
 /**
  * 输入上下文：组合根创建 InputMapper，按激活上下文把底层输入源事件
  * 路由为类型化 action 采样。模块只登记引用；push 钩子经可控输入源
  * 把测试驱动的事件送入 mapper（见 assembly.ts）。
  */
+// branded 来源 id 无运行期值：把业务字符串收窄为品牌类型
+function toSourceId(sourceId: string): IInputSourceId {
+    return sourceId as unknown as IInputSourceId;
+}
+
 export interface FightInputHooks {
     readonly activeContext: string;
     setActiveContext(context: string): void;
@@ -13,17 +18,17 @@ export interface FightInputHooks {
 
 /** 可控输入源：测试经 push 注入底层输入事件，无需真实键盘。 */
 export interface FightInputSource {
-    readonly source: InputSource;
+    readonly source: IInputSource;
     push(sourceId: string, pressed: boolean, value?: number): void;
 }
 
 export function createFightInputSource(): FightInputSource {
-    let listener: ((event: InputEvent) => void) | undefined;
+    let listener: ((event: IInputEvent) => void) | undefined;
 
     return {
         source: {
-            id: "fight-input",
-            subscribe(next: (event: InputEvent) => void): () => void {
+            id: toSourceId("fight-input"),
+            subscribe(next: (event: IInputEvent) => void): () => void {
                 listener = next;
                 return () => {
                     listener = undefined;
@@ -31,12 +36,12 @@ export function createFightInputSource(): FightInputSource {
             },
         },
         push: (sourceId: string, pressed: boolean, value?: number) => {
-            listener?.({ sourceId, pressed, value });
+            listener?.({ sourceId: toSourceId(sourceId), pressed, value });
         },
     };
 }
 
-export function createFightInputModule(handle: FightInputSource): Module {
+export function createFightInputModule(handle: FightInputSource): IModule {
     return {
         id: "fight.input",
         dependencies: [],

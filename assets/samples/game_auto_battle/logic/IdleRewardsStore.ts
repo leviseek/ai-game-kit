@@ -1,4 +1,4 @@
-import type { Module, PlatformStorage } from "../../../framework";
+import type { IModule, IPlatformStorage } from "../../../framework";
 import type { IdleRewardState } from "../models";
 
 /** 挂机存档 schema 版本：夹具层自持版本号，升级时递增。 */
@@ -12,7 +12,7 @@ export type IdleRewardsSaveMigrator = (data: unknown) => unknown;
 
 /** 挂机存储选项：注入平台存储，可选指定当前版本与迁移器映射（测试/未来演进）。 */
 export interface IdleRewardsStoreOptions {
-    readonly storage: PlatformStorage;
+    readonly storage: IPlatformStorage;
     /** 当前 schema version；缺省为 IDLE_REWARDS_SAVE_VERSION。 */
     readonly currentVersion?: number;
     /** 迁移映射：源版本 → 升级到源版本+1 的迁移器；缺省为空，可覆盖。 */
@@ -133,7 +133,7 @@ export function createIdleRewardsStore(options: IdleRewardsStoreOptions): IdleRe
  * 挂机存储模块：组合根创建存储并注入；模块只登记引用，平台存储由注入方
  * 持有，模块生命周期无副作用，不在此释放共享存储。
  */
-export function createIdleRewardsStoreModule(store: IdleRewardStore): Module {
+export function createIdleRewardsStoreModule(store: IdleRewardStore): IModule {
     return {
         id: "auto_battle.idle_rewards_store",
         dependencies: [],

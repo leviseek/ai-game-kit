@@ -1,4 +1,4 @@
-import { FClick, FUIBind, FuiView, type Store } from "../../../framework";
+import { FClick, FUIBind, FuiView, type IStore } from "../../../framework";
 import type { CloseDialogNodes, ICloseDialog } from "../../../ui/generated/ui-demo-types";
 import { CloseDialogFields } from "../../../ui/generated/ui-demo-types";
 import { UiDemoCloseDialog } from "../../../ui/generated/ui-demo";
@@ -10,11 +10,11 @@ import { CLOSE_DIALOG_ACTIONS, projectCloseDialog } from "../store";
  * 演示静态页：经 gen-types 生成的 declaration merging interface（I 前缀形状）提供
  * `_` 字段类型，业务类零手写字段。`interface CloseDialog extends ICloseDialog` 与
  * 类同名合并，使 `this._txt_content` 等获得类型。点击经 @FClick 上行 dispatch，
- * 状态经 Store → project → onState 下行写字段（单向数据流）。
+ * 状态经 IStore → project → onState 下行写字段（单向数据流）。
  *
  * 组件经 FuiViewHost 以无参构造创建（包装器模式：注册表只存 ctor），store 与
  * Application facade 由 Feature assembly 的 binder 在创建时经 bind 注入
- * （runtimeBinding: "required"；端口只含 Store 与 facade，见 fui-view-binding spec）。
+ * （runtimeBinding: "required"；端口只含 IStore 与 facade，见 fui-view-binding spec）。
  */
 
 // 与类同名合并：把生成接口的 `_` 字段并入本类的实例类型。
@@ -26,11 +26,11 @@ export interface CloseDialog extends ICloseDialog {}
 
 @FUIBind(UiDemoCloseDialog, CloseDialogFields, { runtimeBinding: "required" })
 export class CloseDialog extends FuiView<CloseDialogState, CloseDialogViewModel> {
-    private store?: Store<CloseDialogState, CloseDialogAction>;
+    private store?: IStore<CloseDialogState, CloseDialogAction>;
     private application?: CloseDialogApplication;
 
-    /** 注入 Store 与 Application facade（Feature assembly binder 创建时调用）：订阅 + 首次投影。 */
-    bind(deps: { readonly store: Store<CloseDialogState, CloseDialogAction>; readonly application: CloseDialogApplication }): void {
+    /** 注入 IStore 与 Application facade（Feature assembly binder 创建时调用）：订阅 + 首次投影。 */
+    bind(deps: { readonly store: IStore<CloseDialogState, CloseDialogAction>; readonly application: CloseDialogApplication }): void {
         this.store = deps.store;
         this.application = deps.application;
         this.bindStore(this.store, projectCloseDialog);

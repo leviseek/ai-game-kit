@@ -1,4 +1,4 @@
-import type { ViewModelNode } from "../../../framework";
+import type { IViewModelNode } from "../../../framework";
 import { createViewModelRenderer } from "../../../framework";
 import type { GameFixture } from "../../../game/fixture/GameFixture";
 import type { GamePresenter } from "../../../game/lobby/presenter";
@@ -10,7 +10,7 @@ import { createCardBattleBindings, createCardBattleViewModel, type CardBattleCom
  * 联动出牌/回合/重开并立即重渲染；敌方阶段经可控时钟按真实流逝推进，
  * 使对局在持久会话下随时间真实进行。dispose 清理渲染器与时钟驱动。
  */
-export function createCardBattlePresenter(fixture: GameFixture, node: (name: string) => ViewModelNode | undefined): GamePresenter {
+export function createCardBattlePresenter(fixture: GameFixture, node: (name: string) => IViewModelNode | undefined): GamePresenter {
     const card = fixture as CardFixture;
 
     // 敌方 HP 上限取初始状态（对局中途不变），供进度条归一化

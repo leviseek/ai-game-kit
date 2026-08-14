@@ -1,4 +1,4 @@
-import type { Module } from "../../../framework";
+import type { IModule } from "../../../framework";
 import type { AutoBattleSkill } from "../models";
 
 /** 技能结算结果：按技能类型返回实际生效值、结算后 HP 与是否阵亡。 */
@@ -52,7 +52,7 @@ export function resolveAutoBattleSkill(skill: AutoBattleSkill, targetHp: number,
  * 技能模块：结算规则为纯函数，模块只登记引用使其进入装配清单，
  * 生命周期无副作用（对齐其它品类模块的登记语义）。
  */
-export function createAutoBattleSkillsModule(): Module {
+export function createAutoBattleSkillsModule(): IModule {
     return {
         id: "auto_battle.skills",
         dependencies: [],

@@ -1,4 +1,4 @@
-import type { GameFixture, Module, PlatformStorage } from "../../framework";
+import type { GameFixture, IModule, IPlatformStorage } from "../../framework";
 import { createGameFixture } from "../../framework";
 import { createIdleClock, createIdleClockModule, type IdleClock } from "./logic/clock";
 import type { IdleOfflineSettlement, IdleProgressState } from "./models";
@@ -14,7 +14,7 @@ export interface IdleFixtureOptions {
     /** 可控墙钟：缺省为内建时钟（从 0 开始，测试经 fixture.clock.advance 推进）。 */
     readonly clock?: IdleClock;
     /** 平台存储后端：缺省为内存存储；观察版本化存档写入/读取。 */
-    readonly storage?: PlatformStorage;
+    readonly storage?: IPlatformStorage;
 }
 
 /** 挂机组合夹具：在 GameFixture 生命周期接缝之上暴露各能力钩子。 */
@@ -40,8 +40,8 @@ export interface IdleFixture extends GameFixture {
     };
 }
 
-/** 缺省内存平台存储：实现 PlatformStorage，供测试与非 Cocos 环境使用。 */
-class MemoryStorage implements PlatformStorage {
+/** 缺省内存平台存储：实现 IPlatformStorage，供测试与非 Cocos 环境使用。 */
+class MemoryStorage implements IPlatformStorage {
     private readonly entries = new Map<string, string>();
 
     async get(key: string): Promise<string | null> {
@@ -74,7 +74,7 @@ export function createIdleFixture(options: IdleFixtureOptions = {}): IdleFixture
         repeat: true,
     });
 
-    const modules: Module[] = [createIdleClockModule(clock), createIdleSchedulerModule(scheduler), createIdleProgressModule(progress), createIdleSaveModule(save)];
+    const modules: IModule[] = [createIdleClockModule(clock), createIdleSchedulerModule(scheduler), createIdleProgressModule(progress), createIdleSaveModule(save)];
 
     const base = createGameFixture({
         id: "idle",

@@ -1,11 +1,12 @@
-import type { Logger } from "../contracts/logging/Logger";
-import type { ApplicationContext } from "../contracts/application/ApplicationContext";
+import type { ILogger } from "../contracts/interfaces/ILogger";
+import type { IApplicationContext } from "../contracts/interfaces/IApplicationContext";
+import { EnumApplicationState } from "../contracts/enums/EnumApplicationState";
 
-export function createApplicationContext(logger: Logger): ApplicationContext {
+export function createApplicationContext(logger: ILogger): IApplicationContext {
     return {
         logger,
-        get state(): "created" {
-            return "created";
+        get state(): EnumApplicationState {
+            return EnumApplicationState.Created;
         },
     };
 }

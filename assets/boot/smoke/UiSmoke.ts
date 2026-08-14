@@ -1,3 +1,4 @@
+import { EnumUiLayer } from "../../framework";
 import type { UiHost } from "../host/UiHost";
 import { BUNDLES, PACKAGE_PATHS } from "../constants";
 
@@ -30,7 +31,7 @@ export async function runUiSmoke(host: UiHost): Promise<void> {
     }
 
     // 3. 打开页面（package 加载成功后才创建视图）
-    const opened = packageLoaded ? host.openPage("demo", "normal", "Demo", "DemoView") : false;
+    const opened = packageLoaded ? host.openPage("demo", EnumUiLayer.Normal, "Demo", "DemoView") : false;
     report("page-open", opened);
 
     // 4. 遮罩呈现/移除（模态输入阻断）：经导航器打开/关闭阻断页面，遮罩由
@@ -40,7 +41,7 @@ export async function runUiSmoke(host: UiHost): Promise<void> {
     const navigator = host.navigator;
     if (navigator !== undefined) {
         const openResult = navigator.open("ui-modal", {
-            layer: "popup",
+            layer: EnumUiLayer.Popup,
             blocking: true,
         });
         modalShown = openResult.ok === true && navigator.modal === true;

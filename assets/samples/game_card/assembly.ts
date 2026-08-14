@@ -1,4 +1,4 @@
-import type { GameFixture, InputSample, InputSource, Module, UiNavigator } from "../../framework";
+import type { GameFixture, IInputContextId, IInputSample, IInputSource, IModule, UiNavigator } from "../../framework";
 import { createGameFixture, createInputMapper, createUiNavigator } from "../../framework";
 import type { CardAction, CardConfig, CardTurnPhase } from "./models";
 import { createCardBattle, createCardBattleModule, type CardBattleHandle } from "./logic/battle";
@@ -7,8 +7,12 @@ import { createCardConfig, createCardConfigModule, type CardConfigHandle } from 
 import { createCardInputModule, createCardInputSource } from "./logic/input";
 import { createCardUiModule } from "./view/ui";
 import { createCardBattleBindings, createCardBattleViewModel, type CardBattleCommands } from "./view/view";
-import { createViewModelRenderer, type ViewModelNode } from "../../framework";
+import { createViewModelRenderer, type IViewModelNode } from "../../framework";
 
+// branded 上下文无运行期值：把业务字符串收窄为品牌类型
+function toContext(context: string): IInputContextId {
+    return context as unknown as IInputContextId;
+}
 /** 缺省卡牌配置：回合时长与卡牌数值在夹具层内建，测试可注入覆盖。 */
 const DEFAULT_CARD_CONFIG_CONTENT: Record<string, unknown> = {
     cards: [
@@ -34,7 +38,7 @@ export interface CardFixtureOptions {
     /** 配置内容：驱动卡牌数值与回合时长；缺省为内建缺省配置。 */
     readonly configContent?: Record<string, unknown>;
     /** 底层输入源：缺省为可控输入源（测试经 fixture.input.push 注入事件）。 */
-    readonly inputSource?: InputSource;
+    readonly inputSource?: IInputSource;
 }
 
 /** 卡牌组合夹具：在 GameFixture 生命周期接缝之上暴露各能力钩子。 */
@@ -67,7 +71,7 @@ export interface CardFixture extends GameFixture {
         readonly activeContext: string;
         setActiveContext(context: string): void;
         push(sourceId: string, pressed: boolean, value?: number): void;
-        readonly samples: readonly InputSample<CardAction>[];
+        readonly samples: readonly IInputSample<CardAction>[];
     };
     /** 配置驱动数值：卡牌与回合时长来自不可变配置表。 */
     readonly config: {
@@ -100,11 +104,11 @@ export interface CardBattleViewNode {
 }
 
 /**
- * 把记录转换为渲染器消费的 ViewModelNode 实现，并附加 recording 引用：
+ * 把记录转换为渲染器消费的 IViewModelNode 实现，并附加 recording 引用：
  * 测试经 clickHandler 触发命令绑定回调（渲染器 onClick 时写入）。
  * 导出供冒烟回退路径复用，避免节点契约在装配与冒烟间漂移。
  */
-export function toViewModelNode(recording: CardBattleViewNode): ViewModelNode {
+export function toViewModelNode(recording: CardBattleViewNode): IViewModelNode {
     return {
         setText: (value: string) => {
             recording.text = value;
@@ -130,10 +134,10 @@ export function createCardFixture(options: CardFixtureOptions = {}): CardFixture
     // 输入：可控源 + InputMapper，push 注入事件，samples 记录采样；
     // onSample 按 action 联动出牌（play-card-* → playCard、end-turn → endTurn）
     const inputHandle = createCardInputSource();
-    const samples: InputSample<CardAction>[] = [];
+    const samples: IInputSample<CardAction>[] = [];
     const inputMapper = createInputMapper<CardAction>({
         timeSource: clock,
-        activeContext: "gameplay",
+        activeContext: toContext("gameplay"),
         mappings: {
             gameplay: {
                 "keyboard.1": "play-card-0",
@@ -161,7 +165,7 @@ export function createCardFixture(options: CardFixtureOptions = {}): CardFixture
         },
     });
 
-    const modules: Module[] = [createCardClockModule(clock), createCardConfigModule(config), createCardBattleModule(battle), createCardInputModule(inputHandle), createCardUiModule(navigator)];
+    const modules: IModule[] = [createCardClockModule(clock), createCardConfigModule(config), createCardBattleModule(battle), createCardInputModule(inputHandle), createCardUiModule(navigator)];
 
     const base = createGameFixture({
         id: "card",
@@ -187,7 +191,7 @@ export function createCardFixture(options: CardFixtureOptions = {}): CardFixture
         return recording;
     };
     const viewModelRenderer = createViewModelRenderer({
-        // 渲染器消费 ViewModelNode 包装，测试经 viewModel.node 读回 recording
+        // 渲染器消费 IViewModelNode 包装，测试经 viewModel.node 读回 recording
         node: (name: string) => toViewModelNode(ensureViewNode(name)),
         bindings: createCardBattleBindings({
             playCard: (index) => {
@@ -221,10 +225,10 @@ export function createCardFixture(options: CardFixtureOptions = {}): CardFixture
         navigator,
         input: {
             get activeContext() {
-                return inputMapper.activeContext;
+                return String(inputMapper.activeContext);
             },
             setActiveContext: (context: string) => {
-                inputMapper.setActiveContext(context);
+                inputMapper.setActiveContext(toContext(context));
             },
             push: (sourceId: string, pressed: boolean, value?: number) => {
                 inputHandle.push(sourceId, pressed, value);

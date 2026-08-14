@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
-import type { Bindable, ViewModelNode } from "../../../assets/framework/contracts/ui/ViewModel";
+import type { IBindable } from "../../../assets/framework/contracts/interfaces/IBindable";
+import type { IViewModelNode } from "../../../assets/framework/contracts/interfaces/IViewModelNode";
 import { createBindable, createViewModelRenderer, type ViewModelRenderer } from "../../../assets/framework/core/ui/ViewModelRenderer";
 
 /** 记录型视图节点：记录每次 setter 调用与注册的点击回调，供断言 diff 行为。 */
@@ -25,7 +26,7 @@ function recordNode(): RecordingNode {
 }
 
 /** 把记录转换为视图节点实现：setter 写入记录、onClick 保存回调。 */
-function toNode(recording: RecordingNode): ViewModelNode {
+function toNode(recording: RecordingNode): IViewModelNode {
     return {
         setText: (value: string) => {
             recording.text = value;
@@ -48,7 +49,7 @@ function toNode(recording: RecordingNode): ViewModelNode {
 /** 测试视图：按节点名返回记录型节点；name 不存在时返回 undefined。 */
 function makeView(): {
     nodes: Map<string, RecordingNode>;
-    node: (name: string) => ViewModelNode | undefined;
+    node: (name: string) => IViewModelNode | undefined;
 } {
     const nodes = new Map<string, RecordingNode>();
     return {
@@ -66,16 +67,16 @@ interface DemoViewModel {
     showResult: boolean;
 }
 
-describe("Bindable observable state", () => {
+describe("IBindable observable state", () => {
     test("reads back the latest written value", () => {
-        const state: Bindable<number> = createBindable(0);
+        const state: IBindable<number> = createBindable(0);
         expect(state.get()).toBe(0);
         state.set(5);
         expect(state.get()).toBe(5);
     });
 
     test("notifies subscribers when the value changes", () => {
-        const state: Bindable<number> = createBindable(0);
+        const state: IBindable<number> = createBindable(0);
         let received: number | undefined;
         state.subscribe((value) => {
             received = value;
@@ -85,7 +86,7 @@ describe("Bindable observable state", () => {
     });
 
     test("does not notify when writing the same value", () => {
-        const state: Bindable<number> = createBindable(0);
+        const state: IBindable<number> = createBindable(0);
         let calls = 0;
         state.subscribe(() => {
             calls += 1;
@@ -362,7 +363,7 @@ describe("ViewModelRenderer unknown node tolerance", () => {
 
 describe("ViewModelRenderer dynamic instance reclaim", () => {
     type PrunableResolver = {
-        (name: string): ViewModelNode | undefined;
+        (name: string): IViewModelNode | undefined;
         prune?: (nodeNames: readonly string[]) => void;
     };
 

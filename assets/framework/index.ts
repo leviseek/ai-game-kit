@@ -2,17 +2,29 @@
  * 框架公开 API 白名单：仅 re-export 稳定契约类型与核心工厂/类，
  * 是业务代码的推荐导入入口；内部实现经此隔离，不直接深层导入。
  */
-export type { LogContext, Logger, LogLevel, LogRecord } from "./contracts/logging/Logger";
+export type { ILogContext } from "./contracts/interfaces/ILogContext";
+export type { ILogger } from "./contracts/interfaces/ILogger";
+export type { ILogRecord } from "./contracts/interfaces/ILogRecord";
+export { EnumLogLevel } from "./contracts/enums/EnumLogLevel";
 
-export type { ApplicationContext, ApplicationLifecycle, ApplicationState } from "./contracts/application/ApplicationContext";
+export type { IApplicationContext } from "./contracts/interfaces/IApplicationContext";
+export type { IApplicationLifecycle } from "./contracts/interfaces/IApplicationLifecycle";
+export { EnumApplicationState } from "./contracts/enums/EnumApplicationState";
 
-export type { Module, ModulePhase, ModuleRuntimeState } from "./contracts/module/Module";
+export type { IModule } from "./contracts/interfaces/IModule";
+export { EnumModulePhase } from "./contracts/enums/EnumModulePhase";
+export { EnumModuleRuntimeState } from "./contracts/enums/EnumModuleRuntimeState";
 
-export type { ApplicationVisibility, ApplicationVisibilityState, DeviceInfo, PlatformStorage } from "./contracts/platform/Platform";
+export type { IApplicationVisibility } from "./contracts/interfaces/IApplicationVisibility";
+export type { IDeviceInfo } from "./contracts/interfaces/IDeviceInfo";
+export type { IPlatformStorage } from "./contracts/interfaces/IPlatformStorage";
+export { EnumApplicationVisibilityState } from "./contracts/enums/EnumApplicationVisibilityState";
 
-export type { TimeSource } from "./contracts/time/TimeSource";
+export type { ITimeSource } from "./contracts/interfaces/ITimeSource";
 
-export type { Action, Store, StoreListener } from "./contracts/state/Store";
+export type { IAction } from "./contracts/interfaces/IAction";
+export type { IStore } from "./contracts/interfaces/IStore";
+export type { IStoreListener } from "./contracts/interfaces/IStoreListener";
 export { createStore } from "./core/state/Store";
 
 export type { DisposeHandle } from "./core/scheduling/DisposeHandle";
@@ -38,28 +50,52 @@ export { createGameFixture } from "./application/GameFixture";
 export type { GameFixture, GameFixtureOptions } from "./application/GameFixture";
 export { ModuleLifecycleError } from "./application/ModuleLifecycleError";
 
-export type { ResourceHandle, ResourceKey, ResourceKind, ResourceLoadState } from "./contracts/resource/Resource";
+export type { IResourceHandle } from "./contracts/interfaces/IResourceHandle";
+export type { IResourceKey } from "./contracts/interfaces/IResourceKey";
+export { EnumResourceKind } from "./contracts/enums/EnumResourceKind";
+export { EnumResourceLoadState } from "./contracts/enums/EnumResourceLoadState";
 
-export type { ResourceScope } from "./contracts/resource/ResourceScope";
+export type { IResourceScope } from "./contracts/interfaces/IResourceScope";
 
-export type { IResourceProvider, ResourceProviderOptions } from "./contracts/resource/ResourceProvider";
+export type { IResourceProvider } from "./contracts/interfaces/IResourceProvider";
+export type { IResourceProviderOptions } from "./contracts/interfaces/IResourceProviderOptions";
 
 export { createResourceProvider } from "./core/resource/ResourceProvider";
 
 export type { SceneFlow, SceneFlowOptions, SceneFlowState, SceneResources, SceneSwitchResult } from "./core/scene/SceneFlow";
 export { createSceneFlow } from "./core/scene/SceneFlow";
 
-export type { DuplicateOpenPolicy, UiLayer, UiPage, UiResult } from "./contracts/ui/Navigation";
-export { UI_LAYER_ORDER } from "./contracts/ui/Navigation";
+export type { IUiPage } from "./contracts/interfaces/IUiPage";
+export type { IUiResult } from "./contracts/interfaces/IUiResult";
+export { EnumDuplicateOpenPolicy } from "./contracts/enums/EnumDuplicateOpenPolicy";
+export { EnumUiLayer } from "./contracts/enums/EnumUiLayer";
+export { UI_LAYER_ORDER } from "./contracts/constants/UiLayer";
 
-export type { Bindable, Binding, CommandBinding, PositionBinding, ProgressBinding, TextBinding, ViewModelNode, VisibleBinding } from "./contracts/ui/ViewModel";
+export type { Binding } from "./contracts/interfaces/Binding";
+export type { IBindable } from "./contracts/interfaces/IBindable";
+export type { ICommandBinding } from "./contracts/interfaces/ICommandBinding";
+export type { IPositionBinding } from "./contracts/interfaces/IPositionBinding";
+export type { IProgressBinding } from "./contracts/interfaces/IProgressBinding";
+export type { ITextBinding } from "./contracts/interfaces/ITextBinding";
+export type { IViewModelNode } from "./contracts/interfaces/IViewModelNode";
+export type { IVisibleBinding } from "./contracts/interfaces/IVisibleBinding";
 
-export type { FairyGuiListItemView, FairyGuiListHandle } from "./contracts/ui/List";
+export type { IFairyGuiListItemView } from "./contracts/interfaces/IFairyGuiListItemView";
+export type { IFairyGuiListHandle } from "./contracts/interfaces/IFairyGuiListHandle";
 
-export type { TypedButtonNode, TypedComponentNode, TypedImageNode, TypedInputNode, TypedListNode, TypedNode, TypedProgressNode, TypedTextNode } from "./contracts/ui/TypedNode";
+export type { ITypedButtonNode } from "./contracts/interfaces/ITypedButtonNode";
+export type { ITypedComponentNode } from "./contracts/interfaces/ITypedComponentNode";
+export type { ITypedImageNode } from "./contracts/interfaces/ITypedImageNode";
+export type { ITypedInputNode } from "./contracts/interfaces/ITypedInputNode";
+export type { ITypedListNode } from "./contracts/interfaces/ITypedListNode";
+export type { ITypedNode } from "./contracts/interfaces/ITypedNode";
+export type { ITypedProgressNode } from "./contracts/interfaces/ITypedProgressNode";
+export type { ITypedTextNode } from "./contracts/interfaces/ITypedTextNode";
 
-export type { FuiClickMeta, FuiViewSeam } from "./contracts/ui/FuiView";
-export { FuiView } from "./contracts/ui/FuiView";
+export type { IFuiClickMeta } from "./contracts/interfaces/IFuiClickMeta";
+export type { IFuiView } from "./contracts/interfaces/IFuiView";
+export type { IFuiViewSeam } from "./contracts/interfaces/IFuiViewSeam";
+export { FuiView } from "./core/fui/FuiView";
 
 export { FUIBind, FClick } from "./core/fui/FuiBindings";
 export type { FuiBindOptions } from "./core/fui/FuiBindings";
@@ -76,12 +112,20 @@ export { createBindable, createViewModelRenderer } from "./core/ui/ViewModelRend
 export type { UiNavigator, UiNavigatorOptions } from "./core/ui/UiNavigator";
 export { createUiNavigator } from "./core/ui/UiNavigator";
 
-export type { InputContextId, InputEvent, InputMapping, InputSample, InputSource, InputSourceId } from "./contracts/input/Input";
+export type { IInputContextId } from "./contracts/interfaces/IInputContextId";
+export type { IInputEvent } from "./contracts/interfaces/IInputEvent";
+export type { IInputMapping } from "./contracts/interfaces/IInputMapping";
+export type { IInputSample } from "./contracts/interfaces/IInputSample";
+export type { IInputSource } from "./contracts/interfaces/IInputSource";
+export type { IInputSourceId } from "./contracts/interfaces/IInputSourceId";
 
 export type { InputMapper, InputMapperOptions } from "./core/input/InputMapper";
 export { createInputMapper } from "./core/input/InputMapper";
 
-export type { ConfigKey, ConfigReadType, ConfigTable, ReadonlyConfigSnapshot } from "./contracts/config/Config";
+export type { IConfigKey } from "./contracts/interfaces/IConfigKey";
+export type { IConfigReadType } from "./contracts/interfaces/IConfigReadType";
+export type { IConfigTable } from "./contracts/interfaces/IConfigTable";
+export type { IReadonlyConfigSnapshot } from "./contracts/interfaces/IReadonlyConfigSnapshot";
 
 export { ConfigLoadError, ConfigMissingError, ConfigParseError, ConfigTypeMismatchError } from "./core/config/ConfigErrors";
 
@@ -89,12 +133,19 @@ export { configArray, configBoolean, configNumber, configObject, configString, c
 
 export { loadConfigTable } from "./core/config/ConfigLoader";
 
-export type { AudioBackend, AudioBackgroundPolicy, AudioGroup, AudioGroupState, AudioPlayScope, AudioService, AudioServiceOptions, AudioTrackRef } from "./contracts/audio/Audio";
+export type { IAudioBackend } from "./contracts/interfaces/IAudioBackend";
+export type { IAudioBackgroundPolicy } from "./contracts/interfaces/IAudioBackgroundPolicy";
+export type { IAudioGroupState } from "./contracts/interfaces/IAudioGroupState";
+export type { IAudioPlayScope } from "./contracts/interfaces/IAudioPlayScope";
+export type { IAudioService } from "./contracts/interfaces/IAudioService";
+export type { IAudioServiceOptions } from "./contracts/interfaces/IAudioServiceOptions";
+export type { IAudioTrackRef } from "./contracts/interfaces/IAudioTrackRef";
+export { EnumAudioGroup } from "./contracts/enums/EnumAudioGroup";
 export { createAudioService } from "./core/audio/AudioService";
 
 export type { BundleModuleRegistry } from "./core/module/BundleModuleRegistry";
 export { getBundleModuleRegistry, registerBundle, lookupBundle } from "./core/module/BundleModuleRegistry";
 
-export { PauseDomain } from "./contracts/time/PauseDomain";
+export { EnumPauseDomain } from "./contracts/enums/EnumPauseDomain";
 export { GameClock } from "./core/time/GameClock";
-export type { MotionTweenOptions } from "./contracts/time/MotionTween";
+export type { IMotionTweenOptions } from "./contracts/interfaces/IMotionTweenOptions";

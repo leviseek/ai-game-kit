@@ -1,4 +1,7 @@
-import type { ConfigKey, ConfigReadType, ConfigTable, ReadonlyConfigSnapshot } from "../../contracts/config/Config";
+import type { IConfigKey } from "../../contracts/interfaces/IConfigKey";
+import type { IConfigReadType } from "../../contracts/interfaces/IConfigReadType";
+import type { IConfigTable } from "../../contracts/interfaces/IConfigTable";
+import type { IReadonlyConfigSnapshot } from "../../contracts/interfaces/IReadonlyConfigSnapshot";
 import { ConfigMissingError, ConfigParseError, ConfigTypeMismatchError } from "./ConfigErrors";
 
 // 以 `{`/`[` 开头（允许前导空白，与 JSON.parse 的宽容性一致）的字符串
@@ -18,7 +21,7 @@ function isStructuredString(value: unknown): value is string {
  * 其余形状不符属类型不匹配（ConfigTypeMismatchError）。
  * 解析产物在返回前深度冻结，与直接对象字段路径的只读语义保持一致。
  */
-function createStructuredType<T>(name: string, matches: (raw: unknown) => raw is T): ConfigReadType<T> {
+function createStructuredType<T>(name: string, matches: (raw: unknown) => raw is T): IConfigReadType<T> {
     return {
         name,
         parse(key, raw) {
@@ -55,7 +58,7 @@ function isArray(value: unknown): value is readonly unknown[] {
 }
 
 /** 字符串类型声明：仅接受 string，形状不符抛 ConfigTypeMismatchError。 */
-export const configString: ConfigReadType<string> = {
+export const configString: IConfigReadType<string> = {
     name: "string",
     parse(key, raw) {
         if (typeof raw !== "string") {
@@ -66,7 +69,7 @@ export const configString: ConfigReadType<string> = {
 };
 
 /** 数字类型声明：仅接受有限 number，形状不符抛 ConfigTypeMismatchError。 */
-export const configNumber: ConfigReadType<number> = {
+export const configNumber: IConfigReadType<number> = {
     name: "number",
     parse(key, raw) {
         if (typeof raw !== "number" || !Number.isFinite(raw)) {
@@ -77,7 +80,7 @@ export const configNumber: ConfigReadType<number> = {
 };
 
 /** 布尔类型声明：仅接受 boolean，形状不符抛 ConfigTypeMismatchError。 */
-export const configBoolean: ConfigReadType<boolean> = {
+export const configBoolean: IConfigReadType<boolean> = {
     name: "boolean",
     parse(key, raw) {
         if (typeof raw !== "boolean") {
@@ -88,21 +91,21 @@ export const configBoolean: ConfigReadType<boolean> = {
 };
 
 /** 对象类型声明：接受纯对象或可解析为对象的 JSON 字符串。 */
-export const configObject: ConfigReadType<Record<string, unknown>> = createStructuredType("object", isPlainObject);
+export const configObject: IConfigReadType<Record<string, unknown>> = createStructuredType("object", isPlainObject);
 
 /** 数组类型声明：接受数组或可解析为数组的 JSON 字符串。 */
-export const configArray: ConfigReadType<readonly unknown[]> = createStructuredType("array", isArray);
+export const configArray: IConfigReadType<readonly unknown[]> = createStructuredType("array", isArray);
 
 // 递归冻结对象与数组：配置装载后整体不可变，读取方拿到的快照与表共享同一份
 // 冻结结构。用访问中的祖先 WeakSet 检测循环引用，避免递归栈溢出；
-// 循环引用不是合法配置内容，以类型化错误拒绝（对齐 VersionedStorage 先例）。
+// 循环引用不是合法配置内容，以类型化错误拒绝（对齐 IVersionedStorage 先例）。
 function deepFreeze<T>(value: T, ancestors: WeakSet<object> = new WeakSet()): T {
     if (value === null || typeof value !== "object") {
         return value;
     }
 
     if (ancestors.has(value)) {
-        throw new ConfigParseError("", "config content has a circular reference");
+        throw new ConfigParseError("" as unknown as IConfigKey, "config content has a circular reference");
     }
 
     ancestors.add(value);
@@ -125,7 +128,7 @@ function deepFreeze<T>(value: T, ancestors: WeakSet<object> = new WeakSet()): T 
 /** 配置表创建错误时的类型化错误基座：内容非纯对象时在装载入口拒绝。 */
 function assertPlainObjectContent(content: unknown): asserts content is Record<string, unknown> {
     if (!isPlainObject(content)) {
-        throw new ConfigParseError("", "config content is not a plain object");
+        throw new ConfigParseError("" as unknown as IConfigKey, "config content is not a plain object");
     }
 }
 
@@ -134,25 +137,27 @@ function assertPlainObjectContent(content: unknown): asserts content is Record<s
  * 读取按键返回类型化值。内容非纯对象抛 ConfigParseError，不产生部分状态。
  * 引擎无关，不依赖 cc/fgui，也不触达存档后端。
  */
-export function createConfigTable(content: unknown): ConfigTable {
+export function createConfigTable(content: unknown): IConfigTable {
     assertPlainObjectContent(content);
 
     const entries = deepFreeze(content);
 
-    function read<T>(key: ConfigKey, type: ConfigReadType<T>, defaultValue?: T): T {
-        if (!Object.prototype.hasOwnProperty.call(entries, key)) {
+    function read<T>(key: IConfigKey, type: IConfigReadType<T>, defaultValue?: T): T {
+        // branded 键无运行期值：取实际字符串后用于键存在性与取值
+        const keyString = String(key);
+        if (!Object.prototype.hasOwnProperty.call(entries, keyString)) {
             if (defaultValue !== undefined) {
                 return defaultValue;
             }
             throw new ConfigMissingError(key);
         }
 
-        return type.parse(key, entries[key]);
+        return type.parse(key, entries[keyString]);
     }
 
     return {
         read,
-        snapshot(): ReadonlyConfigSnapshot {
+        snapshot(): IReadonlyConfigSnapshot {
             return entries;
         },
     };

@@ -1,4 +1,4 @@
-import type { Module, UiNavigator } from "../../../framework";
+import type { IModule, UiNavigator } from "../../../framework";
 import { AUTO_BATTLE_ROUTE } from "../models";
 
 /**
@@ -7,7 +7,7 @@ import { AUTO_BATTLE_ROUTE } from "../models";
  * 不依赖 fgui。模块只声明装配关系，不在 dispose 释放共享导航器——组合根
  * 的 dispose 统一负责（对齐 GameFixture 幂等契约）。
  */
-export function createAutoBattleUiModule(_navigator: UiNavigator): Module {
+export function createAutoBattleUiModule(_navigator: UiNavigator): IModule {
     return {
         id: "auto_battle.ui",
         dependencies: [],

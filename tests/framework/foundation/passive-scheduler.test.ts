@@ -1,13 +1,13 @@
 import { describe, expect, test } from "bun:test";
 
-import type { TimeSource } from "../../../assets/framework/contracts/time/TimeSource";
+import type { ITimeSource } from "../../../assets/framework/contracts/interfaces/ITimeSource";
 import { PassiveScheduler } from "../../../assets/framework/core/scheduling/PassiveScheduler";
 import { SimulationClock } from "../../../assets/framework/core/time/SimulationClock";
 
 describe("PassiveScheduler", () => {
     test("binds to the supplied time source and drives from it", () => {
         let current = 0;
-        const stub: TimeSource = {
+        const stub: ITimeSource = {
             now: () => current,
         };
         const scheduler = new PassiveScheduler(stub);

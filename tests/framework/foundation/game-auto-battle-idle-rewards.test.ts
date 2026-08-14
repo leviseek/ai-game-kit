@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { MemoryPlatform } from "../../../assets/framework/adapters/memory/MemoryPlatform";
-import type { PlatformStorage } from "../../../assets/framework/contracts/platform/Platform";
+import type { IPlatformStorage } from "../../../assets/framework/contracts/interfaces/IPlatformStorage";
 import { createIdleRewardClock } from "../../../assets/samples/game_auto_battle/logic/clock";
 import { computeIdleRewards, createIdleRewardsHandle, DEFAULT_IDLE_RATE } from "../../../assets/samples/game_auto_battle/logic/IdleRewards";
 import { IDLE_REWARDS_STORAGE_KEY, IDLE_REWARDS_SAVE_VERSION, createIdleRewardsStore, isIdleRewardRecord } from "../../../assets/samples/game_auto_battle/logic/IdleRewardsStore";
@@ -15,7 +15,7 @@ const state = (overrides: Partial<IdleRewardState> = {}): IdleRewardState => ({
 });
 
 /** 直接把一条原始记录写入底层存储键（模拟旧版本/损坏存档）。 */
-function seed(storage: PlatformStorage, raw: string): Promise<void> {
+function seed(storage: IPlatformStorage, raw: string): Promise<void> {
     return storage.set(IDLE_REWARDS_STORAGE_KEY, raw);
 }
 

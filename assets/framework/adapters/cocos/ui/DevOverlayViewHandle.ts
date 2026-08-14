@@ -1,5 +1,5 @@
 import { Event, GComponent, GObject, UIPackage } from "fairygui-cc";
-import type { ViewModelNode } from "../../../contracts/ui/ViewModel";
+import type { IViewModelNode } from "../../../contracts/interfaces/IViewModelNode";
 import { wrapFairyGuiObject } from "./FairyGuiViewHandle";
 import type { GRootLike } from "./CocosUiRoot";
 import { DEV_BALL_NODE, DEV_PANEL_NODE } from "./DevOverlayNodes";
@@ -34,7 +34,7 @@ export interface DevOverlayView {
      * 节点解析器：优先返回球组件自身包装（名 "ball"）与面板组件包装
      * （名 "panel"），其余名字按"递归子节点查找"解析（面板内文本子节点）。
      */
-    readonly node: (name: string) => ViewModelNode | undefined;
+    readonly node: (name: string) => IViewModelNode | undefined;
     /** 绑定交互：把 fgui TOUCH/ROLL_OVER 事件桥接到控制器回调。 */
     bindInteraction(handlers: DevOverlayInteractionHandlers): void;
     /** 从 GRoot 移除并释放组件。幂等。 */
@@ -87,7 +87,7 @@ export function createDevOverlayView(
     const panel = ballComponent?.getChild(DEV_PANEL_NODE) as GObject | undefined;
     const children = ballComponent === undefined ? new Map<string, GObject>() : collectByName(ballComponent);
 
-    const node = (name: string): ViewModelNode | undefined => {
+    const node = (name: string): IViewModelNode | undefined => {
         if (name === DEV_BALL_NODE) {
             return ballComponent === undefined ? undefined : wrapFairyGuiObject(ballComponent);
         }

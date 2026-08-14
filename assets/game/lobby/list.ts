@@ -1,4 +1,4 @@
-import type { Logger } from "../../framework";
+import type { ILogger } from "../../framework";
 import { gameTypeCatalog, lobbyItemNodeName, LOBBY_LIST_ENTRY } from "./catalog";
 import type { GameLobbyHost } from "./host";
 import { createGameLobby, type GameLobby } from "./lobby";
@@ -18,7 +18,7 @@ export interface GameListFlow {
  * 才可用，早期失败保持未初始化，若只轮询就绪状态将永远为 false；重试使 GRoot
  * 就绪后即成功，不依赖固定时长。lobby 对象在列表流内持有，dispose 时释放。
  */
-export function createGameListFlow(host: GameLobbyHost, logger: Logger): GameListFlow {
+export function createGameListFlow(host: GameLobbyHost, logger: ILogger): GameListFlow {
     const lobby: GameLobby = createGameLobby(host);
     let disposed = false;
 

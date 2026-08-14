@@ -2,18 +2,18 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, test } from "bun:test";
 
-import type { ApplicationContext, ApplicationState, Module } from "../../../assets/framework";
+import type { IApplicationContext, EnumApplicationState, IModule } from "../../../assets/framework";
 import { MemoryLogger } from "../support/MemoryLogger";
 
 interface ApplicationInstance {
-    readonly state: ApplicationState;
+    readonly state: EnumApplicationState;
     start(): Promise<void>;
     pause(): Promise<void>;
     resume(): Promise<void>;
     dispose(): Promise<void>;
 }
 
-type ApplicationConstructor = new (modules: readonly Module[], context: ApplicationContext) => ApplicationInstance;
+type ApplicationConstructor = new (modules: readonly IModule[], context: IApplicationContext) => ApplicationInstance;
 
 interface FrameworkExports {
     readonly Application?: ApplicationConstructor;
@@ -30,11 +30,11 @@ async function loadApplication(): Promise<ApplicationConstructor> {
     return exports.Application as ApplicationConstructor;
 }
 
-function createContext(): ApplicationContext {
+function createContext(): IApplicationContext {
     return { logger: new MemoryLogger(), state: "created" };
 }
 
-function createLifecycleModule(id: string, calls: string[], states: ApplicationState[], app: () => ApplicationInstance, dependencies: readonly string[] = []): Module {
+function createLifecycleModule(id: string, calls: string[], states: EnumApplicationState[], app: () => ApplicationInstance, dependencies: readonly string[] = []): IModule {
     const observe = (phase: string): void => {
         states.push(app().state);
         calls.push(`${id}:${phase}`);
@@ -75,7 +75,7 @@ describe("Application lifecycle", () => {
     test("transitions through the full lifecycle in order", async () => {
         const Application = await loadApplication();
         const calls: string[] = [];
-        const states: ApplicationState[] = [];
+        const states: EnumApplicationState[] = [];
 
         const app = new Application([createLifecycleModule("inventory", calls, states, () => app)], createContext());
 
@@ -119,9 +119,9 @@ describe("Application lifecycle", () => {
     test("passes the provided context to module hooks without mutating it", async () => {
         const Application = await loadApplication();
         const logger = new MemoryLogger();
-        const context: ApplicationContext = { logger, state: "created" };
-        let receivedContext: ApplicationContext | undefined;
-        const module: Module = {
+        const context: IApplicationContext = { logger, state: "created" };
+        let receivedContext: IApplicationContext | undefined;
+        const module: IModule = {
             id: "probe",
             dependencies: [],
             initialize: async (ctx) => {

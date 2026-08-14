@@ -1,8 +1,11 @@
-import type { LogContext, Logger, LogLevel, LogRecord } from "../../contracts/logging/Logger";
+import type { ILogContext } from "../../contracts/interfaces/ILogContext";
+import type { ILogger } from "../../contracts/interfaces/ILogger";
+import type { ILogRecord } from "../../contracts/interfaces/ILogRecord";
+import { EnumLogLevel } from "../../contracts/enums/EnumLogLevel";
 
-export type LogRecordSink = (record: LogRecord) => void;
+export type LogRecordSink = (record: ILogRecord) => void;
 
-export type LogRecordFilter = (record: LogRecord) => LogRecord;
+export type LogRecordFilter = (record: ILogRecord) => ILogRecord;
 
 function joinScopes(parentScope: string, childScope: string): string {
     if (parentScope.length === 0) {
@@ -21,10 +24,10 @@ function joinScopes(parentScope: string, childScope: string): string {
  * child 返回继承父 scope 与 baseContext、并沿用 filter 的新日志器；
  * filter 作用于每一条写入记录（默认透传）。
  */
-export function createScopedLogger(sink: LogRecordSink, scope = "", context: LogContext = {}, filter: LogRecordFilter = (record) => record): Logger {
+export function createScopedLogger(sink: LogRecordSink, scope = "", context: ILogContext = {}, filter: LogRecordFilter = (record) => record): ILogger {
     const baseContext = { ...context };
 
-    const write = (level: LogLevel, message: string, callContext: LogContext = {}, error?: Error): void => {
+    const write = (level: EnumLogLevel, message: string, callContext: ILogContext = {}, error?: Error): void => {
         sink(
             filter({
                 level,
@@ -38,10 +41,10 @@ export function createScopedLogger(sink: LogRecordSink, scope = "", context: Log
     };
 
     return {
-        debug: (message, callContext) => write("debug", message, callContext),
-        info: (message, callContext) => write("info", message, callContext),
-        warn: (message, callContext) => write("warn", message, callContext),
-        error: (message, callContext, error) => write("error", message, callContext, error),
+        debug: (message, callContext) => write(EnumLogLevel.Debug, message, callContext),
+        info: (message, callContext) => write(EnumLogLevel.Info, message, callContext),
+        warn: (message, callContext) => write(EnumLogLevel.Warn, message, callContext),
+        error: (message, callContext, error) => write(EnumLogLevel.Error, message, callContext, error),
         child: (childScope, childContext = {}) => createScopedLogger(sink, joinScopes(scope, childScope), { ...baseContext, ...childContext }, filter),
     };
 }

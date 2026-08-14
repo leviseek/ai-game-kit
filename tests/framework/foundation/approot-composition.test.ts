@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, test, mock } from "bun:test";
 
-import { FuiView } from "../../../assets/framework/contracts/ui/FuiView";
+import { FuiView } from "../../../assets/framework/core/fui/FuiView";
 import type { FuiComponentUrl } from "../../../assets/framework/core/fui/FuiComponentRegistry";
 import { getFuiComponentRegistry } from "../../../assets/framework/core/fui/FuiComponentRegistry";
 import { FuiViewBindingRegistrationError, FuiViewCreationError } from "../../../assets/framework/core/fui/FuiErrors";

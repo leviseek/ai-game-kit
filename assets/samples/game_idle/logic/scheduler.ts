@@ -1,4 +1,4 @@
-import type { Module } from "../../../framework";
+import type { IModule } from "../../../framework";
 import type { IdleClock } from "./clock";
 
 export interface IdleScheduleOptions {
@@ -123,7 +123,7 @@ export function createIdleScheduler(clock: IdleClock): IdleScheduler {
  * 调度模块：组合根创建调度器并注入；模块只登记引用，不在 dispose 释放共享
  * 调度器——组合根的 dispose 统一负责（对齐 GameFixture 幂等契约）。
  */
-export function createIdleSchedulerModule(scheduler: IdleScheduler): Module {
+export function createIdleSchedulerModule(scheduler: IdleScheduler): IModule {
     return {
         id: "idle.scheduler",
         dependencies: [],

@@ -8,15 +8,15 @@ import { createFairyGuiMock } from "./helpers/fairygui-mock";
 mock.module("fairygui-cc", () => createFairyGuiMock());
 
 // ---- 接缝类型（契约快照，渲染器/游戏层只消费这些形状）----
-interface FairyGuiListItemView<T> {
+interface IFairyGuiListItemView<T> {
     readonly index: number;
     readonly item: T;
     field(name: string): unknown;
 }
 
-interface FairyGuiListHandle<T> {
+interface IFairyGuiListHandle<T> {
     setItems(items: readonly T[]): void;
-    setItemRenderer(renderer: (view: FairyGuiListItemView<T>) => void): void;
+    setItemRenderer(renderer: (view: IFairyGuiListItemView<T>) => void): void;
     setItemClick(handler: (index: number, item: T) => void): void;
     refresh(): void;
 }
@@ -29,8 +29,8 @@ interface FairyGuiListLike {
 
 // ---- Adapter 契约（红期锁定，实现必须匹配）----
 interface FairyGuiListHandleExports {
-    readonly createFairyGuiListHandle?: (list: FairyGuiListLike) => FairyGuiListHandle<unknown>;
-    readonly createFairyGuiListViewHandle?: (view: unknown) => (name: string) => FairyGuiListHandle<unknown> | undefined;
+    readonly createFairyGuiListHandle?: (list: FairyGuiListLike) => IFairyGuiListHandle<unknown>;
+    readonly createFairyGuiListViewHandle?: (view: unknown) => (name: string) => IFairyGuiListHandle<unknown> | undefined;
 }
 
 const projectRoot = resolve(import.meta.dir, "../../..");
@@ -101,7 +101,7 @@ function createClickableItem(): {
     };
 }
 
-describe("FairyGuiListHandle", () => {
+describe("IFairyGuiListHandle", () => {
     test("setItems drives numItems", async () => {
         const factory = await loadFactory();
         const { list } = createListRecorder();

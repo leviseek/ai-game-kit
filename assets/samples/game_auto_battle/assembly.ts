@@ -1,5 +1,5 @@
-import type { GameFixture, Module, PlatformStorage, UiNavigator } from "../../framework";
-import { createGameFixture, createUiNavigator, createViewModelRenderer, type ViewModelNode } from "../../framework";
+import type { GameFixture, IModule, IPlatformStorage, UiNavigator } from "../../framework";
+import { createGameFixture, createUiNavigator, createViewModelRenderer, type IViewModelNode } from "../../framework";
 import type { AutoBattleEvent, AutoBattleHero, AutoBattleLineup, AutoBattleState, AutoBattleUnit } from "./models";
 import { createAutoBattleClock, createAutoBattleClockModule, createIdleRewardClock, createIdleRewardClockModule, type AutoBattleClock, type IdleRewardClock } from "./logic/clock";
 import { createAutoBattleConfig, createAutoBattleConfigModule, type AutoBattleConfigHandle } from "./logic/config";
@@ -68,7 +68,7 @@ export interface AutoBattleFixtureOptions {
     /** 配置内容：驱动单位/技能/能量规则；缺省为内建缺省配置。 */
     readonly configContent?: Record<string, unknown>;
     /** 平台存储后端：缺省为内存存储；观察编队存档写入/读取。 */
-    readonly storage?: PlatformStorage;
+    readonly storage?: IPlatformStorage;
     /** 事件回调：战斗事件广播接缝（测试据此断言回放顺序）。 */
     readonly onEvent?: (event: AutoBattleEvent) => void;
     /** 挂机可控墙钟：缺省为内建时钟（从 0 开始，测试经 advance 推进模拟离线时长）。 */
@@ -90,11 +90,11 @@ export interface AutoBattleViewNode {
 }
 
 /**
- * 把记录转换为渲染器消费的 ViewModelNode 实现，并附加 recording 引用：
+ * 把记录转换为渲染器消费的 IViewModelNode 实现，并附加 recording 引用：
  * 测试经 clickHandler 触发命令绑定回调（渲染器 onClick 时写入）。
  * 导出供冒烟回退路径复用，避免节点契约在装配与冒烟间漂移。
  */
-export function toViewModelNode(recording: AutoBattleViewNode): ViewModelNode {
+export function toViewModelNode(recording: AutoBattleViewNode): IViewModelNode {
     return {
         setText: (value: string) => {
             recording.text = value;
@@ -194,8 +194,8 @@ export interface AutoBattleFixture extends GameFixture {
     };
 }
 
-/** 缺省内存平台存储：实现 PlatformStorage，供测试与非 Cocos 环境使用。 */
-class MemoryStorage implements PlatformStorage {
+/** 缺省内存平台存储：实现 IPlatformStorage，供测试与非 Cocos 环境使用。 */
+class MemoryStorage implements IPlatformStorage {
     private readonly entries = new Map<string, string>();
 
     async get(key: string): Promise<string | null> {
@@ -314,7 +314,7 @@ export function createAutoBattleFixture(options: AutoBattleFixtureOptions = {}):
         clock.setTimeScale(speed);
     };
 
-    const modules: Module[] = [
+    const modules: IModule[] = [
         createAutoBattleClockModule(clock),
         createAutoBattleConfigModule(config),
         createAutoBattleBattleModule(battle),

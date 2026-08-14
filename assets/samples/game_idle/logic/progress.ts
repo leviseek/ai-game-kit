@@ -1,4 +1,4 @@
-import type { Module } from "../../../framework";
+import type { IModule } from "../../../framework";
 import type { IdleClock } from "./clock";
 import type { IdleOfflineSettlement, IdleProgressState } from "../models";
 
@@ -120,7 +120,7 @@ export function createIdleProgress(clock: IdleClock): IdleProgressHandle {
  * 成长模块：组合根创建控制器并注入；模块只登记引用，不在 dispose 释放共享
  * 控制器——组合根的 dispose 统一负责（对齐 GameFixture 幂等契约）。
  */
-export function createIdleProgressModule(progress: IdleProgressHandle): Module {
+export function createIdleProgressModule(progress: IdleProgressHandle): IModule {
     return {
         id: "idle.progress",
         dependencies: [],

@@ -1,8 +1,8 @@
 import type { JsonAsset } from "cc";
 import { loadConfigTable } from "../../../core/config/ConfigLoader";
 import { ConfigLoadError } from "../../../core/config/ConfigErrors";
-import type { IResourceProvider } from "../../../contracts/resource/ResourceProvider";
-import type { ConfigTable } from "../../../contracts/config/Config";
+import type { IResourceProvider } from "../../../contracts/interfaces/IResourceProvider";
+import type { IConfigTable } from "../../../contracts/interfaces/IConfigTable";
 
 /** 配置 Bundle 加载器：把引擎资源按配置内容语义加载为只读配置表。 */
 export interface CocosConfigLoader {
@@ -11,7 +11,7 @@ export interface CocosConfigLoader {
      * 装载失败或资源非 JsonAsset 形状抛 ConfigLoadError（携带 bundle/path）；
      * 内容非纯对象抛 ConfigParseError。
      */
-    loadConfig(bundle: string, path: string): Promise<ConfigTable>;
+    loadConfig(bundle: string, path: string): Promise<IConfigTable>;
 }
 
 /**

@@ -1,5 +1,5 @@
-import type { ViewModelNode } from "../../../framework";
-import type { FairyGuiListHandle } from "../../../framework";
+import type { IViewModelNode } from "../../../framework";
+import type { IFairyGuiListHandle } from "../../../framework";
 import { createViewModelRenderer } from "../../../framework";
 import type { GamePresenter } from "../../../game/lobby/presenter";
 import type { GameSessionNavigator } from "../../../game/lobby/presenter";
@@ -21,15 +21,15 @@ import { AUTO_BATTLE_IDLE_REWARDS_ENTRY } from "../../../game/lobby/catalog";
  */
 export function createLineupEditorPresenter(
     fixture: GameFixture,
-    node: (name: string) => ViewModelNode | undefined,
+    node: (name: string) => IViewModelNode | undefined,
     session?: GameSessionNavigator,
-    list?: (name: string) => FairyGuiListHandle<unknown> | undefined,
+    list?: (name: string) => IFairyGuiListHandle<unknown> | undefined,
 ): GamePresenter {
     const autoBattle = fixture as AutoBattleFixture;
 
     // 候选英雄 GList 句柄：编队页候选区为虚拟列表，presenter 在 render 时
     // setItems 驱动；节点不存在（内存测试/非真实页面）时退化，候选不渲染
-    const candidateList = list?.("candidate_list") as FairyGuiListHandle<LineupCandidateView> | undefined;
+    const candidateList = list?.("candidate_list") as IFairyGuiListHandle<LineupCandidateView> | undefined;
     if (candidateList !== undefined) {
         candidateList.setItemRenderer((view) => {
             view.field("txt_candidate_name")?.setText(view.item.heroName);

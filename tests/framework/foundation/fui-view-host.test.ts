@@ -6,7 +6,7 @@ import { createFairyGuiMock } from "./helpers/fairygui-mock";
 import { getFuiComponentRegistry, type FuiComponentUrl } from "../../../assets/framework/core/fui/FuiComponentRegistry";
 import { FuiBindingError, FuiViewBindingRegistrationError, FuiViewCleanupError, FuiViewCreationError } from "../../../assets/framework/core/fui/FuiErrors";
 import { createFuiViewBinderRegistry, defineFuiViewBinding } from "../../../assets/framework/core/fui/FuiViewBinderRegistry";
-import { FuiView } from "../../../assets/framework/contracts/ui/FuiView";
+import { FuiView } from "../../../assets/framework/core/fui/FuiView";
 
 // 实现值 import fairygui-cc；统一使用共享 fixture，动态加载避免 mock 前解析。
 mock.module("fairygui-cc", () => createFairyGuiMock());

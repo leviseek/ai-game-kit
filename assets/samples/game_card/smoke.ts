@@ -1,11 +1,11 @@
 import { createCardFixture, toViewModelNode } from "./assembly";
 import { createCardBattleBindings, createCardBattleViewModel } from "./view/view";
-import { createViewModelRenderer, type ViewModelNode } from "../../framework";
+import { createViewModelRenderer, type IViewModelNode } from "../../framework";
 
 /**
  * 卡牌对战冒烟的宿主接缝：boot 侧 UiHost 的结构性子集（运行时值传入，samples 不
  * import boot）。nodeResolver 为可选的真实 fgui 渲染接缝：boot 注入
- * createFairyGuiViewHandle，把页面根组件包装成 ViewModelNode 解析器，使冒烟渲染
+ * createFairyGuiViewHandle，把页面根组件包装成 IViewModelNode 解析器，使冒烟渲染
  * 落到真实 BattleView 节点（验证 BattleView.xml 与 viewModel 节点名对齐）。
  */
 export interface CardBattleSmokeHost {
@@ -27,12 +27,12 @@ export interface CardBattleSmokeHost {
         | undefined;
     smokeUiInit(): boolean;
     release(): void;
-    nodeResolver?: (view: unknown) => (name: string) => ViewModelNode | undefined;
+    nodeResolver?: (view: unknown) => (name: string) => IViewModelNode | undefined;
 }
 
 /** 冒烟运行选项：真实 fgui 渲染接缝由 boot 侧注入（host 缺省无此能力时经此传入）。 */
 export interface CardBattleSmokeOptions {
-    readonly nodeResolver?: (view: unknown) => (name: string) => ViewModelNode | undefined;
+    readonly nodeResolver?: (view: unknown) => (name: string) => IViewModelNode | undefined;
 }
 
 /**
@@ -93,7 +93,7 @@ export async function runCardBattleSmoke(host: CardBattleSmokeHost, ensureShared
     // 解析器，渲染落到真实 BattleView 节点（覆盖 XML↔viewModel 节点名对齐）；
     // 无接缝时回退夹具内存记录型节点（测试/无 fgui 环境）。
     const resolver = options.nodeResolver ?? host.nodeResolver;
-    const node: (name: string) => ViewModelNode | undefined = resolver === undefined ? (name: string): ViewModelNode => toViewModelNode(fixture.viewModel.node(name)) : resolver(page.view);
+    const node: (name: string) => IViewModelNode | undefined = resolver === undefined ? (name: string): IViewModelNode => toViewModelNode(fixture.viewModel.node(name)) : resolver(page.view);
 
     const renderer = createViewModelRenderer({
         node,

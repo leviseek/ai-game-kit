@@ -4,10 +4,10 @@ import { describe, expect, mock, test } from "bun:test";
 
 import { createFairyGuiMock } from "./helpers/fairygui-mock";
 
-import type { ConfigTable } from "../../../assets/framework/contracts/config/Config";
+import type { IConfigTable } from "../../../assets/framework/contracts/interfaces/IConfigTable";
 import { configNumber, configObject, configString } from "../../../assets/framework/core/config/ConfigTable";
 import { ConfigLoadError, ConfigParseError } from "../../../assets/framework/core/config/ConfigErrors";
-import type { IResourceProvider } from "../../../assets/framework/contracts/resource/ResourceProvider";
+import type { IResourceProvider } from "../../../assets/framework/contracts/interfaces/IResourceProvider";
 
 // Cocos 适配器值导入 cc（缺省读 cc.assetManager）与 fairygui-cc（UIPackage）；
 // bun mock.module 全局共享，首个注册生效，注入 assetManager 后不会触达真实引擎。
@@ -28,7 +28,7 @@ interface CocosAssetManagerLike {
 
 interface CocosConfigLoaderFactory {
     createCocosConfigLoader(provider: IResourceProvider): {
-        loadConfig(bundle: string, path: string): Promise<ConfigTable>;
+        loadConfig(bundle: string, path: string): Promise<IConfigTable>;
     };
 }
 

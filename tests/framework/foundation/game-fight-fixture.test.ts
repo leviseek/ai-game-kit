@@ -5,7 +5,7 @@ import { describe, expect, test } from "bun:test";
 
 import type { GameFixture } from "../../../assets/game/fixture/GameFixture";
 import { createResourceProvider } from "../../../assets/framework";
-import type { AudioBackend, AudioGroup, AudioTrackRef, IResourceProvider, InputSample, InputSource, ResourceScope } from "../../../assets/framework";
+import type { IAudioBackend, EnumAudioGroup, IAudioTrackRef, IResourceProvider, IInputSample, IInputSource, IResourceScope } from "../../../assets/framework";
 
 const projectRoot = resolve(import.meta.dir, "../../..");
 const assemblyFile = resolve(projectRoot, "assets/samples/game_fight/assembly.ts");
@@ -59,9 +59,9 @@ interface FightFixtureOptions {
     /** 可控模拟时钟：缺省为内建时钟（从 0 开始，测试经 fixture.battle.tick 推进）。 */
     readonly clock?: FightClock;
     /** 底层输入源：注入以推送底层输入事件。 */
-    readonly inputSource?: InputSource;
+    readonly inputSource?: IInputSource;
     /** 音频后端：注入以观察命中播放与作用域停止。 */
-    readonly audioBackend?: AudioBackend;
+    readonly audioBackend?: IAudioBackend;
     /** 资源提供者：注入以观察资源按作用域释放。 */
     readonly provider?: IResourceProvider;
 }
@@ -89,11 +89,11 @@ interface FightFixtureHooks {
         readonly activeContext: string;
         setActiveContext(context: string): void;
         push(sourceId: string, pressed: boolean, value?: number): void;
-        readonly samples: readonly InputSample<FightAction>[];
+        readonly samples: readonly IInputSample<FightAction>[];
     };
     /** 资源作用域：持有战斗资源，dispose 时释放。 */
     readonly resource: {
-        readonly scope: ResourceScope | undefined;
+        readonly scope: IResourceScope | undefined;
         canUnload(bundle: string): boolean;
     };
     /** 音频服务：命中经作用域播放，dispose 时停止。 */
@@ -126,28 +126,28 @@ async function driveUniformLifecycle(fixture: GameFixture): Promise<string[]> {
 }
 
 // 记录型音频后端：可用性可控，play/stop 调用可断言
-class RecordingBackend implements AudioBackend {
+class RecordingBackend implements IAudioBackend {
     public readonly available: boolean;
-    public readonly playCalls: Array<{ group: AudioGroup; track: AudioTrackRef }> = [];
-    public readonly stopCalls: AudioGroup[] = [];
+    public readonly playCalls: Array<{ group: EnumAudioGroup; track: IAudioTrackRef }> = [];
+    public readonly stopCalls: EnumAudioGroup[] = [];
 
     constructor(available = true) {
         this.available = available;
     }
 
-    play(group: AudioGroup, track: AudioTrackRef): void {
+    play(group: EnumAudioGroup, track: IAudioTrackRef): void {
         this.playCalls.push({ group, track });
     }
 
-    stop(group: AudioGroup): void {
+    stop(group: EnumAudioGroup): void {
         this.stopCalls.push(group);
     }
 
-    pause(_group: AudioGroup): void {}
+    pause(_group: EnumAudioGroup): void {}
 
-    resume(_group: AudioGroup): void {}
+    resume(_group: EnumAudioGroup): void {}
 
-    setVolume(_group: AudioGroup, _volume: number): void {}
+    setVolume(_group: EnumAudioGroup, _volume: number): void {}
 }
 
 describe("Fight fixture contract file", () => {

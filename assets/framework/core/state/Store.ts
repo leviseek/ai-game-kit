@@ -4,17 +4,19 @@
  * dispose 清空后 dispatch 为 no-op（不通知也不抛错）。
  */
 
-import type { Action, Store, StoreListener } from "../../contracts/state/Store";
+import type { IAction } from "../../contracts/interfaces/IAction";
+import type { IStore } from "../../contracts/interfaces/IStore";
+import type { IStoreListener } from "../../contracts/interfaces/IStoreListener";
 
 /**
- * 创建轻量 Store。
+ * 创建轻量 Store（契约 IStore）。
  * reducer 必须是纯函数：相同 (state, action) 必得相同输出；不得修改入参 state。
  * 初始状态直接作为当前 state，dispatch 前订阅者不可见（首次投影由调用方读取）。
  */
-export function createStore<S, A extends Action>(reducer: (state: S, action: A) => S, initialState: S): Store<S, A> {
+export function createStore<S, A extends IAction>(reducer: (state: S, action: A) => S, initialState: S): IStore<S, A> {
     let state = initialState;
     let disposed = false;
-    const listeners = new Set<StoreListener<S>>();
+    const listeners = new Set<IStoreListener<S>>();
 
     return {
         getState(): S {
@@ -29,7 +31,7 @@ export function createStore<S, A extends Action>(reducer: (state: S, action: A) 
                 listener(state);
             }
         },
-        subscribe(listener: StoreListener<S>): { dispose(): void } {
+        subscribe(listener: IStoreListener<S>): { dispose(): void } {
             listeners.add(listener);
             return {
                 dispose(): void {

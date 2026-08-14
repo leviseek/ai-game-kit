@@ -5,7 +5,8 @@
  * 的跨 bundle 注册桥同构），业务代码经框架根入口的装饰器间接写入。
  */
 
-import type { FuiClickMeta, FuiView } from "../../contracts/ui/FuiView";
+import type { IFuiClickMeta } from "../../contracts/interfaces/IFuiClickMeta";
+import type { IFuiView } from "../../contracts/interfaces/IFuiView";
 import { FuiComponentRegistrationError } from "./FuiErrors";
 
 /**
@@ -20,12 +21,12 @@ export function createFuiComponentUrl(packageName: string, componentName: string
 }
 
 export interface FuiComponentEntry {
-    /** 组件类构造器（new 即创建 FuiView 实例）。 */
-    readonly ctor: new () => FuiView<unknown, unknown>;
+    /** 组件类构造器（new 即创建 IFuiView 实例）。 */
+    readonly ctor: new () => IFuiView<unknown, unknown>;
     /** 生成字段描述：元件名 → 能力 kind（来自 gen-types 产物）。 */
     readonly fields: Readonly<Record<string, string>>;
     /** @FClick 收集的点击元数据（原型方法引用，实例化时 bind）。 */
-    readonly clicks: readonly FuiClickMeta[];
+    readonly clicks: readonly IFuiClickMeta[];
     /** 运行时绑定策略：required 组件缺少对应 binder 时创建失败（见 fui-view-binding spec）。 */
     readonly runtimeBinding: "required" | "none";
 }

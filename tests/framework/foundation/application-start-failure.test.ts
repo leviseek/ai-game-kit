@@ -2,16 +2,16 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, test } from "bun:test";
 
-import type { ApplicationContext, ApplicationState, Module } from "../../../assets/framework";
+import type { IApplicationContext, EnumApplicationState, IModule } from "../../../assets/framework";
 import { MemoryLogger } from "../support/MemoryLogger";
 
 interface ApplicationInstance {
-    readonly state: ApplicationState;
+    readonly state: EnumApplicationState;
     start(): Promise<void>;
     dispose(): Promise<void>;
 }
 
-type ApplicationConstructor = new (modules: readonly Module[], context: ApplicationContext) => ApplicationInstance;
+type ApplicationConstructor = new (modules: readonly IModule[], context: IApplicationContext) => ApplicationInstance;
 
 interface FrameworkExports {
     readonly Application?: ApplicationConstructor;
@@ -30,11 +30,11 @@ async function loadApplication(): Promise<ApplicationConstructor> {
     return exports.Application as ApplicationConstructor;
 }
 
-function createContext(): ApplicationContext {
+function createContext(): IApplicationContext {
     return { logger: new MemoryLogger(), state: "created" };
 }
 
-function createModule(id: string, calls: string[], dependencies: readonly string[] = []): Module {
+function createModule(id: string, calls: string[], dependencies: readonly string[] = []): IModule {
     return {
         id,
         dependencies,
@@ -106,7 +106,7 @@ describe("Application start failure", () => {
         const calls: string[] = [];
         const stable = createModule("stable", calls);
         const initializeFailure = new Error("inventory initialize failed");
-        const failing: Module = {
+        const failing: IModule = {
             id: "inventory",
             dependencies: [stable.id],
             initialize: async () => {
@@ -132,7 +132,7 @@ describe("Application start failure", () => {
         const calls: string[] = [];
         const stable = createModule("stable", calls);
         const startFailure = new Error("gameplay start failed");
-        const failing: Module = {
+        const failing: IModule = {
             id: "gameplay",
             dependencies: [stable.id],
             initialize: async () => {

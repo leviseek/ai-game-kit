@@ -1,11 +1,11 @@
 import { FrameworkError } from "../errors/FrameworkError";
-import type { ConfigKey } from "../../contracts/config/Config";
+import type { IConfigKey } from "../../contracts/interfaces/IConfigKey";
 
 /** 读取不存在的配置键时的类型化错误，携带键名。 */
 export class ConfigMissingError extends FrameworkError {
-    readonly key: ConfigKey;
+    readonly key: IConfigKey;
 
-    constructor(key: ConfigKey) {
+    constructor(key: IConfigKey) {
         super(`Config key "${key}" is missing`, { component: "config" });
 
         this.name = "ConfigMissingError";
@@ -15,10 +15,10 @@ export class ConfigMissingError extends FrameworkError {
 
 /** 配置值形状与声明类型不符时的类型化错误，携带键名与期望形状。 */
 export class ConfigTypeMismatchError extends FrameworkError {
-    readonly key: ConfigKey;
+    readonly key: IConfigKey;
     readonly expected: string;
 
-    constructor(key: ConfigKey, expected: string) {
+    constructor(key: IConfigKey, expected: string) {
         super(`Config key "${key}" does not match declared type ${expected}`, {
             component: "config",
         });
@@ -31,10 +31,10 @@ export class ConfigTypeMismatchError extends FrameworkError {
 
 /** 配置内容无法按期望解析时的类型化错误，携带键名与诊断信息。 */
 export class ConfigParseError extends FrameworkError {
-    readonly key: ConfigKey;
+    readonly key: IConfigKey;
     readonly detail: string;
 
-    constructor(key: ConfigKey, detail: string, options?: { readonly cause?: unknown }) {
+    constructor(key: IConfigKey, detail: string, options?: { readonly cause?: unknown }) {
         super(`Config key "${key}" could not be parsed: ${detail}`, {
             component: "config",
             cause: options?.cause,

@@ -4,7 +4,8 @@ import { resolve } from "node:path";
 
 import { createResourceProvider } from "../../../assets/framework/core/resource/ResourceProvider";
 import { createMemoryResourceProvider } from "../../../assets/framework/adapters/memory/MemoryResourceProvider";
-import type { ResourceHandle, ResourceKey } from "../../../assets/framework/contracts/resource/Resource";
+import type { IResourceHandle } from "../../../assets/framework/contracts/interfaces/IResourceHandle";
+import type { IResourceKey } from "../../../assets/framework/contracts/interfaces/IResourceKey";
 
 interface ControlledDeferred {
     readonly resolve: (value: unknown) => void;
@@ -12,16 +13,16 @@ interface ControlledDeferred {
 }
 
 interface ControlledLoader {
-    readonly calls: readonly ResourceKey[];
+    readonly calls: readonly IResourceKey[];
     readonly pending: readonly ControlledDeferred[];
-    readonly loader: (key: ResourceKey) => Promise<unknown>;
+    readonly loader: (key: IResourceKey) => Promise<unknown>;
 }
 
 function createControlledLoader(): ControlledLoader {
-    const calls: ResourceKey[] = [];
+    const calls: IResourceKey[] = [];
     const pending: ControlledDeferred[] = [];
 
-    const loader = (key: ResourceKey): Promise<unknown> => {
+    const loader = (key: IResourceKey): Promise<unknown> => {
         calls.push(key);
         return new Promise((resolve, reject) => {
             pending.push({ resolve, reject });
@@ -48,8 +49,8 @@ function collectTypeScriptFiles(directory: string): readonly string[] {
 }
 
 describe("IResourceProvider contract shape", () => {
-    const contractsResourceRoot = resolve(import.meta.dir, "../../../assets/framework/contracts/resource");
-    const providerContract = resolve(contractsResourceRoot, "ResourceProvider.ts");
+    const contractsResourceRoot = resolve(import.meta.dir, "../../../assets/framework/contracts/interfaces");
+    const providerContract = resolve(contractsResourceRoot, "IResourceProvider.ts");
 
     test("defines IResourceProvider as the unified resource entry", () => {
         expect(existsSync(providerContract)).toBe(true);
@@ -242,7 +243,7 @@ describe("memory resource adapter", () => {
     test("loads resources from the default in-memory table", async () => {
         const provider = createMemoryResourceProvider();
 
-        const handle: ResourceHandle = provider.load("common", "config.json");
+        const handle: IResourceHandle = provider.load("common", "config.json");
         await handle.done;
 
         expect(handle.state).toBe("ready");
@@ -275,7 +276,7 @@ describe("Creator build-transpilation guard: Set/iterator spreads", () => {
 
     // Creator 构建会把 `[...set]`/`[...iterable]` 转译为 `[].concat(iterable)`，
     // concat 不展开 Set/迭代器导致运行期失败（LoadCoordinator waiters /
-    // ResourceScope 逆序释放 / FairyGuiPageAdapter 页面快照 / MemoryPlatform 监听器，
+    // IResourceScope 逆序释放 / FairyGuiPageAdapter 页面快照 / MemoryPlatform 监听器，
     // 4.2 冒烟红期实测 `finish is not a function`）。必须使用 Array.from 显式转换。
     // 全库扫描锁定：任何 `[...x]` 后接 `.values()`/`.keys()`/`.entries()` 或展开的
     // 变量名指向 Set/Map 的场景都必须经 Array.from，禁止直接展开运算符。
@@ -300,7 +301,7 @@ describe("Creator build-transpilation guard: Set/iterator spreads", () => {
         expect(source).not.toMatch(/\[\.\.\.entry\.waiters\]/);
     });
 
-    test("ResourceScope iterates held values with Array.from", () => {
+    test("IResourceScope iterates held values with Array.from", () => {
         const source = readFileSync(resolve(frameworkRoot, "core/resource/ResourceScope.ts"), "utf8");
         expect(source).toMatch(/Array\.from\(held\.values\(\)\)/);
         expect(source).not.toMatch(/\[\.\.\.held\.values\(\)\]/);

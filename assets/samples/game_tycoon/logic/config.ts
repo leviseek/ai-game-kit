@@ -1,6 +1,11 @@
-import type { Module } from "../../../framework";
-import { configArray, configNumber, createConfigTable, type ConfigTable } from "../../../framework";
+import type { IConfigKey, IModule } from "../../../framework";
+import { configArray, configNumber, createConfigTable, type IConfigTable } from "../../../framework";
 import type { TycoonProduct } from "../models";
+
+// branded 键无运行期值：读取前把配置键字符串收窄为品牌类型
+function keyOf(key: string): IConfigKey {
+    return key as unknown as IConfigKey;
+}
 
 /** 配置读取句柄：把不可变配置表解析为产品清单与初始现金。 */
 export interface TycoonConfigHandle {
@@ -37,9 +42,9 @@ function isTycoonProduct(value: unknown): value is TycoonProduct {
  * 配置内容由组合根注入；本模块只负责解析，与生产/经济逻辑解耦（数值与来源分离）。
  */
 export function createTycoonConfig(content: Record<string, unknown>): TycoonConfigHandle {
-    const table: ConfigTable = createConfigTable(content);
+    const table: IConfigTable = createConfigTable(content);
 
-    const rawProducts = table.read("products", configArray, []);
+    const rawProducts = table.read(keyOf("products"), configArray, []);
     const products = rawProducts.map((entry, index) => {
         if (!isTycoonProduct(entry)) {
             throw new Error(`tycoon product config entry at index ${index} has an invalid shape`);
@@ -49,7 +54,7 @@ export function createTycoonConfig(content: Record<string, unknown>): TycoonConf
 
     // 与产品数值校验一致：初始现金只接受有限非负，负值开局会让所有生产永久失败，
     // 属配置错误应 fail-fast，而不是静默进入"看似可用实则全拒"的状态
-    const startCash = table.read("startCash", configNumber, 100);
+    const startCash = table.read(keyOf("startCash"), configNumber, 100);
     if (!Number.isFinite(startCash) || startCash < 0) {
         throw new Error("tycoon startCash must be finite and non-negative");
     }
@@ -64,7 +69,7 @@ export function createTycoonConfig(content: Record<string, unknown>): TycoonConf
  * 配置模块：组合根创建配置句柄并注入；模块只登记引用，配置表为不可变数据，
  * 生命周期无副作用，不在此释放共享配置。
  */
-export function createTycoonConfigModule(config: TycoonConfigHandle): Module {
+export function createTycoonConfigModule(config: TycoonConfigHandle): IModule {
     return {
         id: "tycoon.config",
         dependencies: [],

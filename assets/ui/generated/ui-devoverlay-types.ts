@@ -2,9 +2,9 @@
 // 包: DevOverlay (id=ipgg4xdn)
 
 import type {
-    TypedComponentNode,
-    TypedImageNode,
-    TypedTextNode,
+    ITypedComponentNode,
+    ITypedImageNode,
+    ITypedTextNode,
 } from "../../framework";
 
 export const DevOverlayPanelFields = {
@@ -21,14 +21,14 @@ export const DevOverlayPanelFields = {
 export type DevOverlayPanelNodes = keyof typeof DevOverlayPanelFields;
 
 export interface IDevOverlayPanel {
-    readonly _bg_panel: TypedImageNode;
-    readonly _info_uptime: TypedTextNode;
-    readonly _info_device: TypedTextNode;
-    readonly _info_network: TypedTextNode;
-    readonly _info_fps: TypedTextNode;
-    readonly _info_memory: TypedTextNode;
-    readonly _info_viewport: TypedTextNode;
-    readonly _info_resolution: TypedTextNode;
+    readonly _bg_panel: ITypedImageNode;
+    readonly _info_uptime: ITypedTextNode;
+    readonly _info_device: ITypedTextNode;
+    readonly _info_network: ITypedTextNode;
+    readonly _info_fps: ITypedTextNode;
+    readonly _info_memory: ITypedTextNode;
+    readonly _info_viewport: ITypedTextNode;
+    readonly _info_resolution: ITypedTextNode;
 }
 
 export const DevOverlayBallFields = {
@@ -40,9 +40,9 @@ export const DevOverlayBallFields = {
 export type DevOverlayBallNodes = keyof typeof DevOverlayBallFields;
 
 export interface IDevOverlayBall {
-    readonly _img_ball: TypedImageNode;
-    readonly _badge_fps: TypedTextNode;
-    readonly _panel: TypedComponentNode;
+    readonly _img_ball: ITypedImageNode;
+    readonly _badge_fps: ITypedTextNode;
+    readonly _panel: ITypedComponentNode;
 }
 
 export const SafeAreaFrameFields = {
@@ -55,9 +55,9 @@ export const SafeAreaFrameFields = {
 export type SafeAreaFrameNodes = keyof typeof SafeAreaFrameFields;
 
 export interface ISafeAreaFrame {
-    readonly _frame_top: TypedImageNode;
-    readonly _frame_bottom: TypedImageNode;
-    readonly _frame_left: TypedImageNode;
-    readonly _frame_right: TypedImageNode;
+    readonly _frame_top: ITypedImageNode;
+    readonly _frame_bottom: ITypedImageNode;
+    readonly _frame_left: ITypedImageNode;
+    readonly _frame_right: ITypedImageNode;
 }
 

@@ -1,4 +1,4 @@
-import type { ViewModelNode } from "../../framework";
+import type { IViewModelNode } from "../../framework";
 import { createMotionTween, easeOutCubic, type MotionTween } from "../../framework/core/time/MotionTween";
 import type { DevInfoSampler } from "./DevInfo";
 
@@ -63,7 +63,7 @@ export function computeSnapTarget(position: XY, size: { readonly width: number; 
 
 export interface DevBallOptions {
     /** 节点解析器：球/面板/信息文本按名解析（经 UiHost 视图节点接缝提供）。 */
-    readonly node: (name: string) => ViewModelNode | undefined;
+    readonly node: (name: string) => IViewModelNode | undefined;
     /** 球组件尺寸（GRoot 坐标系），供贴边露头计算。 */
     readonly ballSize: { readonly width: number; readonly height: number };
     /** 实时屏幕边界读取器（GRoot 设计分辨率）；窗口 resize 后取当前值，勿用创建时快照。 */

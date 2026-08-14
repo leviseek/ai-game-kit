@@ -12,7 +12,7 @@ mock.module("cc", () => ({
 // 统一使用共享 fixture（bun mock.module 全局共享首个生效，保证全量运行符号齐全）。
 mock.module("fairygui-cc", () => createFairyGuiMock());
 
-import type { IResourceProvider } from "../../../assets/framework/contracts/resource/ResourceProvider";
+import type { IResourceProvider } from "../../../assets/framework/contracts/interfaces/IResourceProvider";
 
 interface CocosBundleLike {
     readonly name: string;

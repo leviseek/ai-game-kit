@@ -1,20 +1,23 @@
-import type { ApplicationVisibility, ApplicationVisibilityState, DeviceInfo, PlatformStorage } from "../../contracts/platform/Platform";
-import type { TimeSource } from "../../contracts/time/TimeSource";
+import type { IApplicationVisibility } from "../../contracts/interfaces/IApplicationVisibility";
+import type { IDeviceInfo } from "../../contracts/interfaces/IDeviceInfo";
+import type { IPlatformStorage } from "../../contracts/interfaces/IPlatformStorage";
+import { EnumApplicationVisibilityState } from "../../contracts/enums/EnumApplicationVisibilityState";
+import type { ITimeSource } from "../../contracts/interfaces/ITimeSource";
 
 export interface MemoryPlatformOptions {
-    readonly initialVisibility?: ApplicationVisibilityState;
-    readonly deviceInfo?: DeviceInfo;
+    readonly initialVisibility?: EnumApplicationVisibilityState;
+    readonly deviceInfo?: IDeviceInfo;
     readonly initialEntries?: Readonly<Record<string, string>>;
     readonly now?: () => number;
 }
 
 /**
- * 内存平台适配器：供测试与非 Cocos 环境使用的 ApplicationVisibility、
- * PlatformStorage、DeviceInfo 与 TimeSource 实现。
+ * 内存平台适配器：供测试与非 Cocos 环境使用的 IApplicationVisibility、
+ * IPlatformStorage、IDeviceInfo 与 ITimeSource 实现。
  */
-export class MemoryPlatform implements ApplicationVisibility, PlatformStorage, DeviceInfo {
-    private currentVisibility: ApplicationVisibilityState;
-    private readonly visibilityListeners = new Set<(state: ApplicationVisibilityState) => void>();
+export class MemoryPlatform implements IApplicationVisibility, IPlatformStorage, IDeviceInfo {
+    private currentVisibility: EnumApplicationVisibilityState;
+    private readonly visibilityListeners = new Set<(state: EnumApplicationVisibilityState) => void>();
     private readonly entries = new Map<string, string>();
     private readonly timeNow: () => number;
 
@@ -22,10 +25,10 @@ export class MemoryPlatform implements ApplicationVisibility, PlatformStorage, D
     public readonly model: string;
     public readonly language: string;
 
-    public readonly timeSource: TimeSource;
+    public readonly timeSource: ITimeSource;
 
     constructor(options: MemoryPlatformOptions = {}) {
-        this.currentVisibility = options.initialVisibility ?? "foreground";
+        this.currentVisibility = options.initialVisibility ?? EnumApplicationVisibilityState.Foreground;
         this.platform = options.deviceInfo?.platform ?? "memory";
         this.model = options.deviceInfo?.model ?? "memory-test";
         this.language = options.deviceInfo?.language ?? "en-US";
@@ -39,11 +42,11 @@ export class MemoryPlatform implements ApplicationVisibility, PlatformStorage, D
         }
     }
 
-    get state(): ApplicationVisibilityState {
+    get state(): EnumApplicationVisibilityState {
         return this.currentVisibility;
     }
 
-    setVisibility(state: ApplicationVisibilityState): void {
+    setVisibility(state: EnumApplicationVisibilityState): void {
         if (state === this.currentVisibility) {
             return;
         }
@@ -68,7 +71,7 @@ export class MemoryPlatform implements ApplicationVisibility, PlatformStorage, D
         }
     }
 
-    onVisibilityChange(listener: (state: ApplicationVisibilityState) => void): () => void {
+    onVisibilityChange(listener: (state: EnumApplicationVisibilityState) => void): () => void {
         this.visibilityListeners.add(listener);
 
         return () => {

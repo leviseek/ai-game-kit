@@ -3,11 +3,11 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, test } from "bun:test";
 
-import type { ApplicationContext, Logger } from "../../../assets/framework";
+import type { IApplicationContext, ILogger } from "../../../assets/framework";
 import { MemoryLogger } from "../support/MemoryLogger";
 
 interface CreateApplicationContextFn {
-    (logger: Logger): ApplicationContext;
+    (logger: ILogger): IApplicationContext;
 }
 
 interface ApplicationContextExports {
@@ -31,8 +31,8 @@ function collectKeys(target: object): readonly string[] {
     return [...Object.getOwnPropertyNames(target), ...Object.getOwnPropertyNames(Object.getPrototypeOf(target))];
 }
 
-describe("ApplicationContext implementation", () => {
-    test("provides a creation API that returns an ApplicationContext", async () => {
+describe("IApplicationContext implementation", () => {
+    test("provides a creation API that returns an IApplicationContext", async () => {
         const createApplicationContext = await loadFactory();
         const logger = new MemoryLogger();
         const context = createApplicationContext(logger);

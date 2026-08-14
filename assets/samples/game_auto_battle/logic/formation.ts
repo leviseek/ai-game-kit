@@ -1,4 +1,4 @@
-import type { Module } from "../../../framework";
+import type { IModule } from "../../../framework";
 import type { AutoBattlePosition, AutoBattleSide } from "../models";
 
 const SIDE_ORDER: Readonly<Record<AutoBattleSide, number>> = {
@@ -95,7 +95,7 @@ export function selectAutoBattleHealTarget(allies: readonly AutoBattleUnitView[]
  * 阵列模块：查询/排序/目标选择为纯函数，模块只登记引用使其进入装配清单，
  * 生命周期无副作用（对齐其它品类模块的登记语义）。
  */
-export function createAutoBattleFormationModule(): Module {
+export function createAutoBattleFormationModule(): IModule {
     return {
         id: "auto_battle.formation",
         dependencies: [],

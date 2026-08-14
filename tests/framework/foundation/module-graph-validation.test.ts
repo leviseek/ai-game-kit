@@ -3,9 +3,9 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, test } from "bun:test";
 
-import type { Module } from "../../../assets/framework";
+import type { IModule } from "../../../assets/framework";
 
-type ModuleGraphConstructor = new (modules: readonly Module[]) => object;
+type ModuleGraphConstructor = new (modules: readonly IModule[]) => object;
 
 interface ModuleGraphExports {
     readonly ModuleGraph?: ModuleGraphConstructor;
@@ -14,7 +14,7 @@ interface ModuleGraphExports {
 const projectRoot = resolve(import.meta.dir, "../../..");
 const moduleGraphFile = resolve(projectRoot, "assets/framework/application/ModuleGraph.ts");
 
-function createModule(id: string, dependencies: readonly string[] = []): Module {
+function createModule(id: string, dependencies: readonly string[] = []): IModule {
     return { id, dependencies };
 }
 
@@ -69,7 +69,7 @@ describe("ModuleGraph validation", () => {
     test("does not invoke lifecycle hooks while rejecting an invalid graph", async () => {
         const ModuleGraph = await loadModuleGraph();
         const calls: string[] = [];
-        const invalidModule: Module = {
+        const invalidModule: IModule = {
             id: "inventory",
             dependencies: ["missing"],
             initialize: () => {

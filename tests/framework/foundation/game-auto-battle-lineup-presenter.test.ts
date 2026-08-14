@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
-import type { ViewModelNode } from "../../../assets/framework";
-import type { FairyGuiListHandle } from "../../../assets/framework";
+import type { IViewModelNode } from "../../../assets/framework";
+import type { IFairyGuiListHandle } from "../../../assets/framework";
 import { createLineupEditorPresenter } from "../../../assets/samples/game_auto_battle/view/LineupPresenter";
 import { AUTO_BATTLE_ASSEMBLY_EXISTS, loadCreateAutoBattleFixture } from "../support/auto-battle-fixture";
 
@@ -14,7 +14,7 @@ interface RecordingNode {
 
 function recordingView(): {
     nodes: Map<string, RecordingNode>;
-    node: (name: string) => ViewModelNode | undefined;
+    node: (name: string) => IViewModelNode | undefined;
 } {
     const nodes = new Map<string, RecordingNode>();
     const ensure = (name: string): RecordingNode => {
@@ -52,14 +52,14 @@ function recordingView(): {
 /** 记录型候选列表句柄：保存 itemClick 回调供测试触发（模拟 GList 项点击）。 */
 function recordingListHandle(): {
     itemClick: ((index: number, item: { heroId: string; deployed: boolean }) => void) | undefined;
-    list: (name: string) => FairyGuiListHandle<unknown> | undefined;
+    list: (name: string) => IFairyGuiListHandle<unknown> | undefined;
 } {
     const state: {
         itemClick: ((index: number, item: { heroId: string; deployed: boolean }) => void) | undefined;
     } = {
         itemClick: undefined,
     };
-    const handle: FairyGuiListHandle<unknown> = {
+    const handle: IFairyGuiListHandle<unknown> = {
         setItems: () => {},
         setItemRenderer: () => {},
         setItemClick: (handler) => {

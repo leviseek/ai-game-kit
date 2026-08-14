@@ -1,4 +1,4 @@
-import type { Module } from "../../../framework";
+import type { IModule } from "../../../framework";
 import type { TycoonConfigHandle } from "./config";
 import type { TycoonClock } from "./clock";
 import type { TycoonEconomicState, TycoonProductionState } from "../models";
@@ -74,7 +74,7 @@ export function createTycoonEconomy(config: TycoonConfigHandle): TycoonEconomyHa
  * 经济模块：组合根创建经济控制器并注入；模块只登记引用，不在此释放共享
  * 控制器——组合根的 dispose 统一负责（对齐 GameFixture 幂等契约）。
  */
-export function createTycoonEconomyModule(economy: TycoonEconomyHandle): Module {
+export function createTycoonEconomyModule(economy: TycoonEconomyHandle): IModule {
     return {
         id: "tycoon.economy",
         dependencies: [],
@@ -170,7 +170,7 @@ export function createTycoonProduction(clock: TycoonClock, config: TycoonConfigH
  * 控制器——组合根的 dispose 统一负责（避免 failRollback 探针复用模块实例时
  * 提前销毁夹具自身能力，对齐 GameFixture 幂等契约）。
  */
-export function createTycoonProductionModule(production: TycoonProductionHandle): Module {
+export function createTycoonProductionModule(production: TycoonProductionHandle): IModule {
     return {
         id: "tycoon.production",
         dependencies: [],

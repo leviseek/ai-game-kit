@@ -13,7 +13,8 @@ mock.module("cc", () => ({
     },
 }));
 
-import type { InputEvent, InputSourceId } from "../../../assets/framework/contracts/input/Input";
+import type { IInputEvent } from "../../../assets/framework/contracts/interfaces/IInputEvent";
+import type { IInputSourceId } from "../../../assets/framework/contracts/interfaces/IInputSourceId";
 import { createInputMapper, type InputMapper } from "../../../assets/framework/core/input/InputMapper";
 
 type TestAction = "jump" | "move" | "confirm";
@@ -43,7 +44,7 @@ interface CocosInputAdapterFactory {
             readonly gamepadChange: string;
             readonly gamepadInput: string;
         };
-    }): { readonly id: InputSourceId; subscribe(callback: (event: InputEvent) => void): () => void };
+    }): { readonly id: IInputSourceId; subscribe(callback: (event: IInputEvent) => void): () => void };
 }
 
 const projectRoot = resolve(import.meta.dir, "../../..");
@@ -129,7 +130,7 @@ describe("CocosInputAdapter translation", () => {
         const { createCocosInputAdapter } = await loadFactory();
         const mockInput = createMockInput();
         const adapter = createCocosInputAdapter({ input: mockInput, eventTypes: EVENT_TYPES });
-        const events: InputEvent[] = [];
+        const events: IInputEvent[] = [];
 
         const unsubscribe = adapter.subscribe((event) => events.push(event));
 
@@ -148,7 +149,7 @@ describe("CocosInputAdapter translation", () => {
         const { createCocosInputAdapter } = await loadFactory();
         const mockInput = createMockInput();
         const adapter = createCocosInputAdapter({ input: mockInput, eventTypes: EVENT_TYPES });
-        const events: InputEvent[] = [];
+        const events: IInputEvent[] = [];
 
         const unsubscribe = adapter.subscribe((event) => events.push(event));
 
@@ -167,7 +168,7 @@ describe("CocosInputAdapter translation", () => {
         const { createCocosInputAdapter } = await loadFactory();
         const mockInput = createMockInput();
         const adapter = createCocosInputAdapter({ input: mockInput, eventTypes: EVENT_TYPES });
-        const events: InputEvent[] = [];
+        const events: IInputEvent[] = [];
 
         const unsubscribe = adapter.subscribe((event) => events.push(event));
 
@@ -186,7 +187,7 @@ describe("CocosInputAdapter translation", () => {
         const { createCocosInputAdapter } = await loadFactory();
         const mockInput = createMockInput();
         const adapter = createCocosInputAdapter({ input: mockInput, eventTypes: EVENT_TYPES });
-        const events: InputEvent[] = [];
+        const events: IInputEvent[] = [];
 
         const unsubscribe = adapter.subscribe((event) => events.push(event));
 
@@ -204,7 +205,7 @@ describe("CocosInputAdapter translation", () => {
         const { createCocosInputAdapter } = await loadFactory();
         const mockInput = createMockInput();
         const adapter = createCocosInputAdapter({ input: mockInput, eventTypes: EVENT_TYPES });
-        const events: InputEvent[] = [];
+        const events: IInputEvent[] = [];
 
         const unsubscribe = adapter.subscribe((event) => events.push(event));
 
@@ -222,7 +223,7 @@ describe("CocosInputAdapter translation", () => {
         const { createCocosInputAdapter } = await loadFactory();
         const mockInput = createMockInput();
         const adapter = createCocosInputAdapter({ input: mockInput, eventTypes: EVENT_TYPES });
-        const events: InputEvent[] = [];
+        const events: IInputEvent[] = [];
 
         const unsubscribe = adapter.subscribe((event) => events.push(event));
 
@@ -245,7 +246,7 @@ describe("CocosInputAdapter translation", () => {
         const { createCocosInputAdapter } = await loadFactory();
         const mockInput = createMockInput();
         const adapter = createCocosInputAdapter({ input: mockInput, eventTypes: EVENT_TYPES });
-        const events: InputEvent[] = [];
+        const events: IInputEvent[] = [];
 
         const unsubscribe = adapter.subscribe((event) => events.push(event));
 
@@ -314,7 +315,7 @@ describe("CocosInputAdapter translation", () => {
         const { createCocosInputAdapter } = await loadFactory();
         const mockInput = createMockInput();
         const adapter = createCocosInputAdapter({ input: mockInput, eventTypes: EVENT_TYPES });
-        const events: InputEvent[] = [];
+        const events: IInputEvent[] = [];
 
         const unsubscribe = adapter.subscribe((event) => events.push(event));
 
@@ -339,7 +340,7 @@ describe("CocosInputAdapter translation", () => {
         const { createCocosInputAdapter } = await loadFactory();
         const mockInput = createMockInput();
         const adapter = createCocosInputAdapter({ input: mockInput, eventTypes: EVENT_TYPES });
-        const events: InputEvent[] = [];
+        const events: IInputEvent[] = [];
 
         const unsubscribe = adapter.subscribe((event) => events.push(event));
 
@@ -374,7 +375,7 @@ describe("CocosInputAdapter integration with InputMapper", () => {
         mapper: InputMapper<TestAction>;
         mockInput: MockInput;
         samples: Array<{ action: TestAction; pressed: boolean }>;
-        adapter: { subscribe(callback: (event: InputEvent) => void): () => void };
+        adapter: { subscribe(callback: (event: IInputEvent) => void): () => void };
     }> {
         const { createCocosInputAdapter } = await loadFactory();
         const mockInput = createMockInput();

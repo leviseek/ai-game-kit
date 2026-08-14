@@ -1,4 +1,4 @@
-import type { GameFixture, IResourceProvider, InputSample, InputSource, Module, ResourceScope } from "../../framework";
+import type { GameFixture, IResourceProvider, IInputContextId, IInputSample, IInputSource, IModule, IResourceScope } from "../../framework";
 import { createGameFixture, createInputMapper, createResourceProvider } from "../../framework";
 import { createFightAudio, createFightAudioModule, type FightAudioHandle } from "./logic/audio";
 import { createFightBattle, createFightBattleModule, type FightBattleHandle } from "./logic/battle";
@@ -8,6 +8,10 @@ import type { FightAction, FightFrameData } from "./models";
 import { createFightEffectPool, createFightPoolModule, type FightEffectPool } from "./logic/pool";
 import { createFightResourceModule } from "./logic/resource";
 
+// branded 上下文无运行期值：把业务字符串收窄为品牌类型
+function toContext(context: string): IInputContextId {
+    return context as unknown as IInputContextId;
+}
 /**
  * 格斗组合夹具的注入选项：测试可注入受控替身驱动协作行为；
  * 缺省项由夹具内部以引擎无关实现兜底，不依赖 cc/fgui。
@@ -16,9 +20,9 @@ export interface FightFixtureOptions {
     /** 可控模拟时钟：缺省为内建时钟（从 0 开始，测试经 fixture.clock.advance 推进）。 */
     readonly clock?: FightClock;
     /** 底层输入源：缺省为可控输入源（测试经 fixture.input.push 注入事件）。 */
-    readonly inputSource?: InputSource;
+    readonly inputSource?: IInputSource;
     /** 音频后端：缺省为不可用后端（整体降级 no-op）；注入以观察命中播放与作用域停止。 */
-    readonly audioBackend?: import("../../framework").AudioBackend;
+    readonly audioBackend?: import("../../framework").IAudioBackend;
     /** 资源提供者：缺省为内存资源提供者；观察资源按作用域释放。 */
     readonly provider?: IResourceProvider;
 }
@@ -52,11 +56,11 @@ export interface FightFixture extends GameFixture {
         readonly activeContext: string;
         setActiveContext(context: string): void;
         push(sourceId: string, pressed: boolean, value?: number): void;
-        readonly samples: readonly InputSample<FightAction>[];
+        readonly samples: readonly IInputSample<FightAction>[];
     };
     /** 资源作用域：持有战斗资源，dispose 时释放。 */
     readonly resource: {
-        readonly scope: ResourceScope | undefined;
+        readonly scope: IResourceScope | undefined;
         canUnload(bundle: string): boolean;
     };
     /** 音频服务：命中经作用域播放，dispose 时停止。 */
@@ -103,10 +107,10 @@ export function createFightFixture(options: FightFixtureOptions = {}): FightFixt
     // 输入：可控源 + InputMapper，push 注入事件，samples 记录采样；
     // onSample 按 action 联动出招（punch/kick/block → startMove）
     const inputHandle = createFightInputSource();
-    const samples: InputSample<FightAction>[] = [];
+    const samples: IInputSample<FightAction>[] = [];
     const inputMapper = createInputMapper<FightAction>({
         timeSource: clock,
-        activeContext: "gameplay",
+        activeContext: toContext("gameplay"),
         mappings: {
             gameplay: {
                 "keyboard.j": "punch",
@@ -127,7 +131,7 @@ export function createFightFixture(options: FightFixtureOptions = {}): FightFixt
         },
     });
 
-    const modules: Module[] = [
+    const modules: IModule[] = [
         createFightClockModule(clock),
         createFightBattleModule(battle),
         createFightPoolModule(pool),
@@ -163,10 +167,10 @@ export function createFightFixture(options: FightFixtureOptions = {}): FightFixt
         },
         input: {
             get activeContext() {
-                return inputMapper.activeContext;
+                return String(inputMapper.activeContext);
             },
             setActiveContext: (context: string) => {
-                inputMapper.setActiveContext(context);
+                inputMapper.setActiveContext(toContext(context));
             },
             push: (sourceId: string, pressed: boolean, value?: number) => {
                 inputHandle.push(sourceId, pressed, value);

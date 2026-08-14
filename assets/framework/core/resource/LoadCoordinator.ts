@@ -1,37 +1,43 @@
 import { FrameworkError } from "../errors/FrameworkError";
-import type { ResourceHandle, ResourceKey, ResourceLoadState } from "../../contracts/resource/Resource";
+import type { IResourceHandle } from "../../contracts/interfaces/IResourceHandle";
+import type { IResourceKey } from "../../contracts/interfaces/IResourceKey";
 
-// 类型定义提升至 contracts/resource，此处 re-export 保持既有导入路径兼容
-export type { ResourceHandle, ResourceKey, ResourceKind, ResourceLoadState } from "../../contracts/resource/Resource";
+import { EnumResourceLoadState } from "../../contracts/enums/EnumResourceLoadState";
+
+// 类型定义提升至 contracts，此处 re-export 保持既有导入路径兼容
+export type { IResourceHandle } from "../../contracts/interfaces/IResourceHandle";
+export type { IResourceKey } from "../../contracts/interfaces/IResourceKey";
+export type { EnumResourceKind } from "../../contracts/enums/EnumResourceKind";
+export type { EnumResourceLoadState } from "../../contracts/enums/EnumResourceLoadState";
 
 export interface LoadCoordinatorOptions {
-    readonly loader: (key: ResourceKey) => Promise<unknown>;
+    readonly loader: (key: IResourceKey) => Promise<unknown>;
 }
 
 export interface LoadCoordinator {
-    load<T = unknown>(key: ResourceKey): ResourceHandle<T>;
+    load<T = unknown>(key: IResourceKey): IResourceHandle<T>;
 
     /**
      * 使某资源键的终态缓存（ready/failed）失效，下次 load 触发新的底层加载。
      * loading 中的 entry 不做驱逐，避免破坏并发去重共享语义；未知 key 为 no-op。
      */
-    invalidate(key: ResourceKey): void;
+    invalidate(key: IResourceKey): void;
 }
 
 interface LoadEntry {
-    readonly key: ResourceKey;
+    readonly key: IResourceKey;
     readonly keyId: string;
     readonly waiters: Set<() => void>;
-    state: "loading" | "ready" | "failed";
+    state: EnumResourceLoadState.Loading | EnumResourceLoadState.Ready | EnumResourceLoadState.Failed;
     resource: unknown;
     error: unknown;
 }
 
-function serializeKey(key: ResourceKey): string {
+function serializeKey(key: IResourceKey): string {
     return JSON.stringify([key.kind, key.bundle, key.path]);
 }
 
-function createLoadFailure(key: ResourceKey, cause: unknown): unknown {
+function createLoadFailure(key: IResourceKey, cause: unknown): unknown {
     return new FrameworkError(`Failed to load resource "${key.bundle}:${key.path}" (kind=${key.kind})`, { cause, moduleId: "resource", component: "load-coordinator" });
 }
 
@@ -47,8 +53,8 @@ function createLoadFailure(key: ResourceKey, cause: unknown): unknown {
 export function createLoadCoordinator(options: LoadCoordinatorOptions): LoadCoordinator {
     const entries = new Map<string, LoadEntry>();
 
-    function settleEntry(entry: LoadEntry, nextState: "ready" | "failed", value: unknown, error: unknown): void {
-        if (entry.state !== "loading") {
+    function settleEntry(entry: LoadEntry, nextState: EnumResourceLoadState.Ready | EnumResourceLoadState.Failed, value: unknown, error: unknown): void {
+        if (entry.state !== EnumResourceLoadState.Loading) {
             return;
         }
 
@@ -66,17 +72,17 @@ export function createLoadCoordinator(options: LoadCoordinatorOptions): LoadCoor
         }
     }
 
-    function createHandle<T>(key: ResourceKey, entry: LoadEntry): ResourceHandle<T> {
-        let state: ResourceLoadState = "loading";
+    function createHandle<T>(key: IResourceKey, entry: LoadEntry): IResourceHandle<T> {
+        let state: EnumResourceLoadState = EnumResourceLoadState.Loading;
         let resource: T | undefined;
         let error: unknown;
-        let resolveDone: ((handle: ResourceHandle<T>) => void) | undefined;
-        const done = new Promise<ResourceHandle<T>>((resolve) => {
+        let resolveDone: ((handle: IResourceHandle<T>) => void) | undefined;
+        const done = new Promise<IResourceHandle<T>>((resolve) => {
             resolveDone = resolve;
         });
 
         const finish = (): void => {
-            if (state !== "loading") {
+            if (state !== EnumResourceLoadState.Loading) {
                 return;
             }
 
@@ -88,7 +94,7 @@ export function createLoadCoordinator(options: LoadCoordinatorOptions): LoadCoor
             resolveDone?.(handle);
         };
 
-        const handle: ResourceHandle<T> = {
+        const handle: IResourceHandle<T> = {
             key,
             get state() {
                 return state;
@@ -101,17 +107,17 @@ export function createLoadCoordinator(options: LoadCoordinatorOptions): LoadCoor
             },
             done,
             cancel() {
-                if (state !== "loading") {
+                if (state !== EnumResourceLoadState.Loading) {
                     return;
                 }
 
-                state = "cancelled";
+                state = EnumResourceLoadState.Cancelled;
                 entry.waiters.delete(finish);
                 resolveDone?.(handle);
             },
         };
 
-        if (entry.state === "loading") {
+        if (entry.state === EnumResourceLoadState.Loading) {
             entry.waiters.add(finish);
         } else {
             finish();
@@ -120,7 +126,7 @@ export function createLoadCoordinator(options: LoadCoordinatorOptions): LoadCoor
         return handle;
     }
 
-    function load<T = unknown>(key: ResourceKey): ResourceHandle<T> {
+    function load<T = unknown>(key: IResourceKey): IResourceHandle<T> {
         const keyId = serializeKey(key);
         let entry = entries.get(keyId);
 
@@ -129,7 +135,7 @@ export function createLoadCoordinator(options: LoadCoordinatorOptions): LoadCoor
                 key,
                 keyId,
                 waiters: new Set(),
-                state: "loading",
+                state: EnumResourceLoadState.Loading,
                 resource: undefined,
                 error: undefined,
             };
@@ -139,13 +145,13 @@ export function createLoadCoordinator(options: LoadCoordinatorOptions): LoadCoor
             try {
                 loadPromise = options.loader(key);
             } catch (error) {
-                settleEntry(created, "failed", undefined, createLoadFailure(key, error));
+                settleEntry(created, EnumResourceLoadState.Failed, undefined, createLoadFailure(key, error));
                 return createHandle<T>(key, created);
             }
 
             loadPromise.then(
-                (value) => settleEntry(created, "ready", value, undefined),
-                (reason: unknown) => settleEntry(created, "failed", undefined, createLoadFailure(key, reason)),
+                (value) => settleEntry(created, EnumResourceLoadState.Ready, value, undefined),
+                (reason: unknown) => settleEntry(created, EnumResourceLoadState.Failed, undefined, createLoadFailure(key, reason)),
             );
 
             entry = created;
@@ -154,11 +160,11 @@ export function createLoadCoordinator(options: LoadCoordinatorOptions): LoadCoor
         return createHandle<T>(key, entry);
     }
 
-    function invalidate(key: ResourceKey): void {
+    function invalidate(key: IResourceKey): void {
         const entry = entries.get(serializeKey(key));
 
         // 只驱逐终态 entry；loading 中的共享加载继续由已有等待者持有
-        if (entry !== undefined && entry.state !== "loading") {
+        if (entry !== undefined && entry.state !== EnumResourceLoadState.Loading) {
             entries.delete(serializeKey(key));
         }
     }

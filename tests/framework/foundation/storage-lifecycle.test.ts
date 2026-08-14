@@ -16,7 +16,7 @@ mock.module("cc", () => ({
 
 import { MemoryPlatform } from "../../../assets/framework/adapters/memory/MemoryPlatform";
 import { SaveCorruptionError, createVersionedStorage } from "../../../assets/framework/core/storage/VersionedStorage";
-import type { ApplicationVisibility } from "../../../assets/framework/contracts/platform/Platform";
+import type { IApplicationVisibility } from "../../../assets/framework/contracts/interfaces/IApplicationVisibility";
 
 const projectRoot = resolve(import.meta.dir, "../../..");
 const adapterFile = resolve(projectRoot, "assets/framework/adapters/cocos/storage/CocosStorageAdapter.ts");
@@ -27,7 +27,7 @@ interface LocalStorageLike {
     removeItem(key: string): void;
 }
 
-type CreateCocosStorageAdapter = (options?: { readonly localStorage?: LocalStorageLike }) => import("../../../assets/framework/contracts/platform/Platform").PlatformStorage;
+type CreateCocosStorageAdapter = (options?: { readonly localStorage?: LocalStorageLike }) => import("../../../assets/framework/contracts/interfaces/IPlatformStorage").IPlatformStorage;
 
 interface CocosStorageAdapterExports {
     readonly createCocosStorageAdapter: CreateCocosStorageAdapter;
@@ -68,7 +68,7 @@ async function flush(): Promise<void> {
 }
 
 // 生命周期保存协调器契约（实现于 core/storage/SaveCoordinator）：
-// 订阅 ApplicationVisibility，在触发状态变化时调用 save()，并保证同一命名空间
+// 订阅 IApplicationVisibility，在触发状态变化时调用 save()，并保证同一命名空间
 // 写入串行化、同一窗口内多次触发合并到最后一次有效状态。
 interface SaveCoordinator {
     start(): void;
@@ -77,7 +77,7 @@ interface SaveCoordinator {
 
 interface SaveCoordinatorExports {
     readonly createSaveCoordinator: (options: {
-        readonly visibility: ApplicationVisibility;
+        readonly visibility: IApplicationVisibility;
         readonly triggerStates?: readonly ("foreground" | "background")[];
         readonly save: () => Promise<void>;
         readonly onError?: (error: unknown) => void;

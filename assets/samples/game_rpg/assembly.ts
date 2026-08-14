@@ -1,4 +1,4 @@
-import type { GameFixture, IResourceProvider, InputSample, InputSource, Module, PlatformStorage, SceneFlow, UiNavigator } from "../../framework";
+import type { GameFixture, IResourceProvider, IInputContextId, IInputSample, IInputSource, IModule, IPlatformStorage, SceneFlow, UiNavigator } from "../../framework";
 import { createGameFixture, createInputMapper, createResourceProvider, createSceneFlow, createUiNavigator } from "../../framework";
 import { createRpgClockModule, createRpgSimClock, type RpgSimClock } from "./logic/clock";
 import type { RpgAction } from "./models";
@@ -9,6 +9,10 @@ import { createRpgSceneModule } from "./logic/scene";
 import { createRpgStateModule, createRpgStateStore } from "./logic/state";
 import { createRpgUiModule } from "./view/ui";
 
+// branded 上下文无运行期值：把业务字符串收窄为品牌类型
+function toContext(context: string): IInputContextId {
+    return context as unknown as IInputContextId;
+}
 /**
  * RPG 组合夹具的注入选项：测试可注入受控替身驱动协作行为；
  * 缺省项由夹具内部以引擎无关实现兜底，不依赖 cc/fgui。
@@ -19,11 +23,11 @@ export interface RpgFixtureOptions {
     /** 资源提供者：缺省为内存资源提供者；观察跨场景资源按作用域释放。 */
     readonly provider?: IResourceProvider;
     /** 平台存储后端：缺省为内存存储；观察版本化存档写入/读取。 */
-    readonly storage?: PlatformStorage;
+    readonly storage?: IPlatformStorage;
     /** 场景激活接缝：缺省为记录型实现；驱动真实场景切换。 */
     readonly activateScene?: (sceneId: string) => Promise<void>;
     /** 底层输入源：缺省为可控输入源（测试经 fixture.input.push 注入事件）。 */
-    readonly inputSource?: InputSource;
+    readonly inputSource?: IInputSource;
 }
 
 /** RPG 组合夹具：在 GameFixture 生命周期接缝之上暴露各能力钩子。 */
@@ -44,7 +48,7 @@ export interface RpgFixture extends GameFixture {
         readonly activeContext: string;
         setActiveContext(context: string): void;
         push(sourceId: string, pressed: boolean, value?: number): void;
-        readonly samples: readonly InputSample<RpgAction>[];
+        readonly samples: readonly IInputSample<RpgAction>[];
     };
     /** 版本化存档：玩家状态可版本化往返。 */
     readonly storage: {
@@ -54,8 +58,8 @@ export interface RpgFixture extends GameFixture {
     };
 }
 
-/** 缺省内存平台存储：实现 PlatformStorage，供测试与非 Cocos 环境使用。 */
-class MemoryStorage implements PlatformStorage {
+/** 缺省内存平台存储：实现 IPlatformStorage，供测试与非 Cocos 环境使用。 */
+class MemoryStorage implements IPlatformStorage {
     private readonly entries = new Map<string, string>();
 
     async get(key: string): Promise<string | null> {
@@ -113,10 +117,10 @@ export function createRpgFixture(options: RpgFixtureOptions = {}): RpgFixture {
 
     // 输入：可控源 + InputMapper，push 注入事件，samples 记录采样
     const inputHandle = createRpgInputSource();
-    const samples: InputSample<RpgAction>[] = [];
+    const samples: IInputSample<RpgAction>[] = [];
     const inputMapper = createInputMapper<RpgAction>({
         timeSource: clock,
-        activeContext: "gameplay",
+        activeContext: toContext("gameplay"),
         mappings: {
             gameplay: {
                 "keyboard.space": "confirm",
@@ -133,7 +137,7 @@ export function createRpgFixture(options: RpgFixtureOptions = {}): RpgFixture {
     // 版本化存档：基于注入平台存储，自持版本号
     const save = createRpgSave(storage);
 
-    const modules: Module[] = [
+    const modules: IModule[] = [
         createRpgClockModule(clock),
         createRpgStateModule(stateStore),
         createRpgSceneModule(sceneFlow),
@@ -162,10 +166,10 @@ export function createRpgFixture(options: RpgFixtureOptions = {}): RpgFixture {
         navigator,
         input: {
             get activeContext() {
-                return inputMapper.activeContext;
+                return String(inputMapper.activeContext);
             },
             setActiveContext: (context: string) => {
-                inputMapper.setActiveContext(context);
+                inputMapper.setActiveContext(toContext(context));
             },
             push: (sourceId: string, pressed: boolean, value?: number) => {
                 inputHandle.push(sourceId, pressed, value);

@@ -1,38 +1,38 @@
-import type {
-    DuplicateOpenPolicy,
-    UiLayer,
-    UiPage,
-    UiResult,
-} from "../../contracts/ui/Navigation";
-import { UI_LAYER_ORDER } from "../../contracts/ui/Navigation";
+
+import { EnumDuplicateOpenPolicy } from "../../contracts/enums/EnumDuplicateOpenPolicy";
+
+import { EnumUiLayer } from "../../contracts/enums/EnumUiLayer";
+import type { IUiPage } from "../../contracts/interfaces/IUiPage";
+import type { IUiResult } from "../../contracts/interfaces/IUiResult";
+import { UI_LAYER_ORDER } from "../../contracts/constants/UiLayer";
 import type { DisposeHandle } from "../scheduling/DisposeHandle";
 
 export interface UiNavigatorOptions {
     /** 同 route 重复打开策略，导航建立时全局锁定。 */
-    readonly duplicatePolicy?: DuplicateOpenPolicy;
+    readonly duplicatePolicy?: EnumDuplicateOpenPolicy;
     /** 页面作用域释放失败的上报回调；缺省使用 console.error。 */
     readonly onError?: (error: unknown) => void;
 }
 
 export interface UiNavigator {
     /** 页面栈，从底层到栈顶。 */
-    readonly pages: readonly UiPage[];
+    readonly pages: readonly IUiPage[];
     /** 当前栈顶页面；空栈时为 undefined。 */
-    readonly top: UiPage | undefined;
+    readonly top: IUiPage | undefined;
     /** 是否处于阻断模态：栈顶页面声明阻断时成立。 */
     readonly modal: boolean;
     /**
      * 打开页面并入栈。`layer` 缺省为 `normal`；重复打开按建立时锁定的策略处理。
      * 失败（disposed / reject 策略）返回原因且不改变导航状态。
      */
-    open(route: string, options?: { layer?: UiLayer; blocking?: boolean }): UiResult;
+    open(route: string, options?: { layer?: EnumUiLayer; blocking?: boolean }): IUiResult;
     /**
      * 关闭指定页面（缺省为栈顶）。空栈关闭被拒绝；关闭释放页面作用域并移除
      * 该页面，前一层页面成为新的栈顶。重复关闭幂等。
      */
-    close(pageId?: string): UiResult;
+    close(pageId?: string): IUiResult;
     /** 返回上一页：弹出栈顶页面。空栈返回被拒绝。 */
-    back(): UiResult;
+    back(): IUiResult;
     /** 释放全部页面作用域并使导航不再接受新请求，幂等。 */
     dispose(): void;
 }
@@ -42,9 +42,9 @@ export interface UiNavigator {
  * 模态状态由栈顶阻断页面统一推导，页面作用域在关闭时逆序释放。不依赖 cc/fgui。
  */
 export function createUiNavigator(options: UiNavigatorOptions = {}): UiNavigator {
-    const duplicatePolicy: DuplicateOpenPolicy = options.duplicatePolicy ?? "reject";
+    const duplicatePolicy: EnumDuplicateOpenPolicy = options.duplicatePolicy ?? EnumDuplicateOpenPolicy.Reject;
     const reportError = options.onError ?? ((error: unknown) => console.error(error));
-    const stack: UiPage[] = [];
+    const stack: IUiPage[] = [];
     let nextId = 1;
     let disposed = false;
 
@@ -62,9 +62,9 @@ export function createUiNavigator(options: UiNavigatorOptions = {}): UiNavigator
 
     function createPage(
         route: string,
-        layer: UiLayer,
+        layer: EnumUiLayer,
         blocking: boolean,
-    ): UiPage {
+    ): IUiPage {
         const id = `ui-page-${nextId}`;
         nextId += 1;
         const disposables: DisposeHandle[] = [];
@@ -98,7 +98,7 @@ export function createUiNavigator(options: UiNavigatorOptions = {}): UiNavigator
         return stack.findIndex((page) => page.id === pageId);
     }
 
-    function removeFromStack(page: UiPage): void {
+    function removeFromStack(page: IUiPage): void {
         const index = pageIndex(page.id);
         if (index >= 0) {
             stack.splice(index, 1);
@@ -107,7 +107,7 @@ export function createUiNavigator(options: UiNavigatorOptions = {}): UiNavigator
 
     // 按层级插入：层高的页面在栈的更上层，同层后打开的在上；保证七层层级
     // 覆盖关系与打开顺序无关（场景层最低、system 层最高）。
-    function insertByLayer(page: UiPage): void {
+    function insertByLayer(page: IUiPage): void {
         const layerHeight = UI_LAYER_ORDER.indexOf(page.layer);
         const insertAt = stack.findIndex(
             (existing) => UI_LAYER_ORDER.indexOf(existing.layer) > layerHeight,
@@ -120,10 +120,10 @@ export function createUiNavigator(options: UiNavigatorOptions = {}): UiNavigator
     }
 
     return {
-        get pages(): readonly UiPage[] {
+        get pages(): readonly IUiPage[] {
             return stack;
         },
-        get top(): UiPage | undefined {
+        get top(): IUiPage | undefined {
             return stack[stack.length - 1];
         },
         get modal(): boolean {
@@ -131,13 +131,13 @@ export function createUiNavigator(options: UiNavigatorOptions = {}): UiNavigator
         },
         open(
             route: string,
-            options?: { layer?: UiLayer; blocking?: boolean },
-        ): UiResult {
+            options?: { layer?: EnumUiLayer; blocking?: boolean },
+        ): IUiResult {
             if (disposed) {
                 return { ok: false, reason: "disposed" };
             }
 
-            const layer = options?.layer ?? "normal";
+            const layer = options?.layer ?? EnumUiLayer.Normal;
             const existing = stack.find((page) => page.route === route);
 
             if (existing !== undefined) {
@@ -155,7 +155,7 @@ export function createUiNavigator(options: UiNavigatorOptions = {}): UiNavigator
             insertByLayer(page);
             return { ok: true, page };
         },
-        close(pageId?: string): UiResult {
+        close(pageId?: string): IUiResult {
             if (disposed) {
                 return { ok: false, reason: "disposed" };
             }
@@ -175,7 +175,7 @@ export function createUiNavigator(options: UiNavigatorOptions = {}): UiNavigator
             target.dispose();
             return { ok: true, page: target };
         },
-        back(): UiResult {
+        back(): IUiResult {
             if (disposed) {
                 return { ok: false, reason: "disposed" };
             }

@@ -1,5 +1,18 @@
 import { FrameworkError } from "../errors/FrameworkError";
-import type { SaveLoadResult, SaveMigrator, SaveVersion, VersionedStorage, VersionedStorageOptions } from "../../contracts/storage/VersionedStorage";
+import type { ISaveLoadResult } from "../../contracts/interfaces/ISaveLoadResult";
+import type { ISaveMigrator } from "../../contracts/interfaces/ISaveMigrator";
+import type { ISaveVersion } from "../../contracts/interfaces/ISaveVersion";
+import type { IVersionedStorage } from "../../contracts/interfaces/IVersionedStorage";
+import type { IVersionedStorageOptions } from "../../contracts/interfaces/IVersionedStorageOptions";
+
+// branded number 内部运算统一转 number，边界处收窄回 ISaveVersion（branded 无运行期值）
+function toNumber(version: ISaveVersion): number {
+    return Number(version);
+}
+
+function toVersion(version: number): ISaveVersion {
+    return version as unknown as ISaveVersion;
+}
 
 /** 命名空间前缀与存档键的分隔符；键空间依赖它实现命名空间隔离。 */
 const NAMESPACE_SEPARATOR = ":";
@@ -9,10 +22,10 @@ const RECORD_PREFIX = "save:";
 
 /** 存档版本高于当前支持版本时的类型化错误，携带记录版本与当前版本。 */
 export class SaveVersionError extends FrameworkError {
-    readonly recordVersion: SaveVersion;
-    readonly currentVersion: SaveVersion;
+    readonly recordVersion: ISaveVersion;
+    readonly currentVersion: ISaveVersion;
 
-    constructor(recordVersion: SaveVersion, currentVersion: SaveVersion) {
+    constructor(recordVersion: ISaveVersion, currentVersion: ISaveVersion) {
         super(`Save version ${recordVersion} is newer than supported version ${currentVersion}`, { component: "versioned-storage" });
 
         this.name = "SaveVersionError";
@@ -23,10 +36,10 @@ export class SaveVersionError extends FrameworkError {
 
 /** 存档版本迁移失败（缺失迁移级或迁移器抛错）时的类型化错误，携带缺口版本与原因。 */
 export class SaveMigrationError extends FrameworkError {
-    readonly fromVersion: SaveVersion;
-    readonly toVersion: SaveVersion;
+    readonly fromVersion: ISaveVersion;
+    readonly toVersion: ISaveVersion;
 
-    constructor(fromVersion: SaveVersion, toVersion: SaveVersion, options?: { readonly cause?: unknown }) {
+    constructor(fromVersion: ISaveVersion, toVersion: ISaveVersion, options?: { readonly cause?: unknown }) {
         super(`Missing or failed save migration from version ${fromVersion} to ${toVersion}`, { component: "versioned-storage", cause: options?.cause });
 
         this.name = "SaveMigrationError";
@@ -129,7 +142,7 @@ function composeStorageKey(namespace: string, key: string): string {
 
 // 校验解析出的存档记录形状：必须是包含正整数 version 与 data 字段的对象。
 // 形状不符视为数据损坏，抛出类型化错误而非静默降级为空存档。
-function parseRecord(raw: string): { version: SaveVersion; data: unknown } {
+function parseRecord(raw: string): { version: number; data: unknown } {
     let parsed: unknown;
 
     try {
@@ -151,13 +164,16 @@ function parseRecord(raw: string): { version: SaveVersion; data: unknown } {
     return { version, data: (parsed as { data: unknown }).data };
 }
 
-export function createVersionedStorage(options: VersionedStorageOptions): VersionedStorage {
-    const { storage, currentVersion } = options;
+export function createVersionedStorage(options: IVersionedStorageOptions): IVersionedStorage {
+    const { storage } = options;
+    // 当前版本在构造时转 number：内部比较/迁移按原始数值，契约边界再收窄回品牌类型
+    const currentVersion = toNumber(options.currentVersion);
     // 迁移映射缺省为空：不注册任何迁移则任何旧版本存档都无法读取。
-    const migrators: Readonly<Record<SaveVersion, SaveMigrator>> = options.migrators ?? {};
+    // Record 键必须是原始 number（branded 类型无法作索引键，语义等价）。
+    const migrators: Readonly<Record<number, ISaveMigrator>> = options.migrators ?? {};
 
     // 按记录版本逐级升级到当前版本；缺失迁移或迁移抛错时抛类型化错误。
-    function migrate(data: unknown, fromVersion: SaveVersion): unknown {
+    function migrate(data: unknown, fromVersion: number): unknown {
         let migrated = data;
         let sourceVersion = fromVersion;
 
@@ -165,14 +181,14 @@ export function createVersionedStorage(options: VersionedStorageOptions): Versio
             const migrator = migrators[sourceVersion];
 
             if (migrator === undefined) {
-                throw new SaveMigrationError(sourceVersion, sourceVersion + 1);
+                throw new SaveMigrationError(toVersion(sourceVersion), toVersion(sourceVersion + 1));
             }
 
             try {
                 migrated = migrator(migrated);
             } catch (error) {
                 // 迁移失败整体失败，不落盘部分结果；底层错误经 cause 保留可诊断。
-                throw new SaveMigrationError(sourceVersion, sourceVersion + 1, {
+                throw new SaveMigrationError(toVersion(sourceVersion), toVersion(sourceVersion + 1), {
                     cause: error,
                 });
             }
@@ -191,7 +207,7 @@ export function createVersionedStorage(options: VersionedStorageOptions): Versio
             await storage.set(composeStorageKey(namespace, key), record);
         },
 
-        async load(namespace, key): Promise<SaveLoadResult | null> {
+        async load(namespace, key): Promise<ISaveLoadResult | null> {
             const raw = await storage.get(composeStorageKey(namespace, key));
 
             if (raw === null) {
@@ -202,14 +218,14 @@ export function createVersionedStorage(options: VersionedStorageOptions): Versio
             const record = parseRecord(raw);
 
             if (record.version > currentVersion) {
-                throw new SaveVersionError(record.version, currentVersion);
+                throw new SaveVersionError(toVersion(record.version), toVersion(currentVersion));
             }
 
             if (record.version === currentVersion) {
-                return { version: record.version, data: record.data };
+                return { version: toVersion(record.version), data: record.data };
             }
 
-            return { version: currentVersion, data: migrate(record.data, record.version) };
+            return { version: toVersion(currentVersion), data: migrate(record.data, record.version) };
         },
 
         async delete(namespace, key) {

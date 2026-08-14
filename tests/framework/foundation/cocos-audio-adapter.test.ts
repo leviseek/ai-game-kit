@@ -11,12 +11,13 @@ mock.module("cc", () => ({}));
 import { MemoryPlatform } from "../../../assets/framework/adapters/memory/MemoryPlatform";
 import { createAudioService } from "../../../assets/framework/core/audio/AudioService";
 import { createResourceProvider } from "../../../assets/framework/core/resource/ResourceProvider";
-import type { AudioGroup, AudioTrackRef } from "../../../assets/framework/contracts/audio/Audio";
-import type { IResourceProvider } from "../../../assets/framework/contracts/resource/ResourceProvider";
+import type { EnumAudioGroup } from "../../../assets/framework/contracts/interfaces/EnumAudioGroup";
+import type { IAudioTrackRef } from "../../../assets/framework/contracts/interfaces/IAudioTrackRef";
+import type { IResourceProvider } from "../../../assets/framework/contracts/interfaces/IResourceProvider";
 
 const TRACKS = {
-    musicMain: { bundle: "audio", path: "music/main" } as AudioTrackRef,
-    musicBattle: { bundle: "audio", path: "music/battle" } as AudioTrackRef,
+    musicMain: { bundle: "audio", path: "music/main" } as IAudioTrackRef,
+    musicBattle: { bundle: "audio", path: "music/battle" } as IAudioTrackRef,
 };
 
 interface MockAudioSource {
@@ -66,12 +67,12 @@ class MockAudioSourceImpl implements MockAudioSource {
 }
 
 interface SourceSeam {
-    readonly createSource: (group: AudioGroup) => MockAudioSourceImpl;
-    readonly sourceOf: (group: AudioGroup) => MockAudioSourceImpl;
+    readonly createSource: (group: EnumAudioGroup) => MockAudioSourceImpl;
+    readonly sourceOf: (group: EnumAudioGroup) => MockAudioSourceImpl;
 }
 
 function createSourceSeam(): SourceSeam {
-    const sources = new Map<AudioGroup, MockAudioSourceImpl>();
+    const sources = new Map<EnumAudioGroup, MockAudioSourceImpl>();
 
     return {
         createSource(group) {
@@ -127,7 +128,7 @@ const projectRoot = resolve(import.meta.dir, "../../..");
 const adapterFile = resolve(projectRoot, "assets/framework/adapters/cocos/audio/CocosAudioAdapter.ts");
 
 interface CocosAudioAdapterFactory {
-    createCocosAudioAdapter(options: { readonly provider: IResourceProvider; readonly createSource?: (group: AudioGroup) => unknown }): unknown;
+    createCocosAudioAdapter(options: { readonly provider: IResourceProvider; readonly createSource?: (group: EnumAudioGroup) => unknown }): unknown;
 }
 
 async function loadAdapter(): Promise<CocosAudioAdapterFactory["createCocosAudioAdapter"]> {
@@ -150,7 +151,7 @@ describe("CocosAudioAdapter", () => {
         const adapter = createAdapter({
             provider: controlled.provider,
             createSource: seam.createSource,
-        }) as import("../../../assets/framework/contracts/audio/Audio").AudioBackend;
+        }) as import("../../../assets/framework/contracts/interfaces/IAudioBackend").IAudioBackend;
         const service = createAudioService({ backend: adapter });
         const scope = service.createPlayScope();
 
@@ -174,7 +175,7 @@ describe("CocosAudioAdapter", () => {
         const adapter = createAdapter({
             provider: controlled.provider,
             createSource: seam.createSource,
-        }) as import("../../../assets/framework/contracts/audio/Audio").AudioBackend;
+        }) as import("../../../assets/framework/contracts/interfaces/IAudioBackend").IAudioBackend;
         const service = createAudioService({ backend: adapter });
         const scope = service.createPlayScope();
 
@@ -203,7 +204,7 @@ describe("CocosAudioAdapter", () => {
         const adapter = createAdapter({
             provider: controlled.provider,
             createSource: seam.createSource,
-        }) as import("../../../assets/framework/contracts/audio/Audio").AudioBackend;
+        }) as import("../../../assets/framework/contracts/interfaces/IAudioBackend").IAudioBackend;
         const service = createAudioService({
             backend: adapter,
             visibility: platform,
@@ -230,7 +231,7 @@ describe("CocosAudioAdapter", () => {
         const adapter = createAdapter({
             provider: controlled.provider,
             createSource: seam.createSource,
-        }) as import("../../../assets/framework/contracts/audio/Audio").AudioBackend;
+        }) as import("../../../assets/framework/contracts/interfaces/IAudioBackend").IAudioBackend;
         const service = createAudioService({ backend: adapter });
         const scope = service.createPlayScope();
 
@@ -274,7 +275,7 @@ describe("CocosAudioAdapter", () => {
         const adapter = createAdapter({
             provider: controlled.provider,
             createSource: seam.createSource,
-        }) as import("../../../assets/framework/contracts/audio/Audio").AudioBackend;
+        }) as import("../../../assets/framework/contracts/interfaces/IAudioBackend").IAudioBackend;
         const service = createAudioService({ backend: adapter });
         const scope = service.createPlayScope();
 
@@ -296,7 +297,7 @@ describe("CocosAudioAdapter", () => {
         const adapter = createAdapter({
             provider: controlled.provider,
             createSource: seam.createSource,
-        }) as import("../../../assets/framework/contracts/audio/Audio").AudioBackend;
+        }) as import("../../../assets/framework/contracts/interfaces/IAudioBackend").IAudioBackend;
         const service = createAudioService({ backend: adapter });
         const scope = service.createPlayScope();
 
@@ -319,7 +320,7 @@ describe("CocosAudioAdapter", () => {
         const adapter = createAdapter({
             provider: controlled.provider,
             createSource: seam.createSource,
-        }) as import("../../../assets/framework/contracts/audio/Audio").AudioBackend;
+        }) as import("../../../assets/framework/contracts/interfaces/IAudioBackend").IAudioBackend;
         const service = createAudioService({ backend: adapter });
         const scope = service.createPlayScope();
 

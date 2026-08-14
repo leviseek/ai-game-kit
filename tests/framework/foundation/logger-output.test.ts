@@ -3,22 +3,22 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, test } from "bun:test";
 
-import type { LogContext, Logger, LogLevel, LogRecord } from "../../../assets/framework";
+import type { ILogContext, ILogger, EnumLogLevel, ILogRecord } from "../../../assets/framework";
 
 interface ConsoleOutput {
-    debug(record: LogRecord): void;
-    info(record: LogRecord): void;
-    warn(record: LogRecord): void;
-    error(record: LogRecord): void;
+    debug(record: ILogRecord): void;
+    info(record: ILogRecord): void;
+    warn(record: ILogRecord): void;
+    error(record: ILogRecord): void;
 }
 
-type ConsoleLoggerConstructor = new (output?: ConsoleOutput, scope?: string, context?: LogContext) => Logger;
+type ConsoleLoggerConstructor = new (output?: ConsoleOutput, scope?: string, context?: ILogContext) => ILogger;
 
-interface MemoryLogger extends Logger {
-    readonly records: readonly LogRecord[];
+interface MemoryLogger extends ILogger {
+    readonly records: readonly ILogRecord[];
 }
 
-type MemoryLoggerConstructor = new (scope?: string, context?: LogContext) => MemoryLogger;
+type MemoryLoggerConstructor = new (scope?: string, context?: ILogContext) => MemoryLogger;
 
 interface ConsoleLoggerModule {
     readonly ConsoleLogger?: ConsoleLoggerConstructor;
@@ -52,10 +52,10 @@ async function loadMemoryLogger(): Promise<MemoryLoggerConstructor> {
     return module.MemoryLogger as MemoryLoggerConstructor;
 }
 
-describe("Logger outputs", () => {
+describe("ILogger outputs", () => {
     test("ConsoleLogger sends each structured record to its matching level", async () => {
         const ConsoleLogger = await loadConsoleLogger();
-        const calls: Array<{ readonly method: LogLevel; readonly record: LogRecord }> = [];
+        const calls: Array<{ readonly method: EnumLogLevel; readonly record: ILogRecord }> = [];
         const output: ConsoleOutput = {
             debug: (record) => calls.push({ method: "debug", record }),
             info: (record) => calls.push({ method: "info", record }),
@@ -86,7 +86,7 @@ describe("Logger outputs", () => {
 
     test("ConsoleLogger redacts sensitive context by default", async () => {
         const ConsoleLogger = await loadConsoleLogger();
-        const calls: Array<{ readonly record: LogRecord }> = [];
+        const calls: Array<{ readonly record: ILogRecord }> = [];
         const output: ConsoleOutput = {
             debug: (record) => calls.push({ record }),
             info: (record) => calls.push({ record }),

@@ -2,23 +2,23 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, test } from "bun:test";
 
-import type { ApplicationContext, ApplicationState, Module } from "../../../assets/framework";
+import type { IApplicationContext, EnumApplicationState, IModule } from "../../../assets/framework";
 import { MemoryLogger } from "../support/MemoryLogger";
 
 interface ApplicationInstance {
-    readonly state: ApplicationState;
+    readonly state: EnumApplicationState;
     start(): Promise<void>;
     dispose(): Promise<void>;
 }
 
-type ApplicationConstructor = new (modules: readonly Module[], context: ApplicationContext) => ApplicationInstance;
+type ApplicationConstructor = new (modules: readonly IModule[], context: IApplicationContext) => ApplicationInstance;
 
 interface FrameworkExports {
     readonly Application?: ApplicationConstructor;
 }
 
 type ApplicationStateError = Error & {
-    readonly currentState: ApplicationState;
+    readonly currentState: EnumApplicationState;
 };
 
 function isApplicationStateError(error: unknown): error is ApplicationStateError {
@@ -36,7 +36,7 @@ async function loadApplication(): Promise<ApplicationConstructor> {
     return exports.Application as ApplicationConstructor;
 }
 
-function createContext(): ApplicationContext {
+function createContext(): IApplicationContext {
     return { logger: new MemoryLogger(), state: "created" };
 }
 
@@ -45,7 +45,7 @@ describe("Application operation guards", () => {
         const Application = await loadApplication();
         let unblockStart: () => void = () => {};
 
-        const module: Module = {
+        const module: IModule = {
             id: "blocking",
             dependencies: [],
             initialize: async () => {},
@@ -101,7 +101,7 @@ describe("Application operation guards", () => {
         const calls: string[] = [];
         let unblockStart: () => void = () => {};
 
-        const module: Module = {
+        const module: IModule = {
             id: "blocking",
             dependencies: [],
             initialize: async () => {

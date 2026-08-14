@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import { BADGE_FPS_NODE, BALL_NODE, INFO_UPTIME_NODE, PANEL_NODE, computeSnapTarget, createDevBallController, type DevBallController } from "../../../assets/boot/dev/DevBall";
 import type { DevInfoSampler } from "../../../assets/boot/dev/DevInfo";
-import type { ViewModelNode } from "../../../assets/framework";
+import type { IViewModelNode } from "../../../assets/framework";
 
 interface NodeWrites {
     text?: string;
@@ -12,11 +12,11 @@ interface NodeWrites {
 }
 
 function createFakeNodes(): {
-    node: (name: string) => ViewModelNode | undefined;
+    node: (name: string) => IViewModelNode | undefined;
     writes: Record<string, NodeWrites>;
 } {
     const writes: Record<string, NodeWrites> = {};
-    const node = (name: string): ViewModelNode | undefined => {
+    const node = (name: string): IViewModelNode | undefined => {
         let current = writes[name];
         if (current === undefined) {
             current = {};

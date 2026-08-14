@@ -1,4 +1,4 @@
-import type { DeviceInfo, TimeSource } from "../../framework";
+import type { IDeviceInfo, ITimeSource } from "../../framework";
 import type { PerfSampler } from "../../game/fixture/perf";
 
 /** Web 网络状态接缝：与 navigator 形状同构，测试可注入 mock。 */
@@ -23,9 +23,9 @@ export interface UiSizeInfo {
 
 export interface DevInfoSamplerOptions {
     /** 墙钟：运行时间 = now() - 起点差值（表现时钟 GameClock 不可用，见 design D3）。 */
-    readonly clock: TimeSource;
+    readonly clock: ITimeSource;
     /** 设备信息（平台/型号/语言），经 CocosDeviceInfo 适配器提供。 */
-    readonly device: DeviceInfo;
+    readonly device: IDeviceInfo;
     /** 网络状态读取器；缺省读全局 navigator（非浏览器环境视为离线 unknown）。 */
     readonly navigator?: NetworkLike;
     /** 性能采样器（FPS/纹理/缓冲内存，复用 game/fixture/perf 的 PerfSampler）。 */

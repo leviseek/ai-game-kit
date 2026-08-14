@@ -38,7 +38,7 @@ export const SAMPLES_BUNDLE_DESCRIPTOR = Object.freeze({
     unitNodeMappings: {
         auto_battle: AUTO_BATTLE_DYNAMIC_NODE_MAPPINGS,
     },
-    // CloseDialog Feature 装配入口：向组合根 registrar 注册 Store + facade binder
+    // CloseDialog Feature 装配入口：向组合根 registrar 注册 IStore + facade binder
     createCloseDialogFeature,
 });
 

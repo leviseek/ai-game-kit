@@ -15,7 +15,7 @@ const assetsRoot = resolve(projectRoot, "assets");
 const frameworkRoot = resolve(assetsRoot, "framework");
 const frameworkVendorRoot = resolve(frameworkRoot, "libs");
 const frameworkPublicEntry = resolve(frameworkRoot, "index.ts");
-const moduleContractsRoot = resolve(frameworkRoot, "contracts/module");
+const moduleContractFileRoot = resolve(frameworkRoot, "contracts/interfaces/IModule.ts");
 const gameRoot = resolve(assetsRoot, "game");
 const samplesRoot = resolve(assetsRoot, "samples");
 const bootRoot = resolve(assetsRoot, "boot");
@@ -303,21 +303,25 @@ function validateFrameworkImport(file: string, sourceLayer: FrameworkLayer, spec
     if (sourceLayer === "diagnostics" && targetLayer === "contracts") {
         const targetFromFramework = normalizePath(relative(frameworkRoot, target));
 
-        if (targetFromFramework !== "contracts/logging" && !targetFromFramework.startsWith("contracts/logging/")) {
-            return createViolation(file, specifier, "diagnostics/logging can only depend on contracts/logging");
+        // 契约扁平化后 diagnostics 只允许依赖契约层（interfaces 的 Logger 契约
+        // 与 enums 的 LogLevel 值），其余契约模块不在其依赖面
+        if (
+            targetFromFramework !== "contracts/interfaces" &&
+            !targetFromFramework.startsWith("contracts/interfaces/") &&
+            targetFromFramework !== "contracts/enums" &&
+            !targetFromFramework.startsWith("contracts/enums/")
+        ) {
+            return createViolation(file, specifier, "diagnostics/logging can only depend on contracts interfaces/enums");
         }
     }
 
-    if (isWithin(file, moduleContractsRoot) && targetLayer === "contracts" && target !== undefined) {
+    if (isWithin(file, moduleContractFileRoot) && targetLayer === "contracts" && target !== undefined) {
         const targetFromFramework = normalizePath(relative(frameworkRoot, target));
-        const isAllowedModuleContract =
-            targetFromFramework === "contracts/module" ||
-            targetFromFramework.startsWith("contracts/module/") ||
-            targetFromFramework === "contracts/application" ||
-            targetFromFramework.startsWith("contracts/application/");
+        // Module 契约只允许依赖 Application 契约（同 interfaces 目录内）与 core
+        const isAllowedModuleContract = targetFromFramework === "contracts/interfaces/IApplicationContext" || targetFromFramework.startsWith("contracts/interfaces/IApplicationContext/");
 
         if (!isAllowedModuleContract) {
-            return createViolation(file, specifier, "contracts/module can only depend on contracts/application and core");
+            return createViolation(file, specifier, "contracts/interfaces/IModule can only depend on contracts/interfaces/IApplicationContext and core");
         }
     }
 
@@ -403,58 +407,32 @@ describe("framework public boundary", () => {
         expect(source).not.toMatch(/\bexport\s+\*/);
 
         const expectedRootExports = [
-            "Action",
             "Application",
-            "ApplicationContext",
-            "ApplicationLifecycle",
-            "ApplicationState",
             "ApplicationStateError",
-            "ApplicationVisibility",
-            "ApplicationVisibilityState",
-            "AudioBackend",
-            "AudioBackgroundPolicy",
-            "AudioGroup",
-            "AudioGroupState",
-            "AudioPlayScope",
-            "AudioService",
-            "AudioServiceOptions",
-            "AudioTrackRef",
-            "Bindable",
             "Binding",
             "BundleModuleRegistry",
-            "CommandBinding",
-            "ConfigKey",
             "ConfigLoadError",
             "ConfigMissingError",
             "ConfigParseError",
-            "ConfigReadType",
-            "ConfigTable",
             "ConfigTypeMismatchError",
-            "createAudioService",
-            "createBindable",
-            "createInputMapper",
-            "createObjectPool",
-            "createResourceProvider",
-            "createSceneFlow",
-            "createScopedEventChannel",
-            "createServiceRegistry",
-            "createServiceToken",
-            "createStateMachine",
-            "createStore",
-            "createUiNavigator",
-            "createViewModelRenderer",
-            "defineFuiViewBinding",
-            "DeviceInfo",
             "DisposeHandle",
-            "DuplicateOpenPolicy",
+            "EnumApplicationState",
+            "EnumApplicationVisibilityState",
+            "EnumAudioGroup",
+            "EnumDuplicateOpenPolicy",
+            "EnumLogLevel",
+            "EnumModulePhase",
+            "EnumModuleRuntimeState",
+            "EnumPauseDomain",
+            "EnumResourceKind",
+            "EnumResourceLoadState",
+            "EnumUiLayer",
             "EventMap",
             "FClick",
-            "FairyGuiListHandle",
-            "FairyGuiListItemView",
+            "FUIBind",
             "FrameworkError",
             "FrameworkErrorOptions",
             "FuiBindOptions",
-            "FuiClickMeta",
             "FuiComponentEntry",
             "FuiComponentRegistrationError",
             "FuiComponentRegistry",
@@ -464,43 +442,72 @@ describe("framework public boundary", () => {
             "FuiViewBindingRegistrar",
             "FuiViewBindingScope",
             "FuiViewCleanupError",
-            "FuiViewSeam",
-            "FUIBind",
-            "getBundleModuleRegistry",
-            "getFuiComponentRegistry",
+            "GameClock",
+            "GameFixture",
+            "GameFixtureOptions",
+            "IAction",
+            "IApplicationContext",
+            "IApplicationLifecycle",
+            "IApplicationVisibility",
+            "IAudioBackend",
+            "IAudioBackgroundPolicy",
+            "IAudioGroupState",
+            "IAudioPlayScope",
+            "IAudioService",
+            "IAudioServiceOptions",
+            "IAudioTrackRef",
+            "IBindable",
+            "ICommandBinding",
+            "IConfigKey",
+            "IConfigReadType",
+            "IConfigTable",
+            "IDeviceInfo",
+            "IFairyGuiListHandle",
+            "IFairyGuiListItemView",
+            "IFuiClickMeta",
+            "IFuiView",
+            "IFuiViewSeam",
+            "IInputContextId",
+            "IInputEvent",
+            "IInputMapping",
+            "IInputSample",
+            "IInputSource",
+            "IInputSourceId",
+            "ILogContext",
+            "ILogRecord",
+            "ILogger",
+            "IModule",
+            "IMotionTweenOptions",
+            "IPlatformStorage",
+            "IPositionBinding",
+            "IProgressBinding",
+            "IReadonlyConfigSnapshot",
+            "IResourceHandle",
+            "IResourceKey",
             "IResourceProvider",
-            "InputContextId",
-            "InputEvent",
+            "IResourceProviderOptions",
+            "IResourceScope",
+            "IStore",
+            "IStoreListener",
+            "ITextBinding",
+            "ITimeSource",
+            "ITypedButtonNode",
+            "ITypedComponentNode",
+            "ITypedImageNode",
+            "ITypedInputNode",
+            "ITypedListNode",
+            "ITypedNode",
+            "ITypedProgressNode",
+            "ITypedTextNode",
+            "IUiPage",
+            "IUiResult",
+            "IViewModelNode",
+            "IVisibleBinding",
             "InputMapper",
             "InputMapperOptions",
-            "InputMapping",
-            "InputSample",
-            "InputSource",
-            "InputSourceId",
-            "isRecoverableError",
-            "loadConfigTable",
-            "LogContext",
-            "LogLevel",
-            "LogRecord",
-            "Logger",
-            "lookupBundle",
-            "Module",
             "ModuleLifecycleError",
-            "ModulePhase",
-            "ModuleRuntimeState",
             "ObjectPool",
             "ObjectPoolOptions",
-            "PlatformStorage",
-            "PositionBinding",
-            "ProgressBinding",
-            "ReadonlyConfigSnapshot",
-            "registerBundle",
-            "ResourceHandle",
-            "ResourceKey",
-            "ResourceKind",
-            "ResourceLoadState",
-            "ResourceProviderOptions",
-            "ResourceScope",
             "SceneFlow",
             "SceneFlowOptions",
             "SceneFlowState",
@@ -517,41 +524,39 @@ describe("framework public boundary", () => {
             "StateMachineHooks",
             "StateMachineOptions",
             "StateTransitionTable",
-            "Store",
-            "StoreListener",
-            "TextBinding",
-            "TimeSource",
-            "TypedButtonNode",
-            "TypedComponentNode",
-            "TypedImageNode",
-            "TypedInputNode",
-            "TypedListNode",
-            "TypedNode",
-            "TypedProgressNode",
-            "TypedTextNode",
             "UI_LAYER_ORDER",
-            "UiLayer",
             "UiNavigator",
             "UiNavigatorOptions",
-            "UiPage",
-            "UiResult",
-            "ViewModelNode",
             "ViewModelRenderer",
             "ViewModelRendererOptions",
-            "VisibleBinding",
             "configArray",
             "configBoolean",
             "configNumber",
             "configObject",
             "configString",
+            "createAudioService",
+            "createBindable",
             "createConfigTable",
             "createGameFixture",
-            "GameFixture",
-            "GameFixtureOptions",
-            "GameClock",
-            "MotionTweenOptions",
-            "PauseDomain",
-        ].sort();
+            "createInputMapper",
+            "createObjectPool",
+            "createResourceProvider",
+            "createSceneFlow",
+            "createScopedEventChannel",
+            "createServiceRegistry",
+            "createServiceToken",
+            "createStateMachine",
+            "createStore",
+            "createUiNavigator",
+            "createViewModelRenderer",
+            "defineFuiViewBinding",
+            "getBundleModuleRegistry",
+            "getFuiComponentRegistry",
+            "isRecoverableError",
+            "loadConfigTable",
+            "lookupBundle",
+            "registerBundle",
+        ];
 
         expect(extractRootExportNames(source)).toEqual(expectedRootExports);
     });
@@ -559,6 +564,7 @@ describe("framework public boundary", () => {
     test("never leaks framework internals from the root entry", () => {
         const source = readFileSync(frameworkPublicEntry, "utf8");
         const exportedNames = extractRootExportNames(source);
+
         const forbiddenInternals = [
             "ModuleGraph",
             "ModuleRunner",
@@ -588,7 +594,7 @@ describe("framework public boundary", () => {
     test("allows external consumers to import only the root entry", () => {
         const source = `
       import type { Application } from "../framework";
-      export type { Module } from "../framework/index";
+      export type { IModule } from "../framework/index";
       const framework = import("db://assets/framework");
     `;
 
@@ -598,7 +604,7 @@ describe("framework public boundary", () => {
     test("rejects relative and aliased external deep imports", () => {
         const source = `
       import type { Application } from "../framework/application/Application";
-      import type { Module } from "@framework/contracts/module/Module";
+      import type { IModule } from "@framework/contracts/interfaces/IModule";
     `;
 
         expect(analyzeFixture("assets/game/Feature.ts", source).map(({ specifier, reason }) => ({ specifier, reason }))).toEqual([
@@ -607,7 +613,7 @@ describe("framework public boundary", () => {
                 reason: "External consumers must import the Framework root entry",
             },
             {
-                specifier: "@framework/contracts/module/Module",
+                specifier: "@framework/contracts/interfaces/IModule",
                 reason: "External consumers must import the Framework root entry",
             },
         ]);
@@ -616,9 +622,9 @@ describe("framework public boundary", () => {
     test("allows the declared internal dependency direction", () => {
         const fixtures = [
             analyzeFixture("assets/framework/core/lifecycle/State.ts", 'import type { Failure } from "../errors/Failure";'),
-            analyzeFixture("assets/framework/contracts/module/Module.ts", 'import type { State } from "../../core/lifecycle/State";'),
-            analyzeFixture("assets/framework/application/Application.ts", 'import type { Module } from "../contracts/module/Module";'),
-            analyzeFixture("assets/framework/diagnostics/logging/ConsoleLogger.ts", 'import type { Logger } from "../../contracts/logging/Logger";'),
+            analyzeFixture("assets/framework/contracts/interfaces/IModule.ts", 'import type { State } from "../../core/lifecycle/State";'),
+            analyzeFixture("assets/framework/application/Application.ts", 'import type { IModule } from "../contracts/interfaces/IModule";'),
+            analyzeFixture("assets/framework/diagnostics/logging/ConsoleLogger.ts", 'import type { ILogger } from "../../contracts/interfaces/ILogger";'),
             analyzeFixture(
                 "assets/framework/adapters/cocos/application/CocosApplicationAdapter.ts",
                 `
@@ -643,7 +649,7 @@ describe("framework public boundary", () => {
 
     test("allows core implementations to depend on contracts for time", () => {
         const source = `
-      import type { TimeSource } from "../../contracts/time/TimeSource";
+      import type { ITimeSource } from "../../contracts/interfaces/ITimeSource";
     `;
 
         expect(analyzeFixture("assets/framework/core/time/WallClock.ts", source)).toEqual([]);
@@ -651,8 +657,8 @@ describe("framework public boundary", () => {
 
     test("allows memory adapters to depend on core and contracts only", () => {
         const source = `
-      import type { PlatformStorage } from "../../contracts/platform/Platform";
-      import type { TimeSource } from "../../contracts/time/TimeSource";
+      import type { IPlatformStorage } from "../../contracts/interfaces/IPlatformStorage";
+      import type { ITimeSource } from "../../contracts/interfaces/ITimeSource";
       import type { SimulationClock } from "../../core/time/SimulationClock";
     `;
 
@@ -662,7 +668,7 @@ describe("framework public boundary", () => {
     test("rejects runtime, reverse and cross-adapter dependencies from memory adapters", () => {
         const source = `
       import { game } from "cc";
-      import type { ApplicationContext } from "../../contracts/application/ApplicationContext";
+      import type { IApplicationContext } from "../../contracts/interfaces/IApplicationContext";
       import type { Application } from "../../application/Application";
       import { ConsoleLogger } from "../../diagnostics/logging/ConsoleLogger";
       import { CocosApplicationAdapter } from "../../adapters/cocos/application/CocosApplicationAdapter";
@@ -678,31 +684,31 @@ describe("framework public boundary", () => {
         });
     });
 
-    test("allows contracts/module to depend on contracts/application and core", () => {
+    test("allows contracts/interfaces Module to depend on Application contract and core", () => {
         const source = `
-      import type { ApplicationContext } from "../application/ApplicationContext";
+      import type { IApplicationContext } from "./IApplicationContext";
       import type { LifecycleState } from "../../core/lifecycle/LifecycleState";
     `;
 
-        expect(analyzeFixture("assets/framework/contracts/module/Module.ts", source)).toEqual([]);
+        expect(analyzeFixture("assets/framework/contracts/interfaces/IModule.ts", source)).toEqual([]);
     });
 
-    test("rejects forbidden contracts/module architecture dependencies", () => {
+    test("rejects forbidden contracts/interfaces Module architecture dependencies", () => {
         const source = `
-      import type { ApplicationContext } from "../../application/ApplicationContext";
+      import type { IApplicationContext } from "../../application/ApplicationContext";
       import type { CocosAdapter } from "../../adapters/cocos/application/CocosAdapter";
       import type { ConsoleLogger } from "../../diagnostics/logging/ConsoleLogger";
-      import type { Logger } from "../logging/Logger";
+      import type { ILogger } from "../interfaces/ILogger";
       import { Component } from "cc";
     `;
 
-        const violations = analyzeFixture("assets/framework/contracts/module/Module.ts", source);
+        const violations = analyzeFixture("assets/framework/contracts/interfaces/IModule.ts", source);
 
         expect(Object.fromEntries(violations.map(({ specifier, reason }) => [specifier, reason]))).toEqual({
             "../../application/ApplicationContext": "contracts cannot depend on application",
             "../../adapters/cocos/application/CocosAdapter": "contracts cannot depend on adapters/cocos",
             "../../diagnostics/logging/ConsoleLogger": "contracts cannot depend on diagnostics",
-            "../logging/Logger": "contracts/module can only depend on contracts/application and core",
+            "../interfaces/ILogger": "contracts/interfaces/IModule can only depend on contracts/interfaces/IApplicationContext and core",
             cc: "contracts cannot depend on Cocos",
         });
     });
@@ -710,12 +716,12 @@ describe("framework public boundary", () => {
     test("rejects reverse, concrete, Cocos, boot and Game dependencies", () => {
         const fixtures = [
             analyzeFixture("assets/framework/core/lifecycle/State.ts", 'import { game } from "cc";'),
-            analyzeFixture("assets/framework/contracts/module/Module.ts", 'import type { Context } from "../../application/ApplicationContext";'),
+            analyzeFixture("assets/framework/contracts/interfaces/IModule.ts", 'import type { Context } from "../../application/ApplicationContext";'),
             analyzeFixture("assets/framework/application/Application.ts", 'import { ConsoleLogger } from "../diagnostics/logging/ConsoleLogger";'),
             analyzeFixture("assets/framework/application/Application.ts", 'import type { Battle } from "../../game/Battle";'),
             analyzeFixture("assets/framework/diagnostics/logging/ConsoleLogger.ts", 'import type { Application } from "../../application/Application";'),
             analyzeFixture("assets/framework/adapters/cocos/application/CocosApplicationAdapter.ts", 'import { AppRoot } from "../../../../boot/AppRoot";'),
-            analyzeFixture("assets/framework/contracts/module/Module.ts", 'import type { Framework } from "../../index";'),
+            analyzeFixture("assets/framework/contracts/interfaces/IModule.ts", 'import type { Framework } from "../../index";'),
         ];
 
         expect(fixtures.map((violations) => violations[0]?.reason)).toEqual([
@@ -734,7 +740,7 @@ describe("framework public boundary", () => {
         // game_* 品类目录（2.x 起各品类在此建业务模型，漏检会让负向断言失真）
         const fixtures = [
             analyzeFixture("assets/framework/application/Application.ts", 'import type { Battle } from "../../game_rpg/Battle";'),
-            analyzeFixture("assets/framework/contracts/module/Module.ts", 'import { CardDeck } from "../../../game_card/CardDeck";'),
+            analyzeFixture("assets/framework/contracts/interfaces/IModule.ts", 'import { CardDeck } from "../../../game_card/CardDeck";'),
         ];
 
         expect(fixtures.map((violations) => violations[0]?.reason)).toEqual(["Framework cannot depend on Game", "Framework cannot depend on Game"]);
@@ -757,7 +763,7 @@ describe("framework public boundary", () => {
         const source = `
       import type { GameFixture } from "./fixture/GameFixture";
       import type { Application } from "../../framework";
-      import type { Module } from "../../framework/application/Application";
+      import type { IModule } from "../../framework/application/Application";
       import { AppRoot } from "../../boot/AppRoot";
     `;
 
@@ -793,7 +799,7 @@ describe("framework public boundary", () => {
                 "assets/game_card/assembly.ts",
                 `
           import { runFixtureSmoke } from "../game/fixture/smoke";
-          import type { Module } from "../framework";
+          import type { IModule } from "../framework";
         `,
             ),
         ];
@@ -803,7 +809,7 @@ describe("framework public boundary", () => {
         const violations = analyzeFixture(
             "assets/game_rpg/assembly.ts",
             `
-        import type { Module } from "../framework/application/ModuleRunner";
+        import type { IModule } from "../framework/application/ModuleRunner";
         import type { StateMachine } from "@framework/core/fsm/StateMachine";
         import { AppRoot } from "../boot/AppRoot";
         import { createFairyGuiView } from "../framework/adapters/cocos/ui/FairyGuiPageAdapter";
@@ -892,7 +898,7 @@ describe("framework public boundary", () => {
     });
 
     test("keeps the resource package extension free of fgui imports", () => {
-        const resourceRoots = [resolve(frameworkRoot, "core/resource"), resolve(frameworkRoot, "contracts/resource")];
+        const resourceRoots = [resolve(frameworkRoot, "core/resource"), resolve(frameworkRoot, "contracts/interfaces")];
 
         for (const root of resourceRoots) {
             for (const file of collectTypeScriptFiles(root)) {
@@ -908,7 +914,7 @@ describe("framework public boundary", () => {
         for (const file of coreResourceFiles) {
             const source = stripComments(readFileSync(file, "utf8"));
 
-            // 协调器/作用域只消费通用 ResourceKind，不得自行固定 package 键；
+            // 协调器/作用域只消费通用 EnumResourceKind，不得自行固定 package 键；
             // 唯一固定点在 ResourceProvider 的 loadPackage 入口，避免绕过 Provider
             if (!file.endsWith("ResourceProvider.ts")) {
                 expect(source).not.toMatch(/fairygui-package/);
@@ -1002,36 +1008,16 @@ describe("framework public boundary", () => {
         expect(coreSources).not.toMatch(/\b(?:getInstance|singleton|ServiceLocator)\b/);
     });
 
-    test.skipIf(!existsSync(resolve(frameworkRoot, "contracts/resource")))("keeps resource contracts free of core implementations", () => {
-        const contractsResourceRoot = resolve(frameworkRoot, "contracts/resource");
+    test.skipIf(!existsSync(resolve(frameworkRoot, "contracts/interfaces")))("keeps contracts/interfaces free of core implementations and Cocos", () => {
+        const contractsInterfaceRoot = resolve(frameworkRoot, "contracts/interfaces");
 
-        for (const file of collectTypeScriptFiles(contractsResourceRoot)) {
+        for (const file of collectTypeScriptFiles(contractsInterfaceRoot)) {
             const source = stripComments(readFileSync(file, "utf8"));
-            expect(source).not.toMatch(/from\s*["'][^"']*core\/resource/);
-        }
-    });
-
-    test.skipIf(!existsSync(resolve(frameworkRoot, "contracts/ui")))("keeps ui contracts free of core implementations and Cocos", () => {
-        const contractsUiRoot = resolve(frameworkRoot, "contracts/ui");
-
-        for (const file of collectTypeScriptFiles(contractsUiRoot)) {
-            const source = stripComments(readFileSync(file, "utf8"));
-            expect(source).not.toMatch(/from\s*["'][^"']*core\/ui/);
-            expect(source).not.toMatch(/from\s*["']cc(?:["']|\/)/);
-        }
-    });
-
-    test.skipIf(!existsSync(resolve(frameworkRoot, "contracts/config")))("keeps config contracts engine-agnostic and free of core implementations", () => {
-        const contractsConfigRoot = resolve(frameworkRoot, "contracts/config");
-
-        for (const file of collectTypeScriptFiles(contractsConfigRoot)) {
-            const source = stripComments(readFileSync(file, "utf8"));
-            // 契约层只放纯类型；错误类在 core/config（对齐 ADR-013），契约层不得
-            // 反向依赖 core 实现细节
-            expect(source).not.toMatch(/from\s*["'][^"']*core\/config/);
+            // 契约层只放纯类型；实现细节在 core（对齐 ADR-013），契约层不得
+            // 反向依赖 core 实现细节、不触达引擎与存储实现
+            expect(source).not.toMatch(/from\s*["'][^"']*core\/(?:resource|ui|config|storage)\//);
             expect(source).not.toMatch(/from\s*["']cc(?:["']|\/)/);
             expect(source).not.toMatch(/from\s*["']fairygui(?:-cc)?(?:["']|\/)/);
-            // 配置与玩家存档严格分离：契约层不得触达任何存储实现
             expect(source).not.toMatch(/from\s*["'][^"']*\/storage\//);
         }
     });
@@ -1077,8 +1063,9 @@ describe("framework public boundary", () => {
 
     test("keeps platform, time and scheduling layers free of service locators and global singletons", () => {
         const newLayerRoots = [
-            resolve(frameworkRoot, "contracts/platform"),
-            resolve(frameworkRoot, "contracts/time"),
+            resolve(frameworkRoot, "contracts/interfaces"),
+            resolve(frameworkRoot, "contracts/enums"),
+            resolve(frameworkRoot, "contracts/constants"),
             resolve(frameworkRoot, "core/time"),
             resolve(frameworkRoot, "core/scheduling"),
             resolve(frameworkRoot, "adapters/memory"),

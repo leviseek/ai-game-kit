@@ -1,4 +1,4 @@
-import type { ViewModelNode } from "../../framework";
+import type { IViewModelNode } from "../../framework";
 import { WallClock } from "../../framework/core/time/WallClock";
 import { createCocosDeviceInfo } from "../../framework/adapters/cocos/device/CocosDeviceInfo";
 import { createCocosViewportInfo } from "../../framework/adapters/cocos/viewport/CocosViewportInfo";
@@ -23,7 +23,7 @@ export interface DevOverlayInteractionHandlers {
 /** 视图接缝：球/面板节点解析与交互绑定，由 fgui 适配器在 Adapter 边界实现。 */
 export interface DevOverlayViewSeam {
     readonly ballSize: { readonly width: number; readonly height: number };
-    readonly node: (name: string) => ViewModelNode | undefined;
+    readonly node: (name: string) => IViewModelNode | undefined;
     bindInteraction(handlers: DevOverlayInteractionHandlers): void;
     dispose(): void;
 }

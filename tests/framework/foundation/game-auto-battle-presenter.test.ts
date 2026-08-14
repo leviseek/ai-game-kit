@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import type { ViewModelNode } from "../../../assets/framework";
+import type { IViewModelNode } from "../../../assets/framework";
 import { createAutoBattlePresenter } from "../../../assets/samples/game_auto_battle/view/presenter";
 import { AUTO_BATTLE_ASSEMBLY_EXISTS, loadCreateAutoBattleFixture } from "../support/auto-battle-fixture";
 
@@ -15,7 +15,7 @@ interface RecordingNode {
 
 function recordingView(): {
     nodes: Map<string, RecordingNode>;
-    node: (name: string) => ViewModelNode | undefined;
+    node: (name: string) => IViewModelNode | undefined;
 } {
     const nodes = new Map<string, RecordingNode>();
     const ensure = (name: string): RecordingNode => {

@@ -1,4 +1,4 @@
-import type { Module } from "../../../framework";
+import type { IModule } from "../../../framework";
 import { createStateMachine, type StateMachine } from "../../../framework";
 import type { CardSimClock } from "./clock";
 import type { CardConfigHandle } from "./config";
@@ -172,7 +172,7 @@ export function createCardBattle(clock: CardSimClock, config: CardConfigHandle):
  * 控制器——组合根的 dispose 统一负责（避免 failRollback 探针复用模块
  * 实例时提前销毁夹具自身能力，对齐 GameFixture 幂等契约）。
  */
-export function createCardBattleModule(battle: CardBattleHandle): Module {
+export function createCardBattleModule(battle: CardBattleHandle): IModule {
     return {
         id: "card.battle",
         dependencies: [],

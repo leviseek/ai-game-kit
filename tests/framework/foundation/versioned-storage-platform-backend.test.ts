@@ -16,8 +16,10 @@ mock.module("cc", () => ({
 }));
 
 import { SaveCorruptionError, SaveMigrationError, SaveSerializationError, SaveVersionError, createVersionedStorage } from "../../../assets/framework/core/storage/VersionedStorage";
-import type { SaveMigrator, SaveVersion, VersionedStorage } from "../../../assets/framework/contracts/storage/VersionedStorage";
-import type { PlatformStorage } from "../../../assets/framework/contracts/platform/Platform";
+import type { ISaveMigrator } from "../../../assets/framework/contracts/interfaces/ISaveMigrator";
+import type { ISaveVersion } from "../../../assets/framework/contracts/interfaces/ISaveVersion";
+import type { IVersionedStorage } from "../../../assets/framework/contracts/interfaces/IVersionedStorage";
+import type { IPlatformStorage } from "../../../assets/framework/contracts/interfaces/IPlatformStorage";
 
 const projectRoot = resolve(import.meta.dir, "../../..");
 const adapterFile = resolve(projectRoot, "assets/framework/adapters/cocos/storage/CocosStorageAdapter.ts");
@@ -28,7 +30,7 @@ interface LocalStorageLike {
     removeItem(key: string): void;
 }
 
-type CreateCocosStorageAdapter = (options?: { readonly localStorage?: LocalStorageLike }) => PlatformStorage;
+type CreateCocosStorageAdapter = (options?: { readonly localStorage?: LocalStorageLike }) => IPlatformStorage;
 
 async function loadCreateAdapter(): Promise<CreateCocosStorageAdapter> {
     const exports = (await import(pathToFileURL(adapterFile).href)) as { createCocosStorageAdapter: CreateCocosStorageAdapter };
@@ -40,7 +42,7 @@ async function loadCreateAdapter(): Promise<CreateCocosStorageAdapter> {
 
 // 平台后端：内存 localStorage，跨适配器实例共享同一持久化
 interface BackendHarness {
-    readonly backend: () => PlatformStorage;
+    readonly backend: () => IPlatformStorage;
     readonly platform: () => LocalStorageLike & {
         readonly entries: () => Readonly<Record<string, string>>;
     };
@@ -73,14 +75,19 @@ async function createBackendHarness(): Promise<BackendHarness> {
     };
 }
 
-function createRepository(backend: PlatformStorage, currentVersion: SaveVersion, migrators?: Readonly<Record<SaveVersion, SaveMigrator>>): VersionedStorage {
+// branded 版本无运行期值：测试把数字收窄为品牌类型
+function version(value: number): ISaveVersion {
+    return value as unknown as ISaveVersion;
+}
+
+function createRepository(backend: IPlatformStorage, currentVersion: ISaveVersion, migrators?: Readonly<Record<number, ISaveMigrator>>): IVersionedStorage {
     return createVersionedStorage({ storage: backend, currentVersion, migrators });
 }
 
-describe("VersionedStorage over the platform storage adapter", () => {
+describe("IVersionedStorage over the platform storage adapter", () => {
     test("saves and loads through the adapter with namespace isolation", async () => {
         const harness = await createBackendHarness();
-        const storage = createRepository(harness.backend(), 1);
+        const storage = createRepository(harness.backend(), version(1));
 
         await storage.save("player-a", "save", { name: "alice", level: 1 });
         await storage.save("player-b", "save", { name: "bob", level: 2 });
@@ -97,7 +104,7 @@ describe("VersionedStorage over the platform storage adapter", () => {
 
     test("deleting one namespace leaves the other intact through the adapter", async () => {
         const harness = await createBackendHarness();
-        const storage = createRepository(harness.backend(), 1);
+        const storage = createRepository(harness.backend(), version(1));
 
         await storage.save("player-a", "save", { name: "alice" });
         await storage.save("player-b", "save", { name: "bob" });
@@ -113,12 +120,12 @@ describe("VersionedStorage over the platform storage adapter", () => {
 
     test("persisted records survive a new adapter instance over the same platform", async () => {
         const harness = await createBackendHarness();
-        const writer = createRepository(harness.backend(), 1);
+        const writer = createRepository(harness.backend(), version(1));
 
         await writer.save("player", "save", { name: "alice", level: 1 });
 
         // 新适配器实例 + 新仓库实例，读取同一平台后端
-        const reader = createRepository(harness.backend(), 1);
+        const reader = createRepository(harness.backend(), version(1));
         expect(await reader.load("player", "save")).toEqual({
             version: 1,
             data: { name: "alice", level: 1 },
@@ -127,7 +134,7 @@ describe("VersionedStorage over the platform storage adapter", () => {
 
     test("a written save records its schema version through the adapter", async () => {
         const harness = await createBackendHarness();
-        const storage = createRepository(harness.backend(), 3);
+        const storage = createRepository(harness.backend(), version(3));
 
         await storage.save("player", "save", { name: "alice", level: 1 });
 
@@ -140,7 +147,7 @@ describe("VersionedStorage over the platform storage adapter", () => {
     test("a legacy save migrates forward through the adapter", async () => {
         const harness = await createBackendHarness();
         const backend = harness.backend();
-        const legacy = createRepository(backend, 1);
+        const legacy = createRepository(backend, version(1));
         await legacy.save("player", "save", { name: "alice", level: 1 });
 
         const storage = createRepository(backend, 3, {
@@ -157,7 +164,7 @@ describe("VersionedStorage over the platform storage adapter", () => {
     test("a missing migration step fails with a typed error through the adapter", async () => {
         const harness = await createBackendHarness();
         const backend = harness.backend();
-        const legacy = createRepository(backend, 2);
+        const legacy = createRepository(backend, version(2));
         await legacy.save("player", "save", { name: "alice" });
 
         const storage = createRepository(backend, 3, { 1: (data) => data });
@@ -168,10 +175,10 @@ describe("VersionedStorage over the platform storage adapter", () => {
     test("a future version is rejected with a typed error through the adapter", async () => {
         const harness = await createBackendHarness();
         const backend = harness.backend();
-        const future = createRepository(backend, 5);
+        const future = createRepository(backend, version(5));
         await future.save("player", "future", { name: "alice" });
 
-        const storage = createRepository(backend, 3);
+        const storage = createRepository(backend, version(3));
 
         try {
             await storage.load("player", "future");
@@ -186,7 +193,7 @@ describe("VersionedStorage over the platform storage adapter", () => {
 
     test("a DTO with a non-serializable member is rejected before any write", async () => {
         const harness = await createBackendHarness();
-        const storage = createRepository(harness.backend(), 1);
+        const storage = createRepository(harness.backend(), version(1));
 
         expect(() => storage.save("player", "save", { name: "alice", fn: () => {} })).toThrow(SaveSerializationError);
 
@@ -196,7 +203,7 @@ describe("VersionedStorage over the platform storage adapter", () => {
     test("a corrupted platform record surfaces as a typed error", async () => {
         const harness = await createBackendHarness();
         const backend = harness.backend();
-        const storage = createRepository(backend, 3);
+        const storage = createRepository(backend, version(3));
 
         // 直接向平台后端写入损坏数据（模拟平台层记录损坏）
         harness.platform().setItem("save:player:save", "not-json{{");
@@ -207,7 +214,7 @@ describe("VersionedStorage over the platform storage adapter", () => {
     test("a corrupted record in one namespace does not affect another namespace", async () => {
         const harness = await createBackendHarness();
         const backend = harness.backend();
-        const storage = createRepository(backend, 3);
+        const storage = createRepository(backend, version(3));
 
         await storage.save("player", "save", { name: "alice" });
         await storage.save("system", "settings", { theme: "dark" });
@@ -222,7 +229,7 @@ describe("VersionedStorage over the platform storage adapter", () => {
 
     test("a separator inside namespace or key does not collide through the adapter", async () => {
         const harness = await createBackendHarness();
-        const storage = createRepository(harness.backend(), 1);
+        const storage = createRepository(harness.backend(), version(1));
 
         await storage.save("a:b", "c", { name: "first" });
         await storage.save("a", "b:c", { name: "second" });
@@ -239,7 +246,7 @@ describe("VersionedStorage over the platform storage adapter", () => {
 
     test("keys ending in .tmp/.bak do not collide with adapter helper keys", async () => {
         const harness = await createBackendHarness();
-        const storage = createRepository(harness.backend(), 1);
+        const storage = createRepository(harness.backend(), version(1));
 
         // 回归：临时/备份键以 %tmp/%bak 派生，与正式键空间不相交；
         // 若使用 .tmp/.bak 后缀，此处第二个存档会覆盖第一个的正式键导致静默丢失。
@@ -263,7 +270,7 @@ describe("VersionedStorage over the platform storage adapter", () => {
 
     test("a valid envelope holding a corrupted repository record is diagnosed", async () => {
         const harness = await createBackendHarness();
-        const storage = createRepository(harness.backend(), 3);
+        const storage = createRepository(harness.backend(), version(3));
 
         // 经适配器写入非法仓库记录：适配器包装出校验和一致的信封（信封层通过），
         // 仓库层 parseRecord 再诊断 JSON 非法

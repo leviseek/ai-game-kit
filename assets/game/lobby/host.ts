@@ -1,5 +1,5 @@
-import type { ViewModelNode } from "../../framework";
-import type { FairyGuiListHandle } from "../../framework";
+import type { IViewModelNode } from "../../framework";
+import type { IFairyGuiListHandle } from "../../framework";
 import type { GameEntryInfo } from "./catalog";
 
 /**
@@ -41,12 +41,12 @@ export interface GameLobbyHost {
  */
 export interface EntryPageHandle {
     /** 真实页面节点解析器：按名解析 fgui 节点，供呈现器装配渲染。 */
-    readonly node: (name: string) => ViewModelNode | undefined;
+    readonly node: (name: string) => IViewModelNode | undefined;
     /**
      * 可选列表解析器：按名解析 fgui GList 并包装为引擎无关句柄，供含虚拟
      * 列表的页面（如编队页候选区）呈现器驱动。无列表的页面为 undefined。
      */
-    readonly list?: (name: string) => FairyGuiListHandle<unknown> | undefined;
+    readonly list?: (name: string) => IFairyGuiListHandle<unknown> | undefined;
     /** 注册页面关闭回调：导航关闭该页面时触发一次（幂等）。 */
     onClose(callback: () => void): void;
 }

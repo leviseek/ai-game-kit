@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { createLoadCoordinator, type ResourceHandle, type ResourceKey } from "../../../assets/framework/core/resource/LoadCoordinator";
+import { createLoadCoordinator, type IResourceHandle, type IResourceKey } from "../../../assets/framework/core/resource/LoadCoordinator";
 import { createResourceScopeRegistry, type ResourceScopeRegistry } from "../../../assets/framework/core/resource/ResourceScope";
 
 interface ControlledDeferred {
@@ -9,20 +9,20 @@ interface ControlledDeferred {
 }
 
 interface ControlledLoader {
-    readonly calls: readonly ResourceKey[];
+    readonly calls: readonly IResourceKey[];
     readonly pending: readonly ControlledDeferred[];
-    readonly loader: (key: ResourceKey) => Promise<unknown>;
+    readonly loader: (key: IResourceKey) => Promise<unknown>;
 }
 
-function assetKey(path: string, bundle = "common"): ResourceKey {
+function assetKey(path: string, bundle = "common"): IResourceKey {
     return { kind: "asset", bundle, path };
 }
 
 function createControlledLoader(): ControlledLoader {
-    const calls: ResourceKey[] = [];
+    const calls: IResourceKey[] = [];
     const pending: ControlledDeferred[] = [];
 
-    const loader = (key: ResourceKey): Promise<unknown> => {
+    const loader = (key: IResourceKey): Promise<unknown> => {
         calls.push(key);
         return new Promise((resolve, reject) => {
             pending.push({ resolve, reject });
@@ -47,7 +47,7 @@ function createRegistrySpy(): RegistrySpy {
     return { registry, unloaded };
 }
 
-async function settleReady<T>(coordinator: ReturnType<typeof createLoadCoordinator>, pending: readonly ControlledDeferred[], key: ResourceKey): Promise<ResourceHandle<T>> {
+async function settleReady<T>(coordinator: ReturnType<typeof createLoadCoordinator>, pending: readonly ControlledDeferred[], key: IResourceKey): Promise<IResourceHandle<T>> {
     const index = pending.length;
     const handle = coordinator.load<T>(key);
     pending[index].resolve({ id: "loaded" });
@@ -55,7 +55,7 @@ async function settleReady<T>(coordinator: ReturnType<typeof createLoadCoordinat
     return handle;
 }
 
-describe("ResourceScope reverse-order release across independent scopes", () => {
+describe("IResourceScope reverse-order release across independent scopes", () => {
     test("releasing independent scopes inner-to-outer only releases each scope's own holdings", async () => {
         const { loader, pending } = createControlledLoader();
         const coordinator = createLoadCoordinator({ loader });
@@ -90,7 +90,7 @@ describe("ResourceScope reverse-order release across independent scopes", () => 
     });
 });
 
-describe("ResourceScope shared ownership", () => {
+describe("IResourceScope shared ownership", () => {
     test("a resource still referenced by another scope is preserved when one scope releases", async () => {
         const { loader, pending } = createControlledLoader();
         const coordinator = createLoadCoordinator({ loader });
@@ -142,7 +142,7 @@ describe("ResourceScope shared ownership", () => {
     });
 });
 
-describe("ResourceScope unload judgment", () => {
+describe("IResourceScope unload judgment", () => {
     test("canUnload reflects current ownership without consulting engine state", async () => {
         const { loader, pending } = createControlledLoader();
         const coordinator = createLoadCoordinator({ loader });
@@ -203,7 +203,7 @@ describe("ResourceScope unload judgment", () => {
     });
 });
 
-describe("ResourceScope idempotent release", () => {
+describe("IResourceScope idempotent release", () => {
     test("releasing the same scope twice is a no-op", async () => {
         const { loader, pending } = createControlledLoader();
         const coordinator = createLoadCoordinator({ loader });
@@ -221,7 +221,7 @@ describe("ResourceScope idempotent release", () => {
     });
 });
 
-describe("ResourceScope in-flight cancellation during release", () => {
+describe("IResourceScope in-flight cancellation during release", () => {
     test("releasing a scope cancels its in-flight load without breaking other waiters", async () => {
         const { loader, calls, pending } = createControlledLoader();
         const coordinator = createLoadCoordinator({ loader });
@@ -305,7 +305,7 @@ describe("ResourceScope in-flight cancellation during release", () => {
     });
 });
 
-describe("ResourceScope ownership transfer", () => {
+describe("IResourceScope ownership transfer", () => {
     test("transferring ownership retains in the target before releasing the source, never zeroing references or triggering unload", async () => {
         const { loader, pending } = createControlledLoader();
         const coordinator = createLoadCoordinator({ loader });
@@ -332,7 +332,7 @@ describe("ResourceScope ownership transfer", () => {
     });
 });
 
-describe("ResourceScope unload failure isolation", () => {
+describe("IResourceScope unload failure isolation", () => {
     test("an unloadBundle failure does not prevent other bundles from being released", async () => {
         const { loader, pending } = createControlledLoader();
         const coordinator = createLoadCoordinator({ loader });
@@ -360,7 +360,7 @@ describe("ResourceScope unload failure isolation", () => {
     });
 });
 
-describe("ResourceScope failure isolation", () => {
+describe("IResourceScope failure isolation", () => {
     test("a failed resource does not affect the scope's other holdings or unload judgment", async () => {
         const { loader, pending } = createControlledLoader();
         const coordinator = createLoadCoordinator({ loader });

@@ -1,7 +1,8 @@
 import * as cc from "cc";
-import type { AudioBackend, AudioGroup } from "../../../contracts/audio/Audio";
-import type { ResourceScope } from "../../../contracts/resource/ResourceScope";
-import type { IResourceProvider } from "../../../contracts/resource/ResourceProvider";
+import type { IAudioBackend } from "../../../contracts/interfaces/IAudioBackend";
+import { EnumAudioGroup } from "../../../contracts/enums/EnumAudioGroup";
+import type { IResourceScope } from "../../../contracts/interfaces/IResourceScope";
+import type { IResourceProvider } from "../../../contracts/interfaces/IResourceProvider";
 
 const DEFAULT_VOLUME = 1;
 
@@ -20,7 +21,7 @@ export interface CocosAudioSourceLike {
 }
 
 // AudioSource 创建接缝：缺省经 cc.Node + cc.AudioSource 构建，测试可注入 mock
-export type CocosAudioSourceFactory = (group: AudioGroup) => CocosAudioSourceLike;
+export type CocosAudioSourceFactory = (group: EnumAudioGroup) => CocosAudioSourceLike;
 
 export interface CocosAudioAdapterOptions {
     /** 资源层：以 kind: "asset" 加载 AudioClip。 */
@@ -29,7 +30,7 @@ export interface CocosAudioAdapterOptions {
     readonly createSource?: CocosAudioSourceFactory;
 }
 
-function defaultCreateSource(group: AudioGroup): CocosAudioSourceLike {
+function defaultCreateSource(group: EnumAudioGroup): CocosAudioSourceLike {
     // 惰性读取 cc：仅缺省路径触达引擎，测试注入 createSource 时不会执行
     const node = new cc.Node(`framework-audio-${group}`);
     const source = node.addComponent(cc.AudioSource);
@@ -78,26 +79,26 @@ function defaultCreateSource(group: AudioGroup): CocosAudioSourceLike {
 }
 
 /**
- * Cocos 音频适配器：把 AudioBackend 薄映射到 cc.AudioSource/AudioClip。
+ * Cocos 音频适配器：把 IAudioBackend 薄映射到 cc.AudioSource/AudioClip。
  * 音频资源经资源层 `kind: "asset"` 加载（复用加载去重与作用域计数）；
  * 加载发起即建作用域并 retain loading handle，加载期间 Bundle 视为持有中，
  * ready 后转入引用计数，停止/切歌时整体释放，闭合资源闭环。
  * 加载为异步，过期结果（已被更新的 play/stop 取代）会被丢弃并释放占位。
  * dispose 销毁引擎侧 AudioSource/Node 并释放全部持有。
  */
-export function createCocosAudioAdapter(options: CocosAudioAdapterOptions): AudioBackend {
+export function createCocosAudioAdapter(options: CocosAudioAdapterOptions): IAudioBackend {
     const provider = options.provider;
     const createSource = options.createSource ?? defaultCreateSource;
 
-    const sources = new Map<AudioGroup, CocosAudioSourceLike>();
+    const sources = new Map<EnumAudioGroup, CocosAudioSourceLike>();
     // 每组目标音量：setVolume 先于 play 调用时保留，source 创建时应用
-    const volumes = new Map<AudioGroup, number>();
+    const volumes = new Map<EnumAudioGroup, number>();
     // 每组当前播放持有的资源作用域：停止/切歌时释放，闭合资源闭环
-    const heldScopes = new Map<AudioGroup, ResourceScope>();
+    const heldScopes = new Map<EnumAudioGroup, IResourceScope>();
     // 每组加载版本号：更新的 play/stop 使旧加载结果失效
-    const versions = new Map<AudioGroup, number>();
+    const versions = new Map<EnumAudioGroup, number>();
 
-    function sourceFor(group: AudioGroup): CocosAudioSourceLike {
+    function sourceFor(group: EnumAudioGroup): CocosAudioSourceLike {
         let source = sources.get(group);
         if (source === undefined) {
             source = createSource(group);
@@ -107,7 +108,7 @@ export function createCocosAudioAdapter(options: CocosAudioAdapterOptions): Audi
         return source;
     }
 
-    function releaseHeld(group: AudioGroup): void {
+    function releaseHeld(group: EnumAudioGroup): void {
         const scope = heldScopes.get(group);
         if (scope !== undefined) {
             scope.release();
@@ -115,7 +116,7 @@ export function createCocosAudioAdapter(options: CocosAudioAdapterOptions): Audi
         }
     }
 
-    function nextVersion(group: AudioGroup): number {
+    function nextVersion(group: EnumAudioGroup): number {
         const next = (versions.get(group) ?? 0) + 1;
         versions.set(group, next);
         return next;

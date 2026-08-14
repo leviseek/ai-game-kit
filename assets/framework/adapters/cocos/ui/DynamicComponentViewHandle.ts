@@ -1,5 +1,5 @@
 import { GComponent, GObject, UIPackage } from "fairygui-cc";
-import type { ViewModelNode } from "../../../contracts/ui/ViewModel";
+import type { IViewModelNode } from "../../../contracts/interfaces/IViewModelNode";
 import { wrapFairyGuiObject } from "./FairyGuiViewHandle";
 
 /**
@@ -29,7 +29,7 @@ export interface DynamicComponentMapping {
 
 /** 动态实例句柄：resolver 本身 + 绑定集回收能力（供渲染器 setBindings 后调用）。 */
 export interface DynamicInstanceResolver {
-    (name: string): ViewModelNode | undefined;
+    (name: string): IViewModelNode | undefined;
     /**
      * 回收不再活跃的实例：把当前绑定集的节点名推导为活跃实例 id 集，销毁
      * instances 中不在该集合的实例（对齐"单位随状态增删"语义）。
@@ -79,7 +79,7 @@ function ensureInstanceIn(
 /**
  * 通用动态组件节点解析器：静态节点按名查页面子元素；未命中时按 mappings 逐套
  * 懒创建组件实例加入各自容器（按 id 复用）。供需要运行时实例化实体集合的页面
- * （如战场单位 + 命中反馈特效）使用；渲染层只消费 ViewModelNode 契约，不感知
+ * （如战场单位 + 命中反馈特效）使用；渲染层只消费 IViewModelNode 契约，不感知
  * 创建细节。支持单套或数组映射：每套映射独立容器与实例表，节点名依次匹配，
  * 首套命中即返回（不跨套匹配）。返回值附加 prune 能力：渲染器每次 setBindings
  * 全量刷新后把当前节点名交给本句柄，逐套回收不再活跃的实例。
@@ -97,7 +97,7 @@ export function createDynamicComponentViewHandle(
         return state;
     });
 
-    const resolver: DynamicInstanceResolver = (name: string): ViewModelNode | undefined => {
+    const resolver: DynamicInstanceResolver = (name: string): IViewModelNode | undefined => {
         const child = view.getChild(name);
         if (child !== null) {
             return wrapFairyGuiObject(child);

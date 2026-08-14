@@ -1,4 +1,4 @@
-import type { Module } from "../../../framework";
+import type { IModule } from "../../../framework";
 import type { RpgPlayerState } from "../models";
 
 /**
@@ -24,7 +24,7 @@ export function createRpgStateStore(): RpgStateStore {
 }
 
 /** 跨场景状态模块：状态持有本身是纯闭包，模块生命周期无副作用。 */
-export function createRpgStateModule(store: RpgStateStore): Module {
+export function createRpgStateModule(store: RpgStateStore): IModule {
     return {
         id: "rpg.state",
         dependencies: [],

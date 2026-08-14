@@ -2,15 +2,15 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, test } from "bun:test";
 
-import type { ApplicationContext, Module, ModuleRuntimeState } from "../../../assets/framework";
+import type { IApplicationContext, IModule, EnumModuleRuntimeState } from "../../../assets/framework";
 import { MemoryLogger } from "../support/MemoryLogger";
 
 interface ModuleRunnerInstance {
     initialize(): Promise<void>;
-    getState(moduleId: string): ModuleRuntimeState | undefined;
+    getState(moduleId: string): EnumModuleRuntimeState | undefined;
 }
 
-type ModuleRunnerConstructor = new (modules: readonly Module[], context: ApplicationContext) => ModuleRunnerInstance;
+type ModuleRunnerConstructor = new (modules: readonly IModule[], context: IApplicationContext) => ModuleRunnerInstance;
 
 interface ModuleRunnerExports {
     readonly ModuleRunner: ModuleRunnerConstructor;
@@ -18,7 +18,7 @@ interface ModuleRunnerExports {
 
 const projectRoot = resolve(import.meta.dir, "../../..");
 const moduleRunnerFile = resolve(projectRoot, "assets/framework/application/ModuleRunner.ts");
-const context: ApplicationContext = {
+const context: IApplicationContext = {
     logger: new MemoryLogger(),
     state: "created",
 };
@@ -29,7 +29,7 @@ async function loadModuleRunner(): Promise<ModuleRunnerConstructor> {
     return exports.ModuleRunner;
 }
 
-function createModule(id: string, calls: string[], dependencies: readonly string[] = []): Module {
+function createModule(id: string, calls: string[], dependencies: readonly string[] = []): IModule {
     return {
         id,
         dependencies,
@@ -49,7 +49,7 @@ describe("ModuleRunner initialize rollback", () => {
         const logging = createModule("logging", calls);
         const inventory = createModule("inventory", calls, [logging.id]);
         const initializeFailure = new Error("gameplay initialize failed");
-        const gameplay: Module = {
+        const gameplay: IModule = {
             id: "gameplay",
             dependencies: [inventory.id],
             initialize: async () => {

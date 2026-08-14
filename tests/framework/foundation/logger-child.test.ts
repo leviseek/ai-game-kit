@@ -3,11 +3,11 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, test } from "bun:test";
 
-import type { LogContext, Logger, LogRecord } from "../../../assets/framework";
+import type { ILogContext, ILogger, ILogRecord } from "../../../assets/framework";
 
-type LogRecordSink = (record: LogRecord) => void;
+type LogRecordSink = (record: ILogRecord) => void;
 
-type CreateScopedLogger = (sink: LogRecordSink, scope?: string, context?: LogContext) => Logger;
+type CreateScopedLogger = (sink: LogRecordSink, scope?: string, context?: ILogContext) => ILogger;
 
 interface ScopedLoggerModule {
     readonly createScopedLogger?: CreateScopedLogger;
@@ -29,7 +29,7 @@ async function loadCreateScopedLogger(): Promise<CreateScopedLogger> {
 describe("child logger", () => {
     test("inherits its complete parent scope", async () => {
         const createScopedLogger = await loadCreateScopedLogger();
-        const records: LogRecord[] = [];
+        const records: ILogRecord[] = [];
         const root = createScopedLogger((record) => records.push(record), "application");
 
         root.child("inventory").child("sync").info("sync started");
@@ -39,7 +39,7 @@ describe("child logger", () => {
 
     test("merges parent, child and call context with nearest values winning", async () => {
         const createScopedLogger = await loadCreateScopedLogger();
-        const records: LogRecord[] = [];
+        const records: ILogRecord[] = [];
         const root = createScopedLogger((record) => records.push(record), "application", { applicationState: "running", shared: "parent" });
         const child = root.child("inventory", {
             moduleId: "inventory",
@@ -61,8 +61,8 @@ describe("child logger", () => {
 
     test("does not mutate its parent scope or context", async () => {
         const createScopedLogger = await loadCreateScopedLogger();
-        const records: LogRecord[] = [];
-        const parentContext: LogContext = {
+        const records: ILogRecord[] = [];
+        const parentContext: ILogContext = {
             applicationState: "running",
             shared: "parent",
         };

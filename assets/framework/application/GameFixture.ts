@@ -1,8 +1,9 @@
 import { Application } from "./Application";
-import type { ApplicationContext } from "../contracts/application/ApplicationContext";
-import type { Logger } from "../contracts/logging/Logger";
-import type { Module } from "../contracts/module/Module";
-import type { ResourceScope } from "../contracts/resource/ResourceScope";
+import type { IApplicationContext } from "../contracts/interfaces/IApplicationContext";
+import { EnumApplicationState } from "../contracts/enums/EnumApplicationState";
+import type { ILogger } from "../contracts/interfaces/ILogger";
+import type { IModule } from "../contracts/interfaces/IModule";
+import type { IResourceScope } from "../contracts/interfaces/IResourceScope";
 
 /**
  * 品类组合夹具公共契约：声明该品类需要的模块装配清单（modules）与资源作用域
@@ -15,7 +16,7 @@ import type { ResourceScope } from "../contracts/resource/ResourceScope";
  * 资源、全局注册等）。轻量、无状态模块天然满足该约束。
  *
  * 装配约定：模块如何获得 scope / 服务等依赖，由品类 assembly 经构造闭包注入
- * 到模块内部，契约不规定注入方式（ApplicationContext 只暴露 logger 与只读
+ * 到模块内部，契约不规定注入方式（IApplicationContext 只暴露 logger 与只读
  * 生命周期状态）。各品类夹具在 assembly 中自行组织"哪些模块拿到哪个 scope"，
  * 避免发明共享的全局注入机制。
  */
@@ -23,9 +24,9 @@ export interface GameFixture {
     /** 品类标识（如 "rpg"、"card"）。 */
     readonly id: string;
     /** 该品类模块装配清单：只包含已声明的模块，未声明的能力不参与装配。 */
-    readonly modules: readonly Module[];
+    readonly modules: readonly IModule[];
     /** 该品类声明的资源作用域；未声明资源能力时缺省不持有作用域。 */
-    readonly scope?: ResourceScope;
+    readonly scope?: IResourceScope;
     start(): Promise<void>;
     pause(): Promise<void>;
     resume(): Promise<void>;
@@ -35,14 +36,14 @@ export interface GameFixture {
 
 export interface GameFixtureOptions {
     readonly id: string;
-    readonly modules: readonly Module[];
-    readonly scope?: ResourceScope;
+    readonly modules: readonly IModule[];
+    readonly scope?: IResourceScope;
     /** 可选日志：缺省为静默日志，保持夹具装配过程无输出。 */
-    readonly logger?: Logger;
+    readonly logger?: ILogger;
 }
 
 // 失败回滚验证用的哨兵模块：start 阶段抛错，用于触发框架的启动失败回滚路径。
-const failingProbeModule: Module = {
+const failingProbeModule: IModule = {
     id: "__fixture_fail_probe__",
     dependencies: [],
     start: () => {
@@ -50,8 +51,8 @@ const failingProbeModule: Module = {
     },
 };
 
-function createQuietLogger(): Logger {
-    const logger: Logger = {
+function createQuietLogger(): ILogger {
+    const logger: ILogger = {
         debug: () => {},
         info: () => {},
         warn: () => {},
@@ -63,11 +64,11 @@ function createQuietLogger(): Logger {
 
 // 与框架 createApplicationContext 一致：context.state 始终为 "created"，
 // 应用自身的状态由 Application 内部维护，不写入 context。
-function createFixtureContext(logger: Logger): ApplicationContext {
+function createFixtureContext(logger: ILogger): IApplicationContext {
     return {
         logger,
-        get state() {
-            return "created" as const;
+        get state(): EnumApplicationState {
+            return EnumApplicationState.Created;
         },
     };
 }
@@ -79,7 +80,7 @@ function createFixtureContext(logger: Logger): ApplicationContext {
  * Application 实例与独立探针状态机——不改变夹具自身 app 的当前状态。
  * 本接缝只证明组合可回滚；真实品类模块的失败注入由各品类自身测试承担。
  */
-async function runFailRollbackProbe(modules: readonly Module[], context: ApplicationContext): Promise<void> {
+async function runFailRollbackProbe(modules: readonly IModule[], context: IApplicationContext): Promise<void> {
     const probe = new Application([...modules, failingProbeModule], context);
     let rejected = false;
 

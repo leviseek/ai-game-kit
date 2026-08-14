@@ -1,9 +1,8 @@
 import { Event, GComponent, GGraph, UIConfig, UIPackage } from "fairygui-cc";
-import type { IResourceProvider } from "../../../contracts/resource/ResourceProvider";
-import {
-    UI_LAYER_ORDER,
-    type UiLayer,
-} from "../../../contracts/ui/Navigation";
+import type { IResourceProvider } from "../../../contracts/interfaces/IResourceProvider";
+import { UI_LAYER_ORDER } from "../../../contracts/constants/UiLayer";
+
+import { EnumUiLayer } from "../../../contracts/enums/EnumUiLayer";
 import type { UiNavigator } from "../../../core/ui/UiNavigator";
 import { FuiViewCleanupError } from "../../../core/fui/FuiErrors";
 import type { GRootLike } from "./CocosUiRoot";
@@ -112,7 +111,7 @@ export function createClickableFairyGuiView(
 
 export interface FairyGuiPageHandle {
     readonly route: string;
-    readonly layer: UiLayer;
+    readonly layer: EnumUiLayer;
     readonly view: FairyGuiViewLike | undefined;
     readonly mounted: boolean;
     readonly disposed: boolean;
@@ -123,10 +122,10 @@ export interface FairyGuiPageHandle {
 export interface FairyGuiPageAdapter {
     /** 按 UI_LAYER_ORDER 建立七层 GRoot 容器，重复调用幂等（idempotent）。 */
     init(): void;
-    containerFor(layer: UiLayer): FairyGuiContainerLike | undefined;
+    containerFor(layer: EnumUiLayer): FairyGuiContainerLike | undefined;
     createPage(
         route: string,
-        layer: UiLayer,
+        layer: EnumUiLayer,
         options?: { packageName?: string; resName?: string },
     ): FairyGuiPageHandle;
     /** 按 route 查找未销毁的页面句柄；不存在返回 undefined。 */
@@ -150,14 +149,14 @@ interface HandleState {
 }
 
 /**
- * FairyGUI 页面适配器：按 UI_LAYER_ORDER 建立 GRoot 子容器，对齐 UiPage
+ * FairyGUI 页面适配器：按 UI_LAYER_ORDER 建立 GRoot 子容器，对齐 IUiPage
  * 生命周期（创建/挂载/卸载/销毁），并消费导航模态状态呈现遮罩。
  * fgui 类型只存在于本 Adapter 边界；页面与资源的映射由调用方显式传入。
  */
 export function createFairyGuiPageAdapter(
     options: FairyGuiPageAdapterOptions,
 ): FairyGuiPageAdapter {
-    const containers = new Map<UiLayer, FairyGuiContainerLike>();
+    const containers = new Map<EnumUiLayer, FairyGuiContainerLike>();
     const pages = new Set<FairyGuiPageHandle>();
     const handleStates = new WeakMap<FairyGuiPageHandle, HandleState>();
     // 遮罩节点：进入模态时挂到 system 层容器，收敛时整体移除。
@@ -172,7 +171,7 @@ export function createFairyGuiPageAdapter(
         if (disposed) {
             return;
         }
-        const system = containers.get("system");
+        const system = containers.get(EnumUiLayer.System);
         if (system === undefined) {
             return;
         }
@@ -191,7 +190,7 @@ export function createFairyGuiPageAdapter(
         }
     }
 
-    function requireContainer(layer: UiLayer): FairyGuiContainerLike {
+    function requireContainer(layer: EnumUiLayer): FairyGuiContainerLike {
         const container = containers.get(layer);
         if (container === undefined) {
             throw new Error(`FairyGUI layer container "${layer}" is not initialized`);
@@ -201,7 +200,7 @@ export function createFairyGuiPageAdapter(
 
     function makeHandle(
         route: string,
-        layer: UiLayer,
+        layer: EnumUiLayer,
         view: FairyGuiViewLike | undefined,
         error: unknown,
     ): FairyGuiPageHandle {
@@ -252,7 +251,7 @@ export function createFairyGuiPageAdapter(
 
         navigator.open = (
             route: string,
-            navOptions?: { layer?: UiLayer; blocking?: boolean },
+            navOptions?: { layer?: EnumUiLayer; blocking?: boolean },
         ) => {
             const result = (navigatorOriginalOpen as UiNavigator["open"])(
                 route,
@@ -296,7 +295,7 @@ export function createFairyGuiPageAdapter(
             }
             initialized = true;
         },
-        containerFor(layer: UiLayer): FairyGuiContainerLike | undefined {
+        containerFor(layer: EnumUiLayer): FairyGuiContainerLike | undefined {
             return containers.get(layer);
         },
         findPage(route: string): FairyGuiPageHandle | undefined {
@@ -305,7 +304,7 @@ export function createFairyGuiPageAdapter(
         },
         createPage(
             route: string,
-            layer: UiLayer,
+            layer: EnumUiLayer,
             pageOptions?: { packageName?: string; resName?: string },
         ): FairyGuiPageHandle {
             if (disposed) {
@@ -445,7 +444,7 @@ export function createFairyGuiPageAdapter(
             const errors: unknown[] = [];
             // 先移除遮罩，避免残留显示节点；移除失败被隔离，不阻断其余清理
             if (mask !== undefined) {
-                const system = containers.get("system");
+                const system = containers.get(EnumUiLayer.System);
                 try {
                     if (system !== undefined) {
                         system.removeChild(mask);

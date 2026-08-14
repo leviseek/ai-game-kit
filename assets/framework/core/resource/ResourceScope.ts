@@ -1,12 +1,13 @@
-import type { ResourceHandle, ResourceKey } from "../../contracts/resource/Resource";
-import type { ResourceScope } from "../../contracts/resource/ResourceScope";
+import type { IResourceHandle } from "../../contracts/interfaces/IResourceHandle";
+import type { IResourceKey } from "../../contracts/interfaces/IResourceKey";
+import type { IResourceScope } from "../../contracts/interfaces/IResourceScope";
 
 // 类型定义提升至 contracts/resource，此处 re-export 保持既有导入路径兼容
-export type { ResourceScope } from "../../contracts/resource/ResourceScope";
+export type { IResourceScope } from "../../contracts/interfaces/IResourceScope";
 
 export interface ResourceScopeRegistry {
     /** 创建共享同一全局引用计数与卸载判断的独立作用域。 */
-    createScope(): ResourceScope;
+    createScope(): IResourceScope;
 
     /** 查询某 Bundle 当前是否已无任何引用（可卸载），不依赖引擎全局状态。 */
     canUnload(bundle: string): boolean;
@@ -25,7 +26,7 @@ interface CountedResource {
     count: number;
 }
 
-function serializeKey(key: ResourceKey): string {
+function serializeKey(key: IResourceKey): string {
     // 与 LoadCoordinator 相同的键序化，保证同资源键去重一致
     return JSON.stringify([key.kind, key.bundle, key.path]);
 }
@@ -60,7 +61,7 @@ export function createResourceScopeRegistry(options: ResourceScopeRegistryOption
         }
     }
 
-    function markReferenced(key: ResourceKey): void {
+    function markReferenced(key: IResourceKey): void {
         const keyId = serializeKey(key);
         const existing = counts.get(keyId);
 
@@ -92,7 +93,7 @@ export function createResourceScopeRegistry(options: ResourceScopeRegistryOption
         }
     }
 
-    function releaseReferenced(key: ResourceKey): unknown {
+    function releaseReferenced(key: IResourceKey): unknown {
         const keyId = serializeKey(key);
         const entry = counts.get(keyId);
 
@@ -118,11 +119,11 @@ export function createResourceScopeRegistry(options: ResourceScopeRegistryOption
         return maybeUnloadIfNotOwned(key.bundle);
     }
 
-    function createScope(): ResourceScope {
-        const held = new Map<string, { handle: ResourceHandle; counted: boolean; pending: boolean }>();
+    function createScope(): IResourceScope {
+        const held = new Map<string, { handle: IResourceHandle; counted: boolean; pending: boolean }>();
         let released = false;
 
-        function settle(keyId: string, settled: ResourceHandle): void {
+        function settle(keyId: string, settled: IResourceHandle): void {
             if (released) {
                 return;
             }

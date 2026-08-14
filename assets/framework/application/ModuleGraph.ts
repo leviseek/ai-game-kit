@@ -1,20 +1,20 @@
-import type { Module } from "../contracts/module/Module";
+import type { IModule } from "../contracts/interfaces/IModule";
 
 /**
  * 模块依赖图：输入校验（空 id、重复 id、缺失依赖、循环依赖均抛错），
  * 产出按依赖拓扑序排列的 orderedModules（冻结数组）。
  */
 export class ModuleGraph {
-    readonly orderedModules: readonly Module[];
+    readonly orderedModules: readonly IModule[];
 
-    constructor(modules: readonly Module[]) {
+    constructor(modules: readonly IModule[]) {
         const registeredModules = [...modules];
-        const modulesById = new Map<string, Module>();
+        const modulesById = new Map<string, IModule>();
         const registrationIndex = new Map<string, number>();
 
         for (const [index, module] of registeredModules.entries()) {
             if (module.id.trim().length === 0) {
-                throw new Error("Module id cannot be empty");
+                throw new Error("IModule id cannot be empty");
             }
 
             if (modulesById.has(module.id)) {
@@ -26,7 +26,7 @@ export class ModuleGraph {
         }
 
         const dependencyCount = new Map<string, number>();
-        const dependents = new Map<string, Module[]>();
+        const dependents = new Map<string, IModule[]>();
 
         for (const module of registeredModules) {
             dependencyCount.set(module.id, 0);
@@ -36,7 +36,7 @@ export class ModuleGraph {
         for (const module of registeredModules) {
             for (const dependencyId of module.dependencies) {
                 if (!modulesById.has(dependencyId)) {
-                    throw new Error(`Module "${module.id}" depends on missing module "${dependencyId}"`);
+                    throw new Error(`IModule "${module.id}" depends on missing module "${dependencyId}"`);
                 }
 
                 dependencyCount.set(module.id, (dependencyCount.get(module.id) ?? 0) + 1);
@@ -45,7 +45,7 @@ export class ModuleGraph {
         }
 
         const readyModules = registeredModules.filter((module) => dependencyCount.get(module.id) === 0);
-        const orderedModules: Module[] = [];
+        const orderedModules: IModule[] = [];
 
         while (readyModules.length > 0) {
             const module = readyModules.shift();
@@ -70,7 +70,7 @@ export class ModuleGraph {
         }
 
         if (orderedModules.length !== registeredModules.length) {
-            throw new Error("Module dependency graph contains a cycle");
+            throw new Error("IModule dependency graph contains a cycle");
         }
 
         this.orderedModules = Object.freeze(orderedModules);

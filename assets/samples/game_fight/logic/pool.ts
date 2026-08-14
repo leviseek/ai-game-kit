@@ -1,4 +1,4 @@
-import type { Module } from "../../../framework";
+import type { IModule } from "../../../framework";
 import { createObjectPool } from "../../../framework";
 
 /**
@@ -55,7 +55,7 @@ export function createFightEffectPool(): FightEffectPool {
  * 对象池模块：组合根创建对象池并注入战斗；模块只登记引用，
  * 池的借出/归还由战斗控制器驱动，模块生命周期无副作用。
  */
-export function createFightPoolModule(pool: FightEffectPool): Module {
+export function createFightPoolModule(pool: FightEffectPool): IModule {
     return {
         id: "fight.pool",
         dependencies: [],

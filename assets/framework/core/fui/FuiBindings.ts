@@ -2,23 +2,24 @@
  * FuiView 声明式绑定装饰器（legacy 语义，experimentalDecorators 已开）。
  * 装饰器只在类定义期收集元数据（登记组件 / 收集点击），不做实际绑定；
  * 实际字段注入与点击注册由 FuiView.__attach 在组件创建后统一执行
- * （见 contracts/ui/FuiView.ts 与 adapters/cocos/ui/FuiViewHost.ts）。
+ * （见 contracts/interfaces/FuiView.ts 与 adapters/cocos/ui/FuiViewHost.ts）。
  */
 
-import type { FuiClickMeta, FuiView } from "../../contracts/ui/FuiView";
+import type { IFuiClickMeta } from "../../contracts/interfaces/IFuiClickMeta";
+import type { IFuiView } from "../../contracts/interfaces/IFuiView";
 import { getFuiComponentRegistry, type FuiComponentUrl } from "./FuiComponentRegistry";
 
 /** @FClick 元数据原型挂载键：同一组件原型链上收集的点击声明。 */
 const FUI_CLICK_META_KEY = "__fuiClickMeta__";
 
 /** 读取原型上的 @FClick 元数据（含基类继承链，最内层优先）。 */
-export function collectClickMeta(ctor: new () => unknown): readonly FuiClickMeta[] {
-    const out: FuiClickMeta[] = [];
+export function collectClickMeta(ctor: new () => unknown): readonly IFuiClickMeta[] {
+    const out: IFuiClickMeta[] = [];
     let proto: unknown = ctor.prototype;
     while (proto !== null) {
         const meta = (proto as Record<string, unknown>)[FUI_CLICK_META_KEY];
         if (Array.isArray(meta)) {
-            out.unshift(...(meta as FuiClickMeta[]));
+            out.unshift(...(meta as IFuiClickMeta[]));
         }
         proto = Object.getPrototypeOf(proto);
     }
@@ -40,7 +41,7 @@ export function FUIBind<N extends string>(url: FuiComponentUrl, fields: Readonly
     return (ctor: new () => unknown): void => {
         const registry = getFuiComponentRegistry();
         registry.register(url, {
-            ctor: ctor as new () => FuiView<unknown, unknown>,
+            ctor: ctor as new () => IFuiView<unknown, unknown>,
             fields: fields as Readonly<Record<string, string>>,
             clicks: collectClickMeta(ctor),
             runtimeBinding: options.runtimeBinding,
@@ -55,10 +56,10 @@ export function FUIBind<N extends string>(url: FuiComponentUrl, fields: Readonly
  */
 export function FClick<N extends string>(nodeName: N): MethodDecorator {
     return ((target: object, _propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<unknown>): TypedPropertyDescriptor<unknown> | void => {
-        const methodRef = descriptor.value as FuiClickMeta["methodRef"];
+        const methodRef = descriptor.value as IFuiClickMeta["methodRef"];
         const proto = target as Record<string, unknown>;
         const existing = proto[FUI_CLICK_META_KEY];
-        const meta: FuiClickMeta[] = Array.isArray(existing) ? existing : [];
+        const meta: IFuiClickMeta[] = Array.isArray(existing) ? existing : [];
         meta.push({ nodeName, methodRef });
         proto[FUI_CLICK_META_KEY] = meta;
     }) as MethodDecorator;

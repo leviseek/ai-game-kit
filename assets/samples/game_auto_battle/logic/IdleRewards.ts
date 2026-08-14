@@ -1,4 +1,4 @@
-import type { Module, TimeSource } from "../../../framework";
+import type { IModule, ITimeSource } from "../../../framework";
 import type { AutoBattleLineup } from "../models";
 import type { IdleOfflineSettlement, IdleRewardState } from "../models";
 
@@ -50,7 +50,7 @@ export interface IdleRewardsHandle {
 }
 
 export interface IdleRewardsHandleOptions {
-    readonly clock: TimeSource;
+    readonly clock: ITimeSource;
     readonly rateSource?: IdleRateSource;
 }
 
@@ -102,7 +102,7 @@ export function createIdleRewardsHandle(options: IdleRewardsHandleOptions): Idle
  * 挂机收益模块：组合根创建控制器并注入；模块只登记引用，不在 dispose 释放
  * 共享控制器——组合根的 dispose 统一负责（对齐 GameFixture 幂等契约）。
  */
-export function createAutoBattleIdleRewardsModule(idleRewards: IdleRewardsHandle): Module {
+export function createAutoBattleIdleRewardsModule(idleRewards: IdleRewardsHandle): IModule {
     return {
         id: "auto_battle.idle_rewards",
         dependencies: [],

@@ -5,7 +5,7 @@ import { describe, expect, test } from "bun:test";
 
 import type { GameFixture } from "../../../assets/game/fixture/GameFixture";
 import { createResourceProvider } from "../../../assets/framework";
-import type { IResourceProvider, InputSample, InputSource, PlatformStorage, SceneFlow, UiNavigator } from "../../../assets/framework";
+import type { IResourceProvider, IInputSample, IInputSource, IPlatformStorage, SceneFlow, UiNavigator } from "../../../assets/framework";
 import { MemoryPlatform } from "../../../assets/framework/adapters/memory/MemoryPlatform";
 
 const projectRoot = resolve(import.meta.dir, "../../..");
@@ -31,11 +31,11 @@ interface RpgFixtureOptions {
     /** 资源提供者：观察跨场景资源按作用域释放。 */
     readonly provider?: IResourceProvider;
     /** 平台存储后端：观察版本化存档写入/读取。 */
-    readonly storage?: PlatformStorage;
+    readonly storage?: IPlatformStorage;
     /** 场景激活接缝：记录真实场景切换。 */
     readonly activateScene?: (sceneId: string) => Promise<void>;
     /** 底层输入源：注入以推送底层输入事件。 */
-    readonly inputSource?: InputSource;
+    readonly inputSource?: IInputSource;
 }
 
 /** 夹具暴露的协作钩子：测试驱动跨场景状态、场景流、UI、输入与存档。 */
@@ -56,7 +56,7 @@ interface RpgFixtureHooks {
         readonly activeContext: string;
         setActiveContext(context: string): void;
         push(sourceId: string, pressed: boolean, value?: number): void;
-        readonly samples: readonly InputSample<string>[];
+        readonly samples: readonly IInputSample<string>[];
     };
     /** 版本化存档仓库：玩家状态可版本化往返。 */
     readonly storage: {

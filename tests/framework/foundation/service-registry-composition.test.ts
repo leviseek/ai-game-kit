@@ -92,7 +92,7 @@ interface GreeterService {
     readonly greet: (name: string) => string;
 }
 
-// 业务对象只依赖服务契约：服务经构造显式注入，不访问注册表或 ApplicationContext。
+// 业务对象只依赖服务契约：服务经构造显式注入，不访问注册表或 IApplicationContext。
 class GreetingController {
     private readonly greeter: GreeterService;
 

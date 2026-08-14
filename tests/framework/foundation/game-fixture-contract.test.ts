@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, test } from "bun:test";
 
-import type { Module } from "../../../assets/framework";
+import type { IModule } from "../../../assets/framework";
 import { createGameFixture, type GameFixture } from "../../../assets/game/fixture/GameFixture";
 
 const projectRoot = resolve(import.meta.dir, "../../..");
@@ -12,7 +12,7 @@ const contractFile = resolve(projectRoot, "assets/framework/application/GameFixt
 
 const lifecycleSeams = ["start", "pause", "resume", "failRollback", "dispose"] as const;
 
-function createRecordingModule(id: string, log: string[]): Module {
+function createRecordingModule(id: string, log: string[]): IModule {
     return {
         id,
         dependencies: [],

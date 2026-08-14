@@ -1,8 +1,8 @@
 import * as cc from "cc";
 import { UIPackage } from "fairygui-cc";
 import { createResourceProvider } from "../../../core/resource/ResourceProvider";
-import type { ResourceKey } from "../../../contracts/resource/Resource";
-import type { IResourceProvider } from "../../../contracts/resource/ResourceProvider";
+import type { IResourceKey } from "../../../contracts/interfaces/IResourceKey";
+import type { IResourceProvider } from "../../../contracts/interfaces/IResourceProvider";
 
 // 结构化的引擎接缝：只依赖本适配器用到的能力，便于测试注入 mock
 interface CocosBundleLike {
@@ -44,8 +44,8 @@ function defaultUiPackage(): UIPackageLike {
     };
 }
 
-function createCocosLoader(manager: CocosAssetManagerLike, uiPackage: UIPackageLike, registeredPackages: Map<string, string[]>): (key: ResourceKey) => Promise<unknown> {
-    return (key: ResourceKey) =>
+function createCocosLoader(manager: CocosAssetManagerLike, uiPackage: UIPackageLike, registeredPackages: Map<string, string[]>): (key: IResourceKey) => Promise<unknown> {
+    return (key: IResourceKey) =>
         new Promise((resolve, reject) => {
             manager.loadBundle(key.bundle, (bundleError, bundle) => {
                 if (bundleError) {

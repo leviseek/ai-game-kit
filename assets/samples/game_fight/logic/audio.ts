@@ -1,19 +1,19 @@
-import type { AudioBackend, Module } from "../../../framework";
-import { createAudioService, type AudioService } from "../../../framework";
+import type { IAudioBackend, IModule } from "../../../framework";
+import { createAudioService, EnumAudioGroup, type IAudioService } from "../../../framework";
 
 /**
  * 音频句柄：组合根创建音频服务与播放作用域，命中时经作用域播放 sfx，
  * dispose 时作用域释放停止命中音频、服务释放后端。模块只登记引用。
  */
 export interface FightAudioHandle {
-    readonly service: AudioService;
+    readonly service: IAudioService;
     /** 命中音效：战斗命中回调触发播放。 */
     playHit(): void;
     dispose(): void;
 }
 
 /** 缺省降级音频后端：不可用，所有操作均为 no-op，夹具缺省不触达真实音频。 */
-function createUnavailableBackend(): AudioBackend {
+function createUnavailableBackend(): IAudioBackend {
     const noop = (): void => {};
     return {
         available: false,
@@ -26,7 +26,7 @@ function createUnavailableBackend(): AudioBackend {
 }
 
 export interface FightAudioOptions {
-    readonly backend?: AudioBackend;
+    readonly backend?: IAudioBackend;
 }
 
 export function createFightAudio(options: FightAudioOptions = {}): FightAudioHandle {
@@ -38,7 +38,7 @@ export function createFightAudio(options: FightAudioOptions = {}): FightAudioHan
         service,
         playHit: () => {
             // 命中音效：经作用域播放，作用域释放时停止该分组
-            scope.play("sfx", { bundle: "samples", path: "sfx/hit" });
+            scope.play(EnumAudioGroup.Sfx, { bundle: "samples", path: "sfx/hit" });
         },
         dispose: () => {
             scope.release();
@@ -47,7 +47,7 @@ export function createFightAudio(options: FightAudioOptions = {}): FightAudioHan
     };
 }
 
-export function createFightAudioModule(audio: FightAudioHandle): Module {
+export function createFightAudioModule(audio: FightAudioHandle): IModule {
     return {
         id: "fight.audio",
         dependencies: [],

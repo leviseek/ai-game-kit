@@ -1,4 +1,4 @@
-import type { Module, SceneFlow } from "../../../framework";
+import type { IModule, SceneFlow } from "../../../framework";
 
 /**
  * 场景流转模块：组合根创建的 SceneFlow 负责跨场景资源加载与作用域释放，
@@ -7,7 +7,7 @@ import type { Module, SceneFlow } from "../../../framework";
  * 统一负责能力释放（避免 failRollback 探针复用模块实例时提前销毁夹具
  * 自身能力，对齐 GameFixture 幂等契约）。
  */
-export function createRpgSceneModule(flow: SceneFlow): Module {
+export function createRpgSceneModule(flow: SceneFlow): IModule {
     return {
         id: "rpg.scene",
         dependencies: [],

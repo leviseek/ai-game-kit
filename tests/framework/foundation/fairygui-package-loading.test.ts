@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { createResourceProvider } from "../../../assets/framework/core/resource/ResourceProvider";
-import type { ResourceKey } from "../../../assets/framework/contracts/resource/Resource";
+import type { IResourceKey } from "../../../assets/framework/contracts/interfaces/IResourceKey";
 
 interface ControlledDeferred {
     readonly resolve: (value: unknown) => void;
@@ -9,20 +9,20 @@ interface ControlledDeferred {
 }
 
 interface ControlledLoader {
-    readonly calls: readonly ResourceKey[];
+    readonly calls: readonly IResourceKey[];
     readonly pending: readonly ControlledDeferred[];
-    readonly loader: (key: ResourceKey) => Promise<unknown>;
+    readonly loader: (key: IResourceKey) => Promise<unknown>;
 }
 
-function packageKey(path: string, bundle = "ui"): ResourceKey {
+function packageKey(path: string, bundle = "ui"): IResourceKey {
     return { kind: "fairygui-package", bundle, path };
 }
 
 function createControlledLoader(): ControlledLoader {
-    const calls: ResourceKey[] = [];
+    const calls: IResourceKey[] = [];
     const pending: ControlledDeferred[] = [];
 
-    const loader = (key: ResourceKey): Promise<unknown> => {
+    const loader = (key: IResourceKey): Promise<unknown> => {
         calls.push(key);
         return new Promise((resolve, reject) => {
             pending.push({ resolve, reject });

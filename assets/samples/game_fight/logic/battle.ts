@@ -1,4 +1,4 @@
-import type { Module } from "../../../framework";
+import type { IModule } from "../../../framework";
 import type { FightBattleState, FightFrameData, FightHitbox } from "../models";
 import type { FightEffect } from "./pool";
 import type { FightEffectPool } from "./pool";
@@ -164,7 +164,7 @@ export function createFightBattle(options: FightBattleOptions): FightBattleHandl
  * 战斗模块：组合根创建战斗控制器并注入对象池与音频回调；模块只登记引用，
  * 帧推进由测试经 fixture.battle.tick 驱动，模块生命周期无副作用。
  */
-export function createFightBattleModule(battle: FightBattleHandle): Module {
+export function createFightBattleModule(battle: FightBattleHandle): IModule {
     return {
         id: "fight.battle",
         dependencies: [],

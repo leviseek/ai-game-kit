@@ -2,7 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { FClick, FUIBind, collectClickMeta } from "../../../assets/framework/core/fui/FuiBindings";
 import { FuiBindingError, FuiComponentRegistrationError, FuiViewCleanupError } from "../../../assets/framework/core/fui/FuiErrors";
 import { getFuiComponentRegistry, type FuiComponentUrl } from "../../../assets/framework/core/fui/FuiComponentRegistry";
-import { FuiView, type FuiViewSeam } from "../../../assets/framework/contracts/ui/FuiView";
+import { FuiView } from "../../../assets/framework/core/fui/FuiView";
+import type { IFuiViewSeam } from "../../../assets/framework/contracts/interfaces/IFuiViewSeam";
 import { createStore } from "../../../assets/framework/core/state/Store";
 
 // 隔离的测试注册表：登记前先清空全局键，使本用例在全新空注册表上登记（不污染
@@ -38,12 +39,12 @@ function loginReducer(state: LoginState, action: LoginAction): LoginState {
 
 /** 测试用视图接缝：按名返回可写文本节点；缺失时抛 FuiBindingError（对齐 seam 契约）。 */
 function makeSeam(children: Record<string, { text: string; visible: boolean }>): {
-    seam: FuiViewSeam;
+    seam: IFuiViewSeam;
     children: Record<string, { text: string; visible: boolean }>;
     clicks: Array<{ name: string; handler: () => void }>;
 } {
     const clicks: Array<{ name: string; handler: () => void }> = [];
-    const seam: FuiViewSeam = {
+    const seam: IFuiViewSeam = {
         child(name: string) {
             const child = children[name];
             if (child === undefined) {

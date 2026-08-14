@@ -1,6 +1,6 @@
 import * as cc from "cc";
 import { SaveCorruptionError } from "../../../core/storage/VersionedStorage";
-import type { PlatformStorage } from "../../../contracts/platform/Platform";
+import type { IPlatformStorage } from "../../../contracts/interfaces/IPlatformStorage";
 
 // localStorage 形状接缝：与 cc.sys.localStorage 同构，便于测试注入与替换平台后端。
 export interface LocalStorageLike {
@@ -14,8 +14,8 @@ export interface CocosStorageAdapterOptions {
     readonly localStorage?: LocalStorageLike;
 }
 
-// 平台存储适配器：实现 PlatformStorage 契约，并暴露恢复默认/备份恢复路径。
-export interface CocosStorageAdapter extends PlatformStorage {
+// 平台存储适配器：实现 IPlatformStorage 契约，并暴露恢复默认/备份恢复路径。
+export interface CocosStorageAdapter extends IPlatformStorage {
     /** 恢复默认：删除正式键及配套临时/备份键，使读取回到"不存在"，只影响该键。 */
     restoreDefault(key: string): Promise<void>;
     /** 备份恢复：把最近一次有效备份提升为正式值并清理备份/临时键；无可用备份抛 SaveCorruptionError。 */

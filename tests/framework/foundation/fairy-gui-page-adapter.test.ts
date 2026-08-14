@@ -4,7 +4,8 @@ import { describe, expect, mock, test } from "bun:test";
 
 import { createFairyGuiMock } from "./helpers/fairygui-mock";
 import { FuiViewCleanupError } from "../../../assets/framework/core/fui/FuiErrors";
-import { UI_LAYER_ORDER, type UiLayer } from "../../../assets/framework/contracts/ui/Navigation";
+import { UI_LAYER_ORDER } from "../../../assets/framework/contracts/constants/UiLayer";
+import type { EnumUiLayer } from "../../../assets/framework/contracts/enums/EnumUiLayer";
 
 // 3.2 实现值导入 fairygui-cc，统一使用共享 fixture 避免全量运行解析失败。
 // bun 的 mock.module 全局共享且首个注册生效，所有 mock 该模块的文件须注册相同内容。
@@ -43,7 +44,7 @@ interface FairyGuiPageAdapterOptions {
 
 interface FairyGuiPageHandle {
     readonly route: string;
-    readonly layer: UiLayer;
+    readonly layer: EnumUiLayer;
     readonly view: FairyGuiViewLike | undefined;
     readonly mounted: boolean;
     readonly disposed: boolean;
@@ -54,8 +55,8 @@ interface FairyGuiPageHandle {
 interface FairyGuiPageAdapter {
     /** 按 UI_LAYER_ORDER 建立七层 GRoot 容器，幂等。 */
     init(): void;
-    containerFor(layer: UiLayer): FairyGuiContainerLike | undefined;
-    createPage(route: string, layer: UiLayer, options?: { packageName?: string; resName?: string }): FairyGuiPageHandle;
+    containerFor(layer: EnumUiLayer): FairyGuiContainerLike | undefined;
+    createPage(route: string, layer: EnumUiLayer, options?: { packageName?: string; resName?: string }): FairyGuiPageHandle;
     mount(page: FairyGuiPageHandle): void;
     /** 移除挂载；重复卸载幂等。 */
     unmount(page: FairyGuiPageHandle): void;

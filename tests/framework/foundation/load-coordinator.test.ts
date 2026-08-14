@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { createLoadCoordinator, type LoadCoordinator, type ResourceHandle, type ResourceKey } from "../../../assets/framework/core/resource/LoadCoordinator";
+import { createLoadCoordinator, type LoadCoordinator, type IResourceHandle, type IResourceKey } from "../../../assets/framework/core/resource/LoadCoordinator";
 
 interface ControlledDeferred {
     readonly resolve: (value: unknown) => void;
@@ -8,20 +8,20 @@ interface ControlledDeferred {
 }
 
 interface ControlledLoader {
-    readonly calls: readonly ResourceKey[];
+    readonly calls: readonly IResourceKey[];
     readonly pending: readonly ControlledDeferred[];
-    readonly loader: (key: ResourceKey) => Promise<unknown>;
+    readonly loader: (key: IResourceKey) => Promise<unknown>;
 }
 
-function assetKey(path: string, bundle = "common"): ResourceKey {
+function assetKey(path: string, bundle = "common"): IResourceKey {
     return { kind: "asset", bundle, path };
 }
 
 function createControlledLoader(): ControlledLoader {
-    const calls: ResourceKey[] = [];
+    const calls: IResourceKey[] = [];
     const pending: ControlledDeferred[] = [];
 
-    const loader = (key: ResourceKey): Promise<unknown> => {
+    const loader = (key: IResourceKey): Promise<unknown> => {
         calls.push(key);
         return new Promise((resolve, reject) => {
             pending.push({ resolve, reject });
@@ -38,8 +38,8 @@ describe("LoadCoordinator concurrent deduplication", () => {
         const { loader, calls, pending } = createControlledLoader();
         const coordinator: LoadCoordinator = createLoadCoordinator({ loader });
 
-        const first: ResourceHandle = coordinator.load(assetKey("a.png"));
-        const second: ResourceHandle = coordinator.load(assetKey("a.png"));
+        const first: IResourceHandle = coordinator.load(assetKey("a.png"));
+        const second: IResourceHandle = coordinator.load(assetKey("a.png"));
 
         expect(calls).toHaveLength(1);
         expect(first).not.toBe(second);

@@ -1,4 +1,5 @@
-import type { LogContext, LogRecord } from "../../contracts/logging/Logger";
+import type { ILogContext } from "../../contracts/interfaces/ILogContext";
+import type { ILogRecord } from "../../contracts/interfaces/ILogRecord";
 
 const SENSITIVE_KEY_PATTERNS = [/token$/i, /secret$/i, /password$/i, /api[._-]?key$/i];
 
@@ -33,14 +34,14 @@ function redactValue(value: unknown, seen: Set<object>): unknown {
 
     seen.add(value);
 
-    const result = Array.isArray(value) ? value.map((item) => redactValue(item, seen)) : redactContext(value as LogContext, seen);
+    const result = Array.isArray(value) ? value.map((item) => redactValue(item, seen)) : redactContext(value as ILogContext, seen);
 
     seen.delete(value);
 
     return result;
 }
 
-export function redactContext(context: LogContext, seen = new Set<object>()): LogContext {
+export function redactContext(context: ILogContext, seen = new Set<object>()): ILogContext {
     const result: Record<string, unknown> = {};
 
     for (const key of Object.keys(context)) {
@@ -50,7 +51,7 @@ export function redactContext(context: LogContext, seen = new Set<object>()): Lo
     return result;
 }
 
-export function redactRecord(record: LogRecord): LogRecord {
+export function redactRecord(record: ILogRecord): ILogRecord {
     return {
         ...record,
         context: redactContext(record.context),

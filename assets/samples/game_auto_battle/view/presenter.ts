@@ -1,4 +1,4 @@
-import type { ViewModelNode } from "../../../framework";
+import type { IViewModelNode } from "../../../framework";
 import { createViewModelRenderer, GameClock } from "../../../framework";
 import type { GameFixture } from "../../../game/fixture/GameFixture";
 import type { GamePresenter } from "../../../game/lobby/presenter";
@@ -29,7 +29,7 @@ const ENTRANCE_PHASE_MS = 750;
  * 渲染之上（每帧投影 → play → step），动画终态回到 state 姿态。restart 重置
  * 回 VS 阶段并重放覆盖层。dispose 清理渲染器、动画器、VS 覆盖层与时钟驱动。
  */
-export function createAutoBattlePresenter(fixture: GameFixture, node: (name: string) => ViewModelNode | undefined): GamePresenter {
+export function createAutoBattlePresenter(fixture: GameFixture, node: (name: string) => IViewModelNode | undefined): GamePresenter {
     const autoBattle = fixture as AutoBattleFixture;
 
     // 表现时间控制点：动画/阶段/驱动节拍的统一时间源（全局 rate/pause/jump 经它控制）。

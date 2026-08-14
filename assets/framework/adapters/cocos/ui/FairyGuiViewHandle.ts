@@ -1,15 +1,13 @@
 import { Event, GComponent, GObject } from "fairygui-cc";
-import type { ViewModelNode } from "../../../contracts/ui/ViewModel";
-import type {
-    TypedButtonNode,
-    TypedComponentNode,
-    TypedImageNode,
-    TypedInputNode,
-    TypedListNode,
-    TypedNode,
-    TypedProgressNode,
-    TypedTextNode,
-} from "../../../contracts/ui/TypedNode";
+import type { IViewModelNode } from "../../../contracts/interfaces/IViewModelNode";
+import type { ITypedButtonNode } from "../../../contracts/interfaces/ITypedButtonNode";
+import type { ITypedComponentNode } from "../../../contracts/interfaces/ITypedComponentNode";
+import type { ITypedImageNode } from "../../../contracts/interfaces/ITypedImageNode";
+import type { ITypedInputNode } from "../../../contracts/interfaces/ITypedInputNode";
+import type { ITypedListNode } from "../../../contracts/interfaces/ITypedListNode";
+import type { ITypedNode } from "../../../contracts/interfaces/ITypedNode";
+import type { ITypedProgressNode } from "../../../contracts/interfaces/ITypedProgressNode";
+import type { ITypedTextNode } from "../../../contracts/interfaces/ITypedTextNode";
 
 /** 引擎无关的能力 kind（与 gen-types 的 ElementKind 对应，业务层不持 fgui 类型）。 */
 export type FuiElementKind =
@@ -37,11 +35,11 @@ function isClickable(obj: GObject): obj is GObject & { on: GObject["on"] } {
  * （text/value/on），不依赖 GTextField 等类引用（mock 环境无此类）。
  * 能力缺失时对应操作安全降级（如进度写值跳过），对齐 wrapFairyGuiObject 容错风格。
  */
-export function wrapFairyGuiObjectTyped(child: GObject, kind: FuiElementKind): TypedNode {
+export function wrapFairyGuiObjectTyped(child: GObject, kind: FuiElementKind): ITypedNode {
     switch (kind) {
         case "button": {
             const base = toTextNode(child);
-            const node: TypedButtonNode = {
+            const node: ITypedButtonNode = {
                 ...base,
                 onClick(handler: () => void): void {
                     if (isClickable(child)) {
@@ -53,7 +51,7 @@ export function wrapFairyGuiObjectTyped(child: GObject, kind: FuiElementKind): T
         }
         case "input": {
             const base = toTextNode(child);
-            const node: TypedInputNode = {
+            const node: ITypedInputNode = {
                 ...base,
                 readText(): string {
                     return hasText(child) ? child.text : "";
@@ -65,7 +63,7 @@ export function wrapFairyGuiObjectTyped(child: GObject, kind: FuiElementKind): T
         case "richText":
             return toTextNode(child);
         case "progress": {
-            const node: TypedProgressNode = {
+            const node: ITypedProgressNode = {
                 setVisible(visible: boolean): void {
                     child.visible = visible;
                 },
@@ -78,7 +76,7 @@ export function wrapFairyGuiObjectTyped(child: GObject, kind: FuiElementKind): T
             return node;
         }
         case "image": {
-            const node: TypedImageNode = {
+            const node: ITypedImageNode = {
                 setVisible(visible: boolean): void {
                     child.visible = visible;
                 },
@@ -86,7 +84,7 @@ export function wrapFairyGuiObjectTyped(child: GObject, kind: FuiElementKind): T
             return node;
         }
         case "list": {
-            const node: TypedListNode = {
+            const node: ITypedListNode = {
                 setVisible(visible: boolean): void {
                     child.visible = visible;
                 },
@@ -96,7 +94,7 @@ export function wrapFairyGuiObjectTyped(child: GObject, kind: FuiElementKind): T
         case "movieclip":
         case "component":
         default: {
-            const node: TypedComponentNode = {
+            const node: ITypedComponentNode = {
                 setVisible(visible: boolean): void {
                     child.visible = visible;
                 },
@@ -112,7 +110,7 @@ export function wrapFairyGuiObjectTyped(child: GObject, kind: FuiElementKind): T
 }
 
 /** 文本能力包装（text/richText 共用）：写 text 时经 setText 语义，读经 text()。 */
-function toTextNode(child: GObject): TypedTextNode {
+function toTextNode(child: GObject): ITypedTextNode {
     return {
         setText(value: string): void {
             if (hasText(child)) {
@@ -129,12 +127,12 @@ function toTextNode(child: GObject): TypedTextNode {
 }
 
 /**
- * 把单个 fgui 对象包装为 ViewModelNode。进度语义：renderer 契约传归一化 0..1，
+ * 把单个 fgui 对象包装为 IViewModelNode。进度语义：renderer 契约传归一化 0..1，
  * 此处映射到进度节点 value（0..100）；目标无 value 属性（非 GProgressBar/GSlider）
  * 时容错跳过，对齐未知节点容错。不依赖 GProgressBar 类引用（mock 环境无此类），
  * 经 value 属性探测。点击经 GObject.on 注册监听（追加语义，注册方需避免重复）。
  */
-export function wrapFairyGuiObject(child: GObject): ViewModelNode {
+export function wrapFairyGuiObject(child: GObject): IViewModelNode {
     return {
         setText: (value: string) => {
             child.text = value;
@@ -163,14 +161,14 @@ export function wrapFairyGuiObject(child: GObject): ViewModelNode {
 }
 
 /**
- * 视图节点接缝：包装 fgui 页面根组件按名查找子元素并暴露 ViewModelNode。
- * fgui 类型只存在于本 Adapter 边界；渲染器与游戏层只消费 ViewModelNode 契约。
+ * 视图节点接缝：包装 fgui 页面根组件按名查找子元素并暴露 IViewModelNode。
+ * fgui 类型只存在于本 Adapter 边界；渲染器与游戏层只消费 IViewModelNode 契约。
  * 节点名不存在时返回 undefined（渲染器按契约跳过该绑定）。
  */
 export function createFairyGuiViewHandle(
     view: GComponent,
-): (name: string) => ViewModelNode | undefined {
-    return (name: string): ViewModelNode | undefined => {
+): (name: string) => IViewModelNode | undefined {
+    return (name: string): IViewModelNode | undefined => {
         const child = view.getChild(name);
         if (child === null) {
             return undefined;

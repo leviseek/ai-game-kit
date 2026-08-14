@@ -4,7 +4,7 @@ import { pathToFileURL } from "node:url";
 import { describe, expect, test } from "bun:test";
 
 import type { GameFixture } from "../../../assets/game/fixture/GameFixture";
-import type { PlatformStorage, TimeSource, UiNavigator } from "../../../assets/framework";
+import type { IPlatformStorage, ITimeSource, UiNavigator } from "../../../assets/framework";
 import { MemoryPlatform } from "../../../assets/framework/adapters/memory/MemoryPlatform";
 
 const projectRoot = resolve(import.meta.dir, "../../..");
@@ -36,7 +36,7 @@ interface TycoonEconomicState {
 }
 
 /** 可控模拟时钟：now() 返回当前模拟时间，只经 advance 推进，与真实时钟无关。 */
-interface TycoonClock extends TimeSource {
+interface TycoonClock extends ITimeSource {
     advance(milliseconds: number): void;
 }
 
@@ -50,7 +50,7 @@ interface TycoonFixtureOptions {
     /** 配置内容：驱动产品数值与初始现金；缺省为夹具内建缺省配置。 */
     readonly configContent?: Record<string, unknown>;
     /** 平台存储后端：缺省为内存存储；观察版本化存档写入/读取。 */
-    readonly storage?: PlatformStorage;
+    readonly storage?: IPlatformStorage;
 }
 
 /** 夹具暴露的协作钩子：测试驱动调度、生产、经济、配置、存档与分层 UI。 */
@@ -487,7 +487,7 @@ describe.skipIf(!assemblyExists)("Tycoon fixture composition capabilities", () =
 
     test("a failing storage write rejects the save without swallowing the error", async () => {
         const createTycoonFixture = await loadCreateTycoonFixture();
-        const failingStorage: PlatformStorage = {
+        const failingStorage: IPlatformStorage = {
             async get(_key: string): Promise<string | null> {
                 return null;
             },

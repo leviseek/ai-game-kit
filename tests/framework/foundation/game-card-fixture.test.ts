@@ -4,7 +4,7 @@ import { pathToFileURL } from "node:url";
 import { describe, expect, test } from "bun:test";
 
 import type { GameFixture } from "../../../assets/game/fixture/GameFixture";
-import type { InputSample, InputSource, UiNavigator } from "../../../assets/framework";
+import type { IInputSample, IInputSource, UiNavigator } from "../../../assets/framework";
 
 const projectRoot = resolve(import.meta.dir, "../../..");
 const assemblyFile = resolve(projectRoot, "assets/samples/game_card/assembly.ts");
@@ -51,7 +51,7 @@ interface CardFixtureOptions {
     /** 配置内容：驱动卡牌数值与回合时长；缺省为夹具内建缺省配置。 */
     readonly configContent?: Record<string, unknown>;
     /** 底层输入源：注入以推送底层输入事件。 */
-    readonly inputSource?: InputSource;
+    readonly inputSource?: IInputSource;
 }
 
 /** 夹具暴露的协作钩子：测试驱动可控时间、状态机、配置、输入与 UI。 */
@@ -73,7 +73,7 @@ interface CardFixtureHooks {
         readonly activeContext: string;
         setActiveContext(context: string): void;
         push(sourceId: string, pressed: boolean, value?: number): void;
-        readonly samples: readonly InputSample<string>[];
+        readonly samples: readonly IInputSample<string>[];
     };
     /** 配置驱动数值：卡牌与回合时长来自不可变配置表。 */
     readonly config: {

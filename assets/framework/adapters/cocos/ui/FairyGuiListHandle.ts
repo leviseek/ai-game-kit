@@ -1,21 +1,19 @@
 import { Event, GComponent, GList, GObject } from "fairygui-cc";
-import type {
-    FairyGuiListItemView,
-    FairyGuiListHandle,
-} from "../../../contracts/ui/List";
+import type { IFairyGuiListItemView } from "../../../contracts/interfaces/IFairyGuiListItemView";
+import type { IFairyGuiListHandle } from "../../../contracts/interfaces/IFairyGuiListHandle";
 import { wrapFairyGuiObject } from "./FairyGuiViewHandle";
 
 /**
- * 把 fgui GList 包装为引擎无关 FairyGuiListHandle。itemRenderer 内把每个
- * item 对象包装为 FairyGuiListItemView（field 解析 item 内子节点），并把
+ * 把 fgui GList 包装为引擎无关 IFairyGuiListHandle。itemRenderer 内把每个
+ * item 对象包装为 IFairyGuiListItemView（field 解析 item 内子节点），并把
  * 该对象的当前 index 记录到 WeakMap；点击回调去重注册一次，触发时按对象
  * 当前 index 动态解析 item（虚拟列表对象复用，滚动后 index 变化仍正确）。
- * fgui 类型只存在于本 Adapter 边界；渲染器/游戏层只消费 FairyGuiListHandle
+ * fgui 类型只存在于本 Adapter 边界；渲染器/游戏层只消费 IFairyGuiListHandle
  * 契约。
  */
-export function createFairyGuiListHandle<T>(list: GList): FairyGuiListHandle<T> {
+export function createFairyGuiListHandle<T>(list: GList): IFairyGuiListHandle<T> {
     let items: readonly T[] = [];
-    let renderer: ((view: FairyGuiListItemView<T>) => void) | undefined;
+    let renderer: ((view: IFairyGuiListItemView<T>) => void) | undefined;
     let clickHandler: ((index: number, item: T) => void) | undefined;
     // 对象 → 当前 index：itemRenderer 每次渲染更新，点击时动态读取
     const objIndex = new WeakMap<GObject, number>();
@@ -56,7 +54,7 @@ export function createFairyGuiListHandle<T>(list: GList): FairyGuiListHandle<T> 
             items = next;
             list.numItems = next.length;
         },
-        setItemRenderer(next: (view: FairyGuiListItemView<T>) => void): void {
+        setItemRenderer(next: (view: IFairyGuiListItemView<T>) => void): void {
             renderer = next;
         },
         setItemClick(next: (index: number, item: T) => void): void {
@@ -72,13 +70,13 @@ export function createFairyGuiListHandle<T>(list: GList): FairyGuiListHandle<T> 
 }
 
 /**
- * 视图节点接缝：包装 fgui 页面根组件按名解析 GList 并暴露 FairyGuiListHandle。
+ * 视图节点接缝：包装 fgui 页面根组件按名解析 GList 并暴露 IFairyGuiListHandle。
  * 节点不是 GList 或不存在时返回 undefined（渲染器按契约跳过该绑定）。
  */
 export function createFairyGuiListViewHandle(
     view: GComponent,
-): (name: string) => FairyGuiListHandle<unknown> | undefined {
-    return (name: string): FairyGuiListHandle<unknown> | undefined => {
+): (name: string) => IFairyGuiListHandle<unknown> | undefined {
+    return (name: string): IFairyGuiListHandle<unknown> | undefined => {
         const child = view.getChild(name);
         if (child === null || !(child instanceof GList)) {
             return undefined;

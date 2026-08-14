@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
 
 import { createDevInfoSampler, effectiveType, formatUptime } from "../../../assets/boot/dev/DevInfo";
-import type { DeviceInfo, TimeSource } from "../../../assets/framework";
+import type { IDeviceInfo, ITimeSource } from "../../../assets/framework";
 import type { PerfSampler } from "../../../assets/game/fixture/perf";
 
-function makeClock(start: number): { clock: TimeSource; advance(ms: number): void } {
+function makeClock(start: number): { clock: ITimeSource; advance(ms: number): void } {
     let value = start;
     return {
         clock: { now: () => value },
@@ -14,7 +14,7 @@ function makeClock(start: number): { clock: TimeSource; advance(ms: number): voi
     };
 }
 
-const DEVICE: DeviceInfo = {
+const DEVICE: IDeviceInfo = {
     platform: "Windows",
     model: "desktop",
     language: "en",
@@ -61,7 +61,7 @@ describe("createDevInfoSampler", () => {
         expect(info.uptime).toBe("01:05");
     });
 
-    test("平台/型号/语言来自 DeviceInfo", () => {
+    test("平台/型号/语言来自 IDeviceInfo", () => {
         const sampler = createDevInfoSampler({ clock: { now: () => 0 }, device: DEVICE });
         const info = sampler.sample();
         expect(info.platform).toBe("Windows");

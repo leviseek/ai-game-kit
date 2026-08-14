@@ -1,4 +1,4 @@
-import type { ViewModelNode } from "../../../framework";
+import type { IViewModelNode } from "../../../framework";
 import { createViewModelRenderer } from "../../../framework";
 import type { GamePresenter } from "../../../game/lobby/presenter";
 import type { GameSessionNavigator } from "../../../game/lobby/presenter";
@@ -15,7 +15,7 @@ import { createIdleRewardsBindings, createIdleRewardsViewModel, type IdleRewards
  * 增长。点击领取经命令入账（幂等：结算推进 lastSeenAt，重复点击不重复入账）
  * 并刷新显示；返回按钮经会话导航回编队页。dispose 清理渲染器与定时器。
  */
-export function createIdleRewardsPresenter(fixture: GameFixture, node: (name: string) => ViewModelNode | undefined, session?: GameSessionNavigator): GamePresenter {
+export function createIdleRewardsPresenter(fixture: GameFixture, node: (name: string) => IViewModelNode | undefined, session?: GameSessionNavigator): GamePresenter {
     const autoBattle = fixture as AutoBattleFixture;
 
     const renderer = createViewModelRenderer<IdleRewardsViewModel>({

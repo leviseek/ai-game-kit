@@ -1,4 +1,4 @@
-import type { Module } from "../../../framework";
+import type { IModule } from "../../../framework";
 import type { MapGrid, GridKey } from "./grid";
 
 /** 移动解析结果：路径 steps 与最终落点（destination）。 */
@@ -79,7 +79,7 @@ export function resolveMovePath(grid: MapGrid, actorGrid: GridKey, targetGrid: G
  * 移动解析模块：纯函数模块，只登记引用使其进入装配清单，
  * 生命周期无副作用（对齐 formation/skills/effects 纯函数模块登记语义）。
  */
-export function createAutoBattleMoveModule(): Module {
+export function createAutoBattleMoveModule(): IModule {
     return {
         id: "auto_battle.move",
         dependencies: [],

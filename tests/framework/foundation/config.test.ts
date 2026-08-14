@@ -1,7 +1,8 @@
 import { describe, expect, test } from "bun:test";
 
 import { createMemoryResourceProvider } from "../../../assets/framework/adapters/memory/MemoryResourceProvider";
-import type { ConfigTable, ReadonlyConfigSnapshot } from "../../../assets/framework/contracts/config/Config";
+import type { IConfigTable } from "../../../assets/framework/contracts/interfaces/IConfigTable";
+import type { IReadonlyConfigSnapshot } from "../../../assets/framework/contracts/interfaces/IReadonlyConfigSnapshot";
 import { ConfigLoadError, ConfigMissingError, ConfigParseError, ConfigTypeMismatchError } from "../../../assets/framework/core/config/ConfigErrors";
 import { configArray, configBoolean, configNumber, configObject, configString, createConfigTable } from "../../../assets/framework/core/config/ConfigTable";
 import { loadConfigTable } from "../../../assets/framework/core/config/ConfigLoader";
@@ -21,7 +22,7 @@ function attemptMutation(fn: () => void): void {
     }
 }
 
-describe("ConfigTable typed reads", () => {
+describe("IConfigTable typed reads", () => {
     test("reads a configured value at its declared type", () => {
         const table = createConfigTable({ level: 3, name: "levi" });
 
@@ -68,7 +69,7 @@ describe("ConfigTable typed reads", () => {
     });
 });
 
-describe("ConfigTable missing vs malformed config", () => {
+describe("IConfigTable missing vs malformed config", () => {
     test("reading a missing key throws a distinct missing error", () => {
         const table = createConfigTable({ level: 3 });
 
@@ -121,7 +122,7 @@ describe("ConfigTable missing vs malformed config", () => {
     });
 });
 
-describe("ConfigTable default value strategy", () => {
+describe("IConfigTable default value strategy", () => {
     test("a missing key falls back to the provided default without error", () => {
         const table = createConfigTable({ level: 3 });
 
@@ -144,7 +145,7 @@ describe("ConfigTable default value strategy", () => {
     });
 });
 
-describe("ConfigTable read-only snapshot", () => {
+describe("IConfigTable read-only snapshot", () => {
     test("snapshot is a frozen structure", () => {
         const table = createConfigTable({ level: 3, hero: { id: 1, name: "alice" } });
 
@@ -182,7 +183,7 @@ describe("ConfigTable read-only snapshot", () => {
 
     test("snapshot and table expose the same loaded content", () => {
         const table = createConfigTable({ level: 3 });
-        const snapshot: ReadonlyConfigSnapshot = table.snapshot();
+        const snapshot: IReadonlyConfigSnapshot = table.snapshot();
 
         expect(table.read("level", configNumber)).toBe(snapshot.level);
         expect(Object.keys(snapshot)).toEqual(["level"]);
@@ -203,7 +204,7 @@ describe("ConfigTable read-only snapshot", () => {
     });
 });
 
-describe("ConfigTable content validation guards", () => {
+describe("IConfigTable content validation guards", () => {
     test("a circular reference in the content is rejected with a typed parse error", () => {
         const circular: Record<string, unknown> = { name: "alice" };
         circular.self = circular;
@@ -238,7 +239,7 @@ describe("ConfigTable content validation guards", () => {
     });
 });
 
-describe("ConfigTable save-storage separation boundary", () => {
+describe("IConfigTable save-storage separation boundary", () => {
     test("config loads and reads never touch a save key-value backend", async () => {
         const storageCalls: string[] = [];
 
@@ -246,7 +247,7 @@ describe("ConfigTable save-storage separation boundary", () => {
         const provider = createMemoryResourceProvider({
             loader: async () => ({ level: 3, name: "levi" }),
         });
-        const table: ConfigTable = await loadConfigTable(provider, "config", "start.json");
+        const table: IConfigTable = await loadConfigTable(provider, "config", "start.json");
 
         expect(table.read("level", configNumber)).toBe(3);
         expect(table.read("name", configString)).toBe("levi");

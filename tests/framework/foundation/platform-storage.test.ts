@@ -15,7 +15,7 @@ mock.module("cc", () => ({
 }));
 
 import { SaveCorruptionError } from "../../../assets/framework/core/storage/VersionedStorage";
-import type { PlatformStorage } from "../../../assets/framework/contracts/platform/Platform";
+import type { IPlatformStorage } from "../../../assets/framework/contracts/interfaces/IPlatformStorage";
 
 const projectRoot = resolve(import.meta.dir, "../../..");
 const adapterFile = resolve(projectRoot, "assets/framework/adapters/cocos/storage/CocosStorageAdapter.ts");
@@ -31,8 +31,8 @@ interface InspectableLocalStorage extends LocalStorageLike {
     readonly entries: () => Readonly<Record<string, string>>;
 }
 
-// 适配器契约：实现 PlatformStorage 形状，并暴露恢复默认/备份恢复路径。
-interface CocosStorageAdapter extends PlatformStorage {
+// 适配器契约：实现 IPlatformStorage 形状，并暴露恢复默认/备份恢复路径。
+interface CocosStorageAdapter extends IPlatformStorage {
     restoreDefault(key: string): Promise<void>;
     restoreBackup(key: string): Promise<void>;
 }
@@ -131,7 +131,7 @@ describe("CocosStorageAdapter backend read/write", () => {
         expect(await adapter.get("player.save")).toBeNull();
     });
 
-    test("the adapter exposes the PlatformStorage contract shape", async () => {
+    test("the adapter exposes the IPlatformStorage contract shape", async () => {
         const createAdapter = await loadCreateAdapter();
         const adapter = createAdapter({
             localStorage: createInspectableLocalStorage(),
@@ -145,8 +145,8 @@ describe("CocosStorageAdapter backend read/write", () => {
         expect(adapter.set("k", "v") instanceof Promise).toBe(true);
         expect(adapter.delete("k") instanceof Promise).toBe(true);
 
-        // 类型形状：可赋值给 PlatformStorage
-        const contract: PlatformStorage = adapter;
+        // 类型形状：可赋值给 IPlatformStorage
+        const contract: IPlatformStorage = adapter;
         expect(contract).toBe(adapter);
     });
 });

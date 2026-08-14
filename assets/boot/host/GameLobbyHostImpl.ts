@@ -1,4 +1,4 @@
-import { FuiViewCleanupError, type Logger, type ResourceScope } from "../../framework";
+import { EnumUiLayer, FuiViewCleanupError, type ILogger, type IResourceScope } from "../../framework";
 import { lookupBundle, type IResourceProvider } from "../../framework";
 import type { FairyGuiPageHandle } from "../../framework/adapters/cocos/ui/FairyGuiPageAdapter";
 import { createFairyGuiViewHandle } from "../../framework/adapters/cocos/ui/FairyGuiViewHandle";
@@ -15,7 +15,7 @@ import type { UiHost } from "./UiHost";
 export interface GameLobbyHostDeps {
     readonly host: UiHost;
     readonly resourceProvider: IResourceProvider;
-    readonly logger: Logger;
+    readonly logger: ILogger;
 }
 
 /**
@@ -27,9 +27,9 @@ export interface GameLobbyHostDeps {
 export class GameLobbyHostImpl implements GameLobbyHost {
     private readonly host: UiHost;
     private readonly resourceProvider: IResourceProvider;
-    private readonly logger: Logger;
+    private readonly logger: ILogger;
     private lobbyPage?: FairyGuiPageHandle;
-    private lobbyScope?: ResourceScope;
+    private lobbyScope?: IResourceScope;
 
     constructor(deps: GameLobbyHostDeps) {
         this.host = deps.host;
@@ -81,7 +81,7 @@ export class GameLobbyHostImpl implements GameLobbyHost {
             throw new Error(`lobby host: package load failed for "${pkgPath}" (${loaded.state})`);
         }
 
-        const page = adapter.createPage(entry.route, "normal", {
+        const page = adapter.createPage(entry.route, EnumUiLayer.Normal, {
             packageName: entry.packageName,
             resName: entry.resName,
         });
@@ -93,10 +93,10 @@ export class GameLobbyHostImpl implements GameLobbyHost {
 
         // 打开导航页并登记"退出会话"disposable：导航关闭该页面（如返回键）时
         // 经 UiPage 作用域自然触发会话清理，不遗留运行中的夹具。
-        const navResult = this.host.navigator?.open(entry.route, { layer: "normal" });
+        const navResult = this.host.navigator?.open(entry.route, { layer: EnumUiLayer.Normal });
         const navPage = navResult?.ok === true ? navResult.page : undefined;
 
-        // 节点解析器：渲染器与游戏层只消费 ViewModelNode 契约，fgui 类型不出
+        // 节点解析器：渲染器与游戏层只消费 IViewModelNode 契约，fgui 类型不出
         // 组合根（design decision 7 边界）。装配方式由 game 侧 GameEntryInfo 声明：
         // resolver "dynamic" 用品类动态映射数组装配通用动态组件解析器
         // （`unit_{id}` 系列运行时实例化 UnitSlot、`fx_*_{id}` 系列实例化命中
@@ -208,7 +208,7 @@ export class GameLobbyHostImpl implements GameLobbyHost {
             throw new Error(`lobby host: global page package load failed for "${pkgPath}" (${handle.state})`);
         }
 
-        const page = adapter.createPage(entry.route, "normal", {
+        const page = adapter.createPage(entry.route, EnumUiLayer.Normal, {
             packageName: entry.packageName,
             resName: entry.resName,
         });

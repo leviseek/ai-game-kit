@@ -1,4 +1,4 @@
-import type { Module } from "../../../framework";
+import type { IModule } from "../../../framework";
 import type { AutoBattleClock } from "./clock";
 import { MAX_TEAM_SIZE } from "./config";
 import { FORMATION_GRID_COLS } from "./grid";
@@ -389,7 +389,7 @@ export function createAutoBattleBattle(options: AutoBattleBattleOptions): AutoBa
  * 战斗模块：组合根创建战斗控制器并注入；模块只登记引用，不在此释放共享
  * 控制器——组合根的 dispose 统一负责（对齐 GameFixture 幂等契约）。
  */
-export function createAutoBattleBattleModule(battle: AutoBattleBattleHandle): Module {
+export function createAutoBattleBattleModule(battle: AutoBattleBattleHandle): IModule {
     return {
         id: "auto_battle.battle",
         dependencies: [],

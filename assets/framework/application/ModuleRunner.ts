@@ -1,15 +1,17 @@
-import type { ApplicationContext } from "../contracts/application/ApplicationContext";
-import type { Module, ModulePhase, ModuleRuntimeState } from "../contracts/module/Module";
+import type { IApplicationContext } from "../contracts/interfaces/IApplicationContext";
+import type { IModule } from "../contracts/interfaces/IModule";
+import { EnumModulePhase } from "../contracts/enums/EnumModulePhase";
+import { EnumModuleRuntimeState } from "../contracts/enums/EnumModuleRuntimeState";
 import { FrameworkError } from "../core/errors/FrameworkError";
 import { ModuleLifecycleError } from "./ModuleLifecycleError";
 
-type CleanupPhase = "stop" | "dispose";
+type CleanupPhase = EnumModulePhase.Stop | EnumModulePhase.Dispose;
 
 class ModuleCleanupError extends FrameworkError {
     readonly errors: readonly ModuleLifecycleError[];
 
     constructor(errors: readonly ModuleLifecycleError[], cause: ModuleLifecycleError) {
-        super("Module cleanup failed", { cause });
+        super("IModule cleanup failed", { cause });
 
         this.name = "ModuleCleanupError";
         this.errors = Object.freeze([...errors]);
@@ -23,36 +25,36 @@ class ModuleCleanupError extends FrameworkError {
  * 中断其他模块的清理）。
  */
 export class ModuleRunner {
-    private readonly modules: readonly Module[];
-    private readonly context: ApplicationContext;
-    private readonly states = new Map<string, ModuleRuntimeState>();
+    private readonly modules: readonly IModule[];
+    private readonly context: IApplicationContext;
+    private readonly states = new Map<string, EnumModuleRuntimeState>();
 
-    constructor(modules: readonly Module[], context: ApplicationContext) {
+    constructor(modules: readonly IModule[], context: IApplicationContext) {
         this.modules = [...modules];
         this.context = context;
 
         for (const module of this.modules) {
-            this.states.set(module.id, "registered");
+            this.states.set(module.id, EnumModuleRuntimeState.Registered);
         }
     }
 
-    getState(moduleId: string): ModuleRuntimeState | undefined {
+    getState(moduleId: string): EnumModuleRuntimeState | undefined {
         return this.states.get(moduleId);
     }
 
     async initialize(): Promise<void> {
         for (const module of this.modules) {
-            if (this.getState(module.id) !== "registered") {
+            if (this.getState(module.id) !== EnumModuleRuntimeState.Registered) {
                 continue;
             }
 
             try {
-                await this.invokePhase(module, "initialize");
-                this.states.set(module.id, "initialized");
+                await this.invokePhase(module, EnumModulePhase.Initialize);
+                this.states.set(module.id, EnumModuleRuntimeState.Initialized);
             } catch (error) {
-                const primaryError = this.asLifecycleError(module, "initialize", error);
+                const primaryError = this.asLifecycleError(module, EnumModulePhase.Initialize, error);
                 // 初始化失败只 dispose 已进入 initialized 的模块；尚未初始化的保持 registered。
-                const cleanupErrors = await this.cleanup("dispose", (state) => state === "initialized", "disposed");
+                const cleanupErrors = await this.cleanup(EnumModulePhase.Dispose, (state) => state === EnumModuleRuntimeState.Initialized, EnumModuleRuntimeState.Disposed);
 
                 this.throwLifecycleFailure(primaryError, cleanupErrors);
             }
@@ -61,18 +63,23 @@ export class ModuleRunner {
 
     async start(): Promise<void> {
         for (const module of this.modules) {
-            if (this.getState(module.id) !== "initialized") {
+            if (this.getState(module.id) !== EnumModuleRuntimeState.Initialized) {
                 continue;
             }
 
             try {
-                await this.invokePhase(module, "start");
-                this.states.set(module.id, "started");
+                await this.invokePhase(module, EnumModulePhase.Start);
+                this.states.set(module.id, EnumModuleRuntimeState.Started);
             } catch (error) {
-                const primaryError = this.asLifecycleError(module, "start", error);
+                const primaryError = this.asLifecycleError(module, EnumModulePhase.Start, error);
                 // 启动失败分两层回滚：先 stop 已 started 的模块，再 dispose 所有已注册的模块。
-                const stopErrors = await this.cleanup("stop", (state) => state === "started", "stopped");
-                const disposeErrors = await this.cleanup("dispose", (state) => state === "initialized" || state === "started" || state === "paused" || state === "stopped", "disposed");
+                const stopErrors = await this.cleanup(EnumModulePhase.Stop, (state) => state === EnumModuleRuntimeState.Started, EnumModuleRuntimeState.Stopped);
+                const disposeErrors = await this.cleanup(
+                    EnumModulePhase.Dispose,
+                    (state) =>
+                        state === EnumModuleRuntimeState.Initialized || state === EnumModuleRuntimeState.Started || state === EnumModuleRuntimeState.Paused || state === EnumModuleRuntimeState.Stopped,
+                    EnumModuleRuntimeState.Disposed,
+                );
 
                 this.throwLifecycleFailure(primaryError, [...stopErrors, ...disposeErrors]);
             }
@@ -84,47 +91,51 @@ export class ModuleRunner {
         for (let index = this.modules.length - 1; index >= 0; index -= 1) {
             const module = this.modules[index];
 
-            if (this.getState(module.id) !== "started") {
+            if (this.getState(module.id) !== EnumModuleRuntimeState.Started) {
                 continue;
             }
 
-            await this.invokePhase(module, "pause");
-            this.states.set(module.id, "paused");
+            await this.invokePhase(module, EnumModulePhase.Pause);
+            this.states.set(module.id, EnumModuleRuntimeState.Paused);
         }
     }
 
     async resume(): Promise<void> {
         // 正序：与启动顺序一致恢复。
         for (const module of this.modules) {
-            if (this.getState(module.id) !== "paused") {
+            if (this.getState(module.id) !== EnumModuleRuntimeState.Paused) {
                 continue;
             }
 
-            await this.invokePhase(module, "resume");
-            this.states.set(module.id, "started");
+            await this.invokePhase(module, EnumModulePhase.Resume);
+            this.states.set(module.id, EnumModuleRuntimeState.Started);
         }
     }
 
     async stop(): Promise<void> {
-        const errors = await this.cleanup("stop", (state) => state === "started" || state === "paused", "stopped");
+        const errors = await this.cleanup(EnumModulePhase.Stop, (state) => state === EnumModuleRuntimeState.Started || state === EnumModuleRuntimeState.Paused, EnumModuleRuntimeState.Stopped);
 
         this.throwCleanupErrors(errors);
     }
 
     async dispose(): Promise<void> {
-        const errors = await this.cleanup("dispose", (state) => state === "initialized" || state === "started" || state === "paused" || state === "stopped", "disposed");
+        const errors = await this.cleanup(
+            EnumModulePhase.Dispose,
+            (state) => state === EnumModuleRuntimeState.Initialized || state === EnumModuleRuntimeState.Started || state === EnumModuleRuntimeState.Paused || state === EnumModuleRuntimeState.Stopped,
+            EnumModuleRuntimeState.Disposed,
+        );
 
         this.throwCleanupErrors(errors);
     }
 
-    private async invokePhase(module: Module, phase: ModulePhase): Promise<void> {
+    private async invokePhase(module: IModule, phase: EnumModulePhase): Promise<void> {
         try {
             await module[phase]?.call(module, this.context);
         } catch (error) {
             const lifecycleError = new ModuleLifecycleError(module.id, phase, error);
 
             this.context.logger.error(
-                "Module lifecycle failed",
+                "IModule lifecycle failed",
                 {
                     moduleId: module.id,
                     phase,
@@ -136,14 +147,14 @@ export class ModuleRunner {
             throw lifecycleError;
         }
 
-        this.context.logger.info("Module lifecycle completed", {
+        this.context.logger.info("IModule lifecycle completed", {
             moduleId: module.id,
             phase,
             result: "success",
         });
     }
 
-    private async cleanup(phase: CleanupPhase, shouldRun: (state: ModuleRuntimeState | undefined) => boolean, completedState: ModuleRuntimeState): Promise<ModuleLifecycleError[]> {
+    private async cleanup(phase: CleanupPhase, shouldRun: (state: EnumModuleRuntimeState | undefined) => boolean, completedState: EnumModuleRuntimeState): Promise<ModuleLifecycleError[]> {
         const errors: ModuleLifecycleError[] = [];
         // 通用清理：按谓词判定每个模块应从何状态清理到 completedState，避免硬编码状态集合。
         // 逆序遍历保证后启动的模块先清理。
@@ -165,7 +176,7 @@ export class ModuleRunner {
         return errors;
     }
 
-    private asLifecycleError(module: Module, phase: ModulePhase, error: unknown): ModuleLifecycleError {
+    private asLifecycleError(module: IModule, phase: EnumModulePhase, error: unknown): ModuleLifecycleError {
         return error instanceof ModuleLifecycleError ? error : new ModuleLifecycleError(module.id, phase, error);
     }
 

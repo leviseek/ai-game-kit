@@ -1,4 +1,4 @@
-import { createUiNavigator, FuiViewCleanupError, type Logger, type ResourceHandle, type ResourceScope, type UiLayer, type UiNavigator } from "../../framework";
+import { createUiNavigator, EnumUiLayer, FuiViewCleanupError, type ILogger, type IResourceHandle, type IResourceScope, type UiNavigator } from "../../framework";
 import type { IResourceProvider } from "../../framework";
 import type { FuiViewBindingResolver } from "../../framework/core/fui/FuiViewBinderRegistry";
 import { createFairyGuiPageAdapter, type FairyGuiPageAdapter } from "../../framework/adapters/cocos/ui/FairyGuiPageAdapter";
@@ -14,7 +14,7 @@ import type { CocosUiRoot, GRootLike } from "../../framework/adapters/cocos/ui/C
 export interface UiHostDeps {
     readonly uiRoot: CocosUiRoot;
     readonly resourceProvider: IResourceProvider;
-    readonly logger: Logger;
+    readonly logger: ILogger;
     /** 运行时视图 binder 解析器：组合根（assembleApp）注入，required 组件绑定装配。 */
     readonly resolver?: FuiViewBindingResolver;
     /** 对象创建测试接缝：仅测试覆盖对象创建；缺省用 UIPackage.createObject。 */
@@ -29,12 +29,12 @@ export interface UiHostDeps {
 export class UiHost {
     private readonly uiRoot: CocosUiRoot;
     private readonly resourceProvider: IResourceProvider;
-    private readonly logger: Logger;
+    private readonly logger: ILogger;
     private readonly resolver?: FuiViewBindingResolver;
     private readonly fuiObjectFactory?: FuiObjectFactory;
     private adapter?: FairyGuiPageAdapter;
     private nav?: UiNavigator;
-    private uiScope?: ResourceScope;
+    private uiScope?: IResourceScope;
     private resizeUnsubscribe?: () => void;
 
     constructor(deps: UiHostDeps) {
@@ -106,7 +106,7 @@ export class UiHost {
     }
 
     /** 冒烟触发：打开页面。pageAdapter 未就绪时返回 false；页面创建失败保留诊断。 */
-    openPage(route: string, layer: UiLayer, packageName: string, resName: string): boolean {
+    openPage(route: string, layer: EnumUiLayer, packageName: string, resName: string): boolean {
         if (!this.ensurePageAdapter() || this.adapter === undefined) {
             return false;
         }
@@ -143,7 +143,7 @@ export class UiHost {
      * 加载 FairyGUI package 并登记到全局常驻 uiScope，返回加载结果标识。同一
      * uiScope 对同 key 重复 retain 幂等；uiScope 被 release 后下次调用自动重建。
      */
-    loadPackage(bundle: string, path: string): Promise<ResourceHandle> {
+    loadPackage(bundle: string, path: string): Promise<IResourceHandle> {
         if (this.uiScope === undefined) {
             this.uiScope = this.resourceProvider.createScope();
         }

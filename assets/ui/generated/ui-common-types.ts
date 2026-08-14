@@ -2,10 +2,10 @@
 // 包: Common (id=cmn00001)
 
 import type {
-    TypedButtonNode,
-    TypedImageNode,
-    TypedProgressNode,
-    TypedTextNode,
+    ITypedButtonNode,
+    ITypedImageNode,
+    ITypedProgressNode,
+    ITypedTextNode,
 } from "../../framework";
 
 export const CommonButtonFields = {
@@ -18,10 +18,10 @@ export const CommonButtonFields = {
 export type CommonButtonNodes = keyof typeof CommonButtonFields;
 
 export interface ICommonButton {
-    readonly _img_bg_up: TypedImageNode;
-    readonly _img_bg_down: TypedImageNode;
-    readonly _img_bg_over: TypedImageNode;
-    readonly _title: TypedTextNode;
+    readonly _img_bg_up: ITypedImageNode;
+    readonly _img_bg_down: ITypedImageNode;
+    readonly _img_bg_over: ITypedImageNode;
+    readonly _title: ITypedTextNode;
 }
 
 export const CommonProgressBarFields = {
@@ -32,8 +32,8 @@ export const CommonProgressBarFields = {
 export type CommonProgressBarNodes = keyof typeof CommonProgressBarFields;
 
 export interface ICommonProgressBar {
-    readonly _img_track: TypedImageNode;
-    readonly _bar: TypedImageNode;
+    readonly _img_track: ITypedImageNode;
+    readonly _bar: ITypedImageNode;
 }
 
 export const CommonProgressBarHpFields = {
@@ -44,8 +44,8 @@ export const CommonProgressBarHpFields = {
 export type CommonProgressBarHpNodes = keyof typeof CommonProgressBarHpFields;
 
 export interface ICommonProgressBarHp {
-    readonly _img_track: TypedImageNode;
-    readonly _bar: TypedImageNode;
+    readonly _img_track: ITypedImageNode;
+    readonly _bar: ITypedImageNode;
 }
 
 export const UnitSlotFields = {
@@ -58,10 +58,10 @@ export const UnitSlotFields = {
 export type UnitSlotNodes = keyof typeof UnitSlotFields;
 
 export interface IUnitSlot {
-    readonly _txt_name: TypedTextNode;
-    readonly _txt_hp: TypedTextNode;
-    readonly _bar_hp: TypedProgressNode;
-    readonly _bar_energy: TypedProgressNode;
+    readonly _txt_name: ITypedTextNode;
+    readonly _txt_hp: ITypedTextNode;
+    readonly _bar_hp: ITypedProgressNode;
+    readonly _bar_energy: ITypedProgressNode;
 }
 
 export const CandidateItemFields = {
@@ -73,8 +73,8 @@ export const CandidateItemFields = {
 export type CandidateItemNodes = keyof typeof CandidateItemFields;
 
 export interface ICandidateItem {
-    readonly _btn_candidate: TypedButtonNode;
-    readonly _txt_candidate_name: TypedTextNode;
-    readonly _mark_deployed: TypedTextNode;
+    readonly _btn_candidate: ITypedButtonNode;
+    readonly _txt_candidate_name: ITypedTextNode;
+    readonly _mark_deployed: ITypedTextNode;
 }
 

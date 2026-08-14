@@ -3,13 +3,13 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, test } from "bun:test";
 
-import type { Module } from "../../../assets/framework";
+import type { IModule } from "../../../assets/framework";
 
 interface ModuleGraphInstance {
-    readonly orderedModules: readonly Module[];
+    readonly orderedModules: readonly IModule[];
 }
 
-type ModuleGraphConstructor = new (modules: readonly Module[]) => ModuleGraphInstance;
+type ModuleGraphConstructor = new (modules: readonly IModule[]) => ModuleGraphInstance;
 
 interface ModuleGraphExports {
     readonly ModuleGraph?: ModuleGraphConstructor;
@@ -18,7 +18,7 @@ interface ModuleGraphExports {
 const projectRoot = resolve(import.meta.dir, "../../..");
 const moduleGraphFile = resolve(projectRoot, "assets/framework/application/ModuleGraph.ts");
 
-function createModule(id: string, dependencies: readonly string[] = []): Module {
+function createModule(id: string, dependencies: readonly string[] = []): IModule {
     return { id, dependencies };
 }
 
@@ -32,7 +32,7 @@ async function loadModuleGraph(): Promise<ModuleGraphConstructor> {
     return exports.ModuleGraph as ModuleGraphConstructor;
 }
 
-async function orderModules(modules: readonly Module[]): Promise<readonly Module[]> {
+async function orderModules(modules: readonly IModule[]): Promise<readonly IModule[]> {
     const ModuleGraph = await loadModuleGraph();
 
     return new ModuleGraph(modules).orderedModules;

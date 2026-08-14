@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import type { Module } from "../../../assets/framework";
+import type { IModule } from "../../../assets/framework";
 // 副作用导入 samples/entry：触发 samples bundle 单点登记，使运行时夹具登记表非空
 import "../../../assets/samples/entry";
 import { createGameFixture, type GameFixture } from "../../../assets/game/fixture/GameFixture";
@@ -51,7 +51,7 @@ describe("8.6 unified lifecycle test", () => {
 
 describe("8.6 failure rollback leaves no half-started state", () => {
     // 记录型模块：把生命周期钩子调用顺序写入 log，供回滚顺序断言
-    function createRecordingModule(id: string, log: string[]): Module {
+    function createRecordingModule(id: string, log: string[]): IModule {
         return {
             id,
             dependencies: [],
@@ -72,7 +72,7 @@ describe("8.6 failure rollback leaves no half-started state", () => {
 
     test("a failing startup module rolls back started modules into the disposed terminal state", async () => {
         const log: string[] = [];
-        const failingModule: Module = {
+        const failingModule: IModule = {
             id: "failing",
             dependencies: [],
             start: () => {
@@ -101,7 +101,7 @@ describe("8.6 failure rollback leaves no half-started state", () => {
     test("a fixture can be rebuilt after a failed startup", async () => {
         // 首次启动失败进入 disposed 终态后，新建实例可正常走完整生命周期
         const log: string[] = [];
-        const failingModule: Module = {
+        const failingModule: IModule = {
             id: "failing",
             dependencies: [],
             start: () => {

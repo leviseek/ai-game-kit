@@ -2,29 +2,30 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, test } from "bun:test";
 
-import type { LogContext, Logger, LogLevel, LogRecord } from "../../../assets/framework";
+import type { ILogContext, ILogger, ILogRecord } from "../../../assets/framework";
+import { EnumLogLevel } from "../../../assets/framework";
 
 type ErrorWithCause = Error & { readonly cause?: unknown };
 
 interface LoggerProbe {
-    readonly logger: Logger;
-    readonly records: readonly LogRecord[];
+    readonly logger: ILogger;
+    readonly records: readonly ILogRecord[];
 }
 
 const projectRoot = resolve(import.meta.dir, "../../..");
 const frameworkRoot = resolve(projectRoot, "assets/framework");
 const frameworkEntry = resolve(frameworkRoot, "index.ts");
-const loggerContractFile = resolve(frameworkRoot, "contracts/logging/Logger.ts");
+const loggerContractFile = resolve(frameworkRoot, "contracts/interfaces/ILogger.ts");
 const contractImportScanner = new Bun.Transpiler({ loader: "ts" });
 
 function joinScopes(parentScope: string, childScope: string): string {
     return parentScope.length === 0 ? childScope : `${parentScope}.${childScope}`;
 }
 
-function createLoggerProbe(scope: string, context: LogContext = {}, records: LogRecord[] = []): LoggerProbe {
+function createLoggerProbe(scope: string, context: ILogContext = {}, records: ILogRecord[] = []): LoggerProbe {
     const baseContext = { ...context };
 
-    const record = (level: LogLevel, message: string, callContext: LogContext = {}, error?: Error): void => {
+    const record = (level: EnumLogLevel, message: string, callContext: ILogContext = {}, error?: Error): void => {
         records.push({
             level,
             message,
@@ -35,18 +36,18 @@ function createLoggerProbe(scope: string, context: LogContext = {}, records: Log
         });
     };
 
-    const logger: Logger = {
-        debug: (message, callContext) => record("debug", message, callContext),
-        info: (message, callContext) => record("info", message, callContext),
-        warn: (message, callContext) => record("warn", message, callContext),
-        error: (message, callContext, error) => record("error", message, callContext, error),
+    const logger: ILogger = {
+        debug: (message, callContext) => record(EnumLogLevel.Debug, message, callContext),
+        info: (message, callContext) => record(EnumLogLevel.Info, message, callContext),
+        warn: (message, callContext) => record(EnumLogLevel.Warn, message, callContext),
+        error: (message, callContext, error) => record(EnumLogLevel.Error, message, callContext, error),
         child: (childScope, childContext = {}) => createLoggerProbe(joinScopes(scope, childScope), { ...baseContext, ...childContext }, records).logger,
     };
 
     return { logger, records };
 }
 
-describe("Logger contract", () => {
+describe("ILogger contract", () => {
     test("is exposed as a Cocos-free Framework contract", () => {
         expect(existsSync(loggerContractFile)).toBe(true);
 
@@ -58,7 +59,7 @@ describe("Logger contract", () => {
 
         const frameworkSource = readFileSync(frameworkEntry, "utf8");
 
-        expect(frameworkSource).toMatch(/export\s+type\s*\{[\s\S]*?\}\s*from\s*["']\.\/contracts\/logging\/Logger["']/);
+        expect(frameworkSource).toMatch(/export\s+type\s*\{[\s\S]*?\}\s*from\s*["']\.\/contracts\/interfaces\/ILogger["']/);
     });
 
     test("supports debug, info, warn and error levels", () => {
@@ -97,7 +98,7 @@ describe("Logger contract", () => {
     });
 
     test("child inherits scope and context without changing its parent", () => {
-        const parentContext: LogContext = { applicationState: "running" };
+        const parentContext: ILogContext = { applicationState: "running" };
         const { logger: parent, records } = createLoggerProbe("application", parentContext);
         const child = parent.child("inventory", { moduleId: "inventory" });
 

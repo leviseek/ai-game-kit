@@ -1,4 +1,4 @@
-import type { Module } from "../../../framework";
+import type { IModule } from "../../../framework";
 import type { TycoonClock } from "./clock";
 
 export interface TycoonScheduleOptions {
@@ -123,7 +123,7 @@ export function createTycoonScheduler(clock: TycoonClock): TycoonScheduler {
  * 调度模块：组合根创建调度器并注入；模块只登记引用，不在 dispose 释放共享
  * 调度器——组合根的 dispose 统一负责（对齐 GameFixture 幂等契约）。
  */
-export function createTycoonSchedulerModule(scheduler: TycoonScheduler): Module {
+export function createTycoonSchedulerModule(scheduler: TycoonScheduler): IModule {
     return {
         id: "tycoon.scheduler",
         dependencies: [],

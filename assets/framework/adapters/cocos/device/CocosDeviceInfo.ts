@@ -1,5 +1,5 @@
 import * as cc from "cc";
-import type { DeviceInfo } from "../../../contracts/platform/Platform";
+import type { IDeviceInfo } from "../../../contracts/interfaces/IDeviceInfo";
 
 /**
  * cc.sys 系统信息接缝：只依赖本适配器用到的能力，便于测试注入 mock。
@@ -17,12 +17,12 @@ export interface CocosDeviceInfoOptions {
 }
 
 /**
- * Cocos 设备信息适配器：实现 DeviceInfo 契约（platform/model/language）。
+ * Cocos 设备信息适配器：实现 IDeviceInfo 契约（platform/model/language）。
  * 读 cc.sys 的系统信息并归一化为可展示字符串；缺失字段降级为 "unknown"。
  * 引擎访问走惰性接缝（仅未注入时读 cc.sys，同 CocosStorageAdapter 模式），
  * 不进 framework 白名单，由 dev 层直接 import 使用（design D3）。
  */
-export function createCocosDeviceInfo(options: CocosDeviceInfoOptions = {}): DeviceInfo {
+export function createCocosDeviceInfo(options: CocosDeviceInfoOptions = {}): IDeviceInfo {
     const sys = options.sys ?? (cc.sys as unknown as CocosSysLike);
     const label = (value: unknown): string => {
         const text = String(value ?? "");

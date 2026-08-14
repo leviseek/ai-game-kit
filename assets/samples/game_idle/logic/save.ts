@@ -1,4 +1,4 @@
-import type { Module, PlatformStorage } from "../../../framework";
+import type { IModule, IPlatformStorage } from "../../../framework";
 import type { IdleSaveRecord } from "../models";
 
 /** 存档 schema 版本：夹具层自持版本号，升级时递增。 */
@@ -17,7 +17,7 @@ export interface IdleSave {
  * 视为无效并返回 null（夹具层无迁移接缝，旧版本直接拒绝）。夹具层实现
  * "版本化"语义，不依赖框架根入口白名单外的内部实现（design decision 4 边界）。
  */
-export function createIdleSave(storage: PlatformStorage): IdleSave {
+export function createIdleSave(storage: IPlatformStorage): IdleSave {
     const keyFor = (namespace: string, key: string): string => `idle:${encodeURIComponent(namespace)}:${encodeURIComponent(key)}`;
 
     return {
@@ -39,7 +39,7 @@ export function createIdleSave(storage: PlatformStorage): IdleSave {
             try {
                 record = JSON.parse(raw) as { version?: unknown; data?: unknown };
             } catch {
-                // 损坏 JSON 视为无效记录，返回 null（对齐 PlatformStorage 缺档语义）
+                // 损坏 JSON 视为无效记录，返回 null（对齐 IPlatformStorage 缺档语义）
                 return null;
             }
 
@@ -57,7 +57,7 @@ export function createIdleSave(storage: PlatformStorage): IdleSave {
  * 存档模块：组合根创建存档仓库并注入；模块只登记引用，平台存储由注入方
  * 持有，模块生命周期无副作用，不在此释放共享存档仓库。
  */
-export function createIdleSaveModule(save: IdleSave): Module {
+export function createIdleSaveModule(save: IdleSave): IModule {
     return {
         id: "idle.save",
         dependencies: [],

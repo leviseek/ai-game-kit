@@ -1,4 +1,4 @@
-import type { Module, PlatformStorage } from "../../../framework";
+import type { IModule, IPlatformStorage } from "../../../framework";
 import type { AutoBattleLineup } from "../models";
 import { MAX_TEAM_SIZE } from "./config";
 import { FORMATION_GRID_SIZE } from "./grid";
@@ -28,7 +28,7 @@ export const MIGRATE_V1_TO_V2: LineupSaveMigrator = (data) => {
 
 /** lineup 存储选项：注入平台存储，可选指定当前版本与迁移器映射（测试/未来演进）。 */
 export interface LineupStoreOptions {
-    readonly storage: PlatformStorage;
+    readonly storage: IPlatformStorage;
     /** 当前 schema version；缺省为 LINEUP_SAVE_VERSION。 */
     readonly currentVersion?: number;
     /** 迁移映射：源版本 → 升级到源版本+1 的迁移器；缺省内置 v1→v2，可覆盖。 */
@@ -148,7 +148,7 @@ export function createLineupStore(options: LineupStoreOptions): LineupStore {
  * lineup 存储模块：组合根创建存储并注入；模块只登记引用，平台存储由注入方
  * 持有，模块生命周期无副作用，不在此释放共享存储。
  */
-export function createLineupStoreModule(store: LineupStore): Module {
+export function createLineupStoreModule(store: LineupStore): IModule {
     return {
         id: "auto_battle.lineup_store",
         dependencies: [],

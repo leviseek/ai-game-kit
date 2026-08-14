@@ -2,7 +2,7 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, test } from "bun:test";
 
-import { ModuleLifecycleError, type ApplicationContext, type Module } from "../../../assets/framework";
+import { ModuleLifecycleError, type IApplicationContext, type IModule } from "../../../assets/framework";
 import { MemoryLogger } from "../support/MemoryLogger";
 
 interface ModuleRunnerInstance {
@@ -14,7 +14,7 @@ interface ModuleRunnerInstance {
     dispose(): Promise<void>;
 }
 
-type ModuleRunnerConstructor = new (modules: readonly Module[], context: ApplicationContext) => ModuleRunnerInstance;
+type ModuleRunnerConstructor = new (modules: readonly IModule[], context: IApplicationContext) => ModuleRunnerInstance;
 
 interface ModuleRunnerExports {
     readonly ModuleRunner: ModuleRunnerConstructor;
@@ -35,11 +35,11 @@ describe("ModuleRunner lifecycle logging", () => {
     test("records every successful module phase without application identity", async () => {
         const ModuleRunner = await loadModuleRunner();
         const logger = new MemoryLogger();
-        const context: ApplicationContext = {
+        const context: IApplicationContext = {
             logger,
             state: "created",
         };
-        const module: Module = {
+        const module: IModule = {
             id: "inventory",
             dependencies: [],
             initialize: async () => {},
@@ -118,12 +118,12 @@ describe("ModuleRunner lifecycle logging", () => {
     test("records a failed module phase at error level with its cause", async () => {
         const ModuleRunner = await loadModuleRunner();
         const logger = new MemoryLogger();
-        const context: ApplicationContext = {
+        const context: IApplicationContext = {
             logger,
             state: "created",
         };
         const startFailure = new Error("inventory start failed");
-        const module: Module = {
+        const module: IModule = {
             id: "inventory",
             dependencies: [],
             initialize: async () => {},

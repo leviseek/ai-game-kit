@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { buildAutoBattleBindings, gridToXY, type AutoBattleUnitView, type AutoBattleViewModel } from "../../../assets/samples/game_auto_battle/view/view";
-import { createViewModelRenderer, type ViewModelNode } from "../../../assets/framework";
+import { createViewModelRenderer, type IViewModelNode } from "../../../assets/framework";
 /** 记录型视图节点：记录 setter 调用，供断言绑定 diff 行为。 */
 interface RecordingNode {
     text: string | undefined;
@@ -11,7 +11,7 @@ interface RecordingNode {
 /** 记录型 VM 绑定视图：为每个绑定目标惰性建记录节点，节点解析恒返回实现。 */
 function recordingView(): {
     nodes: Map<string, RecordingNode>;
-    node: (name: string) => ViewModelNode | undefined;
+    node: (name: string) => IViewModelNode | undefined;
 } {
     const nodes = new Map<string, RecordingNode>();
     const ensure = (name: string): RecordingNode => {
@@ -173,7 +173,7 @@ describe("Auto-battle dynamic unit bindings", () => {
         // 注册 onClick（否则真实 Adapter 的追加监听会随每次 render 累积触发）
         let clickRegistrations = 0;
         const view = recordingView();
-        const node = (name: string): ViewModelNode | undefined => {
+        const node = (name: string): IViewModelNode | undefined => {
             const resolved = view.node(name);
             if (resolved === undefined) {
                 return undefined;

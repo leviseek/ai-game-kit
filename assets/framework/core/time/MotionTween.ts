@@ -1,5 +1,6 @@
-import type { MotionTweenOptions } from "../../contracts/time/MotionTween";
-import type { PauseDomain } from "../../contracts/time/PauseDomain";
+import type { IMotionTweenOptions } from "../../contracts/interfaces/IMotionTweenOptions";
+
+import { EnumPauseDomain } from "../../contracts/enums/EnumPauseDomain";
 
 /**
  * 缓动曲线：输入线性进度（0..1），输出缓动后的插值进度。纯函数、幂等。
@@ -17,7 +18,7 @@ export function easeOutCubic(progress: number): number {
     return 1 - Math.pow(1 - progress, 3);
 }
 
-export interface MotionTweenRuntimeOptions extends MotionTweenOptions {
+export interface MotionTweenRuntimeOptions extends IMotionTweenOptions {
     /** 缓动曲线：输入 0..1 线性进度，输出插值进度；缺省 easeOutQuad。 */
     readonly ease?: EaseCurve;
 }
@@ -30,15 +31,15 @@ export interface MotionTween {
 }
 
 /**
- * 按域读数：timeSource 契约只声明 now()，但 GameClock 等实现支持按 PauseDomain
+ * 按域读数：timeSource 契约只声明 now()，但 GameClock 等实现支持按 EnumPauseDomain
  * 读数（ADR-029 C-11"动画器只读 now(domain)"）。传 domain 时以带域方式读取，
  * 否则缺省 now()（GameClock 默认 Combat 域）。非 GameClock 实现忽略多余参数。
  */
-function readNow(timeSource: MotionTweenOptions["timeSource"], domain?: PauseDomain): number {
+function readNow(timeSource: IMotionTweenOptions["timeSource"], domain?: EnumPauseDomain): number {
     if (domain === undefined) {
         return timeSource.now();
     }
-    return (timeSource as { now(domain: PauseDomain): number }).now(domain);
+    return (timeSource as { now(domain: EnumPauseDomain): number }).now(domain);
 }
 
 /**

@@ -1,7 +1,7 @@
-import type { TimeSource } from "../../contracts/time/TimeSource";
-import { PauseDomain } from "../../contracts/time/PauseDomain";
+import type { ITimeSource } from "../../contracts/interfaces/ITimeSource";
+import { EnumPauseDomain } from "../../contracts/enums/EnumPauseDomain";
 
-export { PauseDomain } from "../../contracts/time/PauseDomain";
+export { EnumPauseDomain } from "../../contracts/enums/EnumPauseDomain";
 
 export interface GameClockOptions {
     readonly initialTime?: number;
@@ -23,14 +23,14 @@ function isValidRate(rate: number): boolean {
  * 离散 tick（服务确定性逻辑）；本钟可被 rate/pause/jump 控制，逻辑层仍只读
  * SimulationClock（确定性不回归）。
  */
-export class GameClock implements TimeSource {
-    private readonly domainElapsed: Record<PauseDomain, number> = {
-        [PauseDomain.Menu]: 0,
-        [PauseDomain.Combat]: 0,
+export class GameClock implements ITimeSource {
+    private readonly domainElapsed: Record<EnumPauseDomain, number> = {
+        [EnumPauseDomain.Menu]: 0,
+        [EnumPauseDomain.Combat]: 0,
     };
-    private readonly domainPaused: Record<PauseDomain, boolean> = {
-        [PauseDomain.Menu]: false,
-        [PauseDomain.Combat]: false,
+    private readonly domainPaused: Record<EnumPauseDomain, boolean> = {
+        [EnumPauseDomain.Menu]: false,
+        [EnumPauseDomain.Combat]: false,
     };
     /** 应用级冻结标志：独立于分层暂停，thawAll 只清本标志（C-17 叠加语义）。 */
     private appFrozen = false;
@@ -46,7 +46,7 @@ export class GameClock implements TimeSource {
     }
 
     /** 某域表现时间读数：baseTime + 该域已推进量（该域或应用级冻结时读数冻结）。 */
-    now(domain: PauseDomain = PauseDomain.Combat): number {
+    now(domain: EnumPauseDomain = EnumPauseDomain.Combat): number {
         return this.baseTime + this.domainElapsed[domain];
     }
 
@@ -62,11 +62,11 @@ export class GameClock implements TimeSource {
     }
 
     /** 暂停指定域：该域 elapsed 不再推进；resume 只解除本域暂停。 */
-    pause(domain: PauseDomain): void {
+    pause(domain: EnumPauseDomain): void {
         this.domainPaused[domain] = true;
     }
 
-    resume(domain: PauseDomain): void {
+    resume(domain: EnumPauseDomain): void {
         this.domainPaused[domain] = false;
     }
 
@@ -78,7 +78,7 @@ export class GameClock implements TimeSource {
         if (this.appFrozen) {
             return;
         }
-        for (const domain of Object.keys(this.domainElapsed) as PauseDomain[]) {
+        for (const domain of Object.keys(this.domainElapsed) as EnumPauseDomain[]) {
             if (!this.domainPaused[domain]) {
                 this.domainElapsed[domain] += milliseconds * this.rate;
             }
@@ -91,7 +91,7 @@ export class GameClock implements TimeSource {
      */
     jumpTo(time: number): void {
         this.baseTime = time;
-        for (const domain of Object.keys(this.domainElapsed) as PauseDomain[]) {
+        for (const domain of Object.keys(this.domainElapsed) as EnumPauseDomain[]) {
             this.domainElapsed[domain] = 0;
         }
     }

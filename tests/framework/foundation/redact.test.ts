@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import type { LogRecord } from "../../../assets/framework";
+import type { ILogRecord } from "../../../assets/framework";
 import { createScopedLogger } from "../../../assets/framework/diagnostics/logging/ScopedLogger";
 import { redactContext, redactRecord } from "../../../assets/framework/diagnostics/logging/redact";
 
@@ -40,7 +40,7 @@ describe("diagnostics redact sensitive fields", () => {
     });
 
     test("redacts sensitive fields in a log record while preserving record shape", () => {
-        const record: LogRecord = {
+        const record: ILogRecord = {
             level: "error",
             message: "save failed",
             timestamp: 1,
@@ -59,7 +59,7 @@ describe("diagnostics redact sensitive fields", () => {
 
     test("leaves the error instance untouched in a redacted record", () => {
         const error = new Error("save failed");
-        const record: LogRecord = {
+        const record: ILogRecord = {
             level: "error",
             message: "save failed",
             timestamp: 1,
@@ -161,7 +161,7 @@ describe("diagnostics redact sensitive fields", () => {
     });
 
     test("ScopedLogger applies an injected filter to every record shape", () => {
-        const records: LogRecord[] = [];
+        const records: ILogRecord[] = [];
         const logger = createScopedLogger((record) => records.push(record), "application", { source: "boot", secret: "root-secret" }, redactRecord);
 
         logger.child("inventory", { moduleId: "inventory" }).info("inventory started", { token: "call-token", phase: "start" });

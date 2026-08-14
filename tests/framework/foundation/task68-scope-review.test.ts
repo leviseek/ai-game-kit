@@ -186,14 +186,14 @@ describe("6.8 scope review: boot composition root", () => {
         }
     });
 
-    test("does not create Module instances manually", () => {
+    test("does not create IModule instances manually", () => {
         // createModules 随组合根外移到 boot/assembly.ts
         const source = readFileSync(assemblyFile, "utf8");
 
         expect(source).toContain("export function createModules");
-        // new Error/URLSearchParams 是通用构造，不属于 Module 实例化；WallClock 是
-        // 注册表演示服务而非 Module，与既有豁免词并列排除；Touch/EventTouch/Vec3
-        // 为 cc 引擎输入/向量对象（冒烟触摸注入用），同样非业务 Module
+        // new Error/URLSearchParams 是通用构造，不属于 IModule 实例化；WallClock 是
+        // 注册表演示服务而非 IModule，与既有豁免词并列排除；Touch/EventTouch/Vec3
+        // 为 cc 引擎输入/向量对象（冒烟触摸注入用），同样非业务 IModule
         expect(source).not.toMatch(/\bnew\s+(?!ConsoleLogger|CocosApplicationAdapter|Application|Error|URLSearchParams|WallClock|Touch|EventTouch|Vec3)\w+\b/);
     });
 });

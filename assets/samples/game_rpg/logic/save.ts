@@ -1,4 +1,4 @@
-import type { Module, PlatformStorage } from "../../../framework";
+import type { IModule, IPlatformStorage } from "../../../framework";
 
 /** 存档 schema 版本：夹具层自持版本号，升级时递增。 */
 export const RPG_SAVE_VERSION = 1;
@@ -16,7 +16,7 @@ export interface RpgSave {
  * 视为无效并返回 null（夹具层无迁移接缝，旧版本直接拒绝）。夹具层实现
  * "版本化"语义，不依赖框架根入口白名单外的内部实现（design decision 4 边界）。
  */
-export function createRpgSave(storage: PlatformStorage): RpgSave {
+export function createRpgSave(storage: IPlatformStorage): RpgSave {
     const keyFor = (namespace: string, key: string): string => `rpg:${encodeURIComponent(namespace)}:${encodeURIComponent(key)}`;
 
     return {
@@ -38,7 +38,7 @@ export function createRpgSave(storage: PlatformStorage): RpgSave {
             try {
                 record = JSON.parse(raw) as { version?: unknown; data?: unknown };
             } catch {
-                // 损坏 JSON 视为无效记录，返回 null（对齐 PlatformStorage 缺档语义）
+                // 损坏 JSON 视为无效记录，返回 null（对齐 IPlatformStorage 缺档语义）
                 return null;
             }
 
@@ -52,7 +52,7 @@ export function createRpgSave(storage: PlatformStorage): RpgSave {
     };
 }
 
-export function createRpgSaveModule(save: RpgSave): Module {
+export function createRpgSaveModule(save: RpgSave): IModule {
     return {
         id: "rpg.save",
         dependencies: [],

@@ -3,47 +3,49 @@ import { describe, expect, test } from "bun:test";
 // 红期：contracts/audio 与 core/audio 尚未实现，模块解析失败属预期；
 // 本文件通过使用方式锁定待实现契约的形状（分组、后端、作用域、服务）。
 import { createAudioService } from "../../../assets/framework/core/audio/AudioService";
-import type { AudioBackend, AudioGroup, AudioTrackRef } from "../../../assets/framework/contracts/audio/Audio";
+import type { IAudioBackend } from "../../../assets/framework/contracts/interfaces/IAudioBackend";
+import type { EnumAudioGroup } from "../../../assets/framework/contracts/interfaces/EnumAudioGroup";
+import type { IAudioTrackRef } from "../../../assets/framework/contracts/interfaces/IAudioTrackRef";
 
 const DEFAULT_VOLUME = 1;
 
 const TRACKS = {
-    musicMain: { bundle: "audio", path: "music/main" } as AudioTrackRef,
-    musicBattle: { bundle: "audio", path: "music/battle" } as AudioTrackRef,
-    sfxAttack: { bundle: "audio", path: "sfx/attack" } as AudioTrackRef,
-    uiClick: { bundle: "audio", path: "ui/click" } as AudioTrackRef,
+    musicMain: { bundle: "audio", path: "music/main" } as IAudioTrackRef,
+    musicBattle: { bundle: "audio", path: "music/battle" } as IAudioTrackRef,
+    sfxAttack: { bundle: "audio", path: "sfx/attack" } as IAudioTrackRef,
+    uiClick: { bundle: "audio", path: "ui/click" } as IAudioTrackRef,
 };
 
 // 记录型后端替身：可用性可控，所有调用可断言
-class RecordingBackend implements AudioBackend {
+class RecordingBackend implements IAudioBackend {
     public readonly available: boolean;
-    public readonly playCalls: Array<{ group: AudioGroup; track: AudioTrackRef }> = [];
-    public readonly stopCalls: AudioGroup[] = [];
-    public readonly pauseCalls: AudioGroup[] = [];
-    public readonly resumeCalls: AudioGroup[] = [];
-    public readonly volumeCalls: Array<{ group: AudioGroup; volume: number }> = [];
+    public readonly playCalls: Array<{ group: EnumAudioGroup; track: IAudioTrackRef }> = [];
+    public readonly stopCalls: EnumAudioGroup[] = [];
+    public readonly pauseCalls: EnumAudioGroup[] = [];
+    public readonly resumeCalls: EnumAudioGroup[] = [];
+    public readonly volumeCalls: Array<{ group: EnumAudioGroup; volume: number }> = [];
 
     constructor(available = true) {
         this.available = available;
     }
 
-    play(group: AudioGroup, track: AudioTrackRef): void {
+    play(group: EnumAudioGroup, track: IAudioTrackRef): void {
         this.playCalls.push({ group, track });
     }
 
-    stop(group: AudioGroup): void {
+    stop(group: EnumAudioGroup): void {
         this.stopCalls.push(group);
     }
 
-    pause(group: AudioGroup): void {
+    pause(group: EnumAudioGroup): void {
         this.pauseCalls.push(group);
     }
 
-    resume(group: AudioGroup): void {
+    resume(group: EnumAudioGroup): void {
         this.resumeCalls.push(group);
     }
 
-    setVolume(group: AudioGroup, volume: number): void {
+    setVolume(group: EnumAudioGroup, volume: number): void {
         this.volumeCalls.push({ group, volume });
     }
 }

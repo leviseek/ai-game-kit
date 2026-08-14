@@ -2,10 +2,10 @@
 // 包: CardGame (id=cgpk0001)
 
 import type {
-    TypedButtonNode,
-    TypedImageNode,
-    TypedProgressNode,
-    TypedTextNode,
+    ITypedButtonNode,
+    ITypedImageNode,
+    ITypedProgressNode,
+    ITypedTextNode,
 } from "../../framework";
 
 export const CardBattleViewFields = {
@@ -25,16 +25,16 @@ export const CardBattleViewFields = {
 export type CardBattleViewNodes = keyof typeof CardBattleViewFields;
 
 export interface ICardBattleView {
-    readonly _bg_battle: TypedImageNode;
-    readonly _bar_enemy_hp: TypedProgressNode;
-    readonly _txt_enemy_hp: TypedTextNode;
-    readonly _txt_player_hp: TypedTextNode;
-    readonly _txt_mana: TypedTextNode;
-    readonly _btn_card_0: TypedButtonNode;
-    readonly _btn_card_1: TypedButtonNode;
-    readonly _btn_card_2: TypedButtonNode;
-    readonly _btn_end_turn: TypedButtonNode;
-    readonly _txt_result: TypedTextNode;
-    readonly _btn_restart: TypedButtonNode;
+    readonly _bg_battle: ITypedImageNode;
+    readonly _bar_enemy_hp: ITypedProgressNode;
+    readonly _txt_enemy_hp: ITypedTextNode;
+    readonly _txt_player_hp: ITypedTextNode;
+    readonly _txt_mana: ITypedTextNode;
+    readonly _btn_card_0: ITypedButtonNode;
+    readonly _btn_card_1: ITypedButtonNode;
+    readonly _btn_card_2: ITypedButtonNode;
+    readonly _btn_end_turn: ITypedButtonNode;
+    readonly _txt_result: ITypedTextNode;
+    readonly _btn_restart: ITypedButtonNode;
 }
 

@@ -1,4 +1,4 @@
-import type { Module, UiNavigator } from "../../../framework";
+import type { IModule, UiNavigator } from "../../../framework";
 import type { TycoonEconomicState, TycoonProductionState } from "../models";
 import { TYCOON_FACTORY_ROUTE, TYCOON_HUB_ROUTE, type TycoonFactoryViewModel, type TycoonHubViewModel } from "../models";
 
@@ -44,7 +44,7 @@ export function createTycoonUiViewModels(sources: { readonly economyState: () =>
  * 覆盖关系由导航层层级契约维护。模块只声明装配关系，不在 dispose 释放
  * 共享导航器——组合根的 dispose 统一负责（对齐 GameFixture 幂等契约）。
  */
-export function createTycoonUiModule(navigator: UiNavigator): Module {
+export function createTycoonUiModule(navigator: UiNavigator): IModule {
     return {
         id: "tycoon.ui",
         dependencies: [],

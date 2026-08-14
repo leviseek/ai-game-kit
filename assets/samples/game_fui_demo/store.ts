@@ -1,4 +1,4 @@
-import { createStore, type Store } from "../../framework";
+import { createStore, type IStore } from "../../framework";
 
 /** 关闭对话框演示状态：可见性 + 内容文案。 */
 export interface CloseDialogState {
@@ -24,7 +24,7 @@ export interface CloseDialogViewModel {
     readonly title: string;
 }
 
-/** 投影：Store 状态 → 视图数据（外部纯函数，可独立单测）。 */
+/** 投影：IStore 状态 → 视图数据（外部纯函数，可独立单测）。 */
 export function projectCloseDialog(state: CloseDialogState): CloseDialogViewModel {
     return {
         content: state.visible ? state.content : "",
@@ -32,8 +32,8 @@ export function projectCloseDialog(state: CloseDialogState): CloseDialogViewMode
     };
 }
 
-/** 创建演示 Store：初始关闭态。 */
-export function createCloseDialogStore(): Store<CloseDialogState, CloseDialogAction> {
+/** 创建演示 IStore：初始关闭态。 */
+export function createCloseDialogStore(): IStore<CloseDialogState, CloseDialogAction> {
     return createStore(closeDialogReducer, { visible: false, content: "" });
 }
 

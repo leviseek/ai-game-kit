@@ -1,8 +1,15 @@
-import type { AudioBackend, AudioGroup, AudioGroupState, AudioPlayScope, AudioService, AudioServiceOptions, AudioTrackRef } from "../../contracts/audio/Audio";
-import type { Logger } from "../../contracts/logging/Logger";
-import type { ApplicationVisibilityState } from "../../contracts/platform/Platform";
+import type { IAudioBackend } from "../../contracts/interfaces/IAudioBackend";
+import type { IAudioGroupState } from "../../contracts/interfaces/IAudioGroupState";
+import type { IAudioPlayScope } from "../../contracts/interfaces/IAudioPlayScope";
+import type { IAudioService } from "../../contracts/interfaces/IAudioService";
+import type { IAudioServiceOptions } from "../../contracts/interfaces/IAudioServiceOptions";
+import type { IAudioTrackRef } from "../../contracts/interfaces/IAudioTrackRef";
+import { EnumAudioGroup } from "../../contracts/enums/EnumAudioGroup";
+import type { ILogger } from "../../contracts/interfaces/ILogger";
 
-const AUDIO_GROUPS: readonly AudioGroup[] = ["music", "sfx", "ui"];
+import { EnumApplicationVisibilityState } from "../../contracts/enums/EnumApplicationVisibilityState";
+
+const AUDIO_GROUPS: readonly EnumAudioGroup[] = [EnumAudioGroup.Music, EnumAudioGroup.Sfx, EnumAudioGroup.Ui];
 
 const DEFAULT_VOLUME = 1;
 
@@ -19,21 +26,21 @@ interface PlayScopeState {
 
 interface ActivePlay {
     readonly owner: PlayScopeState;
-    readonly group: AudioGroup;
-    readonly track: AudioTrackRef;
+    readonly group: EnumAudioGroup;
+    readonly track: IAudioTrackRef;
 }
 
 /**
  * 引擎无关的分组音频服务。按 music/sfx/ui 分组维护音量、静音与当前播放，
- * 通过注入的 AudioBackend 驱动真实音频；作用域释放时停止其仍持有的播放。
+ * 通过注入的 IAudioBackend 驱动真实音频；作用域释放时停止其仍持有的播放。
  * 后端不可用（available 为 false）时整体降级为 no-op，操作不抛错且不触达后端。
  */
-export function createAudioService(options: AudioServiceOptions): AudioService {
-    const backend: AudioBackend = options.backend;
-    const logger: Logger | undefined = options.logger;
+export function createAudioService(options: IAudioServiceOptions): IAudioService {
+    const backend: IAudioBackend = options.backend;
+    const logger: ILogger | undefined = options.logger;
     const degraded = !backend.available;
 
-    const groups = new Map<AudioGroup, GroupState>(
+    const groups = new Map<EnumAudioGroup, GroupState>(
         AUDIO_GROUPS.map((group) => [
             group,
             {
@@ -44,19 +51,19 @@ export function createAudioService(options: AudioServiceOptions): AudioService {
         ]),
     );
 
-    function stateOf(group: AudioGroup): GroupState {
+    function stateOf(group: EnumAudioGroup): GroupState {
         return groups.get(group) as GroupState;
     }
 
     // 有效音量：静音时以 0 表达，不覆盖用户音量设定
-    function effectiveVolume(group: AudioGroup): number {
+    function effectiveVolume(group: EnumAudioGroup): number {
         const state = stateOf(group);
         return state.muted ? 0 : state.volume;
     }
 
     // 停止分组当前播放：从所属作用域记录中移除，再驱动后端 stop。
     // 作用域释放时也会走这里，因此切换/停止后旧作用域释放不会重复停止。
-    function stopCurrent(group: AudioGroup): void {
+    function stopCurrent(group: EnumAudioGroup): void {
         const state = stateOf(group);
         const current = state.current;
 
@@ -69,7 +76,7 @@ export function createAudioService(options: AudioServiceOptions): AudioService {
         backend.stop(group);
     }
 
-    function setVolume(group: AudioGroup, volume: number): boolean {
+    function setVolume(group: EnumAudioGroup, volume: number): boolean {
         if (!Number.isFinite(volume) || volume < 0 || volume > 1) {
             return false;
         }
@@ -85,7 +92,7 @@ export function createAudioService(options: AudioServiceOptions): AudioService {
         return true;
     }
 
-    function setMuted(group: AudioGroup, muted: boolean): void {
+    function setMuted(group: EnumAudioGroup, muted: boolean): void {
         // 降级与非降级都更新内部状态，使 getGroupState 语义统一；降级不触达后端
         stateOf(group).muted = muted;
         if (!degraded) {
@@ -93,33 +100,33 @@ export function createAudioService(options: AudioServiceOptions): AudioService {
         }
     }
 
-    function stop(group: AudioGroup): void {
+    function stop(group: EnumAudioGroup): void {
         if (degraded) {
             return;
         }
         stopCurrent(group);
     }
 
-    function pause(group: AudioGroup): void {
+    function pause(group: EnumAudioGroup): void {
         if (degraded) {
             return;
         }
         backend.pause(group);
     }
 
-    function resume(group: AudioGroup): void {
+    function resume(group: EnumAudioGroup): void {
         if (degraded) {
             return;
         }
         backend.resume(group);
     }
 
-    function getGroupState(group: AudioGroup): AudioGroupState {
+    function getGroupState(group: EnumAudioGroup): IAudioGroupState {
         const state = stateOf(group);
         return { group, volume: state.volume, muted: state.muted };
     }
 
-    function createPlayScope(): AudioPlayScope {
+    function createPlayScope(): IAudioPlayScope {
         const scopeState: PlayScopeState = { plays: new Set(), released: false };
 
         return {
@@ -157,17 +164,17 @@ export function createAudioService(options: AudioServiceOptions): AudioService {
     // 前后台策略：后台暂停配置分组、前台恢复，仅恢复因可见性被暂停的分组，
     // 避免覆盖调用方手动暂停/恢复的意图。切换处理捕获错误并记录结构化诊断，
     // 不向上抛破坏应用生命周期。
-    const autoPaused = new Set<AudioGroup>();
+    const autoPaused = new Set<EnumAudioGroup>();
     let unsubscribeVisibility: (() => void) | undefined;
 
     if (options.visibility !== undefined && options.backgroundPolicy !== undefined) {
         const visibility = options.visibility;
         const policy = options.backgroundPolicy;
 
-        unsubscribeVisibility = visibility.onVisibilityChange((state: ApplicationVisibilityState) => {
+        unsubscribeVisibility = visibility.onVisibilityChange((state: EnumApplicationVisibilityState) => {
             // 逐组处理并独立捕获：单组后端异常不中断其余分组的切换，
             // 同时把错误隔离为结构化诊断，不向上抛破坏应用生命周期
-            const handleGroup = (group: AudioGroup): void => {
+            const handleGroup = (group: EnumAudioGroup): void => {
                 try {
                     if (state === "background") {
                         if (stateOf(group).current !== undefined) {

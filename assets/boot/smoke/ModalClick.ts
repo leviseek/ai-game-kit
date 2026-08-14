@@ -1,4 +1,5 @@
 import { director, EventTouch, Node, Touch, Vec3 } from "cc";
+import { EnumUiLayer } from "../../framework";
 import { createClickableFairyGuiView } from "../../framework/adapters/cocos/ui/FairyGuiPageAdapter";
 import type { UiHost } from "../host/UiHost";
 import { BUNDLES, PACKAGE_PATHS } from "../constants";
@@ -37,7 +38,7 @@ export async function runModalClickSmoke(host: UiHost): Promise<void> {
     const root = host.root;
     const width = root?.width ?? 1280;
     const height = root?.height ?? 720;
-    const container = host.pageAdapter?.containerFor("normal");
+    const container = host.pageAdapter?.containerFor(EnumUiLayer.Normal);
     let underHits = 0;
     if (container === undefined) {
         report("under-mounted", false, "normal layer container not ready");
@@ -58,7 +59,7 @@ export async function runModalClickSmoke(host: UiHost): Promise<void> {
 
     // 4. 进入阻断模态：遮罩由导航器状态自动呈现
     const opened = host.navigator?.open("modal-click-under", {
-        layer: "system",
+        layer: EnumUiLayer.System,
         blocking: true,
     });
     report("modal-active", opened?.ok === true && host.navigator?.modal === true);

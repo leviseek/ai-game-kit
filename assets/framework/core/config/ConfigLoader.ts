@@ -1,6 +1,6 @@
 import { FrameworkError } from "../errors/FrameworkError";
-import type { IResourceProvider } from "../../contracts/resource/ResourceProvider";
-import type { ConfigTable } from "../../contracts/config/Config";
+import type { IResourceProvider } from "../../contracts/interfaces/IResourceProvider";
+import type { IConfigTable } from "../../contracts/interfaces/IConfigTable";
 import { ConfigLoadError } from "./ConfigErrors";
 import { createConfigTable } from "./ConfigTable";
 
@@ -21,13 +21,13 @@ function unwrapCause(error: unknown): unknown {
  * 装载失败抛 ConfigLoadError 并保留底层原因；内容非纯对象在 createConfigTable
  * 抛 ConfigParseError，均不产生部分配置状态。
  *
- * 注意：配置资源按"应用生命周期内常驻"处理，本函数不创建 ResourceScope 也不
+ * 注意：配置资源按"应用生命周期内常驻"处理，本函数不创建 IResourceScope 也不
  * 提供卸载入口；如需可释放语义由调用方显式管理（见 ADR-015 影响段）。
  *
  * extractContent 把加载到的引擎资源转换为配置内容；缺省原样透传，
  * Cocos 适配器用它把 JsonAsset 解包为纯数据后再走 createConfigTable。
  */
-export async function loadConfigTable(provider: IResourceProvider, bundle: string, path: string, extractContent: (resource: unknown) => unknown = (resource) => resource): Promise<ConfigTable> {
+export async function loadConfigTable(provider: IResourceProvider, bundle: string, path: string, extractContent: (resource: unknown) => unknown = (resource) => resource): Promise<IConfigTable> {
     const handle = provider.load(bundle, path);
     const settled = await handle.done;
 

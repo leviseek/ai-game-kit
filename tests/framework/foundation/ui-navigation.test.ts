@@ -1,9 +1,11 @@
 import { describe, expect, test } from "bun:test";
 
-import type { UiLayer, UiPage, UiResult } from "../../../assets/framework/contracts/ui/Navigation";
+import type { EnumUiLayer } from "../../../assets/framework/contracts/enums/EnumUiLayer";
+import type { IUiPage } from "../../../assets/framework/contracts/interfaces/IUiPage";
+import type { IUiResult } from "../../../assets/framework/contracts/interfaces/IUiResult";
 import { createUiNavigator, type UiNavigator } from "../../../assets/framework/core/ui/UiNavigator";
 
-function openResult(navigator: UiNavigator, route: string, options?: { layer?: UiLayer; blocking?: boolean }): UiResult {
+function openResult(navigator: UiNavigator, route: string, options?: { layer?: EnumUiLayer; blocking?: boolean }): IUiResult {
     return navigator.open(route, options);
 }
 
@@ -168,8 +170,8 @@ describe("UiNavigator layer contract", () => {
 
     test("layers cover the fixed seven-layer order with system highest", () => {
         const navigator = createUiNavigator();
-        const opened: Array<{ route: string; layer: UiLayer }> = [];
-        const entries: Array<[string, UiLayer]> = [
+        const opened: Array<{ route: string; layer: EnumUiLayer }> = [];
+        const entries: Array<[string, EnumUiLayer]> = [
             ["scene", "scene"],
             ["hud", "normal"],
             ["confirm", "popup"],
@@ -223,7 +225,7 @@ describe("UiNavigator page scope", () => {
     test("closing a page releases its subscriptions in reverse registration order", () => {
         const navigator = createUiNavigator();
         const result = openResult(navigator, "hero");
-        const page = result.page as UiPage;
+        const page = result.page as IUiPage;
         const released: string[] = [];
         page.addDisposable({
             dispose: () => {
@@ -245,7 +247,7 @@ describe("UiNavigator page scope", () => {
     test("duplicate close is idempotent and releases the scope only once", () => {
         const navigator = createUiNavigator();
         const result = openResult(navigator, "hero");
-        const page = result.page as UiPage;
+        const page = result.page as IUiPage;
         let releases = 0;
         page.addDisposable({
             dispose: () => {
@@ -296,7 +298,7 @@ describe("UiNavigator page scope", () => {
             },
         });
         const result = openResult(navigator, "hero");
-        const page = result.page as UiPage;
+        const page = result.page as IUiPage;
         const released: string[] = [];
         page.addDisposable({
             dispose: () => {
@@ -331,7 +333,7 @@ describe("UiNavigator page scope", () => {
             },
         });
         const inventoryDisposed: string[] = [];
-        (navigator.pages[1] as UiPage).addDisposable({
+        (navigator.pages[1] as IUiPage).addDisposable({
             dispose: () => {
                 inventoryDisposed.push("inventory");
             },
@@ -347,7 +349,7 @@ describe("UiNavigator page scope", () => {
     test("addDisposable after close is a no-op", () => {
         const navigator = createUiNavigator();
         const result = openResult(navigator, "hero");
-        const page = result.page as UiPage;
+        const page = result.page as IUiPage;
         navigator.close(page.id);
         const released: string[] = [];
         page.addDisposable({

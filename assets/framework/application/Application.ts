@@ -1,5 +1,6 @@
-import type { ApplicationContext, ApplicationState } from "../contracts/application/ApplicationContext";
-import type { Module } from "../contracts/module/Module";
+import type { IApplicationContext } from "../contracts/interfaces/IApplicationContext";
+import { EnumApplicationState } from "../contracts/enums/EnumApplicationState";
+import type { IModule } from "../contracts/interfaces/IModule";
 import { ApplicationStateError } from "./ApplicationStateError";
 import { ModuleGraph } from "./ModuleGraph";
 import { ModuleRunner } from "./ModuleRunner";
@@ -11,22 +12,22 @@ import { ModuleRunner } from "./ModuleRunner";
  * 返回同一进行中的操作。
  */
 export class Application {
-    private readonly modules: readonly Module[];
-    private readonly context: ApplicationContext;
+    private readonly modules: readonly IModule[];
+    private readonly context: IApplicationContext;
     private runner: ModuleRunner | undefined;
-    private currentState: ApplicationState = "created";
+    private currentState: EnumApplicationState = EnumApplicationState.Created;
     private queueTail: Promise<void> = Promise.resolve();
     // start/dispose 用 inFlight 防重入（幂等返回同一操作）；pause/resume 只靠状态守卫，
     // 因为它们在目标状态时本身就是幂等操作。
     private inFlightStart: Promise<void> | null = null;
     private inFlightDispose: Promise<void> | null = null;
 
-    constructor(modules: readonly Module[], context: ApplicationContext) {
+    constructor(modules: readonly IModule[], context: IApplicationContext) {
         this.modules = [...modules];
         this.context = context;
     }
 
-    get state(): ApplicationState {
+    get state(): EnumApplicationState {
         return this.currentState;
     }
 
@@ -40,7 +41,7 @@ export class Application {
         }
 
         const operation = this.enqueue(async () => {
-            this.setState("initializing");
+            this.setState(EnumApplicationState.Initializing);
 
             let runner: ModuleRunner | undefined;
 
@@ -53,13 +54,13 @@ export class Application {
                 await runner.start();
             } catch (primaryError) {
                 // 启动失败后直接进入 disposed 终态：应用不可重试，必须重新创建实例。
-                this.setState("stopping");
+                this.setState(EnumApplicationState.Stopping);
                 await this.rollback(runner);
-                this.setState("disposed");
+                this.setState(EnumApplicationState.Disposed);
                 throw primaryError;
             }
 
-            this.setState("running");
+            this.setState(EnumApplicationState.Running);
         });
 
         this.inFlightStart = operation;
@@ -87,7 +88,7 @@ export class Application {
 
         return this.enqueue(async () => {
             await this.runner?.pause();
-            this.setState("paused");
+            this.setState(EnumApplicationState.Paused);
         });
     }
 
@@ -102,7 +103,7 @@ export class Application {
 
         return this.enqueue(async () => {
             await this.runner?.resume();
-            this.setState("running");
+            this.setState(EnumApplicationState.Running);
         });
     }
 
@@ -116,7 +117,7 @@ export class Application {
         }
 
         const operation = this.enqueue(async () => {
-            this.setState("stopping");
+            this.setState(EnumApplicationState.Stopping);
 
             const cleanupErrors: unknown[] = [];
 
@@ -131,7 +132,7 @@ export class Application {
                 cleanupErrors.push(e);
             }
 
-            this.setState("disposed");
+            this.setState(EnumApplicationState.Disposed);
 
             if (cleanupErrors.length > 0) {
                 this.reportCleanupErrors("dispose", cleanupErrors);
@@ -178,11 +179,11 @@ export class Application {
 
     private reportCleanupErrors(phase: string, errors: readonly unknown[]): void {
         for (const error of errors) {
-            this.context.logger.error("Module cleanup failed", { phase, errorCount: errors.length }, error instanceof Error ? error : undefined);
+            this.context.logger.error("IModule cleanup failed", { phase, errorCount: errors.length }, error instanceof Error ? error : undefined);
         }
     }
 
-    private setState(next: ApplicationState): void {
+    private setState(next: EnumApplicationState): void {
         this.currentState = next;
     }
 

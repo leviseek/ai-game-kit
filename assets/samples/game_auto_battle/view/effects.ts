@@ -1,4 +1,4 @@
-import type { Module } from "../../../framework";
+import type { IModule } from "../../../framework";
 import type { AutoBattleEvent } from "../models";
 
 /**
@@ -97,7 +97,7 @@ export function projectHitFeedbackEvents(events: readonly AutoBattleEvent[], cur
  * 特效投影模块：投影为纯函数，模块只登记引用使其进入装配清单，
  * 生命周期无副作用（对齐 formation/skills 纯函数模块登记语义）。
  */
-export function createAutoBattleEffectsModule(): Module {
+export function createAutoBattleEffectsModule(): IModule {
     return {
         id: "auto_battle.effects",
         dependencies: [],

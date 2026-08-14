@@ -1,12 +1,12 @@
 import { createAutoBattleFixture, toViewModelNode } from "./assembly";
 import { buildAutoBattleBindings, createAutoBattleViewModel, formatAutoBattleEvent, type AutoBattleViewModel } from "./view/view";
 import { SPEED_BUTTON_NODE } from "./view/UiNodes";
-import { createViewModelRenderer, type ViewModelNode } from "../../framework";
+import { createViewModelRenderer, type IViewModelNode } from "../../framework";
 
 /**
  * 自动战斗冒烟的宿主接缝：boot 侧 UiHost 的结构性子集（运行时值传入，
  * samples 不 import boot）。nodeResolver 为可选的真实 fgui 渲染接缝：boot
- * 注入 createFairyGuiViewHandle，把页面根组件包装成 ViewModelNode 解析器，
+ * 注入 createFairyGuiViewHandle，把页面根组件包装成 IViewModelNode 解析器，
  * 使冒烟渲染落到真实 BattleView 节点（验证 BattleView.xml 与 viewModel 节点
  * 名对齐）。
  */
@@ -29,12 +29,12 @@ export interface AutoBattleSmokeHost {
         | undefined;
     smokeUiInit(): boolean;
     release(): void;
-    nodeResolver?: (view: unknown) => (name: string) => ViewModelNode | undefined;
+    nodeResolver?: (view: unknown) => (name: string) => IViewModelNode | undefined;
 }
 
 /** 冒烟运行选项：真实 fgui 渲染接缝由 boot 侧注入，规模配置可选覆盖。 */
 export interface AutoBattleSmokeOptions {
-    readonly nodeResolver?: (view: unknown) => (name: string) => ViewModelNode | undefined;
+    readonly nodeResolver?: (view: unknown) => (name: string) => IViewModelNode | undefined;
     /** 单侧规模（NvN，1..MAX_TEAM_SIZE）：缺省 3v3，注入 6v6 验证规模上限渲染。 */
     readonly scale?: number;
 }
@@ -125,7 +125,7 @@ export async function runAutoBattleSmoke(host: AutoBattleSmokeHost, ensureShared
     await fixture.start();
 
     const resolver = options.nodeResolver ?? host.nodeResolver;
-    const node: (name: string) => ViewModelNode | undefined = resolver === undefined ? (name: string): ViewModelNode => toViewModelNode(fixture.viewModel.node(name)) : resolver(page.view);
+    const node: (name: string) => IViewModelNode | undefined = resolver === undefined ? (name: string): IViewModelNode => toViewModelNode(fixture.viewModel.node(name)) : resolver(page.view);
 
     const renderer = createViewModelRenderer<AutoBattleViewModel>({
         node,
