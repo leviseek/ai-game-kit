@@ -1,6 +1,18 @@
 import type { GameFixture, IModule, IPlatformStorage, UiNavigator } from "../../framework";
 import { createGameFixture, createUiNavigator, createViewModelRenderer, type IViewModelNode } from "../../framework";
-import type { AutoBattleBaseAttributes, AutoBattleBuff, AutoBattleEvent, AutoBattleHero, AutoBattleLineup, AutoBattleSkill, AutoBattleSkillCondition, AutoBattleSkillEffectDef, AutoBattleState, AutoBattleUnit, AutoBattleUnitAnimation } from "./models";
+import type {
+    AutoBattleBaseAttributes,
+    AutoBattleBuff,
+    AutoBattleEvent,
+    AutoBattleHero,
+    AutoBattleLineup,
+    AutoBattleSkill,
+    AutoBattleSkillCondition,
+    AutoBattleSkillEffectDef,
+    AutoBattleState,
+    AutoBattleUnit,
+    AutoBattleUnitAnimation,
+} from "./models";
 import { createAutoBattleClock, createAutoBattleClockModule, createIdleRewardClock, createIdleRewardClockModule, type AutoBattleClock, type IdleRewardClock } from "./logic/clock";
 import { createAutoBattleConfig, createAutoBattleConfigModule, type AutoBattleConfigHandle } from "./logic/config";
 import { createAutoBattleSkillsModule } from "./logic/skills";

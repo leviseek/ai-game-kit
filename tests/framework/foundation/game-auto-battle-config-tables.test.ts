@@ -62,10 +62,7 @@ describe("Auto-battle table-driven config", () => {
         expect(() =>
             createAutoBattleConfig({
                 ...tableContent(),
-                heroes: [
-                    { id: "x", name: "X", position: "front", baseAttributeId: "ghost", energyMax: 20, skillId: "ally-tank-skill" },
-                    ...AUTO_BATTLE_HEROES,
-                ],
+                heroes: [{ id: "x", name: "X", position: "front", baseAttributeId: "ghost", energyMax: 20, skillId: "ally-tank-skill" }, ...AUTO_BATTLE_HEROES],
             }),
         ).toThrow(/base attribute/);
     });
@@ -74,10 +71,7 @@ describe("Auto-battle table-driven config", () => {
         expect(() =>
             createAutoBattleConfig({
                 ...tableContent(),
-                heroes: [
-                    { id: "x", name: "X", position: "front", baseAttributeId: "tank", energyMax: 20, skillId: "ghost-skill" },
-                    ...AUTO_BATTLE_HEROES,
-                ],
+                heroes: [{ id: "x", name: "X", position: "front", baseAttributeId: "tank", energyMax: 20, skillId: "ghost-skill" }, ...AUTO_BATTLE_HEROES],
             }),
         ).toThrow(/skill/);
     });

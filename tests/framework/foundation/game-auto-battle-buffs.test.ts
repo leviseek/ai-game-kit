@@ -41,7 +41,11 @@ describe("Auto-battle buffs", () => {
     });
 
     test("attack bonus sums attack-up buff values", () => {
-        const instances = [createAutoBattleBuffInstance(buff("a", "attack-up", 2, 2)), createAutoBattleBuffInstance(buff("b", "attack-up", 3, 2)), createAutoBattleBuffInstance(buff("c", "defense-up", 9, 2))];
+        const instances = [
+            createAutoBattleBuffInstance(buff("a", "attack-up", 2, 2)),
+            createAutoBattleBuffInstance(buff("b", "attack-up", 3, 2)),
+            createAutoBattleBuffInstance(buff("c", "defense-up", 9, 2)),
+        ];
         expect(autoBattleBuffAttackBonus(instances)).toBe(5);
     });
 

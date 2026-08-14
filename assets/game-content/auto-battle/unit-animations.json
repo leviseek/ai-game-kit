@@ -1,4 +1,16 @@
 [
-    { "id": "warrior-f", "bundle": "animations", "dir": "auto-battle", "frameCount": 10, "prefixByAnim": { "idle": "warrior_f_idle", "gesture": "warrior_f_gesture", "walk": "warrior_f_walk", "attack": "warrior_f_attack", "death": "warrior_f_death" } },
-    { "id": "warrior-m", "bundle": "animations", "dir": "auto-battle", "frameCount": 10, "prefixByAnim": { "idle": "warrior_m_idle", "gesture": "warrior_m_gesture", "walk": "warrior_m_walk", "attack": "warrior_m_attack", "death": "warrior_m_death" } }
+    {
+        "id": "warrior-f",
+        "bundle": "animations",
+        "dir": "auto-battle",
+        "frameCount": 10,
+        "prefixByAnim": { "idle": "warrior_f_idle", "gesture": "warrior_f_gesture", "walk": "warrior_f_walk", "attack": "warrior_f_attack", "death": "warrior_f_death" }
+    },
+    {
+        "id": "warrior-m",
+        "bundle": "animations",
+        "dir": "auto-battle",
+        "frameCount": 10,
+        "prefixByAnim": { "idle": "warrior_m_idle", "gesture": "warrior_m_gesture", "walk": "warrior_m_walk", "attack": "warrior_m_attack", "death": "warrior_m_death" }
+    }
 ]

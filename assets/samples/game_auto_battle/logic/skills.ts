@@ -62,7 +62,12 @@ export function resolveAutoBattleSkillEffect(effect: AutoBattleSkillEffect, buff
  * 不修改任何状态。单效果快捷字段（kind/value）归一化为效果列表首条，
  * 避免伤害钳制/治疗上限规则在多处重复实现导致漂移。
  */
-export function resolveAutoBattleSkill(skill: AutoBattleSkill, targetHp: number, targetMaxHp: number, buffById: (buffId: string) => AutoBattleBuff | undefined): readonly AutoBattleSkillEffectResult[] {
+export function resolveAutoBattleSkill(
+    skill: AutoBattleSkill,
+    targetHp: number,
+    targetMaxHp: number,
+    buffById: (buffId: string) => AutoBattleBuff | undefined,
+): readonly AutoBattleSkillEffectResult[] {
     const effects = skill.effects ?? [{ kind: skill.kind, value: skill.value }];
     let hp = targetHp;
     const results: AutoBattleSkillEffectResult[] = [];

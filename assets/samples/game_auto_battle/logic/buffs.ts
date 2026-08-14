@@ -47,7 +47,5 @@ export function autoBattleBuffDefenseBonus(instances: readonly AutoBattleBuffIns
  * 返回新列表（纯函数，不修改入参）。
  */
 export function tickAutoBattleBuffs(instances: readonly AutoBattleBuffInstance[]): readonly AutoBattleBuffInstance[] {
-    return instances
-        .map((instance) => ({ def: instance.def, remaining: instance.remaining - 1 }))
-        .filter((instance) => instance.remaining > 0);
+    return instances.map((instance) => ({ def: instance.def, remaining: instance.remaining - 1 })).filter((instance) => instance.remaining > 0);
 }

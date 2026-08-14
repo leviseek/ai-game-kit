@@ -11,6 +11,8 @@ history
 .codex
 .codegraph
 .qoder
+.agents
+.claude
 .superpowers
 .cursor
 ui
@@ -20,3 +22,5 @@ arts
 **/*.d.ts
 package-lock.json
 bun.lock
+skills-lock.json
+docs/superpowers

@@ -29,8 +29,20 @@ export const AUTO_BATTLE_HEROES: readonly Record<string, unknown>[] = [
 
 /** 3. 单位动画表：单位 → 动画帧生成参数（替代 animUrls 硬编码映射）。 */
 export const AUTO_BATTLE_UNIT_ANIMATIONS: readonly AutoBattleUnitAnimation[] = [
-    { id: "warrior-f", bundle: "animations", dir: "auto-battle", frameCount: 10, prefixByAnim: { idle: "warrior_f_idle", gesture: "warrior_f_gesture", walk: "warrior_f_walk", attack: "warrior_f_attack", death: "warrior_f_death" } },
-    { id: "warrior-m", bundle: "animations", dir: "auto-battle", frameCount: 10, prefixByAnim: { idle: "warrior_m_idle", gesture: "warrior_m_gesture", walk: "warrior_m_walk", attack: "warrior_m_attack", death: "warrior_m_death" } },
+    {
+        id: "warrior-f",
+        bundle: "animations",
+        dir: "auto-battle",
+        frameCount: 10,
+        prefixByAnim: { idle: "warrior_f_idle", gesture: "warrior_f_gesture", walk: "warrior_f_walk", attack: "warrior_f_attack", death: "warrior_f_death" },
+    },
+    {
+        id: "warrior-m",
+        bundle: "animations",
+        dir: "auto-battle",
+        frameCount: 10,
+        prefixByAnim: { idle: "warrior_m_idle", gesture: "warrior_m_gesture", walk: "warrior_m_walk", attack: "warrior_m_attack", death: "warrior_m_death" },
+    },
 ];
 
 /** 4. 技能表：多效果（damage/heal/buff）、目标选择、条件/动效引用。 */
@@ -58,9 +70,7 @@ export const AUTO_BATTLE_SKILL_EFFECTS: readonly AutoBattleSkillEffectDef[] = [
 ];
 
 /** 7. 技能条件表：释放/目标选择条件。 */
-export const AUTO_BATTLE_SKILL_CONDITIONS: readonly AutoBattleSkillCondition[] = [
-    { id: "self-hp-below-half", kind: "self-hp-ratio", value: 0.5 },
-];
+export const AUTO_BATTLE_SKILL_CONDITIONS: readonly AutoBattleSkillCondition[] = [{ id: "self-hp-below-half", kind: "self-hp-ratio", value: 0.5 }];
 
 /** 缺省编队与能量规则（随 7 表同源维护）。 */
 export const AUTO_BATTLE_LINEUPS: { readonly ally: readonly string[]; readonly enemy: readonly string[] } = {

@@ -93,9 +93,7 @@ function isSkillConfig(value: unknown): value is AutoBattleSkill {
 
     const record = value as Record<string, unknown>;
 
-    const validEffects =
-        record.effects === undefined ||
-        (Array.isArray(record.effects) && record.effects.every((effect) => isSkillEffectConfig(effect)));
+    const validEffects = record.effects === undefined || (Array.isArray(record.effects) && record.effects.every((effect) => isSkillEffectConfig(effect)));
 
     return (
         typeof record.id === "string" &&
@@ -351,10 +349,7 @@ function readSkillConditions(table: IConfigTable): readonly AutoBattleSkillCondi
             throw new Error(`auto-battle config: skillConditions entry at index ${index} must be an object`);
         }
         const record = entry as Record<string, unknown>;
-        const validValue =
-            record.value === undefined ||
-            (typeof record.value === "number" && Number.isFinite(record.value)) ||
-            (typeof record.value === "string" && record.value.length > 0);
+        const validValue = record.value === undefined || (typeof record.value === "number" && Number.isFinite(record.value)) || (typeof record.value === "string" && record.value.length > 0);
         if (typeof record.id !== "string" || record.id.length === 0 || (record.kind !== "self-hp-ratio" && record.kind !== "target-position" && record.kind !== "always") || !validValue) {
             throw new Error(`auto-battle config: skillConditions entry at index ${index} has an invalid shape`);
         }

@@ -106,11 +106,7 @@ describe("Auto-battle skill effect table projection", () => {
 
     test("skill-damage with an effect id projects the mapped extra effect", () => {
         const resolveEffect = (effectId: string) => (effectId === "fireball-explosion" ? { id: effectId, kind: "explosion" as const } : undefined);
-        const { effects } = projectHitFeedbackEvents(
-            [event(0, "skill-damage", { sourceId: "a", targetId: "e", value: 15, effectId: "fireball-explosion" })],
-            -1,
-            resolveEffect,
-        );
+        const { effects } = projectHitFeedbackEvents([event(0, "skill-damage", { sourceId: "a", targetId: "e", value: 15, effectId: "fireball-explosion" })], -1, resolveEffect);
         // 默认伤害飘字/闪白/施法动画之外，额外投影爆炸动效
         expect(effects.some((effect) => effect.kind === "explosion" && effect.unitId === "e")).toBe(true);
         // 默认投影仍保留（表驱动是增量叠加）
