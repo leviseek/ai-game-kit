@@ -28,7 +28,12 @@ export function manhattanDistance(from: GridKey, to: GridKey): number {
     return Math.abs(a.row - b.row) + Math.abs(a.col - b.col);
 }
 
-/** 同排前移一步：同一 row 向目标 col 方向推进一列。返回目标格；越界/解析失败返回 undefined。 */
+/**
+ * 向目标前进一步：行不同时优先向目标行推进一行（列不变），行相同则沿目标列
+ * 方向推进一列。返回目标格；越界（行/列低于 0）或解析失败返回 undefined。
+ * 跨排推进使中/后排单位对前排目标可达（修复"只守不攻"：非同排不再原地不动）；
+ * 上界越界由调用方 grid.move 校验拒绝，路径解析仅需下界守卫。
+ */
 function stepToward(current: GridKey, target: GridKey): GridKey | undefined {
     const cur = parseGridKey(current);
     const tgt = parseGridKey(target);
@@ -36,7 +41,11 @@ function stepToward(current: GridKey, target: GridKey): GridKey | undefined {
         return undefined;
     }
     if (cur.row !== tgt.row) {
-        return undefined;
+        const nextRow = cur.row + (tgt.row > cur.row ? 1 : -1);
+        if (nextRow < 0) {
+            return undefined;
+        }
+        return `${nextRow}:${cur.col}`;
     }
     const nextCol = cur.col + (tgt.col > cur.col ? 1 : -1);
     if (nextCol < 0) {
@@ -47,10 +56,10 @@ function stepToward(current: GridKey, target: GridKey): GridKey | undefined {
 
 /**
  * 移动路径解析（纯函数）：攻击前若与目标曼哈顿距离超过 attackRange，沿最短
- * 路径逐格前移——优先同排向前（同一 row 向目标 col 方向推进），直到满足射程
- * 或到达边界。每步校验目标格空闲（grid.isFree），遇占用停在当前格。
+ * 路径逐格前移——优先向目标行推进（跨排可达），行对齐后沿列方向推进，直到
+ * 满足射程或到达边界。每步校验目标格空闲（grid.isFree），遇占用停在当前格。
  * - 射程内（manhattan <= attackRange）返回空 steps、destination=起点（原地）。
- * - 超射程但同排推进受限（非同排/占用/边界）返回 destination=起点（不移动）。
+ * - 超射程但推进受限（占用/边界）返回 destination=起点（不移动）。
  * 无副作用、无随机，同输入同输出（确定性）；battle 消费返回路径执行 grid.move。
  */
 export function resolveMovePath(grid: MapGrid, actorGrid: GridKey, targetGrid: GridKey, attackRange: number): AutoBattleMovePath {
@@ -66,7 +75,7 @@ export function resolveMovePath(grid: MapGrid, actorGrid: GridKey, targetGrid: G
         }
         const next = stepToward(current, targetGrid);
         if (next === undefined || !grid.isFree(next)) {
-            // 非同排/越界/占用：停在当前格，不移动
+            // 越界/占用：停在当前格，不移动
             break;
         }
         steps.push(next);

@@ -88,9 +88,19 @@ describe("Auto-battle move resolver", () => {
         expect(first.destination).toBe(second.destination);
     });
 
-    test("non same-row target does not move (same-row-only stepping)", () => {
+    test("cross-row target advances vertically first then horizontally (P2-8)", () => {
         const grid = createMapGrid();
-        // 目标在不同行：stepToward 非同排返回 undefined，不移动
+        // 目标在不同行：优先向目标行推进（0→1 行），行对齐后沿列方向推进，
+        // 直到满足射程 1（落点 1:1 距目标 1:0 距离 1）
+        const path = resolveMovePath(grid, "0:3", "1:0", 1);
+        expect(path.steps).toEqual(["1:3", "1:2", "1:1"]);
+        expect(path.destination).toBe("1:1");
+    });
+
+    test("cross-row advance stops when the vertical cell is occupied", () => {
+        const grid = createMapGrid();
+        grid.place("blocker", "1:3");
+        // 垂直首步 1:3 被占用：停在起点，不移动（跨排推进受占用阻断）
         const path = resolveMovePath(grid, "0:3", "1:0", 1);
         expect(path.steps).toEqual([]);
         expect(path.destination).toBe("0:3");
