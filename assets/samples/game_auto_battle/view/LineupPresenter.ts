@@ -72,10 +72,11 @@ export function createLineupEditorPresenter(
                 render();
             },
             startBattle: () => {
-                // 开战由当前编队实例化；随后切到战场页并装配战场呈现器
+                // 开战由当前编队实例化；随后切到战场页并装配战场呈现器。
+                // 战场呈现器不消费会话导航（第三参 options 为驱动接缝），包装忽略 session/list
                 autoBattle.lineup.startBattle();
                 if (session !== undefined) {
-                    void session.openEntry(AUTO_BATTLE_BATTLE_ENTRY, createAutoBattlePresenter);
+                    void session.openEntry(AUTO_BATTLE_BATTLE_ENTRY, (fixture, node) => createAutoBattlePresenter(fixture, node));
                 }
             },
             openIdleRewards: () => {

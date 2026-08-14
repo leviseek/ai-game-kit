@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
+import { createAutoBattlePresenter } from "../../../assets/samples/game_auto_battle/view/presenter";
 import { AUTO_BATTLE_ASSEMBLY_EXISTS, loadCreateAutoBattleFixture, type AutoBattleState, type AutoBattleEvent } from "../support/auto-battle-fixture";
 
 describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)("Auto-battle speed control (clock timeScale)", () => {
@@ -144,5 +145,87 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)("Auto-battle determinism across sp
         // 终局状态逐字段一致（time 只出现在事件，不进入状态）
         expect(two.state).toEqual(one.state);
         expect(three.state).toEqual(one.state);
+    });
+});
+
+describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)("Auto-battle presenter drive timing (P0-4 regression)", () => {
+    // 回归：挡位下模拟时钟推进只应用一次倍率。修复前 presenter 把已含 GameClock
+    // 倍率的 delta 再传给 AutoBattleClock.advance（内部又乘一次 rate），事件时间戳
+    // 按 speed² 膨胀；修复后传原始墙钟增量，推进量 = 墙钟增量 × 挡位（恰一次）。
+    test("advances the simulation clock by the raw wall delta scaled once by the gear rate", async () => {
+        const createAutoBattleFixture = await loadCreateAutoBattleFixture();
+        const fixture = createAutoBattleFixture();
+        await fixture.start();
+
+        // 记录型视图节点：与 presenter 测试同模式；点击 speed 按钮走真实 cycleSpeed 链路
+        const nodes = new Map<string, { clickHandler: (() => void) | undefined }>();
+        const ensure = (name: string): { clickHandler: (() => void) | undefined } => {
+            let recording = nodes.get(name);
+            if (recording === undefined) {
+                recording = { clickHandler: undefined };
+                nodes.set(name, recording);
+            }
+            return recording;
+        };
+        const node = (name: string) => {
+            const recording = ensure(name);
+            return {
+                setText: (_value: string) => undefined,
+                setProgress: (_value: number) => undefined,
+                setVisible: (_value: boolean) => undefined,
+                setXY: (_x: number, _y: number) => undefined,
+                setAlpha: (_value: number) => undefined,
+                setUrl: (_value: string) => undefined,
+                onClick: (handler: () => void) => {
+                    recording.clickHandler = handler;
+                },
+            };
+        };
+
+        // 注入自增墙钟 + 手动驱动：确定性推进三阶段并进入战斗
+        let wallTime = 0;
+        let driver: (() => void) | undefined;
+        const presenter = createAutoBattlePresenter(fixture, node, {
+            now: () => wallTime,
+            drive: (tick) => {
+                driver = tick;
+                return {
+                    dispose: () => {
+                        driver = undefined;
+                    },
+                };
+            },
+        });
+        expect(driver).toBeDefined();
+
+        // 2x 挡位：经 presenter 按钮命令同步 fixture 时钟与表现 GameClock 倍率
+        nodes.get("btn_speed")?.clickHandler?.();
+        expect(fixture.getSpeed()).toBe(2);
+
+        // 每次推进 500ms 墙钟增量：VS(1000ms) → 入场(1750ms)。
+        // 2x 下表现时钟每次 +1000：第 1 次驱动进入入场，第 2 次进入战斗（return 不推进），
+        // 第 3 次起进入战斗块并首次推进模拟时钟：墙钟增量 500 × 挡位 2 = 1000（恰一次倍率；
+        // 修复前为 500×2×2=2000，因为 delta 已含 GameClock 倍率又被 AutoBattleClock 乘一次）
+        wallTime += 500;
+        driver?.();
+        wallTime += 500;
+        driver?.();
+        wallTime += 500;
+        driver?.();
+        expect(fixture.clock.now()).toBe(1000);
+
+        // 第 4 次驱动再次推进：累计 1000+1000=2000（每次恰为 墙钟增量×挡位）
+        wallTime += 500;
+        driver?.();
+        expect(fixture.clock.now()).toBe(2000);
+
+        // 战斗已按挡位推进（每驱动 2 次 tick），事件时间戳与模拟时钟一致
+        expect(fixture.battle.events.length).toBeGreaterThan(0);
+        for (const event of fixture.battle.events) {
+            expect(event.time).toBeLessThanOrEqual(fixture.clock.now());
+        }
+
+        presenter.dispose();
+        await fixture.dispose();
     });
 });
