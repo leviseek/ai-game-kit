@@ -1,4 +1,5 @@
-import { registerBundle } from "../framework";
+import { registerBundle, type IViewModelNode } from "../framework";
+import type { GameFixture } from "../game/fixture/GameFixture";
 import { createCardFixture } from "./game_card/assembly";
 import { createFightFixture } from "./game_fight/assembly";
 import { createIdleFixture } from "./game_idle/assembly";
@@ -24,7 +25,8 @@ export const SAMPLES_BUNDLE_DESCRIPTOR = Object.freeze({
         auto_battle: createAutoBattleFixture,
     },
     presenters: {
-        card: createCardBattlePresenter,
+        // 包装适配 GamePresenterFactory（第三参为驱动接缝 options，不消费会话导航）
+        card: (fixture: GameFixture, node: (name: string) => IViewModelNode | undefined) => createCardBattlePresenter(fixture, node),
         // auto_battle 进入先落编队页（编辑布阵），点"开始战斗"经会话导航切战场页
         auto_battle: createLineupEditorPresenter,
     },
