@@ -35,17 +35,17 @@ export function elementKindOf(element: DisplayElementInfo): ElementKind | undefi
     }
 }
 
-/** 能力 kind → 引擎无关能力接口名（生成 declaration merging interface 用）。 */
+/** 能力 kind → 引擎无关能力接口名（生成 declaration merging interface 用）。接口名带 I 前缀，与 framework 契约一致。 */
 const CAPABILITY_OF_KIND: Readonly<Record<ElementKind, string>> = {
-    button: "TypedButtonNode",
-    input: "TypedInputNode",
-    progress: "TypedProgressNode",
-    text: "TypedTextNode",
-    richText: "TypedTextNode",
-    list: "TypedListNode",
-    component: "TypedComponentNode",
-    image: "TypedImageNode",
-    movieclip: "TypedComponentNode",
+    button: "ITypedButtonNode",
+    input: "ITypedInputNode",
+    progress: "ITypedProgressNode",
+    text: "ITypedTextNode",
+    richText: "ITypedTextNode",
+    list: "ITypedListNode",
+    component: "ITypedComponentNode",
+    image: "ITypedImageNode",
+    movieclip: "ITypedComponentNode",
 };
 
 interface GeneratedTypesFile {

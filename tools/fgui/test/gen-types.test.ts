@@ -97,14 +97,14 @@ describe("generateTypeFiles", () => {
             expect(text).not.toContain('"img_bg" | "txt_title"');
             // declaration merging interface 加 I 前缀（区分生成形状与业务类）
             expect(text).toContain("export interface ILoginView {");
-            expect(text).toContain("    readonly _txt_title: TypedTextNode;");
-            expect(text).toContain("    readonly _btn_login: TypedButtonNode;");
-            expect(text).toContain("    readonly _bar_progress: TypedProgressNode;");
-            expect(text).toContain("    readonly _input_account: TypedInputNode;");
-            expect(text).toContain("    readonly _mc_fx: TypedComponentNode;");
+            expect(text).toContain("    readonly _txt_title: ITypedTextNode;");
+            expect(text).toContain("    readonly _btn_login: ITypedButtonNode;");
+            expect(text).toContain("    readonly _bar_progress: ITypedProgressNode;");
+            expect(text).toContain("    readonly _input_account: ITypedInputNode;");
+            expect(text).toContain("    readonly _mc_fx: ITypedComponentNode;");
             expect(text).toContain("import type {");
-            expect(text).toContain("    TypedButtonNode,");
-            expect(text).toContain("    TypedTextNode,");
+            expect(text).toContain("    ITypedButtonNode,");
+            expect(text).toContain("    ITypedTextNode,");
         } finally {
             rmSync(dir, { recursive: true, force: true });
         }

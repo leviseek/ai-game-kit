@@ -10,9 +10,10 @@ import { join } from "node:path";
 import { READ_TOOLS, WRITE_TOOLS } from "../lib/tools";
 
 const cliSrc = readFileSync(join(import.meta.dir, "..", "cli.ts"), "utf8");
-// 提取 inputSchema 中声明的键（z.string()/z.number()/z.boolean()/z.array() 前的标识符）
+// 提取 inputSchema 中声明的键（z.string()/z.number()/z.boolean()/z.array() 前的标识符）；
+// 缩进宽度不约束，避免 prettier 格式化后误报
 const schemaKeys = new Set<string>();
-for (const match of cliSrc.matchAll(/^\s{16}([a-zA-Z][a-zA-Z0-9]*):\s*z\./gm)) {
+for (const match of cliSrc.matchAll(/^\s+([a-zA-Z][a-zA-Z0-9]*):\s*z\./gm)) {
     schemaKeys.add(match[1]!);
 }
 // 补充常见默认键（schema 定义在 inputSchema 内）

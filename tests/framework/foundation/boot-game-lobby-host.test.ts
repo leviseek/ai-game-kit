@@ -59,7 +59,7 @@ describe("GameLobbyHostImpl source contract", () => {
         // placeholder；loadBundle 不再恒加载 placeholder，经 bundleSentinel 分派
         // （字符串归口：经 BUNDLES/SENTINELS 常量引用，值锁定于 boot constants.ts）
         expect(source).toMatch(/bundleSentinel\(bundle\)/);
-        expect(source).toMatch(/resourceProvider\.load\(\s*bundle,\s*this\.bundleSentinel\(bundle\)\s*,\s*\)/);
+        expect(source).toMatch(/resourceProvider\.load\(\s*bundle,\s*this\.bundleSentinel\(bundle\)\s*\)/);
         expect(source).toMatch(/return bundle === BUNDLES\.game \? BUNDLES\.game : SENTINELS\.placeholder;/);
         // 列表编排不再残留在宿主
         expect(source).not.toMatch(/openListPageWithRetry/);
