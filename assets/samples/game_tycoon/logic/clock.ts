@@ -1,28 +1,16 @@
-import type { IModule, ITimeSource } from "../../../framework";
+import { SimulationClock, type IModule, type ITimeSource } from "../../../framework";
 
 /**
  * 可控模拟时钟：now() 返回当前模拟时间，只经 advance 推进，与真实时钟无关。
  * 实现框架 ITimeSource 契约，供生产推进与调度器共用同一时间基准。
- * 框架根入口不导出 SimulationClock（public-boundary 白名单），
- * 故夹具层自实现最小可控时钟，保证生产进度可经 advance 独立驱动。
+ * 实现复用框架 SimulationClock（框架根入口已导出），品类层不再自实现最小副本。
  */
 export interface TycoonClock extends ITimeSource {
     advance(milliseconds: number): void;
 }
 
 export function createTycoonClock(initialTime = 0): TycoonClock {
-    let current = initialTime;
-
-    return {
-        now: () => current,
-        advance: (milliseconds: number) => {
-            // 与框架时钟先例一致：拒绝负值推进，保证时间单调，避免破坏生产推进
-            if (milliseconds < 0) {
-                throw new Error("TycoonClock advance must not be negative");
-            }
-            current += milliseconds;
-        },
-    };
+    return new SimulationClock({ initialTime });
 }
 
 /**

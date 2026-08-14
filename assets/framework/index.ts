@@ -29,6 +29,9 @@ export { createStore } from "./core/state/Store";
 
 export type { DisposeHandle } from "./core/scheduling/DisposeHandle";
 
+export { PassiveScheduler } from "./core/scheduling/PassiveScheduler";
+export type { PassiveSchedulerOptions, ScheduleOptions } from "./core/scheduling/PassiveScheduler";
+
 export type { FrameworkErrorOptions } from "./core/errors/FrameworkError";
 export { FrameworkError, isRecoverableError } from "./core/errors/FrameworkError";
 
@@ -46,6 +49,7 @@ export { ServiceRegistrationError, ServiceResolutionError, createServiceRegistry
 
 export { Application } from "./application/Application";
 export { ApplicationStateError } from "./application/ApplicationStateError";
+export { createApplicationContext } from "./application/ApplicationContext";
 export { createGameFixture } from "./application/GameFixture";
 export type { GameFixture, GameFixtureOptions } from "./application/GameFixture";
 export { ModuleLifecycleError } from "./application/ModuleLifecycleError";
@@ -150,3 +154,9 @@ export { getBundleModuleRegistry, registerBundle, lookupBundle } from "./core/mo
 export { EnumPauseDomain } from "./contracts/enums/EnumPauseDomain";
 export { GameClock } from "./core/time/GameClock";
 export type { IMotionTweenOptions } from "./contracts/interfaces/IMotionTweenOptions";
+
+export { SimulationClock } from "./core/time/SimulationClock";
+export type { SimulationClockOptions } from "./core/time/SimulationClock";
+export { WallClock } from "./core/time/WallClock";
+export { createMotionTween, easeOutCubic, easeOutQuad } from "./core/time/MotionTween";
+export type { EaseCurve, MotionTween, MotionTweenRuntimeOptions } from "./core/time/MotionTween";

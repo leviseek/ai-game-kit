@@ -1,5 +1,7 @@
 import {
     Application,
+    WallClock,
+    createApplicationContext,
     createSceneFlow,
     createServiceRegistry,
     createServiceToken,
@@ -13,8 +15,6 @@ import {
     type ITimeSource,
     type FuiViewBindingRegistrar,
 } from "../framework";
-import { createApplicationContext } from "../framework/application/ApplicationContext";
-import { WallClock } from "../framework/core/time/WallClock";
 import { createFuiViewBinderRegistry } from "../framework/core/fui/FuiViewBinderRegistry";
 import { ConsoleLogger } from "../framework/diagnostics/logging/ConsoleLogger";
 import { CocosApplicationAdapter } from "../framework/adapters/cocos/application/CocosApplicationAdapter";

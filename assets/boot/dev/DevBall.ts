@@ -1,5 +1,5 @@
 import type { IViewModelNode } from "../../framework";
-import { createMotionTween, easeOutCubic, type MotionTween } from "../../framework/core/time/MotionTween";
+import { createMotionTween, easeOutCubic, type MotionTween } from "../../framework";
 import type { DevInfoSampler } from "./DevInfo";
 
 /**

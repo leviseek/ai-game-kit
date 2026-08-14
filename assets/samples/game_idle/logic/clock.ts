@@ -1,28 +1,16 @@
-import type { IModule, ITimeSource } from "../../../framework";
+import { SimulationClock, type IModule, type ITimeSource } from "../../../framework";
 
 /**
- * 可控墙钟：now() 返回当前墙钟时间，只经 advance 推进，用于模拟离线时长。
+ * 可控时钟：now() 返回当前时间，只经 advance 推进，用于模拟离线时长。
  * 实现框架 ITimeSource 契约，供在线收益调度与离线收益结算共用同一时间基准。
- * 框架根入口不导出 WallClock（public-boundary 白名单），
- * 故夹具层自实现最小可控墙钟，保证离线结算可经 advance 独立驱动。
+ * 实现复用框架 SimulationClock（框架根入口已导出），品类层不再自实现最小副本。
  */
 export interface IdleClock extends ITimeSource {
     advance(milliseconds: number): void;
 }
 
 export function createIdleClock(initialTime = 0): IdleClock {
-    let current = initialTime;
-
-    return {
-        now: () => current,
-        advance: (milliseconds: number) => {
-            // 与框架时钟先例一致：拒绝负值推进，保证时间单调，避免倒退破坏离线结算
-            if (milliseconds < 0) {
-                throw new Error("IdleClock advance must not be negative");
-            }
-            current += milliseconds;
-        },
-    };
+    return new SimulationClock({ initialTime });
 }
 
 /**

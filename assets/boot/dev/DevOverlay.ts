@@ -1,5 +1,5 @@
 import type { IViewModelNode } from "../../framework";
-import { WallClock } from "../../framework/core/time/WallClock";
+import { WallClock } from "../../framework";
 import { createCocosDeviceInfo } from "../../framework/adapters/cocos/device/CocosDeviceInfo";
 import { createCocosViewportInfo } from "../../framework/adapters/cocos/viewport/CocosViewportInfo";
 import { createDevOverlayView } from "../../framework/adapters/cocos/ui/DevOverlayViewHandle";

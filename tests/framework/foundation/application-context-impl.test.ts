@@ -130,13 +130,14 @@ describe("IApplicationContext implementation", () => {
         ]);
     });
 
-    test("the creation API is not exported from the framework root entry", () => {
+    test("the creation API is exported from the framework root entry", () => {
         expect(existsSync(applicationContextImpl)).toBe(true);
 
-        // The root entry must not leak this internal API
+        // 组合根与测试经根入口复用同一工厂：createApplicationContext 已纳入
+        // 公开白名单（业务侧不再深层导入 application/ApplicationContext）
         const rootSource = resolve(projectRoot, "assets/framework/index.ts");
         const content = readFileSync(rootSource, "utf8");
 
-        expect(content).not.toMatch(/\bcreateApplicationContext\b/);
+        expect(content).toMatch(/\bcreateApplicationContext\b/);
     });
 });

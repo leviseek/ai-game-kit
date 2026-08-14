@@ -1,15 +1,10 @@
-import type { IModule, ITimeSource } from "../../../framework";
-
-/** 倍率校验：必须为有限正数，与框架 SimulationClock 的 timeScale 约束一致。 */
-function isValidRate(rate: number): boolean {
-    return Number.isFinite(rate) && rate > 0;
-}
+import { SimulationClock, type IModule, type ITimeSource } from "../../../framework";
 
 /**
  * 可控模拟时钟：now() 返回当前模拟时间，只经 advance 推进，与真实时钟无关。
  * 实现框架 ITimeSource 契约，供战斗事件时间戳与呈现器推进共用同一时间基准。
- * 框架根入口不导出 SimulationClock（public-boundary 白名单），故夹具层自实现
- * 最小可控时钟，保证确定性战斗可经 advance 独立驱动。
+ * 实现复用框架 SimulationClock（确定性时钟语义：拒绝负值推进、timeScale 倍率、
+ * 暂停/恢复），框架根入口现已导出该原语，品类层不再自实现最小副本。
  * timeScale 为倍率语义：advance(ms) 推进 ms * timeScale，供加速挡位复用——
  * 挡位只改变模拟时间流速与呈现器推进量，不改变 tick 内容与战斗结果。
  */
@@ -22,30 +17,7 @@ export interface AutoBattleClock extends ITimeSource {
 }
 
 export function createAutoBattleClock(initialTime = 0): AutoBattleClock {
-    let current = initialTime;
-    let rate = 1;
-
-    return {
-        now: () => current,
-        get timeScale(): number {
-            return rate;
-        },
-        setTimeScale: (nextRate: number) => {
-            if (!isValidRate(nextRate)) {
-                throw new Error("AutoBattleClock timeScale must be finite and greater than zero");
-            }
-            rate = nextRate;
-        },
-        advance: (milliseconds: number) => {
-            // 与其它品类时钟先例一致：拒绝负值推进，保证时间单调，
-            // 避免倒退破坏事件时间戳单调性与确定性
-            if (milliseconds < 0) {
-                throw new Error("AutoBattleClock advance must not be negative");
-            }
-            // 按当前倍率换算推进量：默认 1 时与历史行为一致
-            current += milliseconds * rate;
-        },
-    };
+    return new SimulationClock({ initialTime });
 }
 
 /**
@@ -70,8 +42,8 @@ export function createAutoBattleClockModule(clock: AutoBattleClock): IModule {
  * 挂机墙钟：now() 返回当前墙钟时间，用于离线收益结算读取同一时间基准。
  * 缺省读取真实时间（Date.now），真实运行下 now() 随真实时间流逝自然增长，
  * 收益才会累积；advance 叠加偏移仅供测试注入可控基准（nowSource 返回固定值）
- * 后经 advance 模拟离线时长。框架根入口不导出 WallClock（public-boundary
- * 白名单），故夹具层自实现最小墙钟，保证与战斗模拟时钟解耦。
+ * 后经 advance 模拟离线时长。框架 WallClock 已导出但只读（无 offset 控制），
+ * 本实现以 WallClock 同构的 nowSource 注入 + 本地偏移推进，满足测试可控需求。
  */
 export interface IdleRewardClock extends ITimeSource {
     advance(milliseconds: number): void;
