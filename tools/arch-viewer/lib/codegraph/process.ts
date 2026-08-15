@@ -37,6 +37,11 @@ export const runCodeGraphCommand: CommandRunner = async (args, options) => {
         return { exitCode: 0, stdout: result.stdout, stderr: result.stderr };
     } catch (error) {
         const failure = error as ExecFileFailure;
+        // 命令不存在（ENOENT）：给出可执行指引，避免换机/CI 下晦涩失败
+        // （P1-4：codegraph 为全局二进制，需显式安装/版本固定）
+        if (failure.code === "ENOENT") {
+            throw new Error("codegraph CLI 未安装或不在 PATH：请先运行 `npm i -g codegraph`（或 bun i -g codegraph），" + "版本要求 ≥ 1.5，并确认 `codegraph init` 已初始化 .codegraph 索引");
+        }
         if (failure.killed || failure.code === "ETIMEDOUT") throw failure;
         return {
             exitCode: typeof failure.code === "number" ? failure.code : 1,

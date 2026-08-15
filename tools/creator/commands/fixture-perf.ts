@@ -59,7 +59,8 @@ export async function run(argv: readonly string[]): Promise<number> {
         if (argv.includes("--debug") === false) {
             buildArgs.push("--debug", String(debug));
         }
-        const skipBuild = flagBool(parsed, "skip-build", true);
+        // 默认先构建再采样：产物陈旧时性能数据失真；显式 --skip-build=true 跳过
+        const skipBuild = flagBool(parsed, "skip-build", false);
         const buildCode = skipBuild ? 0 : await runBuild(buildArgs);
         if (buildCode !== 0) {
             return buildCode;

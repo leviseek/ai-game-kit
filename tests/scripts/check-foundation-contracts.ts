@@ -30,11 +30,11 @@ function collectTypeScriptFiles(directory: string): readonly string[] {
     });
 }
 
+// tsc 候选：只从环境变量探测（COCOS_TSC 优先，其次 COCOS_CREATOR_HOME 推导），
+// 不再硬编码本机 Creator 路径——换机开箱即用（P1-4：可复现性治理）。
 const tscCandidates = [
     process.env.COCOS_TSC,
     process.env.COCOS_CREATOR_HOME === undefined ? undefined : resolve(process.env.COCOS_CREATOR_HOME, "resources/app.asar.unpacked/node_modules/typescript/lib/tsc.js"),
-    "D:\\engine\\cocos\\Creator\\3.8.8\\resources\\app.asar.unpacked\\node_modules\\typescript\\lib\\tsc.js",
-    "C:\\Program Files\\CocosCreator\\Creator\\3.8.8\\resources\\app.asar.unpacked\\node_modules\\typescript\\lib\\tsc.js",
 ];
 
 const tsc = tscCandidates.find((candidate) => candidate !== undefined && existsSync(candidate));
