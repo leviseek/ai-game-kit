@@ -27,6 +27,13 @@ export type { IStore } from "./contracts/interfaces/IStore";
 export type { IStoreListener } from "./contracts/interfaces/IStoreListener";
 export { createStore } from "./core/state/Store";
 
+export type { ISaveLoadResult } from "./contracts/interfaces/ISaveLoadResult";
+export type { ISaveMigrator } from "./contracts/interfaces/ISaveMigrator";
+export type { ISaveVersion } from "./contracts/interfaces/ISaveVersion";
+export type { IVersionedStorage } from "./contracts/interfaces/IVersionedStorage";
+export type { IVersionedStorageOptions } from "./contracts/interfaces/IVersionedStorageOptions";
+export { SaveCorruptionError, SaveMigrationError, SaveSerializationError, SaveVersionError, createVersionedStorage } from "./core/storage/VersionedStorage";
+
 export type { DisposeHandle } from "./core/scheduling/DisposeHandle";
 
 export { PassiveScheduler } from "./core/scheduling/PassiveScheduler";

@@ -29,6 +29,36 @@ function emptyBackend(): IPlatformStorage {
     return new MemoryPlatform();
 }
 
+describe("IVersionedStorage fixed storage key (P2-9)", () => {
+    test("storageKey overrides the composed key for save/load/delete", async () => {
+        const storage = new MemoryPlatform();
+        const repo = createVersionedStorage({
+            storage,
+            currentVersion: version(1),
+            storageKey: "custom:key",
+        });
+
+        await repo.save("ns", "k", { v: 1 });
+        // 写入固定键而非默认组合键
+        expect(await storage.get("custom:key")).toBe(JSON.stringify({ version: 1, data: { v: 1 } }));
+        expect(await storage.get("save:ns:k")).toBeNull();
+
+        const loaded = await repo.load("ns", "k");
+        expect(loaded?.data).toEqual({ v: 1 });
+
+        await repo.delete("ns", "k");
+        expect(await storage.get("custom:key")).toBeNull();
+    });
+
+    test("default composition still applies without storageKey", async () => {
+        const storage = new MemoryPlatform();
+        const repo = createVersionedStorage({ storage, currentVersion: version(1) });
+
+        await repo.save("ns", "k", { v: 1 });
+        expect(await storage.get("save:ns:k")).toBe(JSON.stringify({ version: 1, data: { v: 1 } }));
+    });
+});
+
 describe("IVersionedStorage namespace isolation", () => {
     test("saves with the same key in different namespaces stay independent", async () => {
         const storage = createVersionedStorage(createOptions(version(1)));

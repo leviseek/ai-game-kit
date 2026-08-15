@@ -171,6 +171,9 @@ export function createVersionedStorage(options: IVersionedStorageOptions): IVers
     // 迁移映射缺省为空：不注册任何迁移则任何旧版本存档都无法读取。
     // Record 键必须是原始 number（branded 类型无法作索引键，语义等价）。
     const migrators: Readonly<Record<number, ISaveMigrator>> = options.migrators ?? {};
+    // 固定存储键覆盖默认组合：迁移自定键存档时保留既有键不换键
+    const fixedKey = options.storageKey;
+    const composeKey = (namespace: string, key: string): string => fixedKey ?? composeStorageKey(namespace, key);
 
     // 按记录版本逐级升级到当前版本；缺失迁移或迁移抛错时抛类型化错误。
     function migrate(data: unknown, fromVersion: number): unknown {
@@ -204,11 +207,11 @@ export function createVersionedStorage(options: IVersionedStorageOptions): IVers
             assertSerializable(data);
 
             const record = JSON.stringify({ version: currentVersion, data });
-            await storage.set(composeStorageKey(namespace, key), record);
+            await storage.set(composeKey(namespace, key), record);
         },
 
         async load(namespace, key): Promise<ISaveLoadResult | null> {
-            const raw = await storage.get(composeStorageKey(namespace, key));
+            const raw = await storage.get(composeKey(namespace, key));
 
             if (raw === null) {
                 return null;
@@ -229,7 +232,7 @@ export function createVersionedStorage(options: IVersionedStorageOptions): IVers
         },
 
         async delete(namespace, key) {
-            await storage.delete(composeStorageKey(namespace, key));
+            await storage.delete(composeKey(namespace, key));
         },
     };
 }

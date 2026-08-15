@@ -1,4 +1,4 @@
-import type { IModule, IPlatformStorage } from "../../../framework";
+import { createVersionedStorage, type ISaveMigrator, type ISaveVersion, type IModule, type IPlatformStorage } from "../../../framework";
 import type { AutoBattleLineup } from "../models";
 import { MAX_TEAM_SIZE } from "./config";
 import { FORMATION_GRID_SIZE } from "./grid";
@@ -72,30 +72,22 @@ function corrupt(reason: string): Error {
 }
 
 /**
- * 创建 lineup 存储：自持版本化实现（对齐 game_idle `createIdleSave` 先例——
- * `createVersionedStorage` 不在 framework 公开 API 白名单）。写入 `{ version,
- * data }` 记录；读取时按记录版本逐级迁移到当前版本，损坏/未来版本/缺失迁移
- * 均抛错（不静默降级为空编队），schema 版本化保证未来 09 挂机消费兼容。
+ * 创建 lineup 存储：版本化实现委托框架 `createVersionedStorage`（P2-9）——固定
+ * `storageKey` 保留既有存储键不换键（旧存档原位可读），版本/迁移/损坏判定复用
+ * 框架原语；本层保留 lineup 形状校验（isLineupRecord）与 payload 前置拒绝。
+ * 读取时旧版本逐级迁移，损坏/未来版本/缺失迁移均抛错（不静默降级为空编队）。
  */
 export function createLineupStore(options: LineupStoreOptions): LineupStore {
     const { storage } = options;
     const currentVersion = options.currentVersion ?? LINEUP_SAVE_VERSION;
     // 默认迁移器：内置 v1→v2（slots 6→9 补齐）；调用方可覆盖
     const migrators = options.migrators ?? { 1: MIGRATE_V1_TO_V2 };
-
-    function migrate(data: unknown, fromVersion: number): unknown {
-        let migrated = data;
-        let source = fromVersion;
-        while (source < currentVersion) {
-            const migrator = migrators[source];
-            if (migrator === undefined) {
-                throw new Error(`lineup store: missing migration from version ${source}`);
-            }
-            migrated = migrator(migrated);
-            source += 1;
-        }
-        return migrated;
-    }
+    const versioned = createVersionedStorage({
+        storage,
+        currentVersion: currentVersion as unknown as ISaveVersion,
+        migrators: migrators as Readonly<Record<number, ISaveMigrator>>,
+        storageKey: LINEUP_STORAGE_KEY,
+    });
 
     return {
         currentVersion,
@@ -103,43 +95,20 @@ export function createLineupStore(options: LineupStoreOptions): LineupStore {
             if (!isLineupRecord(lineup)) {
                 throw corrupt("invalid lineup payload");
             }
-            const record = JSON.stringify({ version: currentVersion, data: lineup });
-            await storage.set(LINEUP_STORAGE_KEY, record);
+            await versioned.save("auto-battle", "lineup", lineup);
         },
         async load() {
-            const raw = await storage.get(LINEUP_STORAGE_KEY);
-            if (raw === null) {
+            const loaded = await versioned.load("auto-battle", "lineup");
+            if (loaded === null) {
                 return null;
             }
-
-            let parsed: unknown;
-            try {
-                parsed = JSON.parse(raw);
-            } catch {
-                throw corrupt("invalid JSON");
-            }
-            if (parsed === null || typeof parsed !== "object") {
-                throw corrupt("unexpected record shape");
-            }
-
-            const version = (parsed as { version?: unknown }).version;
-            if (typeof version !== "number" || !Number.isInteger(version) || version <= 0) {
-                throw corrupt("unexpected record shape");
-            }
-            if (version > currentVersion) {
-                throw new Error(`lineup store: save version ${version} is newer than supported version ${currentVersion}`);
-            }
-
-            const data = version === currentVersion ? (parsed as { data?: unknown }).data : migrate((parsed as { data?: unknown }).data, version);
-
-            if (!isLineupRecord(data)) {
+            if (!isLineupRecord(loaded.data)) {
                 throw corrupt("unexpected lineup shape");
             }
-
-            return { version: currentVersion, data };
+            return { version: currentVersion, data: loaded.data };
         },
         async delete(): Promise<void> {
-            await storage.delete(LINEUP_STORAGE_KEY);
+            await versioned.delete("auto-battle", "lineup");
         },
     };
 }

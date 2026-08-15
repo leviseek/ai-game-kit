@@ -1,4 +1,4 @@
-import type { IModule, IPlatformStorage } from "../../../framework";
+import { createVersionedStorage, type ISaveMigrator, type ISaveVersion, type IModule, type IPlatformStorage } from "../../../framework";
 import type { IdleRewardState } from "../models";
 
 /** 挂机存档 schema 版本：夹具层自持版本号，升级时递增。 */
@@ -57,30 +57,21 @@ function corrupt(reason: string): Error {
 }
 
 /**
- * 创建挂机存储：自持版本化实现（对齐 lineup-store `createLineupStore` 先例——
- * `createVersionedStorage` 不在 framework 公开 API 白名单）。写入 `{ version,
- * data }` 记录；读取时按记录版本逐级迁移到当前版本，损坏/未来版本/缺失迁移
- * 均抛错（不静默降级为空状态），schema 版本化保证未来字段演进可迁移。
+ * 创建挂机存储：版本化实现委托框架 `createVersionedStorage`（P2-9）——固定
+ * `storageKey` 保留既有存储键不换键（旧存档原位可读），版本/迁移/损坏判定复用
+ * 框架原语；本层保留挂机状态形状校验（isIdleRewardRecord）与 payload 前置拒绝。
  */
 export function createIdleRewardsStore(options: IdleRewardsStoreOptions): IdleRewardStore {
     const { storage } = options;
     const currentVersion = options.currentVersion ?? IDLE_REWARDS_SAVE_VERSION;
     // 迁移映射：调用方按版本注册（v1 为当前版本，未来演进时递增并注册迁移器）
     const migrators = options.migrators ?? {};
-
-    function migrate(data: unknown, fromVersion: number): unknown {
-        let migrated = data;
-        let source = fromVersion;
-        while (source < currentVersion) {
-            const migrator = migrators[source];
-            if (migrator === undefined) {
-                throw new Error(`idle rewards store: missing migration from version ${source}`);
-            }
-            migrated = migrator(migrated);
-            source += 1;
-        }
-        return migrated;
-    }
+    const versioned = createVersionedStorage({
+        storage,
+        currentVersion: currentVersion as unknown as ISaveVersion,
+        migrators: migrators as Readonly<Record<number, ISaveMigrator>>,
+        storageKey: IDLE_REWARDS_STORAGE_KEY,
+    });
 
     return {
         currentVersion,
@@ -88,43 +79,20 @@ export function createIdleRewardsStore(options: IdleRewardsStoreOptions): IdleRe
             if (!isIdleRewardRecord(state)) {
                 throw corrupt("invalid idle rewards payload");
             }
-            const record = JSON.stringify({ version: currentVersion, data: state });
-            await storage.set(IDLE_REWARDS_STORAGE_KEY, record);
+            await versioned.save("auto-battle", "idle-rewards", state);
         },
         async load() {
-            const raw = await storage.get(IDLE_REWARDS_STORAGE_KEY);
-            if (raw === null) {
+            const loaded = await versioned.load("auto-battle", "idle-rewards");
+            if (loaded === null) {
                 return null;
             }
-
-            let parsed: unknown;
-            try {
-                parsed = JSON.parse(raw);
-            } catch {
-                throw corrupt("invalid JSON");
-            }
-            if (parsed === null || typeof parsed !== "object") {
-                throw corrupt("unexpected record shape");
-            }
-
-            const version = (parsed as { version?: unknown }).version;
-            if (typeof version !== "number" || !Number.isInteger(version) || version <= 0) {
-                throw corrupt("unexpected record shape");
-            }
-            if (version > currentVersion) {
-                throw new Error(`idle rewards store: save version ${version} is newer than supported version ${currentVersion}`);
-            }
-
-            const data = version === currentVersion ? (parsed as { data?: unknown }).data : migrate((parsed as { data?: unknown }).data, version);
-
-            if (!isIdleRewardRecord(data)) {
+            if (!isIdleRewardRecord(loaded.data)) {
                 throw corrupt("unexpected idle rewards shape");
             }
-
-            return { version: currentVersion, data };
+            return { version: currentVersion, data: loaded.data };
         },
         async delete(): Promise<void> {
-            await storage.delete(IDLE_REWARDS_STORAGE_KEY);
+            await versioned.delete("auto-battle", "idle-rewards");
         },
     };
 }
