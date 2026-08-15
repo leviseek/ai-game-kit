@@ -52,6 +52,7 @@
 ### Task 1: 确认像素资源与节点契约
 
 **Files:**
+
 - Verify: `ui/demo/assets/AutoBattle/package.xml`
 - Verify: `assets/ui/generated/ui-autobattle-types.ts`
 - Verify: `assets/samples/game_auto_battle/view/UiNodes.ts`
@@ -59,6 +60,7 @@
 - Verify: `assets/samples/game_auto_battle/view/IdleRewards.ts`
 
 **Interfaces:**
+
 - Consumes: 现有 `pixel_*` 图片登记、三页现有节点名、现有绑定表和动态容器。
 - Produces: 一份实施时使用的资源 id 映射和不得重命名的节点清单。
 
@@ -91,11 +93,13 @@ bun run fgui list-resources --package AutoBattle
 ### Task 2: 委派 fgui-designer 重做三页源 XML
 
 **Files:**
+
 - Modify: `ui/demo/assets/AutoBattle/LineupEditorView.xml`
 - Modify: `ui/demo/assets/AutoBattle/AutoBattleView.xml`
 - Modify: `ui/demo/assets/AutoBattle/IdleRewardsView.xml`
 
 **Interfaces:**
+
 - Consumes: Task 1 资源 id 映射和节点契约；设计文档第 4、5、8 节。
 - Produces: 三个可被 FGUI 编辑器读取的 1280x720 XML，含静态视觉层和可交互业务骨架。
 
@@ -130,6 +134,7 @@ bun run fgui list-resources --package AutoBattle
 ### Task 3: 生成类型并确保业务绑定不回归
 
 **Files:**
+
 - Generated: `assets/ui/generated/ui-autobattle.ts`
 - Generated: `assets/ui/generated/ui-autobattle-types.ts`
 - Verify/Modify only when required: `assets/samples/game_auto_battle/view/UiNodes.ts`
@@ -138,6 +143,7 @@ bun run fgui list-resources --package AutoBattle
 - Verify: `assets/samples/game_auto_battle/view/presenter.ts`
 
 **Interfaces:**
+
 - Consumes: Task 2 三页 XML。
 - Produces: 与 XML 同步的生成类型；现有业务节点仍能由 presenter 按名称访问。
 
@@ -172,6 +178,7 @@ bun test ./tests/framework/foundation/game-auto-battle-idle-rewards.test.ts
 ### Task 4: 添加可注入时间源的 HUD 动画器
 
 **Files:**
+
 - Create: `assets/samples/game_auto_battle/view/PixelHudAnimator.ts`
 - Create: `tests/framework/foundation/game-auto-battle-pixel-hud-animator.test.ts`
 - Modify: `assets/samples/game_auto_battle/view/LineupPresenter.ts`
@@ -179,6 +186,7 @@ bun test ./tests/framework/foundation/game-auto-battle-idle-rewards.test.ts
 - Modify: `assets/samples/game_auto_battle/view/IdleRewardsPresenter.ts`
 
 **Interfaces:**
+
 - Consumes: `ITimeSource`, `IViewModelNode`, `GameClock`，以及 Task 3 生成的动态节点名。
 - Produces: `createPixelHudAnimator(options)`，返回 `{ step(): void; dispose(): void }`；`step` 只读取注入时钟并更新扫描/呼吸节点 alpha。
 
@@ -192,7 +200,7 @@ test("scanline alpha follows injected time and stays bounded", () => {
     const scanline = recordingNode();
     const animator = createPixelHudAnimator({
         timeSource: { now: () => now },
-        node: (name) => name === "bg_scanlines" ? scanline : undefined,
+        node: (name) => (name === "bg_scanlines" ? scanline : undefined),
         scanlineNode: "bg_scanlines",
     });
 
@@ -247,6 +255,7 @@ bun test ./tests/framework/foundation/game-auto-battle-pixel-hud-animator.test.t
 ### Task 5: 严格校验 FGUI 源和生成产物
 
 **Files:**
+
 - Verify: `ui/demo/assets/AutoBattle/package.xml`
 - Verify: `ui/demo/assets/AutoBattle/LineupEditorView.xml`
 - Verify: `ui/demo/assets/AutoBattle/AutoBattleView.xml`
@@ -255,6 +264,7 @@ bun test ./tests/framework/foundation/game-auto-battle-pixel-hud-animator.test.t
 - Verify: `assets/ui/generated/ui-autobattle-types.ts`
 
 **Interfaces:**
+
 - Consumes: Task 2 XML、Task 3 生成文件、Task 4 运行时接入。
 - Produces: 通过严格语义校验且源/类型一致的 AutoBattle UI。
 
@@ -295,12 +305,14 @@ git diff --exit-code -- assets/ui/generated/ui-autobattle.ts assets/ui/generated
 ### Task 6: 编辑器刷新、截图和视觉回归
 
 **Files:**
+
 - Verify in editor: `AutoBattle/LineupEditorView`
 - Verify in editor: `AutoBattle/AutoBattleView`
 - Verify in editor: `AutoBattle/IdleRewardsView`
 - Capture output: temporary preview PNG paths returned by `fgui-mcp_fgui_capture_preview`
 
 **Interfaces:**
+
 - Consumes: Task 5 通过校验的源 XML 和生成产物。
 - Produces: 三页可复查截图和 visual-verifier 视觉检查结论。
 
@@ -325,10 +337,12 @@ git diff --exit-code -- assets/ui/generated/ui-autobattle.ts assets/ui/generated
 ### Task 7: 自动测试、类型检查、lint 和发布一致性
 
 **Files:**
+
 - Verify: all files changed by Tasks 2-4
 - Verify in editor: AutoBattle package publish output
 
 **Interfaces:**
+
 - Consumes: Task 6 视觉复核通过的源和截图。
 - Produces: 自动检查通过、编辑器发布完成、发布源一致性有证据的交付状态。
 

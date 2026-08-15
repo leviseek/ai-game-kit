@@ -13,12 +13,12 @@
 
 ### 已确认素材（全部可商用可再分发）
 
-| 类别 | 素材 | 来源 | 许可 | 规模 | 用途 |
-|---|---|---|---|---|---|
-| 背景 | Battle Background - Hazy Hills (1280x832 x4) | OpenGameArt `battle-background-hazy-hills-0` | CC-BY 3.0 | 23KB | 战场/编队/挂机三页共用 `bg_battle.png` |
-| UI | Kenney Pixel UI Pack（750× 像素 UI） | kenney.nl `pixel-ui-pack` | CC0 | 141KB | 按钮三态/面板/槽位 9-slice 素材 |
-| 动效 | Pixel Explosion (12 Frames) 96x96 | OpenGameArt `pixel-explosion-12-frames` | CC-BY 3.0 | 10.6KB | 死亡/技能命中爆炸序列帧 |
-| 单位 | Animated Warrior 320x320（male/female × 5 动画） | OpenGameArt `animated-warrior` | CC-BY 3.0 | 16KB | UnitSlot 单位形象（idle/attack/death） |
+| 类别 | 素材                                             | 来源                                         | 许可      | 规模   | 用途                                   |
+| ---- | ------------------------------------------------ | -------------------------------------------- | --------- | ------ | -------------------------------------- |
+| 背景 | Battle Background - Hazy Hills (1280x832 x4)     | OpenGameArt `battle-background-hazy-hills-0` | CC-BY 3.0 | 23KB   | 战场/编队/挂机三页共用 `bg_battle.png` |
+| UI   | Kenney Pixel UI Pack（750× 像素 UI）             | kenney.nl `pixel-ui-pack`                    | CC0       | 141KB  | 按钮三态/面板/槽位 9-slice 素材        |
+| 动效 | Pixel Explosion (12 Frames) 96x96                | OpenGameArt `pixel-explosion-12-frames`      | CC-BY 3.0 | 10.6KB | 死亡/技能命中爆炸序列帧                |
+| 单位 | Animated Warrior 320x320（male/female × 5 动画） | OpenGameArt `animated-warrior`               | CC-BY 3.0 | 16KB   | UnitSlot 单位形象（idle/attack/death） |
 
 CC0 无署名要求；CC-BY 3.0 已在归档 README 记录署名（作者与来源），满足可再分发义务。
 
