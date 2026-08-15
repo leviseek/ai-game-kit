@@ -218,6 +218,45 @@ describe("validateComponent", () => {
             rmSync(dir, { recursive: true, force: true });
         }
     });
+
+    test("cross-package references resolve the target package and validate the src id (P2-4)", () => {
+        const dir = mkdtempSync(join(tmpdir(), "fgui-xpkg-"));
+        try {
+            writeFileSync(join(dir, "demo.fairy"), `<?xml version="1.0" encoding="utf-8"?>\n<projectDescription id="t" type="CocosCreator" version="5.0"/>`);
+            // Common 包：登记通用组件 cm000
+            const commonDir = join(dir, "assets", "Common");
+            mkdirSync(commonDir, { recursive: true });
+            writeFileSync(
+                join(commonDir, "package.xml"),
+                `<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="cmnid"><resources><component id="cm000" name="CommonButton.xml" path="/" exported="true"/></resources></packageDescription>`,
+            );
+            writeFileSync(join(commonDir, "CommonButton.xml"), `<?xml version="1.0" encoding="utf-8"?>\n<component size="100,100"><displayList/></component>`);
+            // Demo 包：引用 Common 内 cm000（有效）与缺失资源 x999（应报 error）
+            const demoDir = join(dir, "assets", "Demo");
+            mkdirSync(demoDir, { recursive: true });
+            writeFileSync(
+                join(demoDir, "package.xml"),
+                `<?xml version="1.0" encoding="utf-8"?>\n<packageDescription id="testid"><resources><component id="aa11" name="A.xml" path="/" exported="true"/></resources></packageDescription>`,
+            );
+            writeFileSync(
+                join(demoDir, "A.xml"),
+                `<?xml version="1.0" encoding="utf-8"?>\n<component size="100,100"><displayList><component id="n1" name="ok" src="cm000" pkg="cmnid" fileName="CommonButton.xml"/><component id="n2" name="bad" src="x999" pkg="cmnid" fileName="Missing.xml"/></displayList></component>`,
+            );
+            const project = locateProject(dir);
+            const pkg = readPackage(project, "Demo");
+            const comp = readComponent(project, "Demo", "A.xml");
+            const issues = validateComponent(project, pkg, comp);
+            const errors = issues.filter((i) => i.severity === "error").map((i) => i.message);
+            const warnings = issues.filter((i) => i.severity === "warning").map((i) => i.message);
+
+            // 有效跨包引用无任何问题；目标包内缺失资源报 error
+            expect(errors.some((m) => m.includes('src="x999"'))).toBe(true);
+            expect(errors.some((m) => m.includes("ok"))).toBe(false);
+            expect(warnings.some((m) => m.includes("ok"))).toBe(false);
+        } finally {
+            rmSync(dir, { recursive: true, force: true });
+        }
+    });
 });
 
 describe("validateComponentSemantics", () => {

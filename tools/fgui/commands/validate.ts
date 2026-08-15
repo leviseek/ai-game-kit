@@ -15,6 +15,7 @@ import {
 } from "../lib/fgui";
 import { scanTsRawUrls } from "../lib/scan-ts";
 import { generateTypeFiles } from "./gen-types";
+import { generateConstants } from "./gen-constants";
 
 export const help = "validate —— 校验包/组件引用完整性与语义（默认跳过官方库 Basic/Builder，--strict 全量）；同时跨包查重导出组件名、校验 gen-types 产物与源 XML 一致";
 
@@ -85,6 +86,15 @@ export async function run(argv: readonly string[]): Promise<number> {
         if (issue.severity === "error") exitCode = 1;
     }
 
+    // 1d. gen-constants 产物 freshness：与 gen-types 对称——exported 组件增删
+    //     而未重跑 gen-constants 时，`ui-<包>.ts` URL 常量表过期，字符串上游
+    //     会拿到陈旧 URL。重算期望内容与磁盘逐字对比（P1-7）。
+    const constantIssues = checkConstantFreshness(project);
+    for (const issue of constantIssues) {
+        console.error(`[${issue.severity}] ${issue.message}`);
+        if (issue.severity === "error") exitCode = 1;
+    }
+
     // 2. 组件校验：单个组件或全部组件（引用完整性 + 语义校验）
     const targets = componentName ? [componentName] : collectComponentNames(pkg);
     for (const name of targets) {
@@ -144,6 +154,51 @@ export function checkTypeFreshness(project: ReturnType<typeof locateProject>): V
                 issues.push({
                     severity: "error",
                     message: `多余的 gen-types 产物: ${full}（包/组件已不存在，运行 bun run fgui gen-types 不会生成；请删除）`,
+                });
+            }
+        }
+    }
+
+    return issues;
+}
+
+/**
+ * 校验 gen-constants 产物与源 XML 一致：重算期望常量清单并逐字对比磁盘产物
+ * （与 checkTypeFreshness 对称，补 gen-constants freshness——P1-7 残余约束）。
+ */
+export function checkConstantFreshness(project: ReturnType<typeof locateProject>): ValidationIssue[] {
+    const issues: ValidationIssue[] = [];
+    const expected = generateConstants(project);
+    const generatedDir = resolve(project.root, "assets", "ui", "generated");
+
+    for (const file of expected) {
+        if (!existsSync(file.file)) {
+            issues.push({
+                severity: "error",
+                message: `gen-constants 产物缺失: ${file.file}（先运行 bun run fgui gen-constants）`,
+            });
+            continue;
+        }
+        const actual = readFileSync(file.file, "utf8").replace(/\n$/, "");
+        const want = file.lines.join("\n");
+        if (actual !== want) {
+            issues.push({
+                severity: "error",
+                message: `gen-constants 产物过期: ${file.file} 与源 XML 不一致（exported 组件增删后须重跑 bun run fgui gen-constants）`,
+            });
+        }
+    }
+
+    // 磁盘存在但不在期望清单内的常量产物视为脏文件
+    if (existsSync(generatedDir)) {
+        for (const entry of readdirSync(generatedDir, { withFileTypes: true })) {
+            if (!entry.isFile() || !entry.name.startsWith("ui-") || !entry.name.endsWith(".ts")) continue;
+            if (entry.name.endsWith("-types.ts")) continue; // gen-types 产物由 checkTypeFreshness 覆盖
+            const full = resolve(generatedDir, entry.name);
+            if (!expected.some((f) => f.file === full)) {
+                issues.push({
+                    severity: "error",
+                    message: `多余的 gen-constants 产物: ${full}（包/组件已不存在，运行 bun run fgui gen-constants 不会生成；请删除）`,
                 });
             }
         }

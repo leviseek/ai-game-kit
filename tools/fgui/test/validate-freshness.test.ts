@@ -2,7 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { checkTypeFreshness } from "../commands/validate";
+import { checkConstantFreshness, checkTypeFreshness } from "../commands/validate";
+import { generateConstants } from "../commands/gen-constants";
 import { generateTypeFiles } from "../commands/gen-types";
 import type { FguiProject } from "../lib/fgui";
 
@@ -135,3 +136,61 @@ describe("checkTypeFreshness", () => {
 function readFileText(path: string): string {
     return readFileSync(path, "utf8");
 }
+
+/** 把 gen-constants 产物写入磁盘（模拟运行 gen-constants）。 */
+function writeConstantFiles(project: FguiProject): void {
+    for (const f of generateConstants(project)) {
+        mkdirSync(join(project.root, "assets", "ui", "generated"), { recursive: true });
+        writeFileSync(f.file, `${f.lines.join("\n")}\n`, "utf8");
+    }
+}
+
+describe("checkConstantFreshness（P1-7 gen-constants freshness）", () => {
+    test("常量产物与源 XML 一致时通过", () => {
+        const { dir, project } = setupProject();
+        try {
+            writeConstantFiles(project);
+            const issues = checkConstantFreshness(project);
+            expect(issues.filter((i) => i.severity === "error")).toEqual([]);
+        } finally {
+            rmSync(dir, { recursive: true, force: true });
+        }
+    });
+
+    test("exported 组件增删后未重跑 gen-constants 则失败", () => {
+        const { dir, project } = setupProject();
+        try {
+            writeConstantFiles(project);
+            // 修改 package.xml：新增一个 exported 组件（不重跑 gen-constants）
+            const pkgXml = join(dir, "assets", "Demo", "package.xml");
+            writeFileSync(pkgXml, readFileText(pkgXml).replace('<component id="03gta" name="LoginView.xml"', '<component id="03gtb" name="SettingsView.xml"'));
+            writeFileSync(join(dir, "assets", "Demo", "SettingsView.xml"), `<?xml version="1.0" encoding="utf-8"?>\n<component size="100,100"><displayList/></component>`);
+            const issues = checkConstantFreshness(project);
+            expect(issues.some((i) => i.severity === "error" && i.message.includes("gen-constants 产物过期"))).toBe(true);
+        } finally {
+            rmSync(dir, { recursive: true, force: true });
+        }
+    });
+
+    test("常量产物缺失时失败并提示先运行 gen-constants", () => {
+        const { dir, project } = setupProject();
+        try {
+            const issues = checkConstantFreshness(project);
+            expect(issues.some((i) => i.severity === "error" && i.message.includes("gen-constants 产物缺失"))).toBe(true);
+        } finally {
+            rmSync(dir, { recursive: true, force: true });
+        }
+    });
+
+    test("磁盘存在多余常量产物时失败", () => {
+        const { dir, project } = setupProject();
+        try {
+            writeConstantFiles(project);
+            writeFileSync(join(dir, "assets", "ui", "generated", "ui-ghost.ts"), "// stale\n");
+            const issues = checkConstantFreshness(project);
+            expect(issues.some((i) => i.severity === "error" && i.message.includes("多余"))).toBe(true);
+        } finally {
+            rmSync(dir, { recursive: true, force: true });
+        }
+    });
+});

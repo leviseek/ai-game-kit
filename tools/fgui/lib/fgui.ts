@@ -295,11 +295,22 @@ export function validateComponent(project: FguiProject, pkg: FguiPackage, compon
     for (const obj of component.objects) {
         if (!obj.src) continue;
         if (obj.pkg) {
-            // 跨包引用 ui://pkgid...：无法在本包校验目标，仅提示人工确认
-            issues.push({
-                severity: "warning",
-                message: `跨包引用 ${obj.name} → pkg=${obj.pkg} src=${obj.src}，请在目标包确认资源存在`,
-            });
+            // 跨包引用 ui://<pkgid><resid>：解析目标包后反向校验资源存在（P2-4）；
+            // 目标包不可解析（官方库 Basic/Builder 或工程外包）时保留人工确认警告
+            const targetPkg = listPackages(project)
+                .map((packageName) => readPackage(project, packageName))
+                .find((candidate) => obj.pkg === candidate.id);
+            if (targetPkg === undefined) {
+                issues.push({
+                    severity: "warning",
+                    message: `跨包引用 ${obj.name} → pkg=${obj.pkg} src=${obj.src}，目标包不可解析，请在目标包确认资源存在`,
+                });
+            } else if (!targetPkg.resources.some((resource) => resource.id === obj.src)) {
+                issues.push({
+                    severity: "error",
+                    message: `跨包引用不存在: ${obj.name} → 目标包 "${targetPkg.name}" 内 src="${obj.src}"（package.xml 未登记）`,
+                });
+            }
             continue;
         }
         if (!pkgId.has(obj.src)) {
