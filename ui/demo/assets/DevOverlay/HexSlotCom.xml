@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="140,80">
+  <displayList>
+    <image id="hex_top" name="edge_top" src="dash0" fileName="img/frame_dash.png" xy="35,0" size="70,2" touchable="false"/>
+    <image id="hex_upper_right" name="edge_upper_right" src="dash0" fileName="img/frame_dash.png" xy="104,0" size="53,2" rotation="49" touchable="false"/>
+    <image id="hex_lower_right" name="edge_lower_right" src="dash0" fileName="img/frame_dash.png" xy="139,39" size="53,2" rotation="131" touchable="false"/>
+    <image id="hex_bottom" name="edge_bottom" src="dash0" fileName="img/frame_dash.png" xy="105,78" size="70,2" rotation="180" touchable="false"/>
+    <image id="hex_lower_left" name="edge_lower_left" src="dash0" fileName="img/frame_dash.png" xy="35,79" size="53,2" rotation="-131" touchable="false"/>
+    <image id="hex_upper_left" name="edge_upper_left" src="dash0" fileName="img/frame_dash.png" xy="0,40" size="53,2" rotation="-49" touchable="false"/>
+  </displayList>
+</component>

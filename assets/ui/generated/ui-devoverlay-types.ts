@@ -61,3 +61,23 @@ export interface ISafeAreaFrame {
     readonly _frame_right: ITypedImageNode;
 }
 
+export const HexSlotComFields = {
+    edge_top: "image",
+    edge_upper_right: "image",
+    edge_lower_right: "image",
+    edge_bottom: "image",
+    edge_lower_left: "image",
+    edge_upper_left: "image",
+} as const;
+
+export type HexSlotComNodes = keyof typeof HexSlotComFields;
+
+export interface IHexSlotCom {
+    readonly _edge_top: ITypedImageNode;
+    readonly _edge_upper_right: ITypedImageNode;
+    readonly _edge_lower_right: ITypedImageNode;
+    readonly _edge_bottom: ITypedImageNode;
+    readonly _edge_lower_left: ITypedImageNode;
+    readonly _edge_upper_left: ITypedImageNode;
+}
+

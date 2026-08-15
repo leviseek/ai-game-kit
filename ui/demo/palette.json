@@ -44,5 +44,6 @@
   "pixel_cyan_light": "#A8F6FF",
   "pixel_text_muted": "#9FC8D6",
   "pixel_text": "#EAFBFF",
-  "pixel_yellow_light": "#FFF0A0"
+  "pixel_yellow_light": "#FFF0A0",
+  "transparent": "#00000000"
 }

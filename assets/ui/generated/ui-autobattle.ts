@@ -4,4 +4,6 @@ export const UiAutoBattleAutoBattleView = "ui://AutoBattle/AutoBattleView";
 export const UiAutoBattleLineupEditorView = "ui://AutoBattle/LineupEditorView";
 export const UiAutoBattleBattlefieldUnitsCom = "ui://AutoBattle/BattlefieldUnitsCom";
 export const UiAutoBattleUnitHitFeedbackCom = "ui://AutoBattle/UnitHitFeedbackCom";
+export const UiAutoBattleBattleSlotCom = "ui://AutoBattle/BattleSlotCom";
+export const UiAutoBattleBattlefieldSlotsCom = "ui://AutoBattle/BattlefieldSlotsCom";
 export const UiAutoBattleIdleRewardsView = "ui://AutoBattle/IdleRewardsView";

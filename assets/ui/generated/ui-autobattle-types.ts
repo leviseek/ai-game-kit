@@ -24,6 +24,7 @@ export const AutoBattleViewFields = {
     battle_deco_chevron_left: "image",
     battle_deco_chevron_right: "image",
     battle_deco_blocks: "image",
+    battlefield_slots: "component",
     container_units: "component",
     container_effects: "component",
     battle_title: "text",
@@ -69,6 +70,7 @@ export interface IAutoBattleView {
     readonly _battle_deco_chevron_left: ITypedImageNode;
     readonly _battle_deco_chevron_right: ITypedImageNode;
     readonly _battle_deco_blocks: ITypedImageNode;
+    readonly _battlefield_slots: ITypedComponentNode;
     readonly _container_units: ITypedComponentNode;
     readonly _container_effects: ITypedComponentNode;
     readonly _battle_title: ITypedTextNode;
@@ -146,6 +148,14 @@ export const LineupEditorViewFields = {
     img_slot_8: "image",
     highlight_slot_8: "image",
     frame_slot_8: "image",
+    shadow_slot_9: "image",
+    img_slot_9: "image",
+    highlight_slot_9: "image",
+    frame_slot_9: "image",
+    shadow_slot_10: "image",
+    img_slot_10: "image",
+    highlight_slot_10: "image",
+    frame_slot_10: "image",
     bg_candidates_panel: "image",
     frame_candidates_panel: "image",
     surface_candidates_panel: "image",
@@ -159,6 +169,8 @@ export const LineupEditorViewFields = {
     slot_6: "button",
     slot_7: "button",
     slot_8: "button",
+    slot_9: "button",
+    slot_10: "button",
     slot_selected_0: "image",
     slot_selected_1: "image",
     slot_selected_2: "image",
@@ -168,6 +180,8 @@ export const LineupEditorViewFields = {
     slot_selected_6: "image",
     slot_selected_7: "image",
     slot_selected_8: "image",
+    slot_selected_9: "image",
+    slot_selected_10: "image",
     nameplate_slot_0: "image",
     nameplate_slot_1: "image",
     nameplate_slot_2: "image",
@@ -177,6 +191,8 @@ export const LineupEditorViewFields = {
     nameplate_slot_6: "image",
     nameplate_slot_7: "image",
     nameplate_slot_8: "image",
+    nameplate_slot_9: "image",
+    nameplate_slot_10: "image",
     txt_slot_0_name: "text",
     txt_slot_1_name: "text",
     txt_slot_2_name: "text",
@@ -186,6 +202,8 @@ export const LineupEditorViewFields = {
     txt_slot_6_name: "text",
     txt_slot_7_name: "text",
     txt_slot_8_name: "text",
+    txt_slot_9_name: "text",
+    txt_slot_10_name: "text",
     candidate_list: "list",
     txt_title: "text",
     txt_hud_meta: "text",
@@ -257,6 +275,14 @@ export interface ILineupEditorView {
     readonly _img_slot_8: ITypedImageNode;
     readonly _highlight_slot_8: ITypedImageNode;
     readonly _frame_slot_8: ITypedImageNode;
+    readonly _shadow_slot_9: ITypedImageNode;
+    readonly _img_slot_9: ITypedImageNode;
+    readonly _highlight_slot_9: ITypedImageNode;
+    readonly _frame_slot_9: ITypedImageNode;
+    readonly _shadow_slot_10: ITypedImageNode;
+    readonly _img_slot_10: ITypedImageNode;
+    readonly _highlight_slot_10: ITypedImageNode;
+    readonly _frame_slot_10: ITypedImageNode;
     readonly _bg_candidates_panel: ITypedImageNode;
     readonly _frame_candidates_panel: ITypedImageNode;
     readonly _surface_candidates_panel: ITypedImageNode;
@@ -270,6 +296,8 @@ export interface ILineupEditorView {
     readonly _slot_6: ITypedButtonNode;
     readonly _slot_7: ITypedButtonNode;
     readonly _slot_8: ITypedButtonNode;
+    readonly _slot_9: ITypedButtonNode;
+    readonly _slot_10: ITypedButtonNode;
     readonly _slot_selected_0: ITypedImageNode;
     readonly _slot_selected_1: ITypedImageNode;
     readonly _slot_selected_2: ITypedImageNode;
@@ -279,6 +307,8 @@ export interface ILineupEditorView {
     readonly _slot_selected_6: ITypedImageNode;
     readonly _slot_selected_7: ITypedImageNode;
     readonly _slot_selected_8: ITypedImageNode;
+    readonly _slot_selected_9: ITypedImageNode;
+    readonly _slot_selected_10: ITypedImageNode;
     readonly _nameplate_slot_0: ITypedImageNode;
     readonly _nameplate_slot_1: ITypedImageNode;
     readonly _nameplate_slot_2: ITypedImageNode;
@@ -288,6 +318,8 @@ export interface ILineupEditorView {
     readonly _nameplate_slot_6: ITypedImageNode;
     readonly _nameplate_slot_7: ITypedImageNode;
     readonly _nameplate_slot_8: ITypedImageNode;
+    readonly _nameplate_slot_9: ITypedImageNode;
+    readonly _nameplate_slot_10: ITypedImageNode;
     readonly _txt_slot_0_name: ITypedTextNode;
     readonly _txt_slot_1_name: ITypedTextNode;
     readonly _txt_slot_2_name: ITypedTextNode;
@@ -297,6 +329,8 @@ export interface ILineupEditorView {
     readonly _txt_slot_6_name: ITypedTextNode;
     readonly _txt_slot_7_name: ITypedTextNode;
     readonly _txt_slot_8_name: ITypedTextNode;
+    readonly _txt_slot_9_name: ITypedTextNode;
+    readonly _txt_slot_10_name: ITypedTextNode;
     readonly _candidate_list: ITypedListNode;
     readonly _txt_title: ITypedTextNode;
     readonly _txt_hud_meta: ITypedTextNode;
@@ -329,6 +363,100 @@ export interface IUnitHitFeedbackCom {
     readonly _fx_flash: ITypedImageNode;
     readonly _loader_effect: ITypedComponentNode;
     readonly _fx_float: ITypedTextNode;
+}
+
+export const BattleSlotComFields = {
+    battle_slot_surface: "image",
+} as const;
+
+export type BattleSlotComNodes = keyof typeof BattleSlotComFields;
+
+export interface IBattleSlotCom {
+    readonly _battle_slot_surface: ITypedImageNode;
+}
+
+export const BattlefieldSlotsComFields = {
+    battle_slot_0_0: "component",
+    battle_slot_0_1: "component",
+    battle_slot_0_2: "component",
+    battle_slot_1_n1: "component",
+    battle_slot_1_0: "component",
+    battle_slot_1_1: "component",
+    battle_slot_1_2: "component",
+    battle_slot_2_0: "component",
+    battle_slot_2_1: "component",
+    battle_slot_2_2: "component",
+    battle_slot_3_n1: "component",
+    battle_slot_3_0: "component",
+    battle_slot_3_1: "component",
+    battle_slot_3_2: "component",
+    battle_slot_4_0: "component",
+    battle_slot_4_1: "component",
+    battle_slot_4_2: "component",
+    battle_slot_5_n1: "component",
+    battle_slot_5_0: "component",
+    battle_slot_5_1: "component",
+    battle_slot_5_2: "component",
+    battle_slot_6_0: "component",
+    battle_slot_6_1: "component",
+    battle_slot_6_2: "component",
+    battle_slot_7_n1: "component",
+    battle_slot_7_0: "component",
+    battle_slot_7_1: "component",
+    battle_slot_7_2: "component",
+    battle_slot_8_0: "component",
+    battle_slot_8_1: "component",
+    battle_slot_8_2: "component",
+    battle_slot_9_n1: "component",
+    battle_slot_9_0: "component",
+    battle_slot_9_1: "component",
+    battle_slot_9_2: "component",
+    battle_slot_10_0: "component",
+    battle_slot_10_1: "component",
+    battle_slot_10_2: "component",
+} as const;
+
+export type BattlefieldSlotsComNodes = keyof typeof BattlefieldSlotsComFields;
+
+export interface IBattlefieldSlotsCom {
+    readonly _battle_slot_0_0: ITypedComponentNode;
+    readonly _battle_slot_0_1: ITypedComponentNode;
+    readonly _battle_slot_0_2: ITypedComponentNode;
+    readonly _battle_slot_1_n1: ITypedComponentNode;
+    readonly _battle_slot_1_0: ITypedComponentNode;
+    readonly _battle_slot_1_1: ITypedComponentNode;
+    readonly _battle_slot_1_2: ITypedComponentNode;
+    readonly _battle_slot_2_0: ITypedComponentNode;
+    readonly _battle_slot_2_1: ITypedComponentNode;
+    readonly _battle_slot_2_2: ITypedComponentNode;
+    readonly _battle_slot_3_n1: ITypedComponentNode;
+    readonly _battle_slot_3_0: ITypedComponentNode;
+    readonly _battle_slot_3_1: ITypedComponentNode;
+    readonly _battle_slot_3_2: ITypedComponentNode;
+    readonly _battle_slot_4_0: ITypedComponentNode;
+    readonly _battle_slot_4_1: ITypedComponentNode;
+    readonly _battle_slot_4_2: ITypedComponentNode;
+    readonly _battle_slot_5_n1: ITypedComponentNode;
+    readonly _battle_slot_5_0: ITypedComponentNode;
+    readonly _battle_slot_5_1: ITypedComponentNode;
+    readonly _battle_slot_5_2: ITypedComponentNode;
+    readonly _battle_slot_6_0: ITypedComponentNode;
+    readonly _battle_slot_6_1: ITypedComponentNode;
+    readonly _battle_slot_6_2: ITypedComponentNode;
+    readonly _battle_slot_7_n1: ITypedComponentNode;
+    readonly _battle_slot_7_0: ITypedComponentNode;
+    readonly _battle_slot_7_1: ITypedComponentNode;
+    readonly _battle_slot_7_2: ITypedComponentNode;
+    readonly _battle_slot_8_0: ITypedComponentNode;
+    readonly _battle_slot_8_1: ITypedComponentNode;
+    readonly _battle_slot_8_2: ITypedComponentNode;
+    readonly _battle_slot_9_n1: ITypedComponentNode;
+    readonly _battle_slot_9_0: ITypedComponentNode;
+    readonly _battle_slot_9_1: ITypedComponentNode;
+    readonly _battle_slot_9_2: ITypedComponentNode;
+    readonly _battle_slot_10_0: ITypedComponentNode;
+    readonly _battle_slot_10_1: ITypedComponentNode;
+    readonly _battle_slot_10_2: ITypedComponentNode;
 }
 
 export const IdleRewardsViewFields = {

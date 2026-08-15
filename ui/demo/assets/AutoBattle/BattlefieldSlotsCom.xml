@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="1280,500" touchable="false">
+  <displayList>
+    <component id="battle_slot_0_0" name="battle_slot_0_0" src="ab006" fileName="BattleSlotCom.xml" xy="45,222" size="140,80" touchable="false"/>
+    <component id="battle_slot_0_1" name="battle_slot_0_1" src="ab006" fileName="BattleSlotCom.xml" xy="45,302" size="140,80" touchable="false"/>
+    <component id="battle_slot_0_2" name="battle_slot_0_2" src="ab006" fileName="BattleSlotCom.xml" xy="45,382" size="140,80" touchable="false"/>
+    <component id="battle_slot_1_n1" name="battle_slot_1_n1" src="ab006" fileName="BattleSlotCom.xml" xy="150,182" size="140,80" touchable="false"/>
+    <component id="battle_slot_1_0" name="battle_slot_1_0" src="ab006" fileName="BattleSlotCom.xml" xy="150,262" size="140,80" touchable="false"/>
+    <component id="battle_slot_1_1" name="battle_slot_1_1" src="ab006" fileName="BattleSlotCom.xml" xy="150,342" size="140,80" touchable="false"/>
+    <component id="battle_slot_1_2" name="battle_slot_1_2" src="ab006" fileName="BattleSlotCom.xml" xy="150,422" size="140,80" touchable="false"/>
+    <component id="battle_slot_2_0" name="battle_slot_2_0" src="ab006" fileName="BattleSlotCom.xml" xy="255,222" size="140,80" touchable="false"/>
+    <component id="battle_slot_2_1" name="battle_slot_2_1" src="ab006" fileName="BattleSlotCom.xml" xy="255,302" size="140,80" touchable="false"/>
+    <component id="battle_slot_2_2" name="battle_slot_2_2" src="ab006" fileName="BattleSlotCom.xml" xy="255,382" size="140,80" touchable="false"/>
+    <component id="battle_slot_3_n1" name="battle_slot_3_n1" src="ab006" fileName="BattleSlotCom.xml" xy="360,182" size="140,80" touchable="false"/>
+    <component id="battle_slot_3_0" name="battle_slot_3_0" src="ab006" fileName="BattleSlotCom.xml" xy="360,262" size="140,80" touchable="false"/>
+    <component id="battle_slot_3_1" name="battle_slot_3_1" src="ab006" fileName="BattleSlotCom.xml" xy="360,342" size="140,80" touchable="false"/>
+    <component id="battle_slot_3_2" name="battle_slot_3_2" src="ab006" fileName="BattleSlotCom.xml" xy="360,422" size="140,80" touchable="false"/>
+    <component id="battle_slot_4_0" name="battle_slot_4_0" src="ab006" fileName="BattleSlotCom.xml" xy="465,222" size="140,80" touchable="false"/>
+    <component id="battle_slot_4_1" name="battle_slot_4_1" src="ab006" fileName="BattleSlotCom.xml" xy="465,302" size="140,80" touchable="false"/>
+    <component id="battle_slot_4_2" name="battle_slot_4_2" src="ab006" fileName="BattleSlotCom.xml" xy="465,382" size="140,80" touchable="false"/>
+    <component id="battle_slot_5_n1" name="battle_slot_5_n1" src="ab006" fileName="BattleSlotCom.xml" xy="570,182" size="140,80" touchable="false"/>
+    <component id="battle_slot_5_0" name="battle_slot_5_0" src="ab006" fileName="BattleSlotCom.xml" xy="570,262" size="140,80" touchable="false"/>
+    <component id="battle_slot_5_1" name="battle_slot_5_1" src="ab006" fileName="BattleSlotCom.xml" xy="570,342" size="140,80" touchable="false"/>
+    <component id="battle_slot_5_2" name="battle_slot_5_2" src="ab006" fileName="BattleSlotCom.xml" xy="570,422" size="140,80" touchable="false"/>
+    <component id="battle_slot_6_0" name="battle_slot_6_0" src="ab006" fileName="BattleSlotCom.xml" xy="675,222" size="140,80" touchable="false"/>
+    <component id="battle_slot_6_1" name="battle_slot_6_1" src="ab006" fileName="BattleSlotCom.xml" xy="675,302" size="140,80" touchable="false"/>
+    <component id="battle_slot_6_2" name="battle_slot_6_2" src="ab006" fileName="BattleSlotCom.xml" xy="675,382" size="140,80" touchable="false"/>
+    <component id="battle_slot_7_n1" name="battle_slot_7_n1" src="ab006" fileName="BattleSlotCom.xml" xy="780,182" size="140,80" touchable="false"/>
+    <component id="battle_slot_7_0" name="battle_slot_7_0" src="ab006" fileName="BattleSlotCom.xml" xy="780,262" size="140,80" touchable="false"/>
+    <component id="battle_slot_7_1" name="battle_slot_7_1" src="ab006" fileName="BattleSlotCom.xml" xy="780,342" size="140,80" touchable="false"/>
+    <component id="battle_slot_7_2" name="battle_slot_7_2" src="ab006" fileName="BattleSlotCom.xml" xy="780,422" size="140,80" touchable="false"/>
+    <component id="battle_slot_8_0" name="battle_slot_8_0" src="ab006" fileName="BattleSlotCom.xml" xy="885,222" size="140,80" touchable="false"/>
+    <component id="battle_slot_8_1" name="battle_slot_8_1" src="ab006" fileName="BattleSlotCom.xml" xy="885,302" size="140,80" touchable="false"/>
+    <component id="battle_slot_8_2" name="battle_slot_8_2" src="ab006" fileName="BattleSlotCom.xml" xy="885,382" size="140,80" touchable="false"/>
+    <component id="battle_slot_9_n1" name="battle_slot_9_n1" src="ab006" fileName="BattleSlotCom.xml" xy="990,182" size="140,80" touchable="false"/>
+    <component id="battle_slot_9_0" name="battle_slot_9_0" src="ab006" fileName="BattleSlotCom.xml" xy="990,262" size="140,80" touchable="false"/>
+    <component id="battle_slot_9_1" name="battle_slot_9_1" src="ab006" fileName="BattleSlotCom.xml" xy="990,342" size="140,80" touchable="false"/>
+    <component id="battle_slot_9_2" name="battle_slot_9_2" src="ab006" fileName="BattleSlotCom.xml" xy="990,422" size="140,80" touchable="false"/>
+    <component id="battle_slot_10_0" name="battle_slot_10_0" src="ab006" fileName="BattleSlotCom.xml" xy="1095,222" size="140,80" touchable="false"/>
+    <component id="battle_slot_10_1" name="battle_slot_10_1" src="ab006" fileName="BattleSlotCom.xml" xy="1095,302" size="140,80" touchable="false"/>
+    <component id="battle_slot_10_2" name="battle_slot_10_2" src="ab006" fileName="BattleSlotCom.xml" xy="1095,382" size="140,80" touchable="false"/>
+  </displayList>
+</component>

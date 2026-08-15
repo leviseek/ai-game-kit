@@ -20,109 +20,124 @@
 
     <image id="lineup_formation_divider" name="divider_formation" src="px016" fileName="img/pixel_section_divider.png" xy="72,164" size="770,4" touchable="false" alpha="0"/>
 
-    <image id="lineup_slot_shadow_0" name="shadow_slot_0" src="px009" fileName="img/pixel_slot_shadow.png" xy="88,198" size="232,100" touchable="false" alpha="0"/>
-    <image id="lineup_slot_0" name="img_slot_0" src="px024" fileName="img/pixel_clean_panel.png" xy="88,198" size="232,100" touchable="false" alpha="1"/>
-    <image id="lineup_slot_highlight_0" name="highlight_slot_0" src="px011" fileName="img/pixel_slot_highlight.png" xy="88,198" size="232,100" touchable="false" alpha="0"/>
-    <image id="lineup_slot_frame_0" name="frame_slot_0" src="px012" fileName="img/pixel_slot_frame.png" xy="88,198" size="232,100" touchable="false" alpha="0"/>
-    <image id="lineup_slot_shadow_1" name="shadow_slot_1" src="px009" fileName="img/pixel_slot_shadow.png" xy="356,198" size="232,100" touchable="false" alpha="0"/>
-    <image id="lineup_slot_1" name="img_slot_1" src="px024" fileName="img/pixel_clean_panel.png" xy="356,198" size="232,100" touchable="false" alpha="1"/>
-    <image id="lineup_slot_highlight_1" name="highlight_slot_1" src="px011" fileName="img/pixel_slot_highlight.png" xy="356,198" size="232,100" touchable="false" alpha="0"/>
-    <image id="lineup_slot_frame_1" name="frame_slot_1" src="px012" fileName="img/pixel_slot_frame.png" xy="356,198" size="232,100" touchable="false" alpha="0"/>
-    <image id="lineup_slot_shadow_2" name="shadow_slot_2" src="px009" fileName="img/pixel_slot_shadow.png" xy="624,198" size="232,100" touchable="false" alpha="0"/>
-    <image id="lineup_slot_2" name="img_slot_2" src="px024" fileName="img/pixel_clean_panel.png" xy="624,198" size="232,100" touchable="false" alpha="1"/>
-    <image id="lineup_slot_highlight_2" name="highlight_slot_2" src="px011" fileName="img/pixel_slot_highlight.png" xy="624,198" size="232,100" touchable="false" alpha="0"/>
-    <image id="lineup_slot_frame_2" name="frame_slot_2" src="px012" fileName="img/pixel_slot_frame.png" xy="624,198" size="232,100" touchable="false" alpha="0"/>
-    <image id="lineup_slot_shadow_3" name="shadow_slot_3" src="px009" fileName="img/pixel_slot_shadow.png" xy="88,314" size="232,100" touchable="false" alpha="0"/>
-    <image id="lineup_slot_3" name="img_slot_3" src="px024" fileName="img/pixel_clean_panel.png" xy="88,314" size="232,100" touchable="false" alpha="1"/>
-    <image id="lineup_slot_highlight_3" name="highlight_slot_3" src="px011" fileName="img/pixel_slot_highlight.png" xy="88,314" size="232,100" touchable="false" alpha="0"/>
-    <image id="lineup_slot_frame_3" name="frame_slot_3" src="px012" fileName="img/pixel_slot_frame.png" xy="88,314" size="232,100" touchable="false" alpha="0"/>
-    <image id="lineup_slot_shadow_4" name="shadow_slot_4" src="px009" fileName="img/pixel_slot_shadow.png" xy="356,314" size="232,100" touchable="false" alpha="0"/>
-    <image id="lineup_slot_4" name="img_slot_4" src="px024" fileName="img/pixel_clean_panel.png" xy="356,314" size="232,100" touchable="false" alpha="1"/>
-    <image id="lineup_slot_highlight_4" name="highlight_slot_4" src="px011" fileName="img/pixel_slot_highlight.png" xy="356,314" size="232,100" touchable="false" alpha="0"/>
-    <image id="lineup_slot_frame_4" name="frame_slot_4" src="px012" fileName="img/pixel_slot_frame.png" xy="356,314" size="232,100" touchable="false" alpha="0"/>
-    <image id="lineup_slot_shadow_5" name="shadow_slot_5" src="px009" fileName="img/pixel_slot_shadow.png" xy="624,314" size="232,100" touchable="false" alpha="0"/>
-    <image id="lineup_slot_5" name="img_slot_5" src="px024" fileName="img/pixel_clean_panel.png" xy="624,314" size="232,100" touchable="false" alpha="1"/>
-    <image id="lineup_slot_highlight_5" name="highlight_slot_5" src="px011" fileName="img/pixel_slot_highlight.png" xy="624,314" size="232,100" touchable="false" alpha="0"/>
-    <image id="lineup_slot_frame_5" name="frame_slot_5" src="px012" fileName="img/pixel_slot_frame.png" xy="624,314" size="232,100" touchable="false" alpha="0"/>
-    <image id="lineup_slot_shadow_6" name="shadow_slot_6" src="px009" fileName="img/pixel_slot_shadow.png" xy="88,430" size="232,100" touchable="false" alpha="0"/>
-    <image id="lineup_slot_6" name="img_slot_6" src="px024" fileName="img/pixel_clean_panel.png" xy="88,430" size="232,100" touchable="false" alpha="1"/>
-    <image id="lineup_slot_highlight_6" name="highlight_slot_6" src="px011" fileName="img/pixel_slot_highlight.png" xy="88,430" size="232,100" touchable="false" alpha="0"/>
-    <image id="lineup_slot_frame_6" name="frame_slot_6" src="px012" fileName="img/pixel_slot_frame.png" xy="88,430" size="232,100" touchable="false" alpha="0"/>
-    <image id="lineup_slot_shadow_7" name="shadow_slot_7" src="px009" fileName="img/pixel_slot_shadow.png" xy="356,430" size="232,100" touchable="false" alpha="0"/>
-    <image id="lineup_slot_7" name="img_slot_7" src="px024" fileName="img/pixel_clean_panel.png" xy="356,430" size="232,100" touchable="false" alpha="1"/>
-    <image id="lineup_slot_highlight_7" name="highlight_slot_7" src="px011" fileName="img/pixel_slot_highlight.png" xy="356,430" size="232,100" touchable="false" alpha="0"/>
-    <image id="lineup_slot_frame_7" name="frame_slot_7" src="px012" fileName="img/pixel_slot_frame.png" xy="356,430" size="232,100" touchable="false" alpha="0"/>
-    <image id="lineup_slot_shadow_8" name="shadow_slot_8" src="px009" fileName="img/pixel_slot_shadow.png" xy="624,430" size="232,100" touchable="false" alpha="0"/>
-    <image id="lineup_slot_8" name="img_slot_8" src="px024" fileName="img/pixel_clean_panel.png" xy="624,430" size="232,100" touchable="false" alpha="1"/>
-    <image id="lineup_slot_highlight_8" name="highlight_slot_8" src="px011" fileName="img/pixel_slot_highlight.png" xy="624,430" size="232,100" touchable="false" alpha="0"/>
-    <image id="lineup_slot_frame_8" name="frame_slot_8" src="px012" fileName="img/pixel_slot_frame.png" xy="624,430" size="232,100" touchable="false" alpha="0"/>
+    <image id="lineup_slot_shadow_0" name="shadow_slot_0" src="c8up7" fileName="img/pixel_hex_slot.png" xy="88,238" size="232,100" touchable="false" alpha="0"/>
+    <image id="lineup_slot_0" name="img_slot_0" src="c8up7" fileName="img/pixel_hex_slot.png" xy="88,238" size="232,100" touchable="false" alpha="1"/>
+    <image id="lineup_slot_highlight_0" name="highlight_slot_0" src="c8up7" fileName="img/pixel_hex_slot.png" xy="88,238" size="232,100" touchable="false" alpha="0"/>
+    <image id="lineup_slot_frame_0" name="frame_slot_0" src="c8up7" fileName="img/pixel_hex_slot.png" xy="88,238" size="232,100" touchable="false" alpha="0"/>
+    <image id="lineup_slot_shadow_1" name="shadow_slot_1" src="c8up7" fileName="img/pixel_hex_slot.png" xy="88,318" size="232,100" touchable="false" alpha="0"/>
+    <image id="lineup_slot_1" name="img_slot_1" src="c8up7" fileName="img/pixel_hex_slot.png" xy="88,318" size="232,100" touchable="false" alpha="1"/>
+    <image id="lineup_slot_highlight_1" name="highlight_slot_1" src="c8up7" fileName="img/pixel_hex_slot.png" xy="88,318" size="232,100" touchable="false" alpha="0"/>
+    <image id="lineup_slot_frame_1" name="frame_slot_1" src="c8up7" fileName="img/pixel_hex_slot.png" xy="88,318" size="232,100" touchable="false" alpha="0"/>
+    <image id="lineup_slot_shadow_2" name="shadow_slot_2" src="c8up7" fileName="img/pixel_hex_slot.png" xy="88,398" size="232,100" touchable="false" alpha="0"/>
+    <image id="lineup_slot_2" name="img_slot_2" src="c8up7" fileName="img/pixel_hex_slot.png" xy="88,398" size="232,100" touchable="false" alpha="1"/>
+    <image id="lineup_slot_highlight_2" name="highlight_slot_2" src="c8up7" fileName="img/pixel_hex_slot.png" xy="88,398" size="232,100" touchable="false" alpha="0"/>
+    <image id="lineup_slot_frame_2" name="frame_slot_2" src="c8up7" fileName="img/pixel_hex_slot.png" xy="88,398" size="232,100" touchable="false" alpha="0"/>
+    <image id="lineup_slot_shadow_3" name="shadow_slot_3" src="c8up7" fileName="img/pixel_hex_slot.png" xy="88,478" size="232,100" touchable="false" alpha="0"/>
+    <image id="lineup_slot_3" name="img_slot_3" src="c8up7" fileName="img/pixel_hex_slot.png" xy="88,478" size="232,100" touchable="false" alpha="1"/>
+    <image id="lineup_slot_highlight_3" name="highlight_slot_3" src="c8up7" fileName="img/pixel_hex_slot.png" xy="88,478" size="232,100" touchable="false" alpha="0"/>
+    <image id="lineup_slot_frame_3" name="frame_slot_3" src="c8up7" fileName="img/pixel_hex_slot.png" xy="88,478" size="232,100" touchable="false" alpha="0"/>
+    <image id="lineup_slot_shadow_4" name="shadow_slot_4" src="c8up7" fileName="img/pixel_hex_slot.png" xy="298,278" size="232,100" touchable="false" alpha="0"/>
+    <image id="lineup_slot_4" name="img_slot_4" src="c8up7" fileName="img/pixel_hex_slot.png" xy="298,278" size="232,100" touchable="false" alpha="1"/>
+    <image id="lineup_slot_highlight_4" name="highlight_slot_4" src="c8up7" fileName="img/pixel_hex_slot.png" xy="298,278" size="232,100" touchable="false" alpha="0"/>
+    <image id="lineup_slot_frame_4" name="frame_slot_4" src="c8up7" fileName="img/pixel_hex_slot.png" xy="298,278" size="232,100" touchable="false" alpha="0"/>
+    <image id="lineup_slot_shadow_5" name="shadow_slot_5" src="c8up7" fileName="img/pixel_hex_slot.png" xy="298,358" size="232,100" touchable="false" alpha="0"/>
+    <image id="lineup_slot_5" name="img_slot_5" src="c8up7" fileName="img/pixel_hex_slot.png" xy="298,358" size="232,100" touchable="false" alpha="1"/>
+    <image id="lineup_slot_highlight_5" name="highlight_slot_5" src="c8up7" fileName="img/pixel_hex_slot.png" xy="298,358" size="232,100" touchable="false" alpha="0"/>
+    <image id="lineup_slot_frame_5" name="frame_slot_5" src="c8up7" fileName="img/pixel_hex_slot.png" xy="298,358" size="232,100" touchable="false" alpha="0"/>
+    <image id="lineup_slot_shadow_6" name="shadow_slot_6" src="c8up7" fileName="img/pixel_hex_slot.png" xy="298,438" size="232,100" touchable="false" alpha="0"/>
+    <image id="lineup_slot_6" name="img_slot_6" src="c8up7" fileName="img/pixel_hex_slot.png" xy="298,438" size="232,100" touchable="false" alpha="1"/>
+    <image id="lineup_slot_highlight_6" name="highlight_slot_6" src="c8up7" fileName="img/pixel_hex_slot.png" xy="298,438" size="232,100" touchable="false" alpha="0"/>
+    <image id="lineup_slot_frame_6" name="frame_slot_6" src="c8up7" fileName="img/pixel_hex_slot.png" xy="298,438" size="232,100" touchable="false" alpha="0"/>
+    <image id="lineup_slot_shadow_7" name="shadow_slot_7" src="c8up7" fileName="img/pixel_hex_slot.png" xy="508,238" size="232,100" touchable="false" alpha="0"/>
+    <image id="lineup_slot_7" name="img_slot_7" src="c8up7" fileName="img/pixel_hex_slot.png" xy="508,238" size="232,100" touchable="false" alpha="1"/>
+    <image id="lineup_slot_highlight_7" name="highlight_slot_7" src="c8up7" fileName="img/pixel_hex_slot.png" xy="508,238" size="232,100" touchable="false" alpha="0"/>
+    <image id="lineup_slot_frame_7" name="frame_slot_7" src="c8up7" fileName="img/pixel_hex_slot.png" xy="508,238" size="232,100" touchable="false" alpha="0"/>
+    <image id="lineup_slot_shadow_8" name="shadow_slot_8" src="c8up7" fileName="img/pixel_hex_slot.png" xy="508,318" size="232,100" touchable="false" alpha="0"/>
+    <image id="lineup_slot_8" name="img_slot_8" src="c8up7" fileName="img/pixel_hex_slot.png" xy="508,318" size="232,100" touchable="false" alpha="1"/>
+    <image id="lineup_slot_highlight_8" name="highlight_slot_8" src="c8up7" fileName="img/pixel_hex_slot.png" xy="508,318" size="232,100" touchable="false" alpha="0"/>
+    <image id="lineup_slot_frame_8" name="frame_slot_8" src="c8up7" fileName="img/pixel_hex_slot.png" xy="508,318" size="232,100" touchable="false" alpha="0"/>
+    <image id="lineup_slot_shadow_9" name="shadow_slot_9" src="c8up7" fileName="img/pixel_hex_slot.png" xy="508,398" size="232,100" touchable="false" alpha="0"/>
+    <image id="lineup_slot_9" name="img_slot_9" src="c8up7" fileName="img/pixel_hex_slot.png" xy="508,398" size="232,100" touchable="false" alpha="1"/>
+    <image id="lineup_slot_highlight_9" name="highlight_slot_9" src="c8up7" fileName="img/pixel_hex_slot.png" xy="508,398" size="232,100" touchable="false" alpha="0"/>
+    <image id="lineup_slot_frame_9" name="frame_slot_9" src="c8up7" fileName="img/pixel_hex_slot.png" xy="508,398" size="232,100" touchable="false" alpha="0"/>
+    <image id="lineup_slot_shadow_10" name="shadow_slot_10" src="c8up7" fileName="img/pixel_hex_slot.png" xy="508,478" size="232,100" touchable="false" alpha="0"/>
+    <image id="lineup_slot_10" name="img_slot_10" src="c8up7" fileName="img/pixel_hex_slot.png" xy="508,478" size="232,100" touchable="false" alpha="1"/>
+    <image id="lineup_slot_highlight_10" name="highlight_slot_10" src="c8up7" fileName="img/pixel_hex_slot.png" xy="508,478" size="232,100" touchable="false" alpha="0"/>
+    <image id="lineup_slot_frame_10" name="frame_slot_10" src="c8up7" fileName="img/pixel_hex_slot.png" xy="508,478" size="232,100" touchable="false" alpha="0"/>
 
     <image id="lineup_candidates_panel" name="bg_candidates_panel" src="px024" fileName="img/pixel_clean_panel.png" xy="920,112" size="320,454" touchable="false" alpha="1"/>
     <image id="lineup_candidates_frame" name="frame_candidates_panel" src="px006" fileName="img/pixel_panel_frame.png" xy="920,112" size="320,454" touchable="false" alpha="0"/>
     <image id="lineup_candidates_surface" name="surface_candidates_panel" src="px007" fileName="img/pixel_inner_surface.png" xy="940,174" size="280,370" touchable="false" alpha="0"/>
     <image id="lineup_candidates_divider" name="divider_candidates" src="px016" fileName="img/pixel_section_divider.png" xy="954,164" size="220,4" touchable="false" alpha="0"/>
 
-    <component id="lineup_slot_button_0" name="slot_0" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="88,198" size="232,100" alpha="0">
+    <component id="lineup_slot_button_0" name="slot_0" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="88,238" size="232,100" alpha="0">
       <Button title="" titleColor="#ffffff"/>
     </component>
-    <component id="lineup_slot_button_1" name="slot_1" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="356,198" size="232,100" alpha="0">
+    <component id="lineup_slot_button_1" name="slot_1" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="88,318" size="232,100" alpha="0">
       <Button title="" titleColor="#ffffff"/>
     </component>
-    <component id="lineup_slot_button_2" name="slot_2" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="624,198" size="232,100" alpha="0">
+    <component id="lineup_slot_button_2" name="slot_2" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="88,398" size="232,100" alpha="0">
       <Button title="" titleColor="#ffffff"/>
     </component>
-    <component id="lineup_slot_button_3" name="slot_3" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="88,314" size="232,100" alpha="0">
+    <component id="lineup_slot_button_3" name="slot_3" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="88,478" size="232,100" alpha="0">
       <Button title="" titleColor="#ffffff"/>
     </component>
-    <component id="lineup_slot_button_4" name="slot_4" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="356,314" size="232,100" alpha="0">
+    <component id="lineup_slot_button_4" name="slot_4" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="298,278" size="232,100" alpha="0">
       <Button title="" titleColor="#ffffff"/>
     </component>
-    <component id="lineup_slot_button_5" name="slot_5" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="624,314" size="232,100" alpha="0">
+    <component id="lineup_slot_button_5" name="slot_5" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="298,358" size="232,100" alpha="0">
       <Button title="" titleColor="#ffffff"/>
     </component>
-    <component id="lineup_slot_button_6" name="slot_6" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="88,430" size="232,100" alpha="0">
+    <component id="lineup_slot_button_6" name="slot_6" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="298,438" size="232,100" alpha="0">
       <Button title="" titleColor="#ffffff"/>
     </component>
-    <component id="lineup_slot_button_7" name="slot_7" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="356,430" size="232,100" alpha="0">
+    <component id="lineup_slot_button_7" name="slot_7" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="508,238" size="232,100" alpha="0">
       <Button title="" titleColor="#ffffff"/>
     </component>
-    <component id="lineup_slot_button_8" name="slot_8" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="624,430" size="232,100" alpha="0">
+    <component id="lineup_slot_button_8" name="slot_8" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="508,318" size="232,100" alpha="0">
       <Button title="" titleColor="#ffffff"/>
     </component>
+    <component id="lineup_slot_button_9" name="slot_9" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="508,398" size="232,100" alpha="0"><Button title="" titleColor="#ffffff"/></component>
+    <component id="lineup_slot_button_10" name="slot_10" src="com00" fileName="CommonButton.xml" pkg="cmn00001" xy="508,478" size="232,100" alpha="0"><Button title="" titleColor="#ffffff"/></component>
 
-    <image id="lineup_slot_selected_0" name="slot_selected_0" src="px013" fileName="img/pixel_slot_selected.png" xy="88,198" size="232,100" visible="false" alpha="0.92" touchable="false"/>
-    <image id="lineup_slot_selected_1" name="slot_selected_1" src="px013" fileName="img/pixel_slot_selected.png" xy="356,198" size="232,100" visible="false" alpha="0.92" touchable="false"/>
-    <image id="lineup_slot_selected_2" name="slot_selected_2" src="px013" fileName="img/pixel_slot_selected.png" xy="624,198" size="232,100" visible="false" alpha="0.92" touchable="false"/>
-    <image id="lineup_slot_selected_3" name="slot_selected_3" src="px013" fileName="img/pixel_slot_selected.png" xy="88,314" size="232,100" visible="false" alpha="0.92" touchable="false"/>
-    <image id="lineup_slot_selected_4" name="slot_selected_4" src="px013" fileName="img/pixel_slot_selected.png" xy="356,314" size="232,100" visible="false" alpha="0.92" touchable="false"/>
-    <image id="lineup_slot_selected_5" name="slot_selected_5" src="px013" fileName="img/pixel_slot_selected.png" xy="624,314" size="232,100" visible="false" alpha="0.92" touchable="false"/>
-    <image id="lineup_slot_selected_6" name="slot_selected_6" src="px013" fileName="img/pixel_slot_selected.png" xy="88,430" size="232,100" visible="false" alpha="0.92" touchable="false"/>
-    <image id="lineup_slot_selected_7" name="slot_selected_7" src="px013" fileName="img/pixel_slot_selected.png" xy="356,430" size="232,100" visible="false" alpha="0.92" touchable="false"/>
-    <image id="lineup_slot_selected_8" name="slot_selected_8" src="px013" fileName="img/pixel_slot_selected.png" xy="624,430" size="232,100" visible="false" alpha="0.92" touchable="false"/>
+    <image id="lineup_slot_selected_0" name="slot_selected_0" src="c8up7" fileName="img/pixel_hex_slot.png" xy="88,238" size="232,100" visible="false" alpha="0.92" color="#FFF0A0" touchable="false"/>
+    <image id="lineup_slot_selected_1" name="slot_selected_1" src="c8up7" fileName="img/pixel_hex_slot.png" xy="88,318" size="232,100" visible="false" alpha="0.92" color="#FFF0A0" touchable="false"/>
+    <image id="lineup_slot_selected_2" name="slot_selected_2" src="c8up7" fileName="img/pixel_hex_slot.png" xy="88,398" size="232,100" visible="false" alpha="0.92" color="#FFF0A0" touchable="false"/>
+    <image id="lineup_slot_selected_3" name="slot_selected_3" src="c8up7" fileName="img/pixel_hex_slot.png" xy="88,478" size="232,100" visible="false" alpha="0.92" color="#FFF0A0" touchable="false"/>
+    <image id="lineup_slot_selected_4" name="slot_selected_4" src="c8up7" fileName="img/pixel_hex_slot.png" xy="298,278" size="232,100" visible="false" alpha="0.92" color="#FFF0A0" touchable="false"/>
+    <image id="lineup_slot_selected_5" name="slot_selected_5" src="c8up7" fileName="img/pixel_hex_slot.png" xy="298,358" size="232,100" visible="false" alpha="0.92" color="#FFF0A0" touchable="false"/>
+    <image id="lineup_slot_selected_6" name="slot_selected_6" src="c8up7" fileName="img/pixel_hex_slot.png" xy="298,438" size="232,100" visible="false" alpha="0.92" color="#FFF0A0" touchable="false"/>
+    <image id="lineup_slot_selected_7" name="slot_selected_7" src="c8up7" fileName="img/pixel_hex_slot.png" xy="508,238" size="232,100" visible="false" alpha="0.92" color="#FFF0A0" touchable="false"/>
+    <image id="lineup_slot_selected_8" name="slot_selected_8" src="c8up7" fileName="img/pixel_hex_slot.png" xy="508,318" size="232,100" visible="false" alpha="0.92" color="#FFF0A0" touchable="false"/>
+    <image id="lineup_slot_selected_9" name="slot_selected_9" src="c8up7" fileName="img/pixel_hex_slot.png" xy="508,398" size="232,100" visible="false" alpha="0.92" color="#FFF0A0" touchable="false"/>
+    <image id="lineup_slot_selected_10" name="slot_selected_10" src="c8up7" fileName="img/pixel_hex_slot.png" xy="508,478" size="232,100" visible="false" alpha="0.92" color="#FFF0A0" touchable="false"/>
     <image id="lineup_slot_nameplate_0" name="nameplate_slot_0" src="px014" fileName="img/pixel_slot_nameplate.png" xy="100,266" size="208,26" touchable="false"/>
-    <image id="lineup_slot_nameplate_1" name="nameplate_slot_1" src="px014" fileName="img/pixel_slot_nameplate.png" xy="368,266" size="208,26" touchable="false"/>
-    <image id="lineup_slot_nameplate_2" name="nameplate_slot_2" src="px014" fileName="img/pixel_slot_nameplate.png" xy="636,266" size="208,26" touchable="false"/>
-    <image id="lineup_slot_nameplate_3" name="nameplate_slot_3" src="px014" fileName="img/pixel_slot_nameplate.png" xy="100,382" size="208,26" touchable="false"/>
-    <image id="lineup_slot_nameplate_4" name="nameplate_slot_4" src="px014" fileName="img/pixel_slot_nameplate.png" xy="368,382" size="208,26" touchable="false"/>
-    <image id="lineup_slot_nameplate_5" name="nameplate_slot_5" src="px014" fileName="img/pixel_slot_nameplate.png" xy="636,382" size="208,26" touchable="false"/>
-    <image id="lineup_slot_nameplate_6" name="nameplate_slot_6" src="px014" fileName="img/pixel_slot_nameplate.png" xy="100,498" size="208,26" touchable="false"/>
-    <image id="lineup_slot_nameplate_7" name="nameplate_slot_7" src="px014" fileName="img/pixel_slot_nameplate.png" xy="368,498" size="208,26" touchable="false"/>
-    <image id="lineup_slot_nameplate_8" name="nameplate_slot_8" src="px014" fileName="img/pixel_slot_nameplate.png" xy="636,498" size="208,26" touchable="false"/>
+    <image id="lineup_slot_nameplate_1" name="nameplate_slot_1" src="px014" fileName="img/pixel_slot_nameplate.png" xy="100,346" size="208,26" touchable="false"/>
+    <image id="lineup_slot_nameplate_2" name="nameplate_slot_2" src="px014" fileName="img/pixel_slot_nameplate.png" xy="100,426" size="208,26" touchable="false"/>
+    <image id="lineup_slot_nameplate_3" name="nameplate_slot_3" src="px014" fileName="img/pixel_slot_nameplate.png" xy="100,506" size="208,26" touchable="false"/>
+    <image id="lineup_slot_nameplate_4" name="nameplate_slot_4" src="px014" fileName="img/pixel_slot_nameplate.png" xy="310,306" size="208,26" touchable="false"/>
+    <image id="lineup_slot_nameplate_5" name="nameplate_slot_5" src="px014" fileName="img/pixel_slot_nameplate.png" xy="310,386" size="208,26" touchable="false"/>
+    <image id="lineup_slot_nameplate_6" name="nameplate_slot_6" src="px014" fileName="img/pixel_slot_nameplate.png" xy="310,466" size="208,26" touchable="false"/>
+    <image id="lineup_slot_nameplate_7" name="nameplate_slot_7" src="px014" fileName="img/pixel_slot_nameplate.png" xy="520,266" size="208,26" touchable="false"/>
+    <image id="lineup_slot_nameplate_8" name="nameplate_slot_8" src="px014" fileName="img/pixel_slot_nameplate.png" xy="520,346" size="208,26" touchable="false"/>
+    <image id="lineup_slot_nameplate_9" name="nameplate_slot_9" src="px014" fileName="img/pixel_slot_nameplate.png" xy="520,426" size="208,26" touchable="false"/>
+    <image id="lineup_slot_nameplate_10" name="nameplate_slot_10" src="px014" fileName="img/pixel_slot_nameplate.png" xy="520,506" size="208,26" touchable="false"/>
     <text id="lineup_slot_name_0" name="txt_slot_0_name" xy="108,266" size="192,26" touchable="false" fontSize="16" color="#EAFBFF" align="center" vAlign="middle" autoSize="none" singleLine="true" text=""/>
-    <text id="lineup_slot_name_1" name="txt_slot_1_name" xy="376,266" size="192,26" touchable="false" fontSize="16" color="#EAFBFF" align="center" vAlign="middle" autoSize="none" singleLine="true" text=""/>
-    <text id="lineup_slot_name_2" name="txt_slot_2_name" xy="644,266" size="192,26" touchable="false" fontSize="16" color="#EAFBFF" align="center" vAlign="middle" autoSize="none" singleLine="true" text=""/>
-    <text id="lineup_slot_name_3" name="txt_slot_3_name" xy="108,382" size="192,26" touchable="false" fontSize="16" color="#EAFBFF" align="center" vAlign="middle" autoSize="none" singleLine="true" text=""/>
-    <text id="lineup_slot_name_4" name="txt_slot_4_name" xy="376,382" size="192,26" touchable="false" fontSize="16" color="#EAFBFF" align="center" vAlign="middle" autoSize="none" singleLine="true" text=""/>
-    <text id="lineup_slot_name_5" name="txt_slot_5_name" xy="644,382" size="192,26" touchable="false" fontSize="16" color="#EAFBFF" align="center" vAlign="middle" autoSize="none" singleLine="true" text=""/>
-    <text id="lineup_slot_name_6" name="txt_slot_6_name" xy="108,498" size="192,26" touchable="false" fontSize="16" color="#EAFBFF" align="center" vAlign="middle" autoSize="none" singleLine="true" text=""/>
-    <text id="lineup_slot_name_7" name="txt_slot_7_name" xy="376,498" size="192,26" touchable="false" fontSize="16" color="#EAFBFF" align="center" vAlign="middle" autoSize="none" singleLine="true" text=""/>
-    <text id="lineup_slot_name_8" name="txt_slot_8_name" xy="644,498" size="192,26" touchable="false" fontSize="16" color="#EAFBFF" align="center" vAlign="middle" autoSize="none" singleLine="true" text=""/>
-
+    <text id="lineup_slot_name_1" name="txt_slot_1_name" xy="108,346" size="192,26" touchable="false" fontSize="16" color="#EAFBFF" align="center" vAlign="middle" autoSize="none" singleLine="true" text=""/>
+    <text id="lineup_slot_name_2" name="txt_slot_2_name" xy="108,426" size="192,26" touchable="false" fontSize="16" color="#EAFBFF" align="center" vAlign="middle" autoSize="none" singleLine="true" text=""/>
+    <text id="lineup_slot_name_3" name="txt_slot_3_name" xy="108,506" size="192,26" touchable="false" fontSize="16" color="#EAFBFF" align="center" vAlign="middle" autoSize="none" singleLine="true" text=""/>
+    <text id="lineup_slot_name_4" name="txt_slot_4_name" xy="318,306" size="192,26" touchable="false" fontSize="16" color="#EAFBFF" align="center" vAlign="middle" autoSize="none" singleLine="true" text=""/>
+    <text id="lineup_slot_name_5" name="txt_slot_5_name" xy="318,386" size="192,26" touchable="false" fontSize="16" color="#EAFBFF" align="center" vAlign="middle" autoSize="none" singleLine="true" text=""/>
+    <text id="lineup_slot_name_6" name="txt_slot_6_name" xy="318,466" size="192,26" touchable="false" fontSize="16" color="#EAFBFF" align="center" vAlign="middle" autoSize="none" singleLine="true" text=""/>
+    <text id="lineup_slot_name_7" name="txt_slot_7_name" xy="528,266" size="192,26" touchable="false" fontSize="16" color="#EAFBFF" align="center" vAlign="middle" autoSize="none" singleLine="true" text=""/>
+    <text id="lineup_slot_name_8" name="txt_slot_8_name" xy="528,346" size="192,26" touchable="false" fontSize="16" color="#EAFBFF" align="center" vAlign="middle" autoSize="none" singleLine="true" text=""/>
+    <text id="lineup_slot_name_9" name="txt_slot_9_name" xy="528,426" size="192,26" touchable="false" fontSize="16" color="#EAFBFF" align="center" vAlign="middle" autoSize="none" singleLine="true" text=""/>
+    <text id="lineup_slot_name_10" name="txt_slot_10_name" xy="528,506" size="192,26" touchable="false" fontSize="16" color="#EAFBFF" align="center" vAlign="middle" autoSize="none" singleLine="true" text=""/>
     <list id="lineup_candidate_list" name="candidate_list" xy="956,194" size="248,340" overflow="scroll" scrollBar="hidden" selectionMode="single" lineGap="12" defaultItem="ui://cmn00001com04" autoClearItems="true"/>
     <text id="lineup_title" name="txt_title" xy="390,30" size="500,48" touchable="false" fontSize="32" color="#EAFBFF" align="center" vAlign="middle" autoSize="none" singleLine="true" text="自动战斗 · 战术配置"/>
-    <text id="lineup_hud_meta" name="txt_hud_meta" xy="72,36" size="240,28" touchable="false" fontSize="14" color="#9FC8D6" align="left" vAlign="middle" autoSize="none" singleLine="true" text="TACTICAL ARCHIVE // 3×3 GRID"/>
+    <text id="lineup_hud_meta" name="txt_hud_meta" xy="72,36" size="240,28" touchable="false" fontSize="14" color="#9FC8D6" align="left" vAlign="middle" autoSize="none" singleLine="true" text="TACTICAL ARCHIVE // 4-3-4 FORMATION"/>
     <text id="lineup_hud_status" name="txt_hud_status" xy="968,36" size="220,28" touchable="false" fontSize="14" color="#FFF0A0" align="right" vAlign="middle" autoSize="none" singleLine="true" text="SQUAD READY  00/06"/>
-    <text id="lineup_formation_title" name="txt_formation_title" xy="72,130" size="500,28" touchable="false" fontSize="20" color="#EAFBFF" vAlign="middle" autoSize="none" singleLine="true" text="己方布阵  //  3×3  ·  最多上阵 6"/>
+    <text id="lineup_formation_title" name="txt_formation_title" xy="72,130" size="500,28" touchable="false" fontSize="20" color="#EAFBFF" vAlign="middle" autoSize="none" singleLine="true" text="己方布阵  //  4-3-4  ·  最多上阵 6"/>
     <text id="lineup_candidates_title" name="txt_candidates_title" xy="954,130" size="220,28" touchable="false" fontSize="20" color="#EAFBFF" vAlign="middle" autoSize="none" singleLine="true" text="候选终端"/>
 
     <image id="lineup_action_dock" name="dock_lineup_actions" src="px024" fileName="img/pixel_clean_panel.png" xy="40,588" size="1200,96" touchable="false" alpha="1"/>

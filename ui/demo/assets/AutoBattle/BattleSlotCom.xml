@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="140,80">
+  <displayList>
+    <image id="battle_slot_surface" name="battle_slot_surface" src="gmumi" fileName="img/battle_slot.png" xy="0,0" size="140,80" touchable="false"/>
+  </displayList>
+</component>

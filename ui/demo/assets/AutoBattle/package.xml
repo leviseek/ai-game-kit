@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <packageDescription id="abpk0001">
   <resources>
+    <image id="gmumi" name="battle_slot.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="c8up7" name="pixel_hex_slot.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <component id="ab006" name="BattleSlotCom.xml" path="/" exported="true"/>
+    <component id="ab007" name="BattlefieldSlotsCom.xml" path="/" exported="true"/>
     <image id="px024" name="pixel_clean_panel.png" path="/img/" scale="9grid" scale9grid="2,2,4,4" qualityOption="source" duplicatePadding="true"/>
     <image id="px023" name="pixel_double_arrow_mask.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
     <image id="px022" name="pixel_star_mask.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
@@ -57,7 +61,7 @@
     <image id="pnl00" name="panel_lineup_bg.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
     <component id="ab002" name="LineupEditorView.xml" path="/" exported="true"/>
     <component id="ab001" name="AutoBattleView.xml" path="/" exported="true"/>
-    <image id="ab000" name="bg_battle.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
+    <image id="ab000" name="bg_battle.png" path="/img/" qualityOption="source" atlas="alone_npot" duplicatePadding="true"/>
     <image id="vshxd" name="debug_null_probe.png" path="/img/"/>
   </resources>
   <publish name=""/>

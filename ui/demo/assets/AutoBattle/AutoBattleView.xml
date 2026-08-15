@@ -18,6 +18,8 @@
     <image id="battle_deco_chevron_right" name="battle_deco_chevron_right" src="px018" fileName="img/pixel_chevron_right.png" xy="1186,144" size="28,28" touchable="false" alpha="0"/>
     <image id="battle_deco_blocks" name="battle_deco_blocks" src="px021" fileName="img/pixel_block_cluster.png" xy="1060,134" size="64,32" touchable="false" alpha="0.8"/>
 
+
+    <component id="ab_battlefield_slots" name="battlefield_slots" src="ab007" fileName="BattlefieldSlotsCom.xml" xy="0,0" size="1280,500" touchable="false"/>
     <component id="ab_units_container" name="container_units" src="ab003" fileName="BattlefieldUnitsCom.xml" xy="0,0" size="1280,500">
       <relation target="" sidePair="width-width"/>
     </component>
