@@ -171,7 +171,10 @@ describe("Auto-battle target lock", () => {
     });
 
     test("heal skill is not affected by target lock", () => {
-        // 治疗单位：首次行动普攻会锁定目标（能量不足），满能量释放治疗后锁定不被触碰
+        // 治疗单位：能量需积累（cost 100）期间普攻锁定目标；满能量释放治疗后锁定不被触碰。
+        // 能量 = 自身回合开始恢复（energyGainAttacker）+ 受击恢复（energyGainTarget）累计。
+        // 敌方普通攻击制造伤害让治疗有生效值，但技能改为治疗自身，避免布阵留空后
+        // 敌方先满能量用伤害技能击杀治疗单位（a 攻 0 不致死）。
         const healer = hero("a", "a", {
             attack: 0,
             skill: {
@@ -179,20 +182,31 @@ describe("Auto-battle target lock", () => {
                 name: "Heal",
                 kind: "heal",
                 value: 30,
-                energyCost: 1,
+                energyCost: 100,
             },
         });
         const battle = createBattle({
-            heroes: [healer, hero("e", "e")],
+            heroes: [
+                healer,
+                hero("e", "e", {
+                    skill: {
+                        id: "e-heal",
+                        name: "E Heal",
+                        kind: "heal",
+                        value: 10,
+                        energyCost: 100,
+                    },
+                }),
+            ],
             lineups: { ally: ["a"], enemy: ["e"] },
             energyGainAttacker: 10,
             energyGainTarget: 5,
         });
-        battle.tick(); // a 普攻：能量 +10 → 锁定 e
+        battle.tick(); // a 回合开始 +10（<100）→ 普攻锁定 e
         const before = battle.state().units.find((u) => u.side === "ally")!.lockedTargetId;
         expect(before).toBe("e");
         // 推进到 a 释放治疗：锁定不变
-        for (let i = 0; i < 5 && !battle.events().some((ev) => ev.type === "skill-heal"); i += 1) {
+        for (let i = 0; i < 30 && !battle.events().some((ev) => ev.type === "skill-heal"); i += 1) {
             battle.tick();
         }
         expect(battle.events().some((ev) => ev.type === "skill-heal")).toBe(true);
@@ -250,11 +264,12 @@ describe("Auto-battle opening instantiation from lineup", () => {
         const { units } = battle.state;
         const byId = new Map(units.map((u) => [u.id, u.gridKey]));
 
-        // 布阵区 ally 侧格序：row-major，col 从 3 起，slot 8 即 (2,5)
-        expect(byId.get("a")).toBe("2:5");
-        expect(byId.get("b")).toBe("0:3");
-        // 布阵区 enemy 侧格序：col 从 0 起，slot 2 即 (0,2)
-        expect(byId.get("e")).toBe("0:2");
+        // 布阵区 ally 侧格序：列优先（前排 0-3 → 中排 4-6 → 后排 7-10，每排自上而下），
+        // slot 8 即后排第 2 行 (1,9)；slot 0 即前排顶格 (0,7)
+        expect(byId.get("a")).toBe("1:9");
+        expect(byId.get("b")).toBe("0:7");
+        // 布阵区 enemy 侧格序：slot 2 即前排第 3 行 (2,3)
+        expect(byId.get("e")).toBe("2:3");
 
         battle.dispose();
     });
@@ -266,6 +281,24 @@ describe("Auto-battle opening instantiation from lineup", () => {
         const allyIds = units.filter((u) => u.side === "ally").map((u) => u.id);
         expect(allyIds).toEqual(["a0", "a1", "a2"]);
         expect(units.filter((u) => u.side === "enemy").map((u) => u.id)).toEqual(["e0"]);
+
+        battle.dispose();
+    });
+
+    test("default lineup places units in the inner column, one per row", () => {
+        // 默认布阵策略（前排贴中线优先竖排）：每侧 3 单位贴中线纵向排开（前排列阵）
+        const battle = createBattle(lineupContent(["a", "b", "c"], ["x", "y", "z"]));
+        const { units } = battle.state();
+        const byId = new Map(units.map((u) => [u.id, u.gridKey]));
+
+        // 敌方前排 = 贴中线的列 3，自上而下
+        expect(byId.get("x")).toBe("0:3");
+        expect(byId.get("y")).toBe("1:3");
+        expect(byId.get("z")).toBe("2:3");
+        // 己方前排 = 贴中线的列 7，自上而下
+        expect(byId.get("a")).toBe("0:7");
+        expect(byId.get("b")).toBe("1:7");
+        expect(byId.get("c")).toBe("2:7");
 
         battle.dispose();
     });

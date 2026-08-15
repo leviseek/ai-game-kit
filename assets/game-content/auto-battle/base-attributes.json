@@ -1,8 +1,8 @@
 [
-    { "id": "tank", "maxHp": 60, "attack": 6, "speed": 8, "attackRange": 1 },
-    { "id": "mage", "maxHp": 45, "attack": 11, "speed": 7, "attackRange": 1 },
-    { "id": "priest", "maxHp": 40, "attack": 4, "speed": 6, "attackRange": 1 },
-    { "id": "skeleton", "maxHp": 60, "attack": 6, "speed": 8, "attackRange": 1 },
-    { "id": "lich", "maxHp": 45, "attack": 9, "speed": 7, "attackRange": 1 },
-    { "id": "shaman", "maxHp": 40, "attack": 4, "speed": 6, "attackRange": 1 }
+    { "id": "tank", "maxHp": 60, "attack": 6, "speed": 8, "attackRange": 1, "movePoints": 2 },
+    { "id": "mage", "maxHp": 45, "attack": 11, "speed": 7, "attackRange": 4, "movePoints": 1 },
+    { "id": "priest", "maxHp": 40, "attack": 4, "speed": 6, "attackRange": 2, "movePoints": 1 },
+    { "id": "skeleton", "maxHp": 60, "attack": 6, "speed": 8, "attackRange": 1, "movePoints": 2 },
+    { "id": "lich", "maxHp": 45, "attack": 9, "speed": 7, "attackRange": 4, "movePoints": 1 },
+    { "id": "shaman", "maxHp": 40, "attack": 4, "speed": 6, "attackRange": 2, "movePoints": 1 }
 ]

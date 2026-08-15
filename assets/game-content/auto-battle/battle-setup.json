@@ -4,5 +4,7 @@
         "enemy": ["enemy-tank", "enemy-mage", "enemy-shaman"]
     },
     "energyGainAttacker": 10,
-    "energyGainTarget": 5
+    "energyGainTarget": 5,
+    "energyMoveCostRatio": 0.5,
+    "energyGainOnKill": 10
 }

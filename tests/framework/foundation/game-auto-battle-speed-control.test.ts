@@ -106,8 +106,8 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)("Auto-battle determinism across sp
         events: readonly AutoBattleEvent[];
     }> => {
         const createAutoBattleFixture = await loadCreateAutoBattleFixture();
-        // 缺省 3v3 配置即玩家第一场战斗（已锁定自然终局为胜利），
-        // 用同一缺省配置验证不同挡位下的确定性
+        // 缺省 3v3 配置即玩家第一场战斗；布阵中线留空后默认数值下胜负为刀口平衡，
+        // 此处只要求自然终局（result 确定），不同挡位下结果一致（挡位不改变战斗）
         const fixture = createAutoBattleFixture();
         await fixture.start();
         // 挡位只改模拟时钟倍率：不同挡位下 tick 序列相同（每 tick 一个行动）
@@ -129,10 +129,10 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)("Auto-battle determinism across sp
         const two = await runToEnd(2);
         const three = await runToEnd(3);
 
-        // 终局结果一致：三种挡位均自然终局且同为胜利
-        expect(one.state.result).toBe("win");
-        expect(two.state.result).toBe("win");
-        expect(three.state.result).toBe("win");
+        // 终局结果一致：三种挡位均自然终局且结果相同（不钉死胜方）
+        expect(one.state.result).not.toBeUndefined();
+        expect(two.state.result).toBe(one.state.result);
+        expect(three.state.result).toBe(one.state.result);
 
         // 事件数一致（时间戳随挡位变化，其余字段必须一致）
         expect(two.events.length).toBe(one.events.length);

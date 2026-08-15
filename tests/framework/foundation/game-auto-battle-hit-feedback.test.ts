@@ -276,26 +276,26 @@ describe("Auto-battle effect animator", () => {
         expect(animator.active()).toBe(0);
     });
 
-    test("entrance animation rises and fades the unit node in to full alpha", () => {
+    test("entrance animation walks in from the screen edge and fades the unit node to full alpha", () => {
         const { animator, ensureNode, advance } = makeAnimator();
         const unitNode = ensureNode("unit_a");
         animator.play([{ kind: "entrance", unitId: "a", seq: 0 }]);
 
-        // 入场开始：位于布阵格下方（y=100+80）、alpha=0
+        // 入场开始：从屏幕右边界外（840 ≥ 中线 640 → 己方半场从右侧走进），y 保持布阵位、alpha=0
         expect(unitNode.alpha).toBe(0);
-        expect(unitNode.xy).toEqual({ x: 840, y: 180 });
+        expect(unitNode.xy).toEqual({ x: 1440, y: 100 });
 
         advance(375);
         animator.step();
-        // 中段：上浮中、alpha 上升（750ms 时长的一半）
+        // 中段：横向走进中、alpha 上升（750ms 时长的一半）
         expect(unitNode.alpha!).toBeGreaterThan(0);
         expect(unitNode.alpha!).toBeLessThan(1);
-        expect(unitNode.xy!.y).toBeGreaterThan(100);
-        expect(unitNode.xy!.y).toBeLessThan(180);
+        expect(unitNode.xy!.x).toBeGreaterThan(840);
+        expect(unitNode.xy!.x).toBeLessThan(1440);
 
         advance(750);
         animator.step();
-        // 结束：到位（y=100）、alpha=1、active 清空
+        // 结束：到位（x=840）、alpha=1、active 清空
         expect(unitNode.alpha).toBe(1);
         expect(unitNode.xy).toEqual({ x: 840, y: 100 });
         expect(animator.active()).toBe(0);

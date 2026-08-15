@@ -69,6 +69,8 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)("Auto-battle terminal states and d
         const createAutoBattleFixture = await loadCreateAutoBattleFixture();
         const fixture = createAutoBattleFixture({
             configContent: configContent({
+                // 射程 4 使开局即命中（布阵前排间距 4 列），聚焦无移动的普攻击杀序列
+                ally: [unit("a", "A", { attackRange: 4 })],
                 enemy: [unit("x", "X", { maxHp: 10, attack: 1, speed: 1 })],
             }),
         });
@@ -76,10 +78,10 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)("Auto-battle terminal states and d
 
         fixture.battle.tick(); // a 一击击杀 x → 终局
 
-        // 1v1 布阵（敌左 0:0、己右 0:3）manhattan 距离 3 > attackRange 1：
-        // a 前移到距离 ≤1 的格（2 步 move）再普攻（移动 + 普攻两阶段，change 08）
+        // 1v1 默认布阵（敌列 3、己列 7）manhattan 距离 4 ≤ attackRange 4：
+        // 射程内直接普攻，不产生 move 事件（移动 + 普攻两阶段由 unit-motion 专项覆盖）
         const types = fixture.battle.events.map((e) => e.type);
-        expect(types).toEqual(["round-start", "move", "move", "attack", "unit-dead", "battle-over"]);
+        expect(types).toEqual(["round-start", "attack", "unit-dead", "battle-over"]);
         const over = fixture.battle.events[fixture.battle.events.length - 1];
         expect(over?.result).toBe("win");
 

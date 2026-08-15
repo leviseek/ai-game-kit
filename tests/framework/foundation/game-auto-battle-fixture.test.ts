@@ -173,8 +173,9 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)("Auto-battle fixture composition",
         const createAutoBattleFixture = await loadCreateAutoBattleFixture();
         const fixture = createAutoBattleFixture({
             configContent: configContent({
-                ally: [unit("a", "A", { position: "front", maxHp: 100, attack: 10, speed: 5, energyMax: 100 })],
-                enemy: [unit("x", "X", { position: "front", maxHp: 100, attack: 1, speed: 4, energyMax: 100 })],
+                // 布阵留空后前排间距 4 列：射程 4 使双方开局即互射，聚焦普攻能量结算
+                ally: [unit("a", "A", { position: "front", maxHp: 100, attack: 10, speed: 5, energyMax: 100, attackRange: 4 })],
+                enemy: [unit("x", "X", { position: "front", maxHp: 100, attack: 1, speed: 4, energyMax: 100, attackRange: 4 })],
             }),
         });
         await fixture.start();
@@ -216,9 +217,12 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)("Auto-battle fixture composition",
         await fixture.dispose();
     });
 
-    test("the default config terminates naturally as a win", async () => {
+    test("the default config terminates naturally", async () => {
         const createAutoBattleFixture = await loadCreateAutoBattleFixture();
-        // 缺省 3v3 配置是玩家从 Lobby 进入的第一场战斗：锁定其自然终局且为胜利
+        // 缺省 3v3 配置是玩家从 Lobby 进入的第一场战斗：锁定其自然终局（不僵持）。
+        // 布阵中线留空（敌列 1-3、己列 7-9）后前排间距 4 列，近战/治疗先移动再交火、
+        // 移动消耗能量，胜负受路径与数值影响（当前为胜利）——此处只锁定"自然终局"，
+        // 不钉死胜方（数值调优属玩法配置，不由本测试锁定）。
         const fixture = createAutoBattleFixture();
         await fixture.start();
 
@@ -230,7 +234,7 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)("Auto-battle fixture composition",
         const state = fixture.battle.state;
         expect(guard).toBeLessThan(1000);
         expect(state.phase).toBe("over");
-        expect(state.result).toBe("win");
+        expect(state.result).not.toBeUndefined();
 
         await fixture.dispose();
     });

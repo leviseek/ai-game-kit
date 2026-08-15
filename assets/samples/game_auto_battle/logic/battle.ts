@@ -1,15 +1,15 @@
 import type { IModule } from "../../../framework";
 import type { AutoBattleClock } from "./clock";
 import { MAX_TEAM_SIZE } from "./config";
-import { FORMATION_GRID_COLS } from "./grid";
 import type { AutoBattleConfigHandle } from "./config";
 import { applyAutoBattleDamage, growAutoBattleEnergy, resolveAutoBattleSkill } from "./skills";
 import { isAutoBattleAlive, resolveAutoBattleTarget, selectAutoBattleHealTarget, sortAutoBattleOrder } from "./formation";
 import { applyAutoBattleBuffTick, autoBattleBuffAttackBonus, autoBattleBuffDefenseBonus, createAutoBattleBuffInstance, tickAutoBattleBuffs } from "./buffs";
 import { resolveAutoBattleSkillCondition } from "./conditions";
 import { createMutableUnit, snapshotUnits, type MutableUnit } from "./units";
-import { createMapGrid } from "./grid";
-import { resolveMovePath } from "./move";
+import { createMapGrid, formationSlotOf } from "./grid";
+import { manhattanDistance, resolveMovePath } from "./move";
+import { defaultDeploymentSlot } from "./lineup";
 import type { AutoBattleEvent, AutoBattlePhase, AutoBattleSide, AutoBattleState, AutoBattleSkillTarget } from "../models";
 
 /** 开战编队单位：slot = 布阵区格位（0..FORMATION_GRID_SIZE-1），heroId 引用英雄池。 */
@@ -26,14 +26,16 @@ export interface AutoBattleLineupPair {
 
 /**
  * 把配置初始编队（压缩 id 数组，语义 = 已上阵序）转换为 placement 格式：
- * slot 按 0..n-1 连续映射到布阵区前段格（无空槽，与玩家编队定长结构互为转换）。
- * 玩家编队（含空槽）由装配层显式构造 placement，不经此转换。
+ * slot 按默认布阵策略（前排贴中线优先竖排，见 defaultDeploymentSlot）映射到
+ * 布阵区格（无空槽，与玩家编队定长结构互为转换）。玩家编队（含空槽）由装配层
+ * 显式构造 placement，不经此转换。
  */
 export function toLineupPair(lineups: { readonly ally: readonly string[]; readonly enemy: readonly string[] }): AutoBattleLineupPair {
-    const toPlacement = (ids: readonly string[]): readonly AutoBattlePlacedUnit[] => ids.map((heroId, slot) => ({ slot, heroId }));
+    const toPlacement = (side: AutoBattleSide, ids: readonly string[]): readonly AutoBattlePlacedUnit[] =>
+        ids.map((heroId, index) => ({ slot: defaultDeploymentSlot(side, index), heroId }));
     return {
-        ally: toPlacement(lineups.ally),
-        enemy: toPlacement(lineups.enemy),
+        ally: toPlacement("ally", lineups.ally),
+        enemy: toPlacement("enemy", lineups.enemy),
     };
 }
 
@@ -200,12 +202,13 @@ export function createAutoBattleBattle(options: AutoBattleBattleOptions): AutoBa
     }
 
     /**
-     * 行动前向目标移动：解析移动路径（超射程逐格前移），逐格执行 grid.move 并
-     * 广播 move 事件、更新单位 gridKey。射程内/无法移动时不产生 move 事件。
-     * 返回是否发生移动（供调用方判断"移动 + 普攻"两阶段的移动阶段）。
+     * 行动前向目标移动：解析移动路径（超射程按 movePoints 逐格前移），逐格执行
+     * grid.move 并广播 move 事件、更新单位 gridKey。射程内/无法移动时不产生 move
+     * 事件。移动消耗能量（≈ 回合恢复量 × energyMoveCostRatio，下限 1）。返回是否
+     * 发生移动（供调用方判断"移动 + 普攻"两阶段的移动阶段）。
      */
     function moveTowardTarget(actor: MutableUnit, target: MutableUnit): boolean {
-        const { steps } = resolveMovePath(grid, actor.gridKey, target.gridKey, actor.def.attackRange);
+        const { steps } = resolveMovePath(grid, actor.gridKey, target.gridKey, actor.def.attackRange, actor.def.movePoints);
         if (steps.length === 0) {
             return false;
         }
@@ -216,12 +219,36 @@ export function createAutoBattleBattle(options: AutoBattleBattleOptions): AutoBa
                 emit({ type: "move", sourceId: actor.id, fromGridKey: from, toGridKey: to, round });
             }
         }
+        // 移动消耗能量：消耗"近乎一半"的回合恢复量（能量经济规则 2）
+        const moveCost = Math.max(1, Math.round(config.energyGainAttacker * config.energyMoveCostRatio));
+        actor.energy = Math.max(0, actor.energy - moveCost);
         return true;
     }
 
-    /** 技能换位：把单位换位到其所在侧布阵区的相对格（`row:col`，row/col 0..布阵区-1，
-     *  映射到 formationCells 对应格）。目标格被占用或非法则换位失败（位置不变，
-     *  不广播 teleport）。返回是否换位成功。 */
+    /** 最近存活敌方（按曼哈顿距离）：移动靠近目标，与攻击目标（前排优先）解耦。 */
+    function nearestEnemyOf(actor: MutableUnit): MutableUnit | undefined {
+        const opposingSide: AutoBattleSide = actor.side === "ally" ? "enemy" : "ally";
+        let nearest: MutableUnit | undefined;
+        let best = Number.POSITIVE_INFINITY;
+        for (const enemy of sideUnits(opposingSide)) {
+            if (!isAutoBattleAlive(enemy)) {
+                continue;
+            }
+            const distance = manhattanDistance(actor.gridKey, enemy.gridKey);
+            if (distance < best) {
+                best = distance;
+                nearest = enemy;
+            }
+        }
+        return nearest;
+    }
+
+    /**
+     * 技能换位：把单位换位到其所在侧布阵区的相对格（`row:col`，row/col 为布阵区
+     * 相对行/列，经 formationSlotOf 映射到 formationCells 对应格；中排顶格或越界
+     * 的非法相对格换位失败）。目标格被占用或非法则换位失败（位置不变，不广播
+     * teleport）。返回是否换位成功。
+     */
     function teleportTarget(unit: MutableUnit, relative: string): boolean {
         const match = /^(\d+):(\d+)$/.exec(relative);
         if (match === null) {
@@ -229,8 +256,12 @@ export function createAutoBattleBattle(options: AutoBattleBattleOptions): AutoBa
         }
         const row = Number(match[1]);
         const col = Number(match[2]);
+        const slot = formationSlotOf(row, col);
+        if (slot === undefined) {
+            return false;
+        }
         const cells = grid.formationCells(unit.side);
-        const targetKey = cells[row * FORMATION_GRID_COLS + col];
+        const targetKey = cells[slot];
         if (targetKey === undefined || !grid.isFree(targetKey)) {
             return false;
         }
@@ -260,8 +291,9 @@ export function createAutoBattleBattle(options: AutoBattleBattleOptions): AutoBa
             return;
         }
 
-        // 移动 + 普攻两阶段：超射程先前移再结算（移动不改变行动次序）
-        moveTowardTarget(actor, target);
+        // 移动 + 普攻两阶段：超射程向最近敌方前移再结算（移动不改变行动次序，
+        // 移动目标与攻击目标（前排优先）解耦，见 nearestEnemyOf）
+        moveTowardTarget(actor, nearestEnemyOf(actor) ?? target);
 
         // 攻击 buff 加成施法者攻击、防御 buff 减免受击伤害（下限 0）
         const attack = actor.def.attack + autoBattleBuffAttackBonus(actor.buffs);
@@ -269,8 +301,7 @@ export function createAutoBattleBattle(options: AutoBattleBattleOptions): AutoBa
         const damage = Math.max(0, attack - defense);
         const outcome = applyAutoBattleDamage(target.hp, damage);
         target.hp = outcome.hp;
-        actor.energy = growAutoBattleEnergy(actor.energy, actor.def.energyMax, config.energyGainAttacker);
-        // 阵亡目标不再累计受击能量（实现收窄，测试锁定其行为）
+        // 被击打恢复少量能量（非自己回合也能回复，能量经济规则 3）
         if (!outcome.kills) {
             target.energy = growAutoBattleEnergy(target.energy, target.def.energyMax, config.energyGainTarget);
         }
@@ -284,6 +315,8 @@ export function createAutoBattleBattle(options: AutoBattleBattleOptions): AutoBa
         });
 
         if (outcome.kills) {
+            // 击杀获得大量能量（能量经济规则 4）
+            actor.energy = growAutoBattleEnergy(actor.energy, actor.def.energyMax, config.energyGainOnKill);
             emit({ type: "unit-dead", sourceId: actor.id, targetId: target.id, round });
             checkGameOver();
         }
@@ -364,6 +397,8 @@ export function createAutoBattleBattle(options: AutoBattleBattleOptions): AutoBa
                 effectId: skill.effectId,
             });
             if (kills) {
+                // 技能击杀同样获得大量能量（能量经济规则 4；技能清空能量后入账）
+                actor.energy = growAutoBattleEnergy(actor.energy, actor.def.energyMax, config.energyGainOnKill);
                 emit({ type: "unit-dead", sourceId: actor.id, targetId: target.id, round });
                 checkGameOver();
             }
@@ -391,6 +426,8 @@ export function createAutoBattleBattle(options: AutoBattleBattleOptions): AutoBa
     }
 
     function act(actor: MutableUnit): void {
+        // 武将自身回合开始时恢复固定能量（能量经济规则 1）
+        actor.energy = growAutoBattleEnergy(actor.energy, actor.def.energyMax, config.energyGainAttacker);
         if (actor.energy >= actor.def.skill.energyCost) {
             castSkill(actor);
             return;

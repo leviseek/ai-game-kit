@@ -59,65 +59,120 @@ describe("Auto-battle move resolver", () => {
 
     test("within attack range returns no movement", () => {
         const grid = createMapGrid();
-        const path = resolveMovePath(grid, "0:3", "0:2", 1);
+        const path = resolveMovePath(grid, "0:3", "0:2", 1, 10);
         expect(path.steps).toEqual([]);
         expect(path.destination).toBe("0:3");
     });
 
-    test("beyond range moves along same row toward target", () => {
+    test("beyond range advances along rendered slots to the nearest in-range cell", () => {
         const grid = createMapGrid();
-        // 0:3 → 0:0，attackRange 1：前移到距离 ≤1 的格（0:1）
-        const path = resolveMovePath(grid, "0:3", "0:0", 1);
-        expect(path.steps).toEqual(["0:2", "0:1"]);
+        // 0:3 → 0:0，attackRange 1：顶行偶数列无槽位（0:2 不可走），路径斜向贴边
+        // 下探行 1 再回到 0:1（距目标 1），全程只踩已渲染槽位格
+        const path = resolveMovePath(grid, "0:3", "0:0", 1, 10);
+        expect(path.steps).toEqual(["1:2", "0:1"]);
         expect(path.destination).toBe("0:1");
     });
 
-    test("stops at occupied cell without moving", () => {
+    test("every proposed step stays on rendered slot cells", () => {
+        // 全图任意可走起点 → 可走终点的路径：每一步都必须落在槽位格
+        // （列高 3-4-3-4-…-3：偶数列缺顶行，顶行只有奇数列有槽位）
+        const isWalkable = (key: string): boolean => {
+            const [row, col] = key.split(":").map(Number);
+            return col % 2 === 1 || row >= 1;
+        };
         const grid = createMapGrid();
-        grid.place("blocker", "0:2");
-        const path = resolveMovePath(grid, "0:3", "0:0", 1);
-        // 0:2 被占用：停在当前格，不产生移动
+        for (let row = 0; row < 4; row += 1) {
+            for (let col = 0; col < 11; col += 1) {
+                const from = `${row}:${col}`;
+                if (!isWalkable(from)) {
+                    continue;
+                }
+                for (let targetRow = 0; targetRow < 4; targetRow += 1) {
+                    for (let targetCol = 0; targetCol < 11; targetCol += 1) {
+                        const to = `${targetRow}:${targetCol}`;
+                        if (!isWalkable(to)) {
+                            continue;
+                        }
+                        const { steps } = resolveMovePath(grid, from, to, 0, 10);
+                        for (const step of steps) {
+                            expect(isWalkable(step)).toBe(true);
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    test("reroutes around an occupied cell", () => {
+        const grid = createMapGrid();
+        grid.place("blocker", "1:2");
+        // 首步 1:2 被占用：BFS 绕行（1:3 → 2:2 → 1:1）仍落到射程内格
+        const path = resolveMovePath(grid, "0:3", "1:0", 1, 10);
+        expect(path.steps).toEqual(["1:3", "2:2", "1:1"]);
+        expect(path.destination).toBe("1:1");
+    });
+
+    test("stops when all forward paths are blocked", () => {
+        const grid = createMapGrid();
+        grid.place("b1", "1:3");
+        grid.place("b2", "1:2");
+        grid.place("b3", "1:4");
+        // 起点 0:3 的全部前向邻格（1:3/1:2/1:4）被占用：无可达路径，原地不移动
+        const path = resolveMovePath(grid, "0:3", "1:0", 1, 10);
         expect(path.steps).toEqual([]);
         expect(path.destination).toBe("0:3");
     });
 
     test("same input yields same path (determinism)", () => {
-        const first = resolveMovePath(createMapGrid(), "0:3", "0:0", 1);
-        const second = resolveMovePath(createMapGrid(), "0:3", "0:0", 1);
+        const first = resolveMovePath(createMapGrid(), "0:3", "0:0", 1, 10);
+        const second = resolveMovePath(createMapGrid(), "0:3", "0:0", 1, 10);
         expect(first.steps).toEqual(second.steps);
         expect(first.destination).toBe(second.destination);
     });
 
-    test("cross-row target advances vertically first then horizontally (P2-8)", () => {
+    test("cross-row target is reached via the shortest slot path (P2-8)", () => {
         const grid = createMapGrid();
-        // 目标在不同行：优先向目标行推进（0→1 行），行对齐后沿列方向推进，
-        // 直到满足射程 1（落点 1:1 距目标 1:0 距离 1）
-        const path = resolveMovePath(grid, "0:3", "1:0", 1);
-        expect(path.steps).toEqual(["1:3", "1:2", "1:1"]);
+        // 目标在行 1：BFS 最短路径（0:3 斜向贴边下探 1:2 再横移），落点 1:1 距目标 1
+        const path = resolveMovePath(grid, "0:3", "1:0", 1, 10);
+        expect(path.steps).toEqual(["1:2", "1:1"]);
         expect(path.destination).toBe("1:1");
     });
 
-    test("cross-row advance stops when the vertical cell is occupied", () => {
+    test("maxSteps bounds the cells moved per action (movePoints)", () => {
         const grid = createMapGrid();
-        grid.place("blocker", "1:3");
-        // 垂直首步 1:3 被占用：停在起点，不移动（跨排推进受占用阻断）
-        const path = resolveMovePath(grid, "0:3", "1:0", 1);
-        expect(path.steps).toEqual([]);
-        expect(path.destination).toBe("0:3");
+        // 0:3 → 0:0，attackRange 1、maxSteps 2：最多走 2 格（1:2 → 0:1），未到射程也停
+        const path = resolveMovePath(grid, "0:3", "0:0", 1, 2);
+        expect(path.steps).toEqual(["1:2", "0:1"]);
+        expect(path.destination).toBe("0:1");
+        // maxSteps 1：只走 1 格
+        const short = resolveMovePath(grid, "0:3", "0:0", 1, 1);
+        expect(short.steps).toEqual(["1:2"]);
+        expect(short.destination).toBe("1:2");
+        // maxSteps 0：不移动
+        const none = resolveMovePath(grid, "0:3", "0:0", 1, 0);
+        expect(none.steps).toEqual([]);
+        expect(none.destination).toBe("0:3");
     });
 });
 
 describe("Auto-battle move in battle", () => {
     test("beyond attack range moves then attacks (move + attack events)", () => {
-        // a 在 0:3（己方右半），x 在 0:0（敌方左半），距离 3 > 1
-        const battle = createBattle({
+        // a 在己方前排 0:7，x 在敌方前排 0:3，距离 4 > attackRange 1：
+        // 布阵时中间留空（敌列 1-3、己列 7-9），射程不够才在回合内前移
+        const config = createAutoBattleConfig({
             heroes: [hero("a", "a"), hero("x", "x")],
             lineups: { ally: ["a"], enemy: ["x"] },
             energyGainAttacker: 10,
             energyGainTarget: 5,
         });
+        const clock = createAutoBattleClock();
+        const pair: AutoBattleLineupPair = {
+            ally: [{ slot: 0, heroId: "a" }], // 0:7
+            enemy: [{ slot: 0, heroId: "x" }], // 0:3
+        };
+        const battle = createAutoBattleBattle({ clock, config, lineups: () => pair });
         battle.tick();
-        const types = battle.events().map((e) => e.type);
+        const types = battle.events.map((e) => e.type);
         // 1v1 跨半场：move 到距离 ≤1 再攻击
         expect(types).toContain("move");
         expect(types).toContain("attack");
@@ -128,9 +183,9 @@ describe("Auto-battle move in battle", () => {
     });
 
     test("within range attacks without moving", () => {
-        // a 在己方布阵区 0:3，x 在敌方布阵区 0:2（最右格）：距离 1 ≤ attackRange 1
+        // a 在己方前排 0:7，x 在敌方前排 0:3，曼哈顿距离 4 ≤ attackRange 4：射程内不移动
         const config = createAutoBattleConfig({
-            heroes: [hero("a", "a"), hero("x", "x")],
+            heroes: [hero("a", "a", { attackRange: 4 }), hero("x", "x", { attackRange: 4 })],
             lineups: { ally: ["a"], enemy: ["x"] },
             energyGainAttacker: 10,
             energyGainTarget: 5,
@@ -138,7 +193,7 @@ describe("Auto-battle move in battle", () => {
         const clock = createAutoBattleClock();
         const pair: AutoBattleLineupPair = {
             ally: [{ slot: 0, heroId: "a" }],
-            enemy: [{ slot: 2, heroId: "x" }],
+            enemy: [{ slot: 0, heroId: "x" }],
         };
         const battle2 = createAutoBattleBattle({ clock, config, lineups: () => pair });
         battle2.tick();
@@ -148,15 +203,22 @@ describe("Auto-battle move in battle", () => {
     });
 
     test("state snapshot reflects updated gridKey after move", () => {
-        const battle = createBattle({
+        // 默认布阵中间留空（a 0:7 / x 0:3），近战射程不够前移：移动后 gridKey 更新
+        const config = createAutoBattleConfig({
             heroes: [hero("a", "a"), hero("x", "x")],
             lineups: { ally: ["a"], enemy: ["x"] },
             energyGainAttacker: 10,
             energyGainTarget: 5,
         });
-        const before = battle.state().units.find((u) => u.id === "a")!.gridKey;
+        const clock = createAutoBattleClock();
+        const pair: AutoBattleLineupPair = {
+            ally: [{ slot: 0, heroId: "a" }], // 0:7
+            enemy: [{ slot: 0, heroId: "x" }], // 0:3
+        };
+        const battle = createAutoBattleBattle({ clock, config, lineups: () => pair });
+        const before = battle.state.units.find((u) => u.id === "a")!.gridKey;
         battle.tick();
-        const after = battle.state().units.find((u) => u.id === "a")!.gridKey;
+        const after = battle.state.units.find((u) => u.id === "a")!.gridKey;
         expect(after).not.toBe(before);
         battle.dispose();
     });
@@ -190,7 +252,7 @@ describe("Auto-battle move in battle", () => {
             }
         }
         expect(battle.events().some((e) => e.type === "teleport")).toBe(true);
-        // 目标 y（后排，teleportTo 2:0 映射到敌侧布阵区第 3 行第 1 列）
+        // teleportTo 2:0 = 布阵区相对格（row 2, col 0）= 前排第 3 行（slot 2）
         const teleport = battle.events().find((e) => e.type === "teleport")!;
         expect(teleport.toGridKey).toBeDefined();
         battle.dispose();

@@ -127,10 +127,10 @@ describe("Auto-battle lineup editor bindings", () => {
         return { view };
     }
 
-    test("slot bindings cover the full formation size (9 slots)", () => {
+    test("slot bindings cover the full formation size (11 slots 4-3-4)", () => {
         const calls: string[] = [];
-        const heroes: readonly AutoBattleHero[] = Array.from({ length: 9 }, (_, i) => hero(`h${i}`, `H${i}`));
-        const vm = createLineupEditorViewModel(heroes, lineup(["h0", null, "h2", "h3", null, "h5", "h6", null, "h8"]), null);
+        const heroes: readonly AutoBattleHero[] = Array.from({ length: 11 }, (_, i) => hero(`h${i}`, `H${i}`));
+        const vm = createLineupEditorViewModel(heroes, lineup(["h0", null, "h2", "h3", null, "h5", "h6", null, "h8", null, "h10"]), null);
         const view = recordingView();
         const renderer = createViewModelRenderer<LineupEditorViewModel>({
             node: view.node,
@@ -146,7 +146,8 @@ describe("Auto-battle lineup editor bindings", () => {
         expect(view.nodes.get("txt_slot_0_name")?.text).toBe("H0");
         expect(view.nodes.get("txt_slot_6_name")?.text).toBe("H6");
         expect(view.nodes.get("txt_slot_8_name")?.text).toBe("H8");
-        expect(view.nodes.get("slot_8")?.clickHandler).toBeDefined();
+        expect(view.nodes.get("txt_slot_10_name")?.text).toBe("H10");
+        expect(view.nodes.get("slot_10")?.clickHandler).toBeDefined();
     });
 
     test("clicking an unselected slot selects it; clicking again removes the hero", () => {

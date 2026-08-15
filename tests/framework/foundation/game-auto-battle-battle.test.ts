@@ -99,8 +99,10 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)("Auto-battle action mechanics", ()
         const createAutoBattleFixture = await loadCreateAutoBattleFixture();
         const fixture = createAutoBattleFixture({
             configContent: configContent({
-                ally: [unit("a", "A", { position: "front", maxHp: 100, attack: 10, speed: 5, energyMax: 100 })],
-                enemy: [unit("x", "X", { position: "front", maxHp: 100, attack: 1, speed: 4, energyMax: 100 })],
+                // 布阵留空后前排间距 4 列：射程 4 使双方开局即互射（无移动、无移动耗能），
+                // 聚焦普攻伤害与攻击/受击能量结算
+                ally: [unit("a", "A", { position: "front", maxHp: 100, attack: 10, speed: 5, energyMax: 100, attackRange: 4 })],
+                enemy: [unit("x", "X", { position: "front", maxHp: 100, attack: 1, speed: 4, energyMax: 100, attackRange: 4 })],
                 energyGainAttacker: 10,
                 energyGainTarget: 5,
             }),
@@ -145,15 +147,11 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)("Auto-battle action mechanics", ()
         });
         await fixture.start();
 
-        fixture.battle.tick(); // a 普攻 x：能量 0 → 50
-        expect(fixture.battle.state.units.find((u) => u.id === "x")?.hp).toBe(95);
-
-        fixture.battle.tick(); // x 普攻 a：a 能量 50+5 → 上限 50
-        fixture.battle.tick(); // 第 2 回合 a 满能量 → 释放伤害技能
+        fixture.battle.tick(); // a 自身回合开始能量 0 → 50（满）→ 立即释放伤害技能而非普攻
 
         const x = fixture.battle.state.units.find((u) => u.id === "x");
         const a = fixture.battle.state.units.find((u) => u.id === "a");
-        expect(x?.hp).toBe(65); // 95 - skill 30
+        expect(x?.hp).toBe(70); // 100 - skill 30
         expect(a?.energy).toBe(0);
 
         const skillEvents = fixture.battle.events.filter((e) => e.type === "skill-damage");

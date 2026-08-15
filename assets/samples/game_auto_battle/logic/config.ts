@@ -34,10 +34,14 @@ export interface AutoBattleConfigHandle {
         readonly ally: readonly string[];
         readonly enemy: readonly string[];
     };
-    /** 攻击者每次普攻增长的能量。 */
+    /** 武将自身回合开始时恢复的固定能量（能量经济规则 1）。 */
     readonly energyGainAttacker: number;
-    /** 受击者每次受普攻增长的能量。 */
+    /** 受击者每次被敌方击打恢复的少量能量（非自己回合也能回复，规则 3）。 */
     readonly energyGainTarget: number;
+    /** 移动能量消耗比例：移动一次消耗 ≈ 回合恢复量 × 该比例（规则 2，缺省 0.5）。 */
+    readonly energyMoveCostRatio: number;
+    /** 击杀敌方单位获得的大量能量（规则 4，缺省 10）。 */
+    readonly energyGainOnKill: number;
     /** 1. 基础属性表：数值中心，单位按 baseAttributeId 引用。 */
     readonly baseAttributes: readonly AutoBattleBaseAttributes[];
     /** 2. 武将单位表：英雄池的原始静态定义（含表引用字段），供视图按 animationId 查动画。 */
@@ -63,6 +67,7 @@ export interface AutoBattleHeroDefinition {
     readonly attack?: number;
     readonly speed?: number;
     readonly attackRange?: number;
+    readonly movePoints?: number;
     readonly energyMax: number;
     readonly skill?: AutoBattleSkill;
     readonly skillId?: string;
@@ -148,6 +153,7 @@ function isHeroInlineConfig(value: unknown): value is AutoBattleHeroDefinition {
         Number.isFinite(record.speed) &&
         record.speed >= 0 &&
         (record.attackRange === undefined || (typeof record.attackRange === "number" && Number.isFinite(record.attackRange) && record.attackRange >= 0)) &&
+        (record.movePoints === undefined || (typeof record.movePoints === "number" && Number.isFinite(record.movePoints) && record.movePoints >= 0)) &&
         typeof record.energyMax === "number" &&
         Number.isFinite(record.energyMax) &&
         record.energyMax > 0 &&
@@ -159,6 +165,12 @@ function isHeroInlineConfig(value: unknown): value is AutoBattleHeroDefinition {
 function readHeroAttackRange(record: { readonly attackRange?: number }): number {
     const range = record.attackRange;
     return range === undefined ? 1 : range;
+}
+
+/** 读取英雄条目并补充缺省 movePoints（默认 1，向后兼容旧配置无该字段）。 */
+function readHeroMovePoints(record: { readonly movePoints?: number }): number {
+    const move = record.movePoints;
+    return move === undefined ? 1 : move;
 }
 
 /** 读取基础属性表：校验 id 唯一与数值合法。 */
@@ -181,7 +193,8 @@ function readBaseAttributes(table: IConfigTable): readonly AutoBattleBaseAttribu
             typeof record.speed !== "number" ||
             !Number.isFinite(record.speed) ||
             record.speed < 0 ||
-            (record.attackRange !== undefined && (typeof record.attackRange !== "number" || !Number.isFinite(record.attackRange) || record.attackRange < 0))
+            (record.attackRange !== undefined && (typeof record.attackRange !== "number" || !Number.isFinite(record.attackRange) || record.attackRange < 0)) ||
+            (record.movePoints !== undefined && (typeof record.movePoints !== "number" || !Number.isFinite(record.movePoints) || record.movePoints < 0))
         ) {
             throw new Error(`auto-battle config: baseAttributes entry at index ${index} has an invalid shape`);
         }
@@ -191,6 +204,7 @@ function readBaseAttributes(table: IConfigTable): readonly AutoBattleBaseAttribu
             attack: record.attack as number,
             speed: record.speed as number,
             attackRange: record.attackRange === undefined ? 1 : (record.attackRange as number),
+            movePoints: record.movePoints === undefined ? 1 : (record.movePoints as number),
         };
     });
     const seen = new Set<string>();
@@ -385,6 +399,7 @@ function readTeam(table: IConfigTable, key: string, side: AutoBattleSide): reado
             attack: entry.attack!,
             speed: entry.speed!,
             attackRange: readHeroAttackRange(entry),
+            movePoints: readHeroMovePoints(entry),
             skill: entry.skill!,
             side,
             index,
@@ -422,6 +437,7 @@ function expandHero(definition: AutoBattleHeroDefinition, baseAttributes: readon
             attack: attrs.attack,
             speed: attrs.speed,
             attackRange: readHeroAttackRange({ attackRange: attrs.attackRange }),
+            movePoints: readHeroMovePoints({ movePoints: attrs.movePoints }),
             energyMax: definition.energyMax,
             skill,
             animationId: definition.animationId,
@@ -436,6 +452,7 @@ function expandHero(definition: AutoBattleHeroDefinition, baseAttributes: readon
         attack: definition.attack ?? 0,
         speed: definition.speed ?? 0,
         attackRange: readHeroAttackRange(definition),
+        movePoints: readHeroMovePoints(definition),
         energyMax: definition.energyMax,
         skill: definition.skill!,
         animationId: definition.animationId,
@@ -530,6 +547,15 @@ function readEnergyGain(table: IConfigTable, key: string, fallback: number): num
     return value;
 }
 
+/** 读取移动能量消耗比例：0..1 闭区间（缺省 0.5，"移动消耗近乎一半"）。 */
+function readEnergyRatio(table: IConfigTable): number {
+    const value = table.read(keyOf("energyMoveCostRatio"), configNumber, 0.5);
+    if (value < 0 || value > 1) {
+        throw new Error("auto-battle config: energyMoveCostRatio must be within [0, 1]");
+    }
+    return value;
+}
+
 /**
  * 从不可变配置表读取自动战斗数值：优先读取 heroes 池 + lineups（英雄 id 序列，
  * 开战由编队实例化）；无 heroes 键时回退到 teams 兼容格式（deprecated，转出
@@ -549,6 +575,8 @@ export function createAutoBattleConfig(content: Record<string, unknown>): AutoBa
 
     const energyGainAttacker = readEnergyGain(table, "energyGainAttacker", 10);
     const energyGainTarget = readEnergyGain(table, "energyGainTarget", 5);
+    const energyMoveCostRatio = readEnergyRatio(table);
+    const energyGainOnKill = readEnergyGain(table, "energyGainOnKill", 10);
 
     // 7 张表：可选键，缺省为空数组（旧格式配置不提供）
     const baseAttributes = readBaseAttributes(table);
@@ -572,6 +600,8 @@ export function createAutoBattleConfig(content: Record<string, unknown>): AutoBa
             lineups: { ally: ally.ids, enemy: enemy.ids },
             energyGainAttacker,
             energyGainTarget,
+            energyMoveCostRatio,
+            energyGainOnKill,
             baseAttributes,
             heroDefinitions: definitions,
             unitAnimations,
@@ -595,6 +625,7 @@ export function createAutoBattleConfig(content: Record<string, unknown>): AutoBa
         attack: unit.attack,
         speed: unit.speed,
         attackRange: unit.attackRange,
+        movePoints: unit.movePoints,
         energyMax: unit.energyMax,
         skill: unit.skill,
         animationId: unit.animationId,
@@ -611,6 +642,8 @@ export function createAutoBattleConfig(content: Record<string, unknown>): AutoBa
         },
         energyGainAttacker,
         energyGainTarget,
+        energyMoveCostRatio,
+        energyGainOnKill,
         baseAttributes,
         heroDefinitions: heroes,
         unitAnimations,

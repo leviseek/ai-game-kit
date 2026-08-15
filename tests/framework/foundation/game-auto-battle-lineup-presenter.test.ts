@@ -140,7 +140,7 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)("Auto-battle lineup editor present
         const view = recordingView();
         const presenter = createLineupEditorPresenter(fixture, view.node);
 
-        // 布阵区显示已上阵英雄
+        // 布阵区显示已上阵英雄（默认布阵策略：a@slot 0、b@slot 1 前排自上而下）
         expect(view.nodes.get("txt_slot_0_name")?.text).toBe("a");
         expect(view.nodes.get("txt_slot_1_name")?.text).toBe("b");
         expect(view.nodes.get("txt_slot_2_name")?.text).toBe("");
@@ -159,7 +159,7 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)("Auto-battle lineup editor present
         const candidateList = recordingListHandle();
         const presenter = createLineupEditorPresenter(fixture, view.node, undefined, candidateList.list);
 
-        candidateList.itemClick?.(2, { heroId: "c", deployed: false }); // 选择 c → 第一个空槽
+        candidateList.itemClick?.(2, { heroId: "c", deployed: false }); // 选择 c → 第一个空槽（slot 2）
         expect(fixture.lineup.value.slots[2]).toBe("c");
         expect(view.nodes.get("txt_slot_2_name")?.text).toBe("c");
 
@@ -196,9 +196,10 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)("Auto-battle lineup editor present
         const candidateList = recordingListHandle();
         const presenter = createLineupEditorPresenter(fixture, view.node, undefined, candidateList.list);
 
-        candidateList.itemClick?.(2, { heroId: "c", deployed: false }); // 上阵 c
+        candidateList.itemClick?.(2, { heroId: "c", deployed: false }); // 上阵 c → slot 2
         view.nodes.get("btn_start")?.clickHandler?.();
 
+        // 战斗单位按布阵格位序实例化（a@0、b@1、c@2）
         const allyIds = fixture.battle.state.units.filter((u) => u.side === "ally").map((u) => u.id);
         expect(allyIds).toEqual(["a", "b", "c"]);
 

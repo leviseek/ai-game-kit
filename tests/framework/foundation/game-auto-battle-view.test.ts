@@ -69,31 +69,43 @@ function vm(units: readonly AutoBattleUnitView[]): {
     return { round: 1, units, log: [], result: undefined, speed: 1 };
 }
 describe("Auto-battle gridToXY mapping table", () => {
-    test("all formation cells keep a 120x240 unit inside the battle safe area", () => {
-        const SAFE_LEFT = 32;
-        const SAFE_TOP = 108;
-        const SAFE_RIGHT = 1248;
-        const SAFE_BOTTOM = 508;
+    test("all map cells keep the unit feet (hex center) inside the battle panel and the name/bars inside the container", () => {
+        const PANEL_LEFT = 32;
+        const PANEL_TOP = 108;
+        const PANEL_RIGHT = 1248;
+        const PANEL_BOTTOM = 508;
         const UNIT_WIDTH = 120;
-        const UNIT_HEIGHT = 240;
+        // 单位容器（container_units）尺寸
+        const CONTAINER_WIDTH = 1280;
+        const CONTAINER_HEIGHT = 500;
 
-        for (let row = 0; row < 3; row += 1) {
-            for (let col = 0; col < 6; col += 1) {
-                const point = gridToXY(`${row}:${col}`);
-                expect(point.x).toBeGreaterThanOrEqual(SAFE_LEFT);
-                expect(point.y).toBeGreaterThanOrEqual(SAFE_TOP);
-                expect(point.x + UNIT_WIDTH).toBeLessThanOrEqual(SAFE_RIGHT);
-                expect(point.y + UNIT_HEIGHT).toBeLessThanOrEqual(SAFE_BOTTOM);
+        for (let row = 0; row < 4; row += 1) {
+            for (let col = 0; col < 11; col += 1) {
+                const slot = gridToXY(`${row}:${col}`);
+                // 脚底 = 六边形中心（UnitSlot loader 底边，vAlign="bottom"）
+                const centerX = slot.x + 60;
+                const centerY = slot.y + 236;
+                // 六边形中心（单位脚底）落在战场面板内
+                expect(centerX).toBeGreaterThanOrEqual(PANEL_LEFT + 70);
+                expect(centerX).toBeLessThanOrEqual(PANEL_RIGHT - 70);
+                expect(centerY).toBeGreaterThanOrEqual(PANEL_TOP + 40);
+                expect(centerY).toBeLessThanOrEqual(PANEL_BOTTOM - 40);
+                // 名称/血条（槽位局部 y96..136）仍在单位容器内；顶部格脚底靠上，
+                // 槽顶可为负（UnitSlot 上半在容器外可见，仅校验文本/进度条落点）
+                expect(slot.x).toBeGreaterThanOrEqual(0);
+                expect(slot.x + UNIT_WIDTH).toBeLessThanOrEqual(CONTAINER_WIDTH);
+                expect(slot.y + 96).toBeGreaterThanOrEqual(0);
+                expect(slot.y + 136).toBeLessThanOrEqual(CONTAINER_HEIGHT);
             }
         }
     });
 
     test("enemy cells (left half) map left of ally cells", () => {
-        const enemy = gridToXY("0:0");
-        const ally = gridToXY("0:3");
+        const enemy = gridToXY("0:1");
+        const ally = gridToXY("0:7");
         expect(enemy.x).toBeLessThan(ally.x);
-        // 敌左 3 列、己右 3 列：敌列 2 仍在己列 3 左侧
-        expect(gridToXY("0:2").x).toBeLessThan(gridToXY("0:3").x);
+        // 敌右 3 列（列 1-3）、己左 3 列（列 7-9）：敌列 3 仍在己列 7 左侧（中间空列 4-6）
+        expect(gridToXY("0:3").x).toBeLessThan(gridToXY("0:7").x);
     });
 
     test("row increases y and col increases x within a side", () => {

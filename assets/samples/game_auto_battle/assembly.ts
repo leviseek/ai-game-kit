@@ -20,7 +20,7 @@ import { createAutoBattleFormationModule } from "./logic/formation";
 import { createAutoBattleMoveModule } from "./logic/move";
 import { FORMATION_GRID_SIZE } from "./logic/grid";
 import { createAutoBattleBattle, createAutoBattleBattleModule, type AutoBattleBattleHandle, type AutoBattlePlacedUnit } from "./logic/battle";
-import { editLineup } from "./logic/lineup";
+import { defaultDeploymentSlot, editLineup } from "./logic/lineup";
 import { createLineupStore, type LineupStore } from "./logic/LineupStore";
 import { computeRate, createAutoBattleIdleRewardsModule, createIdleRewardsHandle, type IdleRateSource, type IdleRewardsHandle } from "./logic/IdleRewards";
 import { createIdleRewardsStore, createIdleRewardsStoreModule, type IdleRewardStore } from "./logic/IdleRewardsStore";
@@ -207,11 +207,12 @@ class MemoryStorage implements IPlatformStorage {
     }
 }
 
-/** 压缩 heroId 序列 → 定长编队（空槽 null）；不足布阵区容量 FORMATION_GRID_SIZE 的部分留空。 */
+/** 压缩 heroId 序列 → 定长编队（空槽 null）；按默认布阵策略（前排贴中线优先，
+ *  见 defaultDeploymentSlot）落槽，不足布阵区容量 FORMATION_GRID_SIZE 的部分留空。 */
 function toFullLineup(ids: readonly string[]): AutoBattleLineup {
     const slots: (string | null)[] = Array.from({ length: FORMATION_GRID_SIZE }, () => null);
     ids.forEach((heroId, index) => {
-        slots[index] = heroId;
+        slots[defaultDeploymentSlot("ally", index)] = heroId;
     });
     return { slots };
 }
@@ -256,11 +257,11 @@ export function createAutoBattleFixture(options: AutoBattleFixtureOptions = {}):
         clock,
         config,
         // 开战编队由当前玩家编队（己方）+ 配置固定敌方阵容派生；己方按真实布阵
-        // 格位（slot）输出，敌方压缩序映射到布阵区前段格。战斗实例化后持单位
-        // 快照，后续编队改动只影响下一次重开
+        // 格位（slot）输出，敌方压缩序按默认布阵策略（前排贴中线优先）映射到布阵
+        // 区格。战斗实例化后持单位快照，后续编队改动只影响下一次重开
         lineups: () => ({
             ally: lineup.slots.reduce<AutoBattlePlacedUnit[]>((placed, heroId, slot) => (heroId === null ? placed : placed.concat([{ slot, heroId }])), []),
-            enemy: config.lineups.enemy.map((heroId, slot) => ({ slot, heroId })),
+            enemy: config.lineups.enemy.map((heroId, index) => ({ slot: defaultDeploymentSlot("enemy", index), heroId })),
         }),
         onEvent: (event) => {
             options.onEvent?.(event);

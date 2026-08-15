@@ -18,10 +18,14 @@ const FLASH_DURATION_MS = 120;
 const FLASH_PEAK = 0.5;
 /** 抖动动画参数：峰值偏移像素。 */
 const SHAKE_OFFSET = 4;
-/** 位移动画参数：move 插值时长；入场淡入时长（与 presenter 入场阶段一致）；入场上浮高度。 */
+/** 位移动画参数：move 插值时长；入场淡入时长（与 presenter 入场阶段一致）。 */
 const MOVE_DURATION_MS = 300;
 const ENTRANCE_DURATION_MS = 750;
-const ENTRANCE_RISE = 80;
+/** 战场画布宽度与中线（1280×720，敌左己右分界）：入场按单位所在半场选走进方向。 */
+const SCREEN_WIDTH = 1280;
+const SCREEN_CENTER_X = 640;
+/** 入场横向偏移：单位从屏幕左右边界外走进布阵位（敌从左、己从右）。 */
+const ENTRANCE_FROM_EDGE = 160;
 /** 爆炸序列帧参数：每帧展示时长（12 帧总时长约 480ms，短促爆炸）。 */
 const EXPLOSION_FRAME_MS = 40;
 
@@ -74,7 +78,7 @@ function lerp(from: number, to: number, t: number): number {
  *   坐标）为基准短促偏移，终态回到该坐标
  * - 移动（move 事件）：`unit_{unitId}` 从 `gridXYOf(from)` 到 `gridXYOf(to)` 插值
  * - 瞬移（teleport 事件）：直接跳变到 `gridXYOf(to)`
- * - 入场（round-start 首轮）：`unit_{unitId}` 从当前位置淡入到位（alpha 0→1）
+ * - 入场（round-start 首轮）：`unit_{unitId}` 从屏幕左右边界外横向走进布阵位（alpha 0→1）
  * - 爆炸（unit-dead 事件）：`fx_effect_{unitId}` loader 逐帧 setUrl 播放爆炸序列
  * 飘字/闪白/抖动/位移/爆炸终态统一回到 state 快照姿态（alpha 或坐标对齐 state）。
  * 单位形象动画（idle/attack/death 循环）由 UnitAnimator 单独驱动，不经本动画器。
@@ -177,10 +181,12 @@ export function createEffectAnimator(options: {
                 const toXY = gridXYOf(effect.toGrid);
                 writeXY(`unit_${effect.unitId}`, toXY.x, toXY.y);
             } else if (effect.kind === "entrance") {
-                // 入场：单位从布阵格下方上浮到位 + 淡入（alpha 0→1），表现更明显
+                // 入场：单位从屏幕左右边界外横向走进布阵位（敌从左、己从右，
+                // 方向按目标坐标所在半场派生），伴随淡入；不再从下方上浮
                 replace(effect.unitId, "entrance");
                 const base = homeXYOf(effect.unitId);
-                writeXY(`unit_${effect.unitId}`, base.x, base.y + ENTRANCE_RISE);
+                const fromX = base.x < SCREEN_CENTER_X ? -ENTRANCE_FROM_EDGE : SCREEN_WIDTH + ENTRANCE_FROM_EDGE;
+                writeXY(`unit_${effect.unitId}`, fromX, base.y);
                 writeAlpha(`unit_${effect.unitId}`, 0);
                 activeAnimations.push({
                     kind: "entrance",
@@ -188,6 +194,7 @@ export function createEffectAnimator(options: {
                     start: now,
                     end: now + ENTRANCE_DURATION_MS,
                     base,
+                    fromXY: { x: fromX, y: base.y },
                 });
             } else if (effect.kind === "explosion") {
                 // 爆炸：定位到目标单位坐标 + 播放首帧 + 淡入；后续 step 逐帧 setUrl
@@ -237,9 +244,10 @@ export function createEffectAnimator(options: {
                 const to = anim.toXY ?? homeXYOf(anim.unitId);
                 writeXY(`unit_${anim.unitId}`, to.x, to.y);
             } else if (anim.kind === "entrance") {
-                // 入场：从下方上浮到位 + alpha 0→1 淡入
-                const base = anim.base ?? homeXYOf(anim.unitId);
-                writeXY(`unit_${anim.unitId}`, base.x, base.y + ENTRANCE_RISE * (1 - progress));
+                // 入场：从屏幕边界外横向走进布阵位（x 插值）+ alpha 0→1 淡入
+                const from = anim.fromXY ?? homeXYOf(anim.unitId);
+                const to = anim.base ?? homeXYOf(anim.unitId);
+                writeXY(`unit_${anim.unitId}`, lerp(from.x, to.x, progress), to.y);
                 writeAlpha(`unit_${anim.unitId}`, progress);
             } else if (anim.kind === "explosion") {
                 // 爆炸：按进度推进帧索引逐帧 setUrl（帧索引取 clamp 防越界）

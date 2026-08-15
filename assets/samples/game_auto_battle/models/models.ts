@@ -56,7 +56,7 @@ export interface AutoBattleSkill {
     readonly teleportTo?: string;
 }
 
-/** 基础属性表条目：数值中心，单位按 id 引用（maxHp/attack/speed/attackRange）。 */
+/** 基础属性表条目：数值中心，单位按 id 引用（maxHp/attack/speed/attackRange/movePoints）。 */
 export interface AutoBattleBaseAttributes {
     readonly id: string;
     readonly maxHp: number;
@@ -64,6 +64,8 @@ export interface AutoBattleBaseAttributes {
     readonly speed: number;
     /** 攻击射程：缺省 1（配置表可调）。 */
     readonly attackRange: number;
+    /** 每次行动可移动格数：超射程向前移动时最多走的格数（配置表可调，缺省 1）。 */
+    readonly movePoints: number;
 }
 
 /** 单位动画表条目：帧 URL 生成参数（bundle://<bundle>/<dir>/<prefix>_<两位序号>）。 */
@@ -133,6 +135,8 @@ export interface AutoBattleUnit {
     readonly speed: number;
     /** 攻击射程：普攻/伤害技能与目标曼哈顿距离超过该值前移后攻击（默认 1）。 */
     readonly attackRange: number;
+    /** 每次行动可移动格数：超射程向前移动时最多走的格数（默认 1，配置表可调）。 */
+    readonly movePoints: number;
     readonly energyMax: number;
     readonly skill: AutoBattleSkill;
     /** 单位动画表 id：视图层按此查 unitAnimations 表生成帧 URL（缺省走变体回退）。 */
@@ -149,6 +153,8 @@ export interface AutoBattleHero {
     readonly speed: number;
     /** 攻击射程：缺省 1（配置表可调）。 */
     readonly attackRange: number;
+    /** 每次行动可移动格数：超射程向前移动时最多走的格数（默认 1，配置表可调）。 */
+    readonly movePoints: number;
     readonly energyMax: number;
     readonly skill: AutoBattleSkill;
     /** 单位动画表 id：视图层按此查 unitAnimations 表生成帧 URL（缺省走变体回退）。 */

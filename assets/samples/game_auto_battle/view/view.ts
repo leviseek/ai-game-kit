@@ -2,20 +2,52 @@ import type { Binding } from "../../../framework";
 import type { AutoBattleEvent, AutoBattleSide, AutoBattleState, AutoBattleUnitState } from "../models";
 import { LOG_TEXT_NODE, RESTART_BUTTON_NODE, RESULT_PLATE_NODE, RESULT_TEXT_NODE, ROUND_TEXT_NODE, SPEED_BUTTON_NODE } from "./UiNodes";
 
-/** 战场网格屏幕布局（1280×720）：敌左 3 列、己右 3 列、3 行（与 AutoBattleView 容器化对齐）。 */
-const GRID_COL_STRIDE = 140;
-/** 紧凑行距：单位组件 240 高，相邻行轻微重叠（角色居中缩放，视觉可接受）。 */
-const GRID_ROW_STRIDE = 80;
-const GRID_TOP = 108;
-const ENEMY_LEFT = 32;
-const ALLY_LEFT = 840;
-/** 战场网格列数：敌左半 3 列、己右半 3 列（对齐逻辑层 BATTLEFIELD_COLS）。 */
-const GRID_COLS_PER_SIDE = 3;
+/** 战场六边形蜂窝晶格（1280×720 画布）：扁六边形（平顶）宽 140、高 80，正确蜂窝
+ *  邻接偏移 = 纵向 (0,±80) 贴边 + 斜向 (±105,±40) 贴边 → 中心公式
+ *  x = X0 + 列×105，y = Y0 + 行×80 + (列%2)×40（奇数列下移半高）。全图连续
+ *  贴边平铺（每格与 6 邻格共享边，无点对点接触）；外接盒超出面板边界的格不放
+ *  （BattlefieldSlotsCom 由 fgui-designer 按本公式静态拼装：11 列，列高
+ *  3-4-3-4-…-3 交替共 38 格，奇数列多出顶行）。布阵区为晶格中部的 4-3-4 列阵：
+ *  敌方占列 1-3、己方占列 7-9（前排贴中线，中间空列 4-6），单位站位由 gridToXY
+ *  落该晶格（脚底 = 六边形中心）；开战后射程不够的单位沿格前移收拢距离。 */
+export const HEX_WIDTH = 140;
+export const HEX_HEIGHT = 80;
+/** 相邻列中心横向步距：0.75 × HEX_WIDTH（平顶六边形斜向贴边偏移）。 */
+const HEX_COL_STRIDE = 105;
+/** 相邻行中心纵向步距：HEX_HEIGHT（平顶六边形纵向贴边偏移）。 */
+const HEX_ROW_STRIDE = 80;
+/** 奇数列纵向错位：0.5 × HEX_HEIGHT（平顶六边形斜向贴边偏移）。 */
+const HEX_ODD_COL_SHIFT = 40;
+/** 晶格原点（0 行 0 列六边形中心）：X0=115 使 11 列覆盖面板；Y0=262 对应拼接
+ *  槽位的"基准行"（逻辑行 1 = 晶格行 0，脚底 262/342/422，奇列 +40），顶部留作
+ *  地图装饰场景（拼接槽位下方见 BattlefieldSlotsCom）。 */
+const LATTICE_ORIGIN_X = 115;
+const LATTICE_ORIGIN_Y = 262;
+/** 形成区在晶格中的偏移：逻辑行 0..3 → 晶格行 -1..2（拼接槽位奇数列多出的顶行
+ *  即晶格行 -1，脚底 222/302/382/462）；列直映（敌列 1-3、己列 7-9，中间空列
+ *  4-6 保持布阵间距）。拼接槽位由 FGUI 组合组件（BattlefieldSlotsCom）静态平铺
+ *  （11 列，列高 3-4-3-4-...-3 交替），本映射仅用于单位站位（脚底 = 六边形中心）。 */
+const FORMATION_ROW_OFFSET = -1;
+const FORMATION_ENEMY_COL_OFFSET = 0;
+const FORMATION_ALLY_COL_OFFSET = 0;
+/** 单位脚底在 UnitSlot 内的锚点（loader 底边中心，vAlign="bottom" 契约，
+ *  对齐 UnitSlot.xml）。 */
+const UNIT_ANCHOR_X = 60;
+const UNIT_ANCHOR_Y = 236;
+
+/** 晶格格中心坐标（正确蜂窝：纵向贴边 + 斜向贴边偏移）。 */
+function latticeCenter(latticeRow: number, latticeCol: number): { readonly x: number; readonly y: number } {
+    return {
+        x: LATTICE_ORIGIN_X + latticeCol * HEX_COL_STRIDE,
+        y: LATTICE_ORIGIN_Y + latticeRow * HEX_ROW_STRIDE + (latticeCol % 2) * HEX_ODD_COL_SHIFT,
+    };
+}
 
 /**
- * 网格格（`row:col`）→ 屏幕坐标映射（敌左、己右）：由逻辑网格行列推导
- * 单位实例在战场页的屏幕坐标，纯函数单向推导，不反向回写逻辑。列 < 3 为敌方
- * 半场、>= 3 为己方半场；行/列递增分别映射 y/x 递增。
+ * 逻辑网格格（`row:col`）→ 单位槽位屏幕坐标（敌左、己右）：逻辑格映射到蜂窝
+ * 晶格（行 +FORMATION_ROW_OFFSET；列直映：敌 1-3、己 7-9，col < 4 视为敌方半场
+ * 否则己方），返回 UnitSlot 左上角（六边形中心 - 脚底锚点，脚底 = 六边形中心）。
+ * 纯函数单向推导，不反向回写逻辑。行/列递增分别映射 y/x 递增。
  */
 export function gridToXY(gridKey: string): { readonly x: number; readonly y: number } {
     const match = /^(\d+):(\d+)$/.exec(gridKey);
@@ -24,11 +56,10 @@ export function gridToXY(gridKey: string): { readonly x: number; readonly y: num
     }
     const row = Number(match[1]);
     const col = Number(match[2]);
-    const left = col < GRID_COLS_PER_SIDE ? ENEMY_LEFT : ALLY_LEFT;
-    return {
-        x: left + (col % GRID_COLS_PER_SIDE) * GRID_COL_STRIDE,
-        y: GRID_TOP + row * GRID_ROW_STRIDE,
-    };
+    // 敌方半场 = 列 < 4（布阵区列 1-3，含前方空列），己方 = 其余（列 7-9）
+    const latticeCol = col + (col < 4 ? FORMATION_ENEMY_COL_OFFSET : FORMATION_ALLY_COL_OFFSET);
+    const center = latticeCenter(row + FORMATION_ROW_OFFSET, latticeCol);
+    return { x: center.x - UNIT_ANCHOR_X, y: center.y - UNIT_ANCHOR_Y };
 }
 
 /** 单位页面呈现数据：只承载节点需要的字段，不含战斗逻辑。 */

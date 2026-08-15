@@ -1,9 +1,21 @@
 import { MAX_TEAM_SIZE } from "./config";
 import { FORMATION_GRID_SIZE } from "./grid";
-import type { AutoBattleLineup } from "../models";
+import type { AutoBattleLineup, AutoBattleSide } from "../models";
 
 /** 编队编辑动作：填充/替换指定槽，或卸下指定槽。 */
 export type LineupAction = { readonly type: "fill"; readonly slot: number; readonly heroId: string } | { readonly type: "remove"; readonly slot: number };
+
+/**
+ * 压缩编队序 → 默认布阵槽位（前排贴中线优先竖排）：槽位序即 4-3-4 列优先排布
+ * （前排 0-3 → 中排 4-6 → 后排 7-10，每排自上而下，见 grid.formationCells），
+ * 默认上阵按序落前排贴中线纵向列阵（左右对称，无需区分 side），再向后排推进。
+ */
+export function defaultDeploymentSlot(side: AutoBattleSide, index: number): number {
+    // 槽位序 = 列优先排布序：index 即槽位（0..FORMATION_GRID_SIZE-1），
+    // 前排贴中线自上而下先落位，中排、后排依次填充
+    void side;
+    return index;
+}
 
 /**
  * 编队 reducer：纯函数状态变换，返回新的 AutoBattleLineup（不可变，输入不被

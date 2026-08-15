@@ -42,6 +42,7 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)("Auto-battle lineup editor command
         await fixture.start();
 
         fixture.lineup.selectHero("c");
+        // 初始编队按默认布阵策略落槽（a@0、b@1 前排自上而下）；首个空槽 = slot 2
         expect(fixture.lineup.value.slots[0]).toBe("a");
         expect(fixture.lineup.value.slots[1]).toBe("b");
         expect(fixture.lineup.value.slots[2]).toBe("c");
@@ -118,7 +119,7 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)("Auto-battle lineup editor command
         // 手工播种含未知英雄 id 的存档（绕过编辑 reducer 的正常写入路径）
         const store = fixture.lineup.store;
         await store.save({
-            slots: ["ghost", "a", null, null, null, null, null, null, null],
+            slots: ["ghost", "a", null, null, null, null, null, null, null, null, null],
         });
 
         await expect(fixture.lineup.restoreLineup()).rejects.toThrow(/unknown hero/);
@@ -138,6 +139,7 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)("Auto-battle lineup editor command
         fixture.lineup.selectHero("c");
         fixture.lineup.startBattle();
 
+        // 战斗单位按布阵格位序实例化（a@0、b@1、c@2）
         const allyIds = fixture.battle.state.units.filter((u) => u.side === "ally").map((u) => u.id);
         expect(allyIds).toEqual(["a", "b", "c"]);
 

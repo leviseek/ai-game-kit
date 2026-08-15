@@ -7,14 +7,20 @@ import type { AutoBattleBaseAttributes, AutoBattleBuff, AutoBattleSkill, AutoBat
  * 由测试 `game-auto-battle-tables-consistency` 锁定（读 JSON 文件逐表对比）。
  */
 
-/** 1. 基础属性表：数值中心，单位按 id 引用。 */
+/** 1. 基础属性表：数值中心，单位按 id 引用（含攻击射程与每行动移动格数）。 */
 export const AUTO_BATTLE_BASE_ATTRIBUTES: readonly AutoBattleBaseAttributes[] = [
-    { id: "tank", maxHp: 60, attack: 6, speed: 8, attackRange: 1 },
-    { id: "mage", maxHp: 45, attack: 11, speed: 7, attackRange: 1 },
-    { id: "priest", maxHp: 40, attack: 4, speed: 6, attackRange: 1 },
-    { id: "skeleton", maxHp: 60, attack: 6, speed: 8, attackRange: 1 },
-    { id: "lich", maxHp: 45, attack: 9, speed: 7, attackRange: 1 },
-    { id: "shaman", maxHp: 40, attack: 4, speed: 6, attackRange: 1 },
+    // 近战坦克：普攻距离 1 格、行动可移动 2 格
+    { id: "tank", maxHp: 60, attack: 6, speed: 8, attackRange: 1, movePoints: 2 },
+    // 法师：普攻距离 4 格、移动 1 格
+    { id: "mage", maxHp: 45, attack: 11, speed: 7, attackRange: 4, movePoints: 1 },
+    // 牧师：治疗位，普攻距离 2 格、移动 1 格
+    { id: "priest", maxHp: 40, attack: 4, speed: 6, attackRange: 2, movePoints: 1 },
+    // 近战骷髅：普攻距离 1 格、行动可移动 2 格
+    { id: "skeleton", maxHp: 60, attack: 6, speed: 8, attackRange: 1, movePoints: 2 },
+    // 巫妖（法师）：普攻距离 4 格、移动 1 格
+    { id: "lich", maxHp: 45, attack: 9, speed: 7, attackRange: 4, movePoints: 1 },
+    // 萨满：普攻距离 2 格、移动 1 格
+    { id: "shaman", maxHp: 40, attack: 4, speed: 6, attackRange: 2, movePoints: 1 },
 ];
 
 /** 2. 武将单位表：静态定义，引用基础属性/技能/动画，不内联技能对象。 */
@@ -80,6 +86,10 @@ export const AUTO_BATTLE_LINEUPS: { readonly ally: readonly string[]; readonly e
 
 export const AUTO_BATTLE_ENERGY_GAIN_ATTACKER = 10;
 export const AUTO_BATTLE_ENERGY_GAIN_TARGET = 5;
+/** 移动能量消耗比例：移动一次消耗 ≈ 回合恢复量 × 该比例（"移动消耗近乎一半"）。 */
+export const AUTO_BATTLE_ENERGY_MOVE_COST_RATIO = 0.5;
+/** 击杀敌方单位获得的大量能量。 */
+export const AUTO_BATTLE_ENERGY_GAIN_ON_KILL = 10;
 
 /**
  * 缺省自动战斗配置内容：把 7 张表与编队/能量规则组装为 configContent 形状
@@ -97,5 +107,7 @@ export function createDefaultAutoBattleConfigContent(): Record<string, unknown> 
         lineups: AUTO_BATTLE_LINEUPS,
         energyGainAttacker: AUTO_BATTLE_ENERGY_GAIN_ATTACKER,
         energyGainTarget: AUTO_BATTLE_ENERGY_GAIN_TARGET,
+        energyMoveCostRatio: AUTO_BATTLE_ENERGY_MOVE_COST_RATIO,
+        energyGainOnKill: AUTO_BATTLE_ENERGY_GAIN_ON_KILL,
     };
 }
