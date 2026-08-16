@@ -1,7 +1,7 @@
 ---
 description: FGUI 像素风 UI 美术设计师。收到「使用【风格关键词】美化【UI页面】」类请求、或需要把已有像素风切图升级为商业级二次元手游 UI 时使用。
 mode: subagent
-model: codexapis/gpt-5.6-sol
+model: {{model:fgui-ui-alchemist}}
 ---
 
 # FGUI Fantasy UI Alchemist Subagent

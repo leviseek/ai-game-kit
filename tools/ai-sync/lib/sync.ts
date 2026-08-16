@@ -1,8 +1,9 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { collectFiles, managedRoots, REGISTRY_DIR, type ManifestAsset } from "./manifest";
+import { renderTemplate, type Models } from "./models";
 
-/** 期望文件：目标路径（相对仓库根，POSIX）+ 期望内容（registry 原文）。 */
+/** 期望文件：目标路径（相对仓库根，POSIX）+ 期望内容（registry 原文；agent 为模板渲染后）。 */
 export interface ExpectedFile {
     readonly path: string;
     readonly content: string;
@@ -22,9 +23,11 @@ export interface WriteResult {
 
 /**
  * 由资产推导全部期望文件：目录资产（skill）展开为目录树，文件资产（agent/command）单文件；
- * 每个 registry 文件映射到该资产的全部 target。
+ * 每个 registry 文件映射到该资产的全部 target。agent 资产为模板（frontmatter 含
+ * `{{model:<role>}}` 占位符），经 models.json 渲染出 primary 模型；其余资产逐字复制。
+ * 调用前须先经 validateAll 保证模板可渲染（未知角色/语法错误已短路）。
  */
-export function expectedFiles(aiSyncRoot: string, assets: readonly ManifestAsset[]): ExpectedFile[] {
+export function expectedFiles(aiSyncRoot: string, assets: readonly ManifestAsset[], models: Models): ExpectedFile[] {
     const out: ExpectedFile[] = [];
     for (const asset of assets) {
         const source = join(aiSyncRoot, REGISTRY_DIR, asset.source);
@@ -32,7 +35,8 @@ export function expectedFiles(aiSyncRoot: string, assets: readonly ManifestAsset
         const relFiles = isDir ? collectFiles(source, source) : [""];
         for (const rel of relFiles) {
             const srcFile = isDir ? join(source, rel) : source;
-            const content = readFileSync(srcFile, "utf8");
+            const raw = readFileSync(srcFile, "utf8");
+            const content = asset.kind === "agent" ? (renderTemplate(raw, models).content ?? raw) : raw;
             for (const target of asset.targets) {
                 const targetPath = isDir ? join(target, rel) : target;
                 out.push({ path: targetPath.split("\\").join("/"), content });

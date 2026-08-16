@@ -1,9 +1,11 @@
 import { parseArgs } from "../lib/args";
-import { expandAssets, hasStructuralErrors, loadManifest, validateManifest } from "../lib/manifest";
+import { expandAssets, hasStructuralErrors, loadManifest } from "../lib/manifest";
+import { loadModels } from "../lib/models";
 import { aiSyncRoot, repoRoot } from "../lib/project";
 import { checkExpected, expectedFiles, scanManagedRoots, type SyncIssue } from "../lib/sync";
+import { validateAll } from "../lib/validate";
 
-export const help = "doctor —— 漂移全量诊断：缺失/过期/多余/空目录/manifest 结构问题，带严重度与修复建议";
+export const help = "doctor —— 漂移全量诊断：缺失/过期/多余/空目录/结构问题，带严重度与修复建议";
 
 export function run(argv: readonly string[]): number {
     const parsed = parseArgs(argv);
@@ -14,19 +16,20 @@ export function run(argv: readonly string[]): number {
     const project = repoRoot();
     const sync = aiSyncRoot();
     const manifest = loadManifest(sync);
+    const models = loadModels(sync);
     const assets = expandAssets(manifest);
-    const structural = validateManifest(sync, manifest);
+    const structural = validateAll(sync, manifest);
 
     if (hasStructuralErrors(structural)) {
         // 结构错误会使漂移诊断不可信（源缺失时 expectedFiles 无法展开），只报结构问题
         for (const issue of structural) {
             console.error(`[error] ${issue.message}`);
         }
-        console.error(`[ai-sync:doctor] manifest 结构错误，无法诊断漂移；先修复 registry/manifest`);
+        console.error(`[ai-sync:doctor] 结构错误，无法诊断漂移；先修复 registry/manifest/models.json`);
         return 1;
     }
 
-    const expected = expectedFiles(sync, assets);
+    const expected = expectedFiles(sync, assets, models);
     const issues: SyncIssue[] = [...structural, ...checkExpected(project, expected), ...scanManagedRoots(project, assets, expected)];
 
     const bySeverity = (sev: SyncIssue["severity"]) => issues.filter((i) => i.severity === sev);

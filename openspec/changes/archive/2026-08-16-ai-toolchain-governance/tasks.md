@@ -19,10 +19,10 @@
 
 ## 3. 模型注册表与 verify-models
 
-- [ ] 3.1 `registry/models.json`：角色 → primary/fallback（fgui-designer/fgui-ui-alchemist/visual-verifier 三角色，primary 沿用 `codexapis/gpt-5.6-sol`，fallback 由执行期定）
-- [ ] 3.2 agent 模板化：`registry/agents/*.md` frontmatter 的 `model:` 由 models.json 注入（占位符 + 生成逻辑），agent 正文禁止裸模型名散落
-- [ ] 3.3 `commands/verify-models.ts`：分层探测——优先模型列表通道，通道不可用降级为环境变量存在性检查，输出标注探测通道状态（真实探测/配置检查/未配置）
-- [ ] 3.4 `test/`：models.json 解析、verify-models 输出格式、agent 模板渲染一致性单测
+- [x] 3.1 `registry/models.json`：角色 → primary/fallback（fgui-designer/fgui-ui-alchemist/visual-verifier 三角色，primary 沿用 `codexapis/gpt-5.6-sol`，fallback 当前为 null——执行期无多模型策略，未配置即不声明降级）
+- [x] 3.2 agent 模板化：`registry/agents/*.md` frontmatter 的 `model:` 改为 `{{model:<role>}}` 占位符，`expectedFiles` 对 agent 资产经 models.json 渲染 primary（渲染错误经 `validateAgentTemplates` 进结构错误短路；target 保持实际模型名，registry 为模板）
+- [x] 3.3 `commands/verify-models.ts`：分层探测——opencode models list 真实通道优先，CLI 不可达降级环境变量配置检查（CODEX_API_KEY/OPENAI_API_KEY），再不可用报未配置；输出标注探测通道状态（cli/env/none）
+- [x] 3.4 `test/`：models.json 解析、模板渲染（占位符/未知角色/语法残留）、probe 分层（cli/env/none 三通道）、agent 模板渲染一致性单测（43 用例全量）；既有测试适配 expectedFiles 新签名
 
 ## 4. UI spec 结构化（tools/fgui spec-check）
 

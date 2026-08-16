@@ -23,7 +23,7 @@ describe("doctor 组合诊断", () => {
         const structural = validateManifest(fx.sync, manifest);
         // 与 doctor 命令同语义：结构错误短路，只报结构问题（此时 expectedFiles 不可信）
         if (hasStructuralErrors(structural)) return structural;
-        const expected = expectedFiles(fx.sync, assets);
+        const expected = expectedFiles(fx.sync, assets, {});
         return [...structural, ...checkExpected(fx.root, expected), ...scanManagedRoots(fx.root, assets, expected)];
     }
 
@@ -52,7 +52,7 @@ describe("doctor 组合诊断", () => {
 
     it("同步落盘后 error 清零", () => {
         const manifest = loadManifest(fx.sync);
-        writeExpected(fx.root, expectedFiles(fx.sync, expandAssets(manifest)));
+        writeExpected(fx.root, expectedFiles(fx.sync, expandAssets(manifest), {}));
         const issues = diagnose();
         expect(issues.filter((i) => i.severity === "error")).toHaveLength(0);
     });

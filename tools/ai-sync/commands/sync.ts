@@ -1,7 +1,9 @@
 import { parseArgs } from "../lib/args";
-import { expandAssets, hasStructuralErrors, loadManifest, validateManifest } from "../lib/manifest";
+import { expandAssets, hasStructuralErrors, loadManifest } from "../lib/manifest";
+import { loadModels } from "../lib/models";
 import { aiSyncRoot, repoRoot } from "../lib/project";
 import { checkExpected, expectedFiles, scanManagedRoots, writeExpected, type SyncIssue } from "../lib/sync";
+import { validateAll } from "../lib/validate";
 
 export const help = "sync —— 将 registry 同步到各工具目录（默认 dry-run 输出差异清单，--apply 才落盘）";
 
@@ -15,17 +17,18 @@ export function run(argv: readonly string[]): number {
     const project = repoRoot();
     const sync = aiSyncRoot();
     const manifest = loadManifest(sync);
+    const models = loadModels(sync);
     const assets = expandAssets(manifest);
-    const issues: SyncIssue[] = validateManifest(sync, manifest);
+    const issues: SyncIssue[] = validateAll(sync, manifest);
 
     if (hasStructuralErrors(issues)) {
-        // manifest 结构问题会污染结论，拒绝同步
+        // 结构问题会污染结论，拒绝同步
         for (const issue of issues) console.error(`[error] ${issue.message}`);
-        console.error(`[ai-sync:sync] manifest 结构错误，拒绝同步`);
+        console.error(`[ai-sync:sync] 结构错误，拒绝同步`);
         return 1;
     }
 
-    const expected = expectedFiles(sync, assets);
+    const expected = expectedFiles(sync, assets, models);
 
     // dry-run：列出差异（缺失/过期）与受管根扫描结果
     const diffIssues = [...checkExpected(project, expected), ...scanManagedRoots(project, assets, expected)];

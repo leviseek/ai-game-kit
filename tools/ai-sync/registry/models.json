@@ -1,0 +1,5 @@
+{
+    "fgui-designer": { "primary": "codexapis/gpt-5.6-sol", "fallback": null },
+    "fgui-ui-alchemist": { "primary": "codexapis/gpt-5.6-sol", "fallback": null },
+    "visual-verifier": { "primary": "codexapis/gpt-5.6-sol", "fallback": null }
+}

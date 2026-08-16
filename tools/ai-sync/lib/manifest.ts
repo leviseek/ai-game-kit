@@ -35,7 +35,17 @@ export const MANIFEST_FILE = "manifest.json";
 export const REGISTRY_DIR = "registry";
 
 /** 结构错误问题码：这类错误会使 expectedFiles/check 结论不可信，需先修复 registry/manifest。 */
-export const STRUCTURAL_ERROR_CODES = new Set(["invalid-id", "empty-targets", "invalid-target", "duplicate-target", "missing-source"]);
+export const STRUCTURAL_ERROR_CODES = new Set([
+    "invalid-id",
+    "empty-targets",
+    "invalid-target",
+    "duplicate-target",
+    "missing-source",
+    "invalid-role",
+    "empty-primary",
+    "invalid-fallback",
+    "template-error",
+]);
 
 /** 是否存在结构错误（error 级且属于结构问题码）。 */
 export function hasStructuralErrors(issues: readonly ManifestIssue[]): boolean {

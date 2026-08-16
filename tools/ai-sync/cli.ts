@@ -1,17 +1,19 @@
 /**
  * ai-sync 入口：AI 协作资产（skills/commands/agents）单一来源同步工具。
  *
- * 用法：bun run ai-sync <check|sync|doctor> [options]
- *   check   —— 校验受管文件与 registry 逐字一致（非零退出）
- *   sync    —— 同步 registry → 各工具目录（默认 dry-run，--apply 落盘）
- *   doctor  —— 漂移全量诊断（缺失/过期/多余/空目录/结构问题）
+ * 用法：bun run ai-sync <check|sync|doctor|verify-models> [options]
+ *   check         —— 校验受管文件与 registry 逐字一致（非零退出）
+ *   sync          —— 同步 registry → 各工具目录（默认 dry-run，--apply 落盘）
+ *   doctor        —— 漂移全量诊断（缺失/过期/多余/空目录/结构问题）
+ *   verify-models —— 探测模型注册表可用性（分层：模型列表通道 → 环境变量配置检查）
  */
 import { run as runCheck } from "./commands/check";
 import { run as runSync } from "./commands/sync";
 import { run as runDoctor } from "./commands/doctor";
+import { run as runVerifyModels } from "./commands/verify-models";
 
 interface Command {
-    readonly run: (argv: readonly string[]) => number;
+    readonly run: (argv: readonly string[]) => number | Promise<number>;
     readonly usage: string;
 }
 
@@ -19,6 +21,7 @@ const COMMANDS: Record<string, Command> = {
     check: { run: runCheck, usage: "check —— 校验受管文件与 registry 逐字一致" },
     sync: { run: runSync, usage: "sync [--apply] —— 同步 registry → 工具目录（默认 dry-run）" },
     doctor: { run: runDoctor, usage: "doctor —— 漂移全量诊断" },
+    "verify-models": { run: runVerifyModels, usage: "verify-models —— 探测模型注册表可用性" },
 };
 
 function printHelp(): void {
@@ -29,19 +32,23 @@ function printHelp(): void {
     console.log("");
     console.log("命令:");
     for (const [name, cmd] of Object.entries(COMMANDS)) {
-        console.log(`  ${name.padEnd(8)} ${cmd.usage}`);
+        console.log(`  ${name.padEnd(14)} ${cmd.usage}`);
     }
 }
 
-const [command, ...rest] = process.argv.slice(2);
-if (!command || command === "-h" || command === "--help") {
-    printHelp();
-    process.exit(command ? 0 : 1);
+async function main(): Promise<void> {
+    const [command, ...rest] = process.argv.slice(2);
+    if (!command || command === "-h" || command === "--help") {
+        printHelp();
+        process.exit(command ? 0 : 1);
+    }
+    const cmd = COMMANDS[command];
+    if (!cmd) {
+        console.error(`[ai-sync] 未知命令: "${command}"`);
+        printHelp();
+        process.exit(1);
+    }
+    process.exit(await cmd.run(rest));
 }
-const cmd = COMMANDS[command];
-if (!cmd) {
-    console.error(`[ai-sync] 未知命令: "${command}"`);
-    printHelp();
-    process.exit(1);
-}
-process.exit(cmd.run(rest));
+
+void main();
