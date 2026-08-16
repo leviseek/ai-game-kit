@@ -1,0 +1,9 @@
+{
+    "sfx_test_hit": {
+        "file": "assets/audio/sfx/sfx_test_hit.wav",
+        "kind": "wav",
+        "generator": "python-wave",
+        "paramsHash": "1qunjst",
+        "durationSec": 0.3
+    }
+}

@@ -7,6 +7,7 @@
  */
 import { run as runValidate } from "./commands/validate";
 import { run as runGenI18n } from "./commands/gen-i18n";
+import { run as runAssetgen, registerBuiltinGenerators } from "./commands/assetgen";
 
 interface Command {
     readonly run: (argv: readonly string[]) => number | Promise<number>;
@@ -16,6 +17,7 @@ interface Command {
 const COMMANDS: Record<string, Command> = {
     validate: { run: runValidate, usage: "validate —— 配置 schema/引用/文本 + i18n 完整性校验" },
     "gen-i18n": { run: runGenI18n, usage: "gen-i18n —— 生成 generated/i18n.ts（key 联合 + TextRepo）" },
+    assetgen: { run: runAssetgen, usage: "assetgen <generate|validate|ingest> —— 外部生成器产物接入（staging → 校验 → 登记）" },
 };
 
 function printHelp(): void {
@@ -31,6 +33,7 @@ function printHelp(): void {
 }
 
 async function main(): Promise<void> {
+    registerBuiltinGenerators();
     const argv = process.argv.slice(2);
     if (argv.length === 0 || argv[0] === "-h" || argv[0] === "--help") {
         printHelp();

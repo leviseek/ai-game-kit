@@ -47,3 +47,4 @@
 - **配置纪律**：`assets/game-content/**/*.json` 是内容数据，schema 由 `tools/content/lib/schemas/` 定义（新增表按模板补 schema 模块）。产出/修改配置后必须 `bun run content validate` 通过（schema/跨表引用/id 唯一/内嵌文本禁令 + i18n 完整性 + 生成物 freshness）。
 - **内嵌文本禁令**：用户可见文本（`name`/`description` 等）**禁止内嵌中文或直接文案**，必须引用本地化 key（`auto_battle.<table>.<id>.<field>`，见 `assets/game-content/i18n/`）；新增 key 同时补 `zh-CN.json`（主语言权威）与各翻译表，再 `bun run content gen-i18n`。
 - **文案消费**：游戏侧展示层经 `assets/game-content/generated/i18n.ts` 的 `text.get(key)` 取文案（未知 key fail-fast）；领域层只承载 key 不消费文案。生成物禁止手改（freshness 由 `content validate` 强制）。
+- **生成器接入（外部资产）**：外部生成器产物（ComfyUI/音频模型等）一律经 `bun run content assetgen` 管线——`generate <生成器>` 落 staging → `validate` 契约校验（存在/签名/尺寸/时长/命名）通过 → `ingest --target assets/<子目录> --id <id>` 登记（`generated-assets.json`）。**禁止直接手放生成产物进 `assets/` 绕过校验**；像素 UI 资产继续走 `bun run fgui sprite` 主链路（见 FGUI 工作流）。
