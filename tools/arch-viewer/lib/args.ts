@@ -2,6 +2,7 @@ export interface ArchCliOptions {
     readonly port: number | undefined;
     readonly open: boolean;
     readonly once: boolean;
+    readonly refresh: boolean;
     readonly help: boolean;
 }
 
@@ -11,6 +12,7 @@ export function parseArchArgs(argv: readonly string[]): ParseArchArgsResult {
     let port: number | undefined;
     let open = true;
     let once = false;
+    let refresh = false;
     let help = false;
 
     for (let index = 0; index < argv.length; index += 1) {
@@ -21,6 +23,8 @@ export function parseArchArgs(argv: readonly string[]): ParseArchArgsResult {
             open = false;
         } else if (arg === "--once") {
             once = true;
+        } else if (arg === "--refresh") {
+            refresh = true;
         } else if (arg === "--port") {
             const value = argv[index + 1];
             if (value === undefined) return { ok: false, message: "invalid port" };
@@ -35,9 +39,9 @@ export function parseArchArgs(argv: readonly string[]): ParseArchArgsResult {
         }
     }
 
-    return { ok: true, options: { port, open, once, help } };
+    return { ok: true, options: { port, open, once, refresh, help } };
 }
 
 export function archUsage(): string {
-    return "arch [--port <number>] [--no-open] [--once]";
+    return "arch [--port <number>] [--no-open] [--once] [--refresh]";
 }

@@ -29,8 +29,15 @@
 - **调色板锁定**：sprite 生成的颜色必须 ⊆ `ui/demo/palette.json` 允许集合；新色先加入该文件。资源 id 采用前缀续编（`next-id --prefix`）。
 - **跨资源包引用只允许指向通用资源包 `Common`/`Common_xxx`**：禁止业务包（Demo/CardGame 等）跨包引用其它业务包，也禁止跨包引用 FairyGUI 编辑器官方库包 `Basic`/`Builder`（只能作参考示例，不得使用）。共享按钮/进度条等通用组件统一承载于 `ui/demo/assets/Common/`；打开业务页面 package 前必须先注册 Common（fgui loadPackage 不自动加载依赖包），否则跨包组件退化为空组件、点击事件不触发（见 `.ai/instructions.md` 第 13 条）。
 - **发布产物由 FGUI 编辑器生成**：`assets/ui/*/*.bin` 与 atlas 禁止手改；修改源 XML/PNG 后需在 FGUI 编辑器中重新发布对应包，不得提交陈旧 bin（见 `.ai/instructions.md` 第 14 条）。
-- **字符串归口**：新增事件名、状态名、FGUI 资源 URL / 节点名 / 动画名、bundle 名等字符串前，必须先搜索已有常量表与类型联合（`ui/generated/`、模块内 `constants.ts`、既有 `EventMap`/状态联合类型）。命中「三问」任一必须进常量表，否则禁止裸写：
+- **字符串归口**：新增事件名、状态名、FGUI 资源 URL / 节点名 / 动画名、bundle 名等字符串前，必须先搜索已有常量表与类型联合（`assets/ui/generated/`、模块内 `constants.ts`、既有 `EventMap`/状态联合类型）。命中「三问」任一必须进常量表，否则禁止裸写：
     - 跨模块共享（存在第二个消费方）
     - 耦合外部契约（FGUI 资源 URL、组件名、节点名、bundle 名、存储 key）
     - 拼错会静默断裂（事件名、状态名、资源 id）
-      FGUI 资源 URL 一律引用 `ui/generated/` 生成产物（名字格式 `ui://<包名>/<资源名>`，禁用短 id 裸写 `ui://<pkgId><resId>`）；事件/状态等模块内常量用 `const X = {...} as const` + 联合类型双导出。
+      FGUI 资源 URL 一律引用 `assets/ui/generated/` 生成产物（名字格式 `ui://<包名>/<资源名>`，禁用短 id 裸写 `ui://<pkgId><resId>`）；事件/状态等模块内常量用 `const X = {...} as const` + 联合类型双导出。
+
+## AI 资产治理（skills / commands / agents）
+
+- **单一真源**：`.codex`、`.cursor`、`.claude`、`.opencode`、`.qoder`、`.agents` 下的 skills/commands/subagent 定义是**生成物**，唯一真源在 `tools/ai-sync/registry/`（`manifest.json` 声明目标映射）。**禁止手改工具目录中的受管文件**；修改/新增资产一律改 registry，再运行 `bun run ai-sync sync --apply`。
+- **提交前 check**：改动 registry 或 manifest 后，提交前必须 `bun run ai-sync check` 通过（受管文件与 registry 逐字一致；`doctor` 可诊断漂移/空目录）。
+- **模型注册表**：subagent 的模型声明在 `registry/models.json`（角色 → primary/fallback），agent 文件 frontmatter 的 `model:` 由模板占位符渲染，禁止在 agent 正文散落裸模型名。primary 模型不可用时，委派前用 `bun run ai-sync verify-models` 确认可用性，并按 fallback（如有）覆写模型。
+- **UI spec 流程**：FGUI 创建/编辑先产出结构化 spec.json，运行 `bun run fgui spec-check --spec <spec.json>`（硬规则：字号档位、interactive 类型决策、graph/transition 禁令、relation sidePair ≤ 2、语义化命名），通过后才映射 XML（见 `/fgui-create`、`/fgui-edit`）。

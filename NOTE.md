@@ -1,3 +1,5 @@
+> **历史方法论记录（2026-08）**：本文是项目早期选定「GPT-5.6 + Superpowers + OpenSpec」方法论时的设计笔记，正文保留不改。当前 AI 协作约定的权威入口见根目录 `AGENTS.md` 与 `README.md`；流程纪律（OpenSpec change/ADR）见 `openspec/config.yaml` 与 `doc/decisions/`；工具链现状见 `README.md` 门禁命令表与 `tools/ai-sync/` 资产 registry。
+
 ## 为什么选择 GPT-5.6 + Superpowers + OpenSpec
 
 你是：

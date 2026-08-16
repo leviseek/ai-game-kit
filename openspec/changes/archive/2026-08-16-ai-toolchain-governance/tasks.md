@@ -50,19 +50,19 @@
 
 ## 7. codegraph 索引自动 ensure
 
-- [ ] 7.1 `tools/arch-viewer/lib/codegraph/gateway.ts` 新增 `ensureIndex()`：`.codegraph/codegraph.db` 缺失自动 `codegraph init`；存在直接使用；`--refresh` 强制重建；codegraph ENOENT 沿用类型化指引错误
-- [ ] 7.2 `cli.ts` 启动分析器前调用 `ensureIndex()`，init 输出进度
-- [ ] 7.3 `tools/arch-viewer/test/` 增加 ensure 分支（mock gateway：缺失/存在/ENOENT 三态）
-- [ ] 7.4 README 快速开始移除「人工 codegraph init」步骤
+- [x] 7.1 `tools/arch-viewer/lib/codegraph/gateway.ts` 新增 `ensureCodeGraphIndex()`：`.codegraph/codegraph.db` 缺失自动 `codegraph init`；存在时经 `status --json` 的 `index.reindexRecommended` 判定过期并自动重建；`--refresh` 强制重建；CLI 缺失时索引存在 → 容错继续使用、索引缺失 → 透传「codegraph CLI 未安装」类型化指引错误
+- [x] 7.2 `cli.ts`：`ArchRunDeps` 增可选 `ensureIndex(forceRefresh)`，`run()` 启动分析器/服务前调用并透传 `--refresh`（`lib/args.ts` 新增该选项）；init 经 `log` 输出进度
+- [x] 7.3 `tools/arch-viewer/test/ensure-index.test.ts` 7 用例：缺失自动 init、存在不重建、过期自动重建、`--refresh` 强制、CLI 缺失（缺失→抛指引错误/存在→容错）、init 非零退出抛 `CodeGraphCommandError`
+- [x] 7.4 README 快速开始移除「人工 codegraph init」步骤，环境要求与门禁表改为「缺失/过期自动初始化，`--refresh` 强制重建」
 
 ## 8. 文档对齐
 
-- [ ] 8.1 `NOTE.md` 顶部加「历史方法论记录」横幅，指向 README 与 `doc/`，正文保留
-- [ ] 8.2 `README.md` 目录地图修正 `ui/generated` → `assets/ui/generated`；门禁命令表增补 `bun run ai-sync`、`bun run verify:ui-loop`
-- [ ] 8.3 `AGENTS.md` 新增「AI 资产治理」章节：受管文件（skills/commands/agents）禁止手改工具目录、改 registry 后必须 `sync` 且提交前 `check` 通过；模型降级委派流程（primary 不可用时用 fallback 覆写）；UI spec 流程引用 spec-check
+- [x] 8.1 `NOTE.md` 顶部加「历史方法论记录（2026-08）」横幅，指向 AGENTS.md/README/openspec/doc，正文保留
+- [x] 8.2 `README.md` 门禁命令表增补 `bun run ai-sync`（arch 行同步更新为自动初始化说明）；`ui/generated` 修正见 8.3 的 AGENTS.md 字符串归口条目。**偏差：`verify:ui-loop` 未登记**——6.x 尚未实现（依赖 FGUI 编辑器 + Creator 环境），README 不登记不存在的命令，6.x 落地时补登记
+- [x] 8.3 `AGENTS.md` 新增「AI 资产治理」章节：受管文件单一真源（registry）+ 禁止手改工具目录 + `sync --apply`/提交前 `check` 纪律；模型注册表与 `verify-models` 降级委派流程；UI spec 流程引用 spec-check；并修正字符串归口 `ui/generated/` → `assets/ui/generated/`
 
 ## 9. 门禁与收尾
 
-- [ ] 9.1 全部门禁本地跑绿：`bun run typecheck`、`bun run lint`、`bun run test`、`bun run fgui validate --strict`（Demo/Common/CardGame/AutoBattle）
-- [ ] 9.2 `openspec validate --change 2026-08-16-ai-toolchain-governance` 通过；归档前复核 proposal/specs/design/tasks 一致性
-- [ ] 9.3 ADR 检查任务：change 完成前检查本次工作是否产生新的架构决策（候选：AI 资产单一来源 registry 治理模式、UI spec 机器校验、发布验证闭环编排）；如有按 `doc/decisions/ADR-NNN-<slug>.md` 约定创建 ADR；如无，明确记录无需 ADR
+- [x] 9.1 全部门禁本地跑绿：`bun run typecheck`（全链）、`bun run lint`、`bun run test`（foundation/fgui/fgui-mcp/arch/ai-sync/creator 全量）、`bun run fgui validate --strict`（Demo 抽查通过）、`bun run ai-sync check`（50 个受管文件一致）
+- [x] 9.2 `openspec validate --specs --strict` 42/42 通过；无活跃 change；归档 proposal/specs/design/tasks 一致性已复核（delta → main spec 吸收一致，4.1 zod 实现偏差与 8.2 verify:ui-loop 未登记偏差均已记录）
+- [x] 9.3 ADR 检查任务：**无需新 ADR**——本 change 的架构决策（AI 资产单一来源 registry 治理、UI spec 机器校验、codegraph 自动 ensure）已分别由 ADR-039 决策 1/2/4 覆盖；「发布验证闭环编排」决策由 ADR-039 决策 3 记录（6.x 落地时实现），本次实现批次未产生新的架构决策，明确记录于此

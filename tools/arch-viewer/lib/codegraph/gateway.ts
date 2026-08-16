@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import type { SymbolRef } from "../config/types";
 import type { Diagnostic } from "../graph/types";
 import { CodeGraphCommandError, CodeGraphJsonError, CodeGraphTimeoutError } from "./errors";
@@ -5,6 +7,7 @@ import { runCodeGraphCommand, type CommandRunner } from "./process";
 import type { CodeGraphFile, CodeGraphNode, CodeGraphRelationNode, CodeGraphStatus } from "./types";
 
 const limits = { timeoutMs: 15_000, maxBuffer: 16 * 1024 * 1024 } as const;
+const initLimits = { timeoutMs: 60_000, maxBuffer: 16 * 1024 * 1024 } as const;
 const resolveSymbolLimit = 100;
 
 interface QueryResult {
@@ -158,8 +161,7 @@ function isTimeout(error: unknown): boolean {
     return isRecord(error) && (error.code === "ETIMEDOUT" || error.killed === true);
 }
 
-export function createCodeGraphGateway(options?: { readonly projectRoot?: string; readonly runner?: CommandRunner }): CodeGraphGateway {
-    const projectRoot = options?.projectRoot ?? process.cwd();
+export function createCodeGraphGateway(options?: { readonly projectRoot?: string; readonly runner?: CommandRunner }): CodeGraphGateway {    const projectRoot = options?.projectRoot ?? process.cwd();
     const runner = options?.runner ?? runCodeGraphCommand;
 
     async function run(args: readonly string[]) {
@@ -246,6 +248,76 @@ export function createCodeGraphGateway(options?: { readonly projectRoot?: string
             };
         },
     };
+}
+
+export interface EnsureIndexOptions {
+    readonly projectRoot?: string;
+    /** 可注入命令执行器（测试用）；缺省走真实 codegraph CLI。 */
+    readonly runner?: CommandRunner;
+    /** 索引库路径（测试用）；缺省为 <projectRoot>/.codegraph/codegraph.db */
+    readonly dbPath?: string;
+    /** 强制重建（--refresh），忽略既有索引状态。 */
+    readonly forceRefresh?: boolean;
+    /** 初始化进度输出（默认静默）。 */
+    readonly log?: (line: string) => void;
+}
+
+/**
+ * 启动前索引 ensure：.codegraph 索引缺失或过期（status 报 reindexRecommended）时自动
+ * `codegraph init`，无需开发者预先手动初始化；`--refresh` 无条件重建。codegraph CLI
+ * 缺失（ENOENT 已由 process 层转带安装指引的类型化错误）时：索引缺失 → 透传该指引错误；
+ * 索引已存在 → 容错继续使用既有索引（不阻断）。
+ */
+export async function ensureCodeGraphIndex(options: EnsureIndexOptions = {}): Promise<void> {
+    const projectRoot = options.projectRoot ?? process.cwd();
+    const runner = options.runner ?? runCodeGraphCommand;
+    const dbPath = options.dbPath ?? join(projectRoot, ".codegraph", "codegraph.db");
+    const forceRefresh = options.forceRefresh ?? false;
+    const log = options.log ?? (() => {});
+
+    const dbExists = existsSync(dbPath);
+    if (!forceRefresh && dbExists) {
+        // 索引已存在：尝试 status 判定过期；CLI 缺失时容错继续（既有索引可用即可用）
+        try {
+            const status = await readStatus(projectRoot, runner);
+            if (status !== null && status.index?.reindexRecommended === true) {
+                log("[arch] codegraph 索引过期，自动重建（codegraph init）…");
+                await runInit(projectRoot, runner);
+            }
+        } catch (error) {
+            if (isCliMissingError(error)) return; // db 在、CLI 不在：不阻断使用
+            throw error;
+        }
+        return;
+    }
+
+    log("[arch] codegraph 索引缺失/需重建，自动初始化（codegraph init）…");
+    await runInit(projectRoot, runner);
+}
+
+async function runInit(projectRoot: string, runner: CommandRunner): Promise<void> {
+    const args = ["init", projectRoot];
+    const result = await runner(args, initLimits);
+    if (result.exitCode !== 0) {
+        throw new CodeGraphCommandError(args, result.stderr, result.exitCode);
+    }
+}
+
+/** 读取 status（--json），返回 null 表示 JSON 不可解析（视为无过期信号）。 */
+async function readStatus(projectRoot: string, runner: CommandRunner): Promise<CodeGraphStatus | null> {
+    const args = ["status", projectRoot, "--json"];
+    const result = await runner(args, limits);
+    if (result.exitCode !== 0) throw new CodeGraphCommandError(args, result.stderr, result.exitCode);
+    try {
+        const value: unknown = JSON.parse(result.stdout);
+        return isStatus(value) ? value : null;
+    } catch {
+        return null;
+    }
+}
+
+function isCliMissingError(error: unknown): boolean {
+    return error instanceof Error && error.message.includes("codegraph CLI 未安装");
 }
 
 export type { CodeGraphFile, CodeGraphNode, CodeGraphRelationNode, CodeGraphStatus };

@@ -8,7 +8,7 @@
 - Cocos Creator 3.8.8（本地构建/冒烟需要；纯类型检查与测试不需要）
 - FairyGUI 编辑器（FGUI 组件源发布需要）
 - `openspec` CLI（全局命令，change 生命周期使用）
-- CodeGraph CLI ≥ 1.5（`bun run arch` 依赖；索引需用户显式初始化）
+- CodeGraph CLI ≥ 1.5（`bun run arch` 依赖；`.codegraph` 索引缺失/过期时工作台自动初始化）
 
 `test:foundation:types` 与 `ccc` 相关命令依赖 Cocos Creator 安装路径：优先读取环境变量 `COCOS_CREATOR_HOME`（指向 Creator 安装根目录），未设置时回退到内置默认路径。
 
@@ -18,10 +18,9 @@
 git submodule update --init --recursive   # 首次拉取第三方库子模块（third-party/）
 bun install
 bun run build:fairygui                    # 同步 FairyGUI 库产物到 assets/framework/libs
-codegraph init                            # 首次使用架构工作台前由用户显式初始化 .codegraph
+bun run arch                              # 启动本地架构图谱工作台（.codegraph 索引缺失/过期时自动初始化）
 bun run typecheck
 bun run test
-bun run arch                              # 启动本地架构图谱工作台
 ```
 
 > 第三方库子模块统一存根目录 `third-party/`（当前含 `fairygui`）。产物由
@@ -38,9 +37,10 @@ bun run arch                              # 启动本地架构图谱工作台
 | `bun run test`           | foundation、FGUI、FGUI MCP 与架构工作台测试                                                                                          | 否         |
 | `bun run test:all`       | 追加 `test:foundation:types`（framework 契约 + fairygui 接入类型检查）                                                               | 是         |
 | `bun run verify`         | `typecheck` + `lint` + `test`，提交前完整门禁                                                                                        | 是         |
-| `bun run fgui <command>` | FGUI 确定性工具链（资源清单/校验/短 id 等）                                                                                          | 否         |
+| `bun run fgui <command>` | FGUI 确定性工具链（资源清单/校验/短 id/spec-check 等）                                                                                          | 否         |
+| `bun run ai-sync <command>` | AI 资产单一来源同步（registry → 各工具目录；check/sync/doctor/verify-models）                                                                                  | 否         |
 | `bun run ccc <command>`  | Creator 命令行工具（构建/smoke/性能检查等）                                                                                          | 是         |
-| `bun run arch`           | 启动本地架构图谱工作台（需已初始化 `.codegraph`）                                                                                    | 否         |
+| `bun run arch`           | 启动本地架构图谱工作台（`.codegraph` 缺失/过期自动初始化，`--refresh` 强制重建）                                                                                    | 否         |
 | `bun run test:arch`      | 架构分析、服务和前端纯函数测试                                                                                                       | 否         |
 | `bun run build:arch-web` | 编译架构工作台前端静态脚本                                                                                                           | 否         |
 

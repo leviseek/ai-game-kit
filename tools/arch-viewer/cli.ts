@@ -4,7 +4,7 @@ import { join, resolve } from "node:path";
 import architectureConfig from "./architecture.config";
 import { archUsage, parseArchArgs } from "./lib/args";
 import { ArchitectureAnalyzer } from "./lib/analysis/analyzer";
-import { createCodeGraphGateway } from "./lib/codegraph/gateway";
+import { createCodeGraphGateway, ensureCodeGraphIndex } from "./lib/codegraph/gateway";
 import type { CodeGraphStatus } from "./lib/codegraph/types";
 import type { GraphSnapshot } from "./lib/graph/types";
 import { openBrowser } from "./lib/server/open-browser";
@@ -29,6 +29,8 @@ export interface ArchRunDeps {
     readonly waitForShutdown: (server: ArchServerSession, watcher: WatchHandle) => Promise<void>;
     readonly writeOut: (line: string) => void;
     readonly writeErr: (line: string) => void;
+    /** 启动前索引 ensure（缺失/过期自动 init，--refresh 强制重建）；未提供则跳过。 */
+    readonly ensureIndex?: (forceRefresh: boolean) => Promise<void>;
 }
 
 const projectRoot = resolve(import.meta.dirname, "../..");
@@ -47,6 +49,7 @@ export async function run(argv: readonly string[], deps: ArchRunDeps = productio
     }
 
     try {
+        await deps.ensureIndex?.(parsed.options.refresh);
         if (parsed.options.once) {
             const snapshot = await deps.analyzeOnce();
             deps.writeOut(snapshotSummary(snapshot));
@@ -74,6 +77,7 @@ export async function run(argv: readonly string[], deps: ArchRunDeps = productio
 
 const productionDeps: ArchRunDeps = {
     buildWeb: () => runProcess("bun", ["x", "tsc", "-p", "tools/arch-viewer/tsconfig.web.json"]),
+    ensureIndex: (forceRefresh) => ensureCodeGraphIndex({ projectRoot, forceRefresh, log: (line) => console.log(line) }),
     analyzeOnce: async () => {
         const gateway = createCodeGraphGateway({ projectRoot });
         await gateway.sync();
