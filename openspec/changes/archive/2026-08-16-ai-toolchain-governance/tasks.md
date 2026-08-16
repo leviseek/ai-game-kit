@@ -43,10 +43,10 @@
 
 ## 6. 发布验证闭环 verify:ui-loop
 
-- [ ] 6.1 `scripts/verify-ui-loop.ts`：四阶段编排（子进程 `fgui validate --strict` → 复用 `tools/fgui-mcp/lib/bridge.ts` MailboxBridge 发真实发布 `redirectToScratch:false` → 复用 `lib/check-publish.ts` 三重证据 → 子进程 `ccc ui-smoke`）；`--package` 必填否则拒绝；退出码约定 0 通过 / 1 阶段失败 / 2 环境缺失
-- [ ] 6.2 环境检测：编辑器探针可达性（mailbox 目录/探针响应）、`COCOS_CREATOR_HOME`；缺失时输出恢复指引并以退出码 2 结束，绝不假装成功
-- [ ] 6.3 根 package.json scripts 增 `verify:ui-loop`；README 门禁命令表登记
-- [ ] 6.4 环境缺失路径单测（mock bridge/子进程）；真实发布链路需 FGUI 编辑器 + Creator 本地验证，结果记入交付说明
+- [x] 6.1 `scripts/verify-ui-loop.ts`：四阶段编排（子进程 `fgui validate --strict` → 复用 `tools/fgui-mcp/lib/bridge.ts` MailboxBridge 发真实发布 `redirectToScratch:false` → 复用 `lib/check-publish.ts` 三重证据 → 子进程 `ccc ui-smoke`）；`--package` 必填否则拒绝；退出码约定 0 通过 / 1 阶段失败 / 2 环境缺失。核心编排 `verifyUiLoop(pkg, deps)` 依赖可注入便于单测，入口 `import.meta.main` 守卫
+- [x] 6.2 环境检测：编辑器探针可达性（`isBridgeReachable` + 发布桥接 `reached` 判定）、`findCreatorHome()` 预检 Creator；缺失时输出恢复指引（编辑器前台/插件日志、`COCOS_CREATOR_HOME`/`ccc open`）并以退出码 2 结束，绝不假装成功
+- [x] 6.3 根 package.json scripts 增 `verify:ui-loop`（`test:verify-ui-loop` 接入 test 链）；README 门禁命令表登记（标注需 FGUI 编辑器 + Creator 环境，退出码 2 表示环境缺失）
+- [x] 6.4 环境缺失路径单测（`scripts/test/verify-ui-loop.test.ts` 10 用例：工程不可定位/探针不可达/发布桥接不可达/Creator 不可定位/validate 阻断/发布失败/isSuccess=false/证据不一致/ui-smoke 失败/全通过）；**真实链路已本机验证通过**：`bun run verify:ui-loop --package Demo` 四阶段全绿（validate ✓ → 真实发布 isSuccess=true 写入 assets/ui/Demo ✓ → 三重证据 ✓ → ccc ui-smoke 运行时冒烟 ✓，exit 0；发布产物字节与源一致无 git diff）
 
 ## 7. codegraph 索引自动 ensure
 
