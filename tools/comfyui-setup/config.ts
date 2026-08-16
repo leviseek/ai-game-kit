@@ -33,7 +33,8 @@ export interface ComfyUiConfig {
 const DEFAULTS: Omit<ComfyUiConfig, "installDir" | "models"> = {
     port: 8188,
     venvName: "venv",
-    torchIndexUrl: "https://download.pytorch.org/whl/cpu",
+    // GPU 优先：cu130 支持 NVIDIA 40 系（cu126 在 40 系上输出恒定灰）；无 GPU 环境可改 cpu index
+    torchIndexUrl: "https://download.pytorch.org/whl/cu130",
     pipIndexUrl: "https://pypi.tuna.tsinghua.edu.cn/simple",
     gitUrl: "https://github.com/comfyanonymous/ComfyUI.git",
 };

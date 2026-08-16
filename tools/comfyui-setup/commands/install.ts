@@ -49,17 +49,18 @@ export async function installComfyUi(config: ComfyUiConfig, options: { force?: b
         console.log(`[comfyui-setup] venv 已存在: ${py}`);
     }
 
-    // 4. CPU-only torch（requirements.txt 内的 torch 是无 index 的，必须先装 CPU wheel 防拉 CUDA 版）
-    const torchCheck = runCommand(py, ["-c", "import torch, sys; print(torch.__version__)"], { cwd: installDir, timeoutMs: 60_000 });
-    if (torchCheck.status !== 0 || !torchCheck.stdout.includes("+cpu")) {
-        console.log(`[comfyui-setup] 安装 CPU-only torch（index-url: ${torchIndexUrl}）`);
+    // 4. CUDA torch（有 NVIDIA GPU 时装 cu130 版；requirements.txt 内 torch 无 index，先装 wheel 防拉错版）
+    //    无 GPU 时可用 CPU 版（torchIndexUrl 配 cpu index）。检查标准：torch.cuda.is_available()。
+    const torchCheck = runCommand(py, ["-c", "import torch; print(torch.cuda.is_available())"], { cwd: installDir, timeoutMs: 60_000 });
+    if (torchCheck.status !== 0 || torchCheck.stdout.trim() !== "True") {
+        console.log(`[comfyui-setup] 安装 CUDA torch（index-url: ${torchIndexUrl}）`);
         const torch = runCommand(py, ["-m", "pip", "install", "torch", "torchvision", "--index-url", torchIndexUrl], { cwd: installDir, timeoutMs: 900_000 });
         if (torch.status !== 0) {
             console.error(`[comfyui-setup] torch 安装失败: ${torch.stderr.trim() || torch.stdout.trim()}`);
             return 1;
         }
     } else {
-        console.log(`[comfyui-setup] torch 已就绪: ${torchCheck.stdout.trim()}`);
+        console.log(`[comfyui-setup] CUDA torch 已就绪（cuda=True）`);
     }
 
     // 5. requirements（镜像可配）

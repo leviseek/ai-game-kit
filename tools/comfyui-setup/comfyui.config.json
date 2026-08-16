@@ -2,7 +2,7 @@
     "installDir": "D:/dev/ComfyUI",
     "port": 8188,
     "venvName": "venv",
-    "torchIndexUrl": "https://download.pytorch.org/whl/cpu",
+    "torchIndexUrl": "https://download.pytorch.org/whl/cu130",
     "pipIndexUrl": "https://pypi.tuna.tsinghua.edu.cn/simple",
     "gitUrl": "https://github.com/comfyanonymous/ComfyUI.git",
     "models": [
@@ -11,6 +11,12 @@
             "url": "https://hf-mirror.com/stabilityai/sd-turbo/resolve/main/sd_turbo.safetensors",
             "size": 5214561328,
             "file": "models/checkpoints/sd_turbo.safetensors"
+        },
+        {
+            "id": "dreamshaper_xl_turbo",
+            "url": "https://hf-mirror.com/Lykon/dreamshaper-xl-v2-turbo/resolve/main/DreamShaperXL_Turbo_v2_1.safetensors",
+            "size": 6939220250,
+            "file": "models/checkpoints/DreamShaperXL_Turbo_v2_1.safetensors"
         }
     ]
 }

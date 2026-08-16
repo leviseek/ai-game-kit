@@ -8,6 +8,8 @@ import { openSync, closeSync, ftruncateSync, statSync, existsSync, writeSync } f
 const CHUNK_BYTES = 16 * 1024 * 1024;
 const DEFAULT_THREADS = 8;
 const FETCH_TIMEOUT_MS = 120_000;
+/** 单分片失败重试次数（网络抖动容忍；重试间隔 1s×attempt）。 */
+const RETRY_COUNT = 3;
 
 /** 探测资源总字节数：Range: bytes=0-0 读 Content-Range 末段。 */
 export async function probeSize(url: string): Promise<number> {
@@ -47,6 +49,8 @@ export interface DownloadResult {
 
 /**
  * 并发分片下载到 outPath；目标已存在且大小一致则跳过。
+ * 分片失败自动重试（每片最多 RETRY 次），完成时校验大小——防中断后
+ * 空洞文件（truncate 到全大小但部分分片未写入）被误判为完整。
  * onProgress 每完成一批分片回调（节流 ≥1s）。
  */
 export async function downloadFile(
@@ -71,7 +75,23 @@ export async function downloadFile(
         let lastReport = 0;
         for (let i = 0; i < ranges.length; i += threads) {
             const batch = ranges.slice(i, i + threads);
-            await Promise.all(batch.map((range) => downloadRange(url, range.start, range.end, fd, range.start)));
+            await Promise.all(
+                batch.map(async (range) => {
+                    let attempt = 0;
+                    for (;;) {
+                        try {
+                            await downloadRange(url, range.start, range.end, fd, range.start);
+                            return;
+                        } catch (error) {
+                            attempt += 1;
+                            if (attempt > RETRY_COUNT) {
+                                throw error;
+                            }
+                            await sleep(1000 * attempt);
+                        }
+                    }
+                }),
+            );
             doneBytes += batch.reduce((sum, range) => sum + (range.end - range.start + 1), 0);
             const now = Date.now();
             if (options.onProgress !== undefined && now - lastReport >= 1000) {
@@ -88,4 +108,8 @@ export async function downloadFile(
     } finally {
         closeSync(fd);
     }
+}
+
+function sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
 }

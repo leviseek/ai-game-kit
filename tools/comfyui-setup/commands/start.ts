@@ -1,16 +1,23 @@
 /**
- * start —— 后台启动 ComfyUI（--cpu --port <port>），日志落 temp/comfyui/comfyui.log，
+ * start —— 后台启动 ComfyUI（GPU 优先，无 CUDA 时 --cpu），日志落 temp/comfyui/comfyui.log，
  * PID 落 temp/comfyui/comfyui.pid；等待 /system_stats 健康后返回。
  * 已运行（PID 存活且端口可达）时幂等提示。
  */
 import { existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
-import { killPid, readPid, spawnDetached, venvPython } from "../lib/exec";
+import { runCommand, killPid, readPid, spawnDetached, venvPython } from "../lib/exec";
 import type { ComfyUiConfig } from "../config";
 import { repoRoot } from "./paths";
 
 const PID_FILE = "comfyui.pid";
 const LOG_FILE = "comfyui.log";
+
+/** 探测 venv torch 是否支持 CUDA（GPU 可用则不加 --cpu）。 */
+function detectGpu(installDir: string, venvName: string): boolean {
+    const py = venvPython(installDir, venvName);
+    const result = runCommand(py, ["-c", "import torch; print(torch.cuda.is_available())"], { cwd: installDir, timeoutMs: 30_000 });
+    return result.status === 0 && result.stdout.trim() === "True";
+}
 
 export async function startComfyUi(config: ComfyUiConfig): Promise<number> {
     const stateDir = join(repoRoot(), "temp", "comfyui");
@@ -33,17 +40,21 @@ export async function startComfyUi(config: ComfyUiConfig): Promise<number> {
         console.error(`[comfyui-setup] venv python 不存在: ${py}（先运行 comfyui-setup install）`);
         return 2;
     }
-    const child = spawnDetached(py, ["main.py", "--cpu", "--port", String(config.port), "--disable-auto-launch"], {
+    const useGpu = detectGpu(config.installDir, config.venvName);
+    const args = useGpu
+        ? ["main.py", "--port", String(config.port), "--disable-auto-launch"]
+        : ["main.py", "--cpu", "--port", String(config.port), "--disable-auto-launch"];
+    const child = spawnDetached(py, args, {
         cwd: config.installDir,
         logFile,
         pidFile,
     });
-    console.log(`[comfyui-setup] 启动 ComfyUI（pid=${child.pid}，日志: ${logFile}）`);
+    console.log(`[comfyui-setup] 启动 ComfyUI（pid=${child.pid}，device=${useGpu ? "gpu" : "cpu"}，日志: ${logFile}）`);
 
     const deadline = Date.now() + 120_000;
     while (Date.now() < deadline) {
         if (await healthOk(config.port)) {
-            console.log(`[comfyui-setup] 就绪: http://127.0.0.1:${config.port}（device=cpu）`);
+            console.log(`[comfyui-setup] 就绪: http://127.0.0.1:${config.port}（device=${useGpu ? "gpu" : "cpu"}）`);
             return 0;
         }
         await new Promise((resolve) => setTimeout(resolve, 1500));
