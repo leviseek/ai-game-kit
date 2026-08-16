@@ -15,8 +15,8 @@
 ## 3. 参考适配器
 
 - [x] 3.1 `generators/python-wave.ts` + `generators/python-wave.py`：Python 3 标准库生成 WAV（正弦/噪声/包络），`generate` 落 staging、声明时长；Python 缺失抛环境错误（ENOENT 判定）；**本机实跑全链路验证**：generate（sfx_test_hit.wav 0.3s）→ validate 契约通过 → ingest 登记 + staging 清理
-- [x] 3.2 `generators/comfyui.ts`：HTTP 契约定义（POST /prompt + 轮询 /history），实装抛「未配置端点」占位错误；`fgui-sprite` 适配器引导走既有 `bun run fgui sprite` 主链路（不伪造产物）
-- [x] 3.3 单测：python-wave 生成 WAV 契约校验通过（本机 Python 3 实跑）、comfyui 占位错误、内置生成器注册齐全
+- [x] 3.2 `generators/comfyui.ts`：**完整实装**（归档后补充）——HTTP 客户端：POST /prompt（提交工作流 + client_id）→ 轮询 GET /history/<prompt_id>（生成中空、出现输出图片即收）→ GET /view 下载到 staging 并声明 PNG 契约；参数 `workflow`（JSON）/`workflow-file`（路径）/`id`；端点 `options.endpoint ?? env COMFYUI_ENDPOINT`，未配置抛明确错误；**假 ComfyUI 服务器单测验证全协议**（comfyui.test.ts 3 用例：全流程下载/契约校验、workflow-file、未配置端点）；真实联调待环境（本机无 ComfyUI，8188 未监听——交付说明记录）；`fgui-sprite` 适配器引导走既有 `bun run fgui sprite` 主链路（不伪造产物）
+- [x] 3.3 单测：python-wave 生成 WAV 契约校验通过（本机 Python 3 实跑）、comfyui 全协议（假服务器）+ 未配置端点、内置生成器注册齐全
 
 ## 4. 文档、门禁与收尾
 
