@@ -34,12 +34,12 @@
 
 ## 5. tools/creator 单元测试（纯函数层）
 
-- [ ] 5.1 `test/args.test.ts`：parseArgs 各分支（flag/require/help）
-- [ ] 5.2 `test/env.test.ts`：`COCOS_CREATOR_HOME` 解析与回退（fixtures 驱动）
-- [ ] 5.3 `test/proc.test.ts`：`killChromeByProfile` 过滤逻辑（只清自己启动的实例）
-- [ ] 5.4 `test/lock.test.ts`、`test/log.test.ts`：锁获取/释放、sleep 边界与日志格式
-- [ ] 5.5 `test/cdp.test.ts`：`findFreePort` 真实端口分配、`waitForPageTarget` 用假 server 验证超时与命中
-- [ ] 5.6 `tools/creator/tsconfig.json` 纳入 test 目录；根 `test` 链接入 `bun test ./tools/creator/test`（无 Creator 环境可跑）
+- [x] 5.1 `test/args.test.ts`：parseArgs 各分支（key value/=value/布尔/help/位置参数）+ flagString/flagBool/flagNumber
+- [x] 5.2 `test/env.test.ts`：`COCOS_CREATOR_HOME`/`CHROME_PATH` 经临时 fake exe fixtures 驱动（返回命中、不误报），getCreatorVersion/getCreatorTempDir 读真实工程
+- [x] 5.3 `test/proc.test.ts`：`killChromeByProfile` 过滤逻辑——抽 `buildKillChromeCommand` 纯函数断言 user-data-dir 过滤与反斜杠转义、不含无差别 kill（不执行 PowerShell）
+- [x] 5.4 `test/lock.test.ts`、`test/log.test.ts`：锁获取/活锁拒绝/释放重取/僵尸锁自动清除；sleep 边界、readTextWithRetry 正常/重试耗尽、waitForPattern 命中/超时
+- [x] 5.5 `test/cdp.test.ts`：`findFreePort` 真实端口分配；`waitForPageTarget` 用假 CDP server（node http）验证命中/无 page 超时/端口未监听超时（导出该函数）
+- [x] 5.6 `tools/creator/tsconfig.json` 显式 `exclude test`（与 ai-sync 一致：测试由 bun 运行时校验、不参与 tsc）；根 `test` 链接入 `bun test ./tools/creator/test`（无 Creator 环境可跑，29 用例）
 
 ## 6. 发布验证闭环 verify:ui-loop
 

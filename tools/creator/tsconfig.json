@@ -9,5 +9,6 @@
         "forceConsistentCasingInFileNames": true,
         "types": ["node"]
     },
-    "include": ["cli.ts", "lib/**/*.ts", "commands/**/*.ts"]
+    "include": ["cli.ts", "lib/**/*.ts", "commands/**/*.ts"],
+    "exclude": ["test/**/*.ts"]
 }

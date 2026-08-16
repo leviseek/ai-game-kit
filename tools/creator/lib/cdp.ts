@@ -26,7 +26,8 @@ export interface CdpSession {
     click(x: number, y: number): Promise<void>;
 }
 
-async function findFreePort(): Promise<number> {
+/** 分配一个空闲本地端口（监听后立即释放，返回端口号）。 */
+export async function findFreePort(): Promise<number> {
     const server: Server = createServer();
     await new Promise<void>((resolve, reject) => {
         server.once("error", reject);
@@ -37,7 +38,8 @@ async function findFreePort(): Promise<number> {
     return port;
 }
 
-async function waitForPageTarget(port: number, timeoutMs: number): Promise<string> {
+/** 轮询 Chrome CDP 的 /json 端点直到出现 page 目标，返回其 WebSocket URL；超时抛错。 */
+export async function waitForPageTarget(port: number, timeoutMs: number): Promise<string> {
     const deadline = Date.now() + timeoutMs;
     while (Date.now() < deadline) {
         try {

@@ -62,12 +62,15 @@ export function closeCreator(): void {
     }
 }
 
+/** 生成仅清理指定 user-data-dir 的 chrome 进程命令（避免误杀用户浏览器）。 */
+export function buildKillChromeCommand(profileDir: string): string {
+    return `Get-CimInstance Win32_Process -Filter "Name = 'chrome.exe'" | Where-Object { $_.CommandLine -match '${profileDir.replaceAll("\\", "\\\\")}' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }`;
+}
+
 /** 仅清理指定 user-data-dir 的 chrome 进程，避免误杀用户浏览器。 */
 export function killChromeByProfile(profileDir: string): void {
     try {
-        runPowershell(
-            `Get-CimInstance Win32_Process -Filter "Name = 'chrome.exe'" | Where-Object { $_.CommandLine -match '${profileDir.replaceAll("\\", "\\\\")}' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }`,
-        );
+        runPowershell(buildKillChromeCommand(profileDir));
     } catch {
         // 无匹配进程时 PowerShell 管道可能报非零退出码，清理目标已达成即可容忍
     }
