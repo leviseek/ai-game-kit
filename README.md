@@ -40,6 +40,7 @@ bun run test
 | `bun run fgui <command>` | FGUI 确定性工具链（资源清单/校验/短 id/spec-check 等）                                                                                          | 否         |
 | `bun run ai-sync <command>` | AI 资产单一来源同步（registry → 各工具目录；check/sync/doctor/verify-models）                                                                                  | 否         |
 | `bun run content <command>` | 内容管线（game-content 配置 schema/引用/文本校验 + i18n 生成 + 生成器接入：validate/gen-i18n/assetgen）                                                                                            | 否         |
+| `bun run comfyui-setup <command>` | ComfyUI 部署工具链（install/model/start/stop/status；ComfyUI 本体/权重在仓库外，见 ADR-042）                                                                                            | 否         |
 | `bun run verify:ui-loop --package <包名>` | FGUI 发布验证闭环：validate → 真实发布 → 三重证据 → 运行时冒烟（需 FGUI 编辑器 + Creator 本地环境；退出码 2 表示环境缺失）                                        | 是         |
 | `bun run ccc <command>`  | Creator 命令行工具（构建/smoke/性能检查等）                                                                                          | 是         |
 | `bun run arch`           | 启动本地架构图谱工作台（`.codegraph` 缺失/过期自动初始化，`--refresh` 强制重建）                                                                                    | 否         |
@@ -69,6 +70,8 @@ tools/
   fgui/               FGUI 确定性工具（含独立测试）
   creator/            Cocos Creator 命令行工具
   arch-viewer/        本地架构图谱工作台（CodeGraph + SourceScanner + HTTP/SSE）
+  content/            内容管线（配置 schema/引用/文本校验 + i18n + assetgen 生成器接入）
+  comfyui-setup/      ComfyUI 部署工具链（仓库外安装编排，本体/权重不入库）
 tests/
   framework/          foundation 测试与契约类型检查
 openspec/             OpenSpec 变更（changes / specs / decisions）
