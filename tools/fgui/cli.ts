@@ -6,6 +6,7 @@ import { run as runSprite } from "./commands/sprite";
 import { run as runRegisterComponent } from "./commands/register-component";
 import { run as runGenConstants } from "./commands/gen-constants";
 import { run as runGenTypes } from "./commands/gen-types";
+import { run as runSpecCheck } from "./commands/spec-check";
 
 interface Command {
     readonly run: (argv: readonly string[]) => Promise<number>;
@@ -44,6 +45,10 @@ const COMMANDS: Record<string, Command> = {
     "gen-types": {
         run: runGenTypes,
         usage: "gen-types [--project <工程目录>] 生成 exported 组件类型描述（字段/节点名联合/interface）到 assets/ui/generated/",
+    },
+    "spec-check": {
+        run: runSpecCheck,
+        usage: "spec-check --spec <spec.json> 校验 UI spec JSON（字号档位/类型决策/禁令/命名）",
     },
 };
 

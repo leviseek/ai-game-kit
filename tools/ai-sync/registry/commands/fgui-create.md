@@ -12,21 +12,22 @@ agent: fgui-designer
 1. 读取用户需求（设计稿图片路径 或 纯文字描述）。若是图片，先读图提取 UI 结构。
 2. 确认目标包名（默认 `Demo`）。需要时可运行 `bun run fgui list-resources --package <包名>` 查看现有资源。
 
-## 阶段 2：产出 UI spec
+## 阶段 2：产出 UI spec（结构化 JSON）
 
-3. 输出布局树 spec（从底到顶）：对象名、**组件类型（含选择依据）**、坐标、尺寸、字号（档位表）、颜色、引用资源。交互区域必须按 fgui-designer 的"组件类型决策"表选择组件（Button/Slider/ProgressBar/ComboBox/List/TextInput 等），禁止退化成裸 image+text。信息缺失列入"待确认项"，禁止臆造。
+3. 输出**结构化 spec.json**（从底到顶的布局树）：字段含 `canvas`（宽高）、`package`（目标包）、`objects`（name/type/xy/size/fontSize/color/src/interactive/componentType/rationale/relations）、`pending`（待确认项）。交互区域必须按 fgui-designer 的"组件类型决策"表选择组件（Button/Slider/ProgressBar/ComboBox/List/TextInput 等）并标记 `interactive: true` + `componentType` + `rationale`，禁止退化成裸 image+text。信息缺失列入 `pending`，禁止臆造。
 4. **先查库**：涉及 Button/ComboBox/List/TextInput 时，先 `bun run fgui list-resources --package Basic` + 按需 `read-component`，能嵌套引用现成组件就不从零生成。
+5. **机器校验**：运行 `bun run fgui spec-check --spec <spec.json>`（硬规则：字号 ∈ 档位表、interactive 决策必填、graph/transition 禁令、relation sidePair ≤ 2、语义化命名）。**有 error 必须修正后重跑直到通过，才能进入 XML 阶段**；warning 可接受但需说明。
 
 ## 阶段 3：生成 XML
 
-5. 基于 spec 输出组件 XML。id 唯一；图片 src 必须是 package.xml 已登记资源 id（先跑 `list-resources` 确认，不得编造）。**禁止使用 `<graph>` 组件**。交互组件必须带完整结构（controller 骨架 + 命名约定子节点 + 扩展节点），参数从模板抄。**需要自适应的布局必须加 `<relation>`**（铺满/居中/贴底/随兄弟），不要只用死坐标；单个 relation 的 sidePair 最多 2 项，禁止凭相似性叠加第 3 项。**禁止手写 transition**。子元件 name 语义化（txt_/btn_/bg_/bar_ 前缀）。
-6. 若需新图片资源：给出 ASCII 画布 + 调色板，用 `bun run fgui sprite --package <包名> --name <文件.png> --palette <调色板> [--prefix <前缀>] --art <多行ASCII> [--scale9grid x,y,width,height] --path <目录>` 生成并登记。**颜色必须 ⊆ `ui/demo/palette.json` 允许集合**。
-7. 新组件登记用 `bun run fgui register-component --package <包名> --name <组件文件.xml> [--path <子目录>] [--prefix <前缀>]`（幂等，已存在返回原 id），**禁止手改 package.xml 登记条目**。`--prefix` 决定登记 id 的前缀续编（如 `--prefix hp` → `hp000/hp001`）；sprite 与 register 都以登记的 id 为准（`next-id` 仅作预览）。
-8. 将组件 XML 写入 `ui/demo/assets/<包名>/` 下（可复用组件建议放 `component/`，整屏 View 放包根）。
+6. 基于通过校验的 spec.json 输出组件 XML。id 唯一；图片 src 必须是 package.xml 已登记资源 id（先跑 `list-resources` 确认，不得编造）。**禁止使用 `<graph>` 组件**。交互组件必须带完整结构（controller 骨架 + 命名约定子节点 + 扩展节点），参数从模板抄。**需要自适应的布局必须加 `<relation>`**（铺满/居中/贴底/随兄弟），不要只用死坐标；单个 relation 的 sidePair 最多 2 项，禁止凭相似性叠加第 3 项。**禁止手写 transition**。子元件 name 语义化（txt_/btn_/bg_/bar_ 前缀）。
+7. 若需新图片资源：给出 ASCII 画布 + 调色板，用 `bun run fgui sprite --package <包名> --name <文件.png> --palette <调色板> [--prefix <前缀>] --art <多行ASCII> [--scale9grid x,y,width,height] --path <目录>` 生成并登记。**颜色必须 ⊆ `ui/demo/palette.json` 允许集合**。
+8. 新组件登记用 `bun run fgui register-component --package <包名> --name <组件文件.xml> [--path <子目录>] [--prefix <前缀>]`（幂等，已存在返回原 id），**禁止手改 package.xml 登记条目**。`--prefix` 决定登记 id 的前缀续编（如 `--prefix hp` → `hp000/hp001`）；sprite 与 register 都以登记的 id 为准（`next-id` 仅作预览）。
+9. 将组件 XML 写入 `ui/demo/assets/<包名>/` 下（可复用组件建议放 `component/`，整屏 View 放包根）。
 
 ## 阶段 4：校验与交付
 
-9. 运行 `bun run fgui validate --package <包名> [--component <组件名>] --strict` 校验（含引用完整性 + 语义：controller 配对、扩展节点必备结构、relation sidePair 项数与合法性、image fill、fileName 一致、transition 禁令、graph 禁令）。有 error 必须修正后重跑直到通过。
-10. 在 FGUI 编辑器中刷新并打开目标组件，确认无读取错误；结尾记录该结果，并列出仍需人工确认的九宫格、字体、间距观感等事项。
+10. 运行 `bun run fgui validate --package <包名> [--component <组件名>] --strict` 校验（含引用完整性 + 语义：controller 配对、扩展节点必备结构、relation sidePair 项数与合法性、image fill、fileName 一致、transition 禁令、graph 禁令）。有 error 必须修正后重跑直到通过。
+11. 在 FGUI 编辑器中刷新并打开目标组件，确认无读取错误；结尾记录该结果，并列出仍需人工确认的九宫格、字体、间距观感等事项。
 
 **边界**：只产出/修改源 XML、PNG 与 package.xml 登记；发布 .bin 与 atlas 由用户用 FGUI 编辑器完成。

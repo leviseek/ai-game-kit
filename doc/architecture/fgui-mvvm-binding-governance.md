@@ -5,7 +5,10 @@
 ## 1. 自动绑定链
 
 ```text
-FGUI XML
+UI 需求（读图/文字）
+  -> UI spec.json（结构化布局树，interactive 类型决策 + 字号档位 + relation sidePair ≤ 2）
+  -> fgui spec-check：机器校验（字号档位/graph 与 transition 禁令/命名/类型决策），error 阻断
+  -> FGUI XML（由 fgui-designer 产出）
   -> gen-constants: 生成 ui://包/资源 URL 常量
   -> gen-types: 生成 Fields、Nodes 与能力接口形状
   -> @FUIBind / @FClick: 类定义期收集元数据
@@ -16,6 +19,8 @@ FGUI XML
 ```
 
 `FuiView` 采用包装器模式，不继承 `GComponent`。业务层只消费引擎无关能力接口，真实 FGUI 类型由 Cocos Adapter 隔离。
+
+spec.json 是 XML 生成前的机器可校验中间产物（`bun run fgui spec-check --spec <spec.json>`），双输入通道（设计稿截图 / 纯文字）都先收敛到同一结构化 spec 再映射 XML；spec-check 硬规则（字号档位、interactive 组件类型决策、graph/transition 禁令、relation sidePair ≤ 2、语义化命名）未通过不得进入 XML 阶段。
 
 ## 2. 生成物边界
 

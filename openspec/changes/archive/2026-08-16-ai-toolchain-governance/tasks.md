@@ -26,11 +26,11 @@
 
 ## 4. UI spec 结构化（tools/fgui spec-check）
 
-- [ ] 4.1 `tools/fgui/lib/spec.ts`：zod schema（画布/目标包/从底到顶布局树/`interactive` 组件类型决策/字号/颜色/资源引用/待确认项）+ 校验器（硬规则 error、软规则 warning 分级）
-- [ ] 4.2 `commands/spec-check.ts`：`bun run fgui spec-check --spec <spec.json>` CLI 接线，非档位字号提示最近档位
-- [ ] 4.3 `tools/fgui/test/spec.test.ts`：字号档位、类型决策缺失、graph/transition 禁令、relation sidePair>2、命名前缀各分支
-- [ ] 4.4 经 registry 更新 `.opencode/commands/fgui-create.md` 与 `fgui-edit.md`：增加「先产出 spec.json → `spec-check` 通过 → 再映射 XML」阶段（同步后 check 转绿）
-- [ ] 4.5 `doc/architecture/fgui-mvvm-binding-governance.md` 自动绑定链流程补 spec.json 前置步骤
+- [x] 4.1 `tools/fgui/lib/spec.ts`：UI spec 类型 + 校验器（画布/目标包/从底到顶布局树/`interactive` 组件类型决策/字号档位/颜色/资源引用/待确认项），硬规则 error（graph 与 transition 禁令、interactive 决策必填、非档位字号、relation sidePair>2、无语义命名）、软规则 warning（缺 src/字号/尺寸）。**实现偏差：tasks 原计划 zod，因 `.ai/instructions.md` 第 3 条禁止第三方运行时依赖，改手写类型化校验器（规则语义与 design D5 一致）**
+- [x] 4.2 `commands/spec-check.ts`：`bun run fgui spec-check --spec <spec.json>` CLI 接线，非档位字号提示最近档位（平局取小）
+- [x] 4.3 `tools/fgui/test/spec.test.ts`：字号档位（含最近档位）、类型决策缺失、graph/transition 禁令、relation sidePair>2、命名前缀、软规则各分支（18 用例）
+- [x] 4.4 经 registry 更新 `.opencode/commands/fgui-create.md` 与 `fgui-edit.md`：增加「先产出 spec.json → `spec-check` 通过 → 再映射 XML」阶段（fgui-edit 改为先产出目标状态 spec 再修改）；sync 后 check 转绿（50 个受管文件一致）
+- [x] 4.5 `doc/architecture/fgui-mvvm-binding-governance.md` 自动绑定链流程补 spec.json 前置步骤（双通道收敛 → spec-check → XML）
 
 ## 5. tools/creator 单元测试（纯函数层）
 
