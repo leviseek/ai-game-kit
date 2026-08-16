@@ -1,0 +1,13 @@
+{
+    "name": "comfyui-setup",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "description": "ComfyUI 部署工具链（仓库外安装，本工具只编排）：install/model/start/stop/status",
+    "bin": {
+        "comfyui-setup": "cli.ts"
+    },
+    "devDependencies": {
+        "@types/node": "^26.1.2"
+    }
+}

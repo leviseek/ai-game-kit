@@ -48,3 +48,4 @@
 - **内嵌文本禁令**：用户可见文本（`name`/`description` 等）**禁止内嵌中文或直接文案**，必须引用本地化 key（`auto_battle.<table>.<id>.<field>`，见 `assets/game-content/i18n/`）；新增 key 同时补 `zh-CN.json`（主语言权威）与各翻译表，再 `bun run content gen-i18n`。
 - **文案消费**：游戏侧展示层经 `assets/game-content/generated/i18n.ts` 的 `text.get(key)` 取文案（未知 key fail-fast）；领域层只承载 key 不消费文案。生成物禁止手改（freshness 由 `content validate` 强制）。
 - **生成器接入（外部资产）**：外部生成器产物（ComfyUI/音频模型等）一律经 `bun run content assetgen` 管线——`generate <生成器>` 落 staging → `validate` 契约校验（存在/签名/尺寸/时长/命名）通过 → `ingest --target assets/<子目录> --id <id>` 登记（`generated-assets.json`）。**禁止直接手放生成产物进 `assets/` 绕过校验**；像素 UI 资产继续走 `bun run fgui sprite` 主链路（见 FGUI 工作流）。
+- **ComfyUI 部署边界**：ComfyUI 本体/venv/模型权重（`.safetensors` 等）**永不入库**（体积与许可）；仓库只提供部署工具链 `tools/comfyui-setup`（`bun run comfyui-setup install → model → start → status`，配置在 `tools/comfyui-setup/comfyui.config.json`，见 ADR-042）。部署/启动/停止一律走该工具链，禁止在仓库内手装 ComfyUI 或提交权重。

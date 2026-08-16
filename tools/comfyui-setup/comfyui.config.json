@@ -1,0 +1,16 @@
+{
+    "installDir": "D:/dev/ComfyUI",
+    "port": 8188,
+    "venvName": "venv",
+    "torchIndexUrl": "https://download.pytorch.org/whl/cpu",
+    "pipIndexUrl": "https://pypi.tuna.tsinghua.edu.cn/simple",
+    "gitUrl": "https://github.com/comfyanonymous/ComfyUI.git",
+    "models": [
+        {
+            "id": "sd_turbo",
+            "url": "https://hf-mirror.com/stabilityai/sd-turbo/resolve/main/sd_turbo.safetensors",
+            "size": 5214561328,
+            "file": "models/checkpoints/sd_turbo.safetensors"
+        }
+    ]
+}
