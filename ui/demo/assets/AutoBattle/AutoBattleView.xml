@@ -54,6 +54,9 @@
       <Button title="x1" titleColor="#9FC8D6"/>
     </component>
 
+    <image id="ab_vs_bg" name="vs_bg" src="ai000" fileName="img/ai_vs_bg.png" xy="0,0" size="1280,720" alpha="0" touchable="false">
+      <relation target="" sidePair="width-width,height-height"/>
+    </image>
     <text id="ab_vs_left" name="vs_left" xy="100,360" size="200,64" pivot="0.5,0.5" anchor="true" alpha="0" touchable="false" fontSize="28" color="#A8F6FF" align="center" vAlign="middle" autoSize="none" singleLine="true" text="敌方队长"/>
     <text id="ab_vs_right" name="vs_right" xy="980,360" size="200,64" pivot="0.5,0.5" anchor="true" alpha="0" touchable="false" fontSize="28" color="#A8F6FF" align="center" vAlign="middle" autoSize="none" singleLine="true" text="己方队长"/>
     <text id="ab_vs_badge" name="vs_badge" xy="640,360" size="160,80" pivot="0.5,0.5" anchor="true" alpha="0" touchable="false" fontSize="40" color="#FFF0A0" align="center" vAlign="middle" autoSize="none" singleLine="true" strokeColor="#0B1830" text="VS"/>

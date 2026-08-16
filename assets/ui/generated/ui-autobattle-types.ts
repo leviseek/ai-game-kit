@@ -46,6 +46,7 @@ export const AutoBattleViewFields = {
     txt_result: "text",
     btn_restart: "button",
     btn_speed: "button",
+    vs_bg: "image",
     vs_left: "text",
     vs_right: "text",
     vs_badge: "text",
@@ -92,6 +93,7 @@ export interface IAutoBattleView {
     readonly _txt_result: ITypedTextNode;
     readonly _btn_restart: ITypedButtonNode;
     readonly _btn_speed: ITypedButtonNode;
+    readonly _vs_bg: ITypedImageNode;
     readonly _vs_left: ITypedTextNode;
     readonly _vs_right: ITypedTextNode;
     readonly _vs_badge: ITypedTextNode;

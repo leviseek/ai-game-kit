@@ -1,5 +1,6 @@
 import type { EffectNode } from "./EffectAnimator";
 import { text } from "../../../game-content/generated/i18n";
+import { VS_BG_NODE } from "./UiNodes";
 
 /** VS 进场配置：左右双方队长武将名 + 基础坐标 + 动画时长（参数化，供定制）。 */
 export interface VsEntranceConfig {
@@ -85,6 +86,8 @@ export function createVsEntranceTemplate(options: { node: (name: string) => Effe
             writeText("vs_left", text.getOr(config.left.name, config.left.name));
             writeText("vs_right", text.getOr(config.right.name, config.right.name));
             writeText("vs_badge", "VS");
+            // AI 生成背景（vs_bg）：VS 阶段铺满全屏，与文本同频淡入淡出
+            writeAlpha(VS_BG_NODE, 0);
             // 起点：从各自 baseXY.x 向屏外偏移、alpha 0（VS 大字淡入、武将随移动入场）
             writeXY("vs_left", config.left.baseXY.x - SIDE_OFFSET, config.left.baseXY.y);
             writeXY("vs_right", config.right.baseXY.x + SIDE_OFFSET, config.right.baseXY.y);
@@ -105,10 +108,11 @@ export function createVsEntranceTemplate(options: { node: (name: string) => Effe
                 writeAlpha("vs_left", 0);
                 writeAlpha("vs_right", 0);
                 writeAlpha("vs_badge", 0);
+                writeAlpha(VS_BG_NODE, 0);
                 started = false;
                 return;
             }
-            // 入场阶段：武将从两侧向 baseXY 收敛 + 淡入，VS 大字淡入
+            // 入场阶段：武将从两侧向 baseXY 收敛 + 淡入，VS 大字淡入，AI 背景同频浮现
             // easeOutBack：先快后慢、临近目标轻微回弹（overshoot 越过 baseXY 再收敛）
             const entranceProgress = clamp01((now - playStart) / config.durationMs);
             const eased = easeOutBack(entranceProgress);
@@ -119,6 +123,7 @@ export function createVsEntranceTemplate(options: { node: (name: string) => Effe
             writeAlpha("vs_left", entranceProgress);
             writeAlpha("vs_right", entranceProgress);
             writeAlpha("vs_badge", entranceProgress);
+            writeAlpha(VS_BG_NODE, entranceProgress);
             // 定格窗口 [playEnd, fadeStart)：入场完成后保持位置与 alpha（无额外写入）
             if (now >= fadeStart) {
                 // 淡出：alpha 线性降到 0
@@ -126,6 +131,7 @@ export function createVsEntranceTemplate(options: { node: (name: string) => Effe
                 writeAlpha("vs_left", 1 - fadeProgress);
                 writeAlpha("vs_right", 1 - fadeProgress);
                 writeAlpha("vs_badge", 1 - fadeProgress);
+                writeAlpha(VS_BG_NODE, 1 - fadeProgress);
             }
         },
         active() {
@@ -135,6 +141,7 @@ export function createVsEntranceTemplate(options: { node: (name: string) => Effe
             writeAlpha("vs_left", 0);
             writeAlpha("vs_right", 0);
             writeAlpha("vs_badge", 0);
+            writeAlpha(VS_BG_NODE, 0);
             started = false;
         },
     };

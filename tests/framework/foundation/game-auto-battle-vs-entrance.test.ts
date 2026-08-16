@@ -138,6 +138,34 @@ describe("Auto-battle VS entrance template", () => {
         expect(template.active()).toBe(false);
     });
 
+    test("AI 背景 vs_bg 与 VS 文本同频淡入淡出，reset 归零", () => {
+        const { template, ensureNode, advance } = makeTemplate();
+        const bg = ensureNode("vs_bg");
+        template.play();
+        expect(bg.alpha).toBe(0);
+        // 入场中段：背景随 entranceProgress 浮现
+        advance(900);
+        template.step();
+        expect(bg.alpha!).toBeGreaterThan(0);
+        // 入场结束：背景全显
+        advance(900);
+        template.step();
+        expect(bg.alpha).toBe(1);
+        // 定格窗口：保持全显
+        advance(300);
+        template.step();
+        expect(bg.alpha).toBe(1);
+        // 整体淡出结束：背景归零、active 结束
+        advance(600 + 300);
+        template.step();
+        expect(bg.alpha).toBe(0);
+        expect(template.active()).toBe(false);
+        // reset 幂等归零
+        template.play();
+        template.reset();
+        expect(bg.alpha).toBe(0);
+    });
+
     test("reset clears active state", () => {
         const { template, ensureNode } = makeTemplate();
         const left = ensureNode("vs_left");

@@ -63,6 +63,7 @@
     <component id="ab001" name="AutoBattleView.xml" path="/" exported="true"/>
     <image id="ab000" name="bg_battle.png" path="/img/" qualityOption="source" atlas="alone_npot" duplicatePadding="true"/>
     <image id="vshxd" name="debug_null_probe.png" path="/img/"/>
+    <image id="ai000" name="ai_vs_bg.png" path="/img/" qualityOption="source" duplicatePadding="true"/>
   </resources>
   <publish name=""/>
 </packageDescription>

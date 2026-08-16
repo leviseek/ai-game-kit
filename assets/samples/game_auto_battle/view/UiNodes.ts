@@ -19,6 +19,10 @@ export const RESTART_BUTTON_NODE = "btn_restart";
 /** 观战加速挡位按钮节点。 */
 export const SPEED_BUTTON_NODE = "btn_speed";
 
+// ---- VS 进场覆盖层节点 ----
+/** VS 阶段 AI 生成背景图节点（fgui-designer 登记，alpha 由 VsEntrance 驱动）。 */
+export const VS_BG_NODE = "vs_bg";
+
 // ---- 像素 HUD 动态视觉节点 ----
 /** 编队页背景扫描线节点。 */
 export const LINEUP_SCANLINES_NODE = "lineup_bg_scanlines";
