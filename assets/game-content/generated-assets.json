@@ -15,7 +15,9 @@
     "warrior_ai_idle": {
         "file": "assets/animations/auto-battle/warrior_ai_idle_00.png",
         "kind": "png",
-        "generator": "comfyui",
-        "paramsHash": "qt7art"
+        "generator": "comfyui+grabcut",
+        "paramsHash": "zlegip",
+        "width": 832,
+        "height": 1216
     }
 }

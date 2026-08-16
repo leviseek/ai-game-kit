@@ -1,0 +1,47 @@
+{
+  "1": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": { "ckpt_name": "DreamShaperXL_Turbo_v2_1.safetensors" }
+  },
+  "2": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "masterpiece, best quality, polished chibi anime game character, cute heroic Chinese Three Kingdoms general, Q-version warrior, full body, complete body, three-head-tall proportions, centered standing pose, both arms fully visible, both hands visible, both legs fully visible, both feet fully visible, complete ornate golden lamellar armor, red cape with clear silhouette, red sash, round heroic helmet with feather, holding a complete Chinese dao sword with visible handle and full blade, thick clean dark outline, cel shading, flat separated colors, simple shapes, high contrast, isolated character, plain solid deep blue background, no environment, no floor, no cast shadow, game asset, character sheet quality",
+      "clip": ["1", 1]
+    }
+  },
+  "3": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "photorealistic, realistic human proportions, realistic lighting, cinematic lighting, soft edges, painterly, watercolor, fog, glow, bloom, particles, scenery, landscape, battlefield, castle, floor, cast shadow, vignette, gradient background, low contrast, dark character, cropped, cut off head, cut off feet, missing hands, missing arms, missing legs, missing sword, incomplete blade, fused limbs, hidden limbs, extra limbs, extra fingers, deformed anatomy, blurry, low quality, watermark, text, logo",
+      "clip": ["1", 1]
+    }
+  },
+  "4": {
+    "class_type": "EmptyLatentImage",
+    "inputs": { "width": 1024, "height": 1536, "batch_size": 3 }
+  },
+  "5": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": ["1", 0],
+      "positive": ["2", 0],
+      "negative": ["3", 0],
+      "latent_image": ["4", 0],
+      "seed": 20260818,
+      "steps": 10,
+      "cfg": 2.5,
+      "sampler_name": "dpmpp_sde",
+      "scheduler": "karras",
+      "denoise": 1.0
+    }
+  },
+  "6": {
+    "class_type": "VAEDecode",
+    "inputs": { "samples": ["5", 0], "vae": ["1", 2] }
+  },
+  "7": {
+    "class_type": "SaveImage",
+    "inputs": { "filename_prefix": "warrior_source_1024x1536", "images": ["6", 0] }
+  }
+}

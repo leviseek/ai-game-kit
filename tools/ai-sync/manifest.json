@@ -21,6 +21,9 @@
         },
         "find-skills": {
             "targets": [".claude/skills/find-skills", ".qoder/skills/find-skills", ".agents/skills/find-skills"]
+        },
+        "chibi-warrior-asset-pipeline": {
+            "targets": [".codex/skills/chibi-warrior-asset-pipeline", ".cursor/skills/chibi-warrior-asset-pipeline", ".opencode/skills/chibi-warrior-asset-pipeline", ".qoder/skills/chibi-warrior-asset-pipeline", ".agents/skills/chibi-warrior-asset-pipeline"]
         }
     },
     "agents": {
