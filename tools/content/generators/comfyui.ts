@@ -74,7 +74,8 @@ export function createComfyUiGenerator(options: ComfyUiOptions = {}): GeneratorA
                     throw new Error(`ComfyUI /view 下载失败: ${image.filename}（HTTP ${response.status}）`);
                 }
                 const bytes = Buffer.from(await response.arrayBuffer());
-                const relPath = `${String(params.id ?? "comfyui")}_${index}.png`;
+                // 文件名：--name 覆盖（单产物序列帧定名）；缺省 `<id>_<index>`
+                const relPath = resolveArtifactName(params, index, images.length);
                 writeFileSync(join(stagingDir, relPath), bytes);
                 artifacts.push({ relPath, kind: "png" });
             }
@@ -103,6 +104,16 @@ function resolveWorkflow(params: GeneratorParams): unknown | null {
         }
     }
     return null;
+}
+
+/** 产物文件名解析：--name 单产物定名（如序列帧首帧 warrior_ai_idle_00）；
+ * 多产物时 name 带序号后缀（name_0/name_1）；缺省 `<id>_<index>`。 */
+function resolveArtifactName(params: GeneratorParams, index: number, imageCount: number): string {
+    const name = params.name;
+    if (typeof name === "string" && name.length > 0) {
+        return imageCount > 1 ? `${name}_${index}.png` : `${name}.png`;
+    }
+    return `${String(params.id ?? "comfyui")}_${index}.png`;
 }
 
 async function pollHistoryImages(endpoint: string, promptId: string, options: ComfyUiOptions): Promise<readonly ComfyImageRef[]> {

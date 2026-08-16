@@ -99,6 +99,16 @@ describe("comfyui 适配器（假服务器协议验证）", () => {
         expect(result.artifacts).toHaveLength(1);
     });
 
+    it("--name 单产物定名（序列帧首帧命名约定）", async () => {
+        const { server: srv, port } = await startFakeComfyUi();
+        server = srv;
+        const generator = createComfyUiGenerator({ endpoint: `http://127.0.0.1:${port}`, pollIntervalMs: 10, timeoutMs: 5000 });
+        const result = await generator.generate(staging, { workflow: '{"3":{"class_type":"KSampler"}}', id: "warrior_ai_idle", name: "warrior_ai_idle_00" });
+        expect(result.artifacts).toHaveLength(1);
+        expect(result.artifacts[0]!.relPath).toBe("warrior_ai_idle_00.png");
+        expect(existsSync(join(staging, "warrior_ai_idle_00.png"))).toBe(true);
+    });
+
     it("未配置端点抛明确错误", async () => {
         const generator = createComfyUiGenerator({ endpoint: undefined });
         delete process.env.COMFYUI_ENDPOINT;

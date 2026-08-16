@@ -58,6 +58,24 @@ describe("Auto-battle unit animation table", () => {
         }
     });
 
+    test("AI 静态帧条目（frameCount=1）每动画单帧，idle/gesture/walk 同立绘、attack/death 复用占位", () => {
+        const aiAnim: AutoBattleUnitAnimation = {
+            id: "warrior-ai",
+            bundle: "animations",
+            dir: "auto-battle",
+            frameCount: 1,
+            prefixByAnim: { idle: "warrior_ai_idle", gesture: "warrior_ai_idle", walk: "warrior_ai_idle", attack: "warrior_f_attack", death: "warrior_f_death" },
+        };
+        const frames = buildUnitAnimationFrames(aiAnim);
+        expect(frames.idle).toEqual(["bundle://animations/auto-battle/warrior_ai_idle_00"]);
+        expect(frames.walk[0]).toBe("bundle://animations/auto-battle/warrior_ai_idle_00");
+        expect(frames.attack[0]).toBe("bundle://animations/auto-battle/warrior_f_attack_00");
+        expect(frames.death[0]).toBe("bundle://animations/auto-battle/warrior_f_death_00");
+        for (const anim of ["idle", "gesture", "walk", "attack", "death"] as const) {
+            expect(frames[anim]).toHaveLength(1);
+        }
+    });
+
     test("unit animator plays frames from the injected animation table", () => {
         const nodes = new Map<string, RecordingNode>();
         const time = makeTime();

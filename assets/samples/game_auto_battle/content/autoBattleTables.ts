@@ -25,7 +25,7 @@ export const AUTO_BATTLE_BASE_ATTRIBUTES: readonly AutoBattleBaseAttributes[] = 
 
 /** 2. 武将单位表：静态定义，引用基础属性/技能/动画，不内联技能对象。 */
 export const AUTO_BATTLE_HEROES: readonly Record<string, unknown>[] = [
-    { id: "ally-tank", name: "auto_battle.heroes.ally-tank.name", position: "front", baseAttributeId: "tank", energyMax: 20, skillId: "ally-tank-skill", animationId: "warrior-f" },
+    { id: "ally-tank", name: "auto_battle.heroes.ally-tank.name", position: "front", baseAttributeId: "tank", energyMax: 20, skillId: "ally-tank-skill", animationId: "warrior-ai" },
     { id: "ally-mage", name: "auto_battle.heroes.ally-mage.name", position: "mid", baseAttributeId: "mage", energyMax: 20, skillId: "ally-mage-skill", animationId: "warrior-f" },
     { id: "ally-priest", name: "auto_battle.heroes.ally-priest.name", position: "back", baseAttributeId: "priest", energyMax: 20, skillId: "ally-priest-skill", animationId: "warrior-f" },
     { id: "enemy-tank", name: "auto_battle.heroes.enemy-tank.name", position: "front", baseAttributeId: "skeleton", energyMax: 20, skillId: "enemy-tank-skill", animationId: "warrior-m" },
@@ -48,6 +48,15 @@ export const AUTO_BATTLE_UNIT_ANIMATIONS: readonly AutoBattleUnitAnimation[] = [
         dir: "auto-battle",
         frameCount: 10,
         prefixByAnim: { idle: "warrior_m_idle", gesture: "warrior_m_gesture", walk: "warrior_m_walk", attack: "warrior_m_attack", death: "warrior_m_death" },
+    },
+    {
+        // AI 生成立绘静态帧：idle/gesture/walk 用 ComfyUI 立绘（frameCount=1 单帧静态），
+        // attack/death 复用现有占位帧（warrior_f_* 存在性由 content validate 校验）
+        id: "warrior-ai",
+        bundle: "animations",
+        dir: "auto-battle",
+        frameCount: 1,
+        prefixByAnim: { idle: "warrior_ai_idle", gesture: "warrior_ai_idle", walk: "warrior_ai_idle", attack: "warrior_f_attack", death: "warrior_f_death" },
     },
 ];
 

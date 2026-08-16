@@ -42,8 +42,8 @@ describe("Auto-battle table-driven config", () => {
         // 技能从 skillId 展开，不再内联
         expect(tank?.skill.id).toBe("ally-tank-skill");
         expect(tank?.skill.kind).toBe("damage");
-        // 动画 id 引用保留
-        expect(tank?.animationId).toBe("warrior-f");
+        // 动画 id 引用保留（ally-tank 走 AI 静态帧条目）
+        expect(tank?.animationId).toBe("warrior-ai");
     });
 
     test("multi-effect skills keep the full effects list", () => {

@@ -11,5 +11,11 @@
         "kind": "png",
         "generator": "comfyui",
         "paramsHash": "1cowd0h"
+    },
+    "warrior_ai_idle": {
+        "file": "assets/animations/auto-battle/warrior_ai_idle_00.png",
+        "kind": "png",
+        "generator": "comfyui",
+        "paramsHash": "1cdjz7m"
     }
 }
