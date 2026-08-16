@@ -29,6 +29,20 @@ export interface FieldSpec {
     readonly displayText?: boolean;
 }
 
+/** 资产引用声明：配置条目 → 文件系统资产（动画帧）的存在性校验。 */
+export interface AssetSpec {
+    /** 相对仓库根的 bundle 目录（assets/<bundleDir>，如 "animations"） */
+    readonly bundleDir: string;
+    /** 配置字段：bundle 内子目录（如 unit-animations 的 "dir"） */
+    readonly dirField: string;
+    /** 配置字段：文件前缀（字符串或 Record<动画名, 前缀>，如 unit-animations 的 "prefixByAnim"） */
+    readonly prefixField: string;
+    /** 配置字段：帧数（如 unit-animations 的 "frameCount"） */
+    readonly countField: string;
+    /** 允许的图片扩展名（不含点，默认 ["png"]） */
+    readonly imageExts?: readonly string[];
+}
+
 export interface TableSchema {
     /** 表名（跨表引用目标用；如 buffs/skills） */
     readonly table: string;
@@ -37,6 +51,8 @@ export interface TableSchema {
     /** 表形态：数组（条目列表）或对象（单配置） */
     readonly shape: "array" | "object";
     readonly fields: readonly FieldSpec[];
+    /** 可选：条目引用的资产帧文件存在性校验 */
+    readonly assets?: AssetSpec;
 }
 
 export interface ContentIssue {

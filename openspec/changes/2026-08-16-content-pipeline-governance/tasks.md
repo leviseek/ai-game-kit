@@ -28,3 +28,10 @@
 - [x] 4.3 `AGENTS.md` 新增「内容管线」章节（配置纪律/内嵌文本禁令/文案消费）；`README.md` 门禁命令表增补 `bun run content <command>`
 - [x] 4.4 全部门禁本地跑绿：typecheck（全链）/lint/全量 test（foundation 1308 + fgui + fgui-mcp + arch + ai-sync + creator + verify-ui-loop + content 17）/`content validate` 通过/`ai-sync check` 50 一致/`openspec validate --specs --strict` 42/42
 - [x] 4.5 ADR 检查：**已创建 ADR-040**（内容管线治理：配置 schema 校验 + i18n 链路 + 核心 fail-fast/展示层 getOr 容错语义 + 配置双源治理）
+
+## 5. 资源引用存在性校验（P0 二期）
+
+- [x] 5.1 `TableSchema.assets`（AssetSpec）声明：`{ bundleDir, dirField, prefixField, countField, imageExts? }`；`unit-animations` schema 挂载 assets 标记
+- [x] 5.2 `lib/asset-validation.ts`：`validateAssetFiles`（bundle/dir/帧文件存在性，prefix 支持单值或 prefixByAnim 对象）+ `validateExplosionFrames`（kind=explosion → fx_explosion_00..11，对齐 EXPLOSION_FRAME_URLS）；集成 `validateContent`
+- [x] 5.3 单测 7 用例（asset-validation.test.ts：帧齐全/缺失帧/子目录缺失/bundle 缺失/爆炸帧齐全/缺失/无条目 warning）；**实机缺帧检出演练**：删除 warrior_m_death_09.png → validate 报 `asset-frame-missing`（含动画名与期望路径）+ exit 1，恢复后转绿
+- [x] 5.4 ADR 检查：P0 二期决策并入 ADR-040（新增「资源引用存在性校验」决策，Non-Goals 同步移除该遗留项）

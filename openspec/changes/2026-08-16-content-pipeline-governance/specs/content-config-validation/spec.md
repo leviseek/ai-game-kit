@@ -49,3 +49,22 @@
 
 - **WHEN** `buffs.json` 的 `name` 为「攻击强化」而非 i18n key
 - **THEN** validate 报内嵌文本禁令 error，并提示迁移到 `assets/game-content/i18n/`
+
+### Requirement: 资源引用存在性校验
+
+系统 SHALL 校验配置声明的资产引用（如 `unit-animations` 表的 `dir`/`prefixByAnim`/`frameCount` → `assets/animations/<dir>/<prefix>_<NN>.png` 帧文件、`skill-effects` 的 `kind=explosion` → 爆炸序列帧）：bundle 目录、子目录与全部期望帧文件缺失 SHALL 报 error 并给出期望路径。
+
+#### Scenario: 动画帧缺失被拦截
+
+- **WHEN** `unit-animations.json` 的某条目 `frameCount=10` 但第 10 帧文件不存在
+- **THEN** validate 报 `asset-frame-missing` error，指明动画名与期望路径
+
+#### Scenario: 爆炸序列帧缺失被拦截
+
+- **WHEN** `skill-effects.json` 含 `kind=explosion` 但 `fx_explosion_11.png` 不存在
+- **THEN** validate 报缺失帧 error（对齐 `EXPLOSION_FRAME_URLS` 12 帧约定）
+
+#### Scenario: 帧文件齐全通过
+
+- **WHEN** 全部声明帧文件真实存在
+- **THEN** validate 报告通过

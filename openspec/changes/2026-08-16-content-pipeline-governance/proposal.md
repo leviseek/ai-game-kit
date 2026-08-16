@@ -12,7 +12,8 @@
   - **schema 校验**：每张表有 TS 定义的 schema（类型/必填/枚举/数值范围），手写校验器（对齐 `lib/spec.ts` 模式，`.ai/instructions.md` 第 3 条禁止新增运行时依赖）；
   - **跨表引用校验**：`effectId` 等跨表引用必须解析到目标表真实 id；
   - **id 唯一性**：表内 id 重复、跨表语义 id 冲突均 error；
-  - **内嵌可见文本禁令**：`name`/`description` 等用户可见字段不得内嵌中文（或任何非 key 值），必须引用本地化 key。
+  - **内嵌可见文本禁令**：`name`/`description` 等用户可见字段不得内嵌中文（或任何非 key 值），必须引用本地化 key；
+  - **资源引用存在性校验（P0 二期）**：`unit-animations` 的 `dir`/`prefixByAnim`/`frameCount` → `assets/animations/<dir>/<prefix>_<NN>.png` 帧文件、`skill-effects` 的 `kind=explosion` → 爆炸序列帧，缺失报 error。
 - **本地化管线**：
   - `assets/game-content/i18n/`：`zh-CN.json`（主语言）+ 各语言表；key 点分路径归口（如 `auto_battle.buffs.attack-up.name`）；
   - 生成类型化 TS 常量（对齐 `gen-constants` 模式）：`assets/game-content/generated/i18n.ts`（key 联合类型 + 主语言默认值），freshness 逐字校验；
@@ -37,4 +38,4 @@
 - `assets/game-content/`：新增 `i18n/`、`generated/`；既有 8 张表 `name` 字段迁移为 i18n key。
 - 游戏代码：`assets/samples/game_auto_battle/` 读取配置 `name` 处适配为 `TextRepo` 查找（默认回退主语言）。
 - 文档：`AGENTS.md`（字符串归口升级）、`README.md`（门禁命令表增补 `bun run content validate`）。
-- **Non-Goals（后续阶段，本 change 不做）**：配置引用的美术/动画**资源存在性**校验（P0 二期）；外部生成器接入（美术/音频，P2）；CI 恢复（另立 change）；框架层配置热更/版本化（`versioned-storage` 已覆盖存档域，不扩展）。
+- **Non-Goals（后续阶段，本 change 不做）**：外部生成器接入（美术/音频，P2）；CI 恢复（另立 change）；框架层配置热更/版本化（`versioned-storage` 已覆盖存档域，不扩展）。资源存在性校验已随 P0 二期纳入本 change。

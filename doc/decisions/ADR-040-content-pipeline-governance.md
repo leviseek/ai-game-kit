@@ -40,10 +40,14 @@ Accepted
 
 `autoBattleTables.ts` 镜像表的 `name` 与 JSON 同步迁移为 key（镜像 == JSON，由 `game-auto-battle-tables-consistency` 测试强制），领域层只承载 key 不消费文案，展示层经 `TextRepo` 取文案。
 
+### 5. 资源引用存在性校验（P0 二期）
+
+配置声明的资产帧文件必须真实存在（守护配置驱动帧表与资源不漂移）：`TableSchema.assets` 声明 `{ bundleDir, dirField, prefixField, countField, imageExts? }`，`validateAssetFiles` 按条目展开期望帧 `assets/<bundleDir>/<dir>/<prefix>_<NN>.<ext>`（`NN` 两位补零，0..frameCount-1），bundle/子目录/单帧缺失均 error；`skill-effects` 的 `kind=explosion` 走专项校验（`fx_explosion_00..11`，对齐 `EXPLOSION_FRAME_URLS` 12 帧约定）。帧 URL 生成语义（`bundle://<bundle>/<dir>/<prefix>_<NN>`）与文件模板一致，校验即守护一致性。
+
 ## Consequences
 
-- **tools/content**：新增 workspace + validate/gen-i18n 命令；8 表 schema；接入 typecheck/lint/test 门禁。
+- **tools/content**：新增 workspace + validate/gen-i18n 命令；8 表 schema；`schema.assets` 资源声明与资产帧校验；接入 typecheck/lint/test 门禁。
 - **内容数据**：8 张配置表 `name` 迁移为 i18n key；`assets/game-content/i18n/`（zh-CN + en-US）与 `generated/i18n.ts` 新增。
 - **游戏代码**：`samples/game_auto_battle` 展示层（view/presenter/lineup/VsEntrance/assembly/smoke）经 `text.getOr` 取文案；`autoBattleTables.ts` 镜像同步。
 - **文档**：AGENTS.md 新增「内容管线」章节（配置纪律/内嵌文本禁令/文案消费）；README 门禁表增补 `bun run content`。
-- **Non-Goals（记录，后续阶段）**：配置引用的美术/动画资源存在性校验（P0 二期）；外部生成器接入（美术/音频，P2）；CI 恢复（另立 change）；新增运行时依赖（无）。
+- **Non-Goals（记录，后续阶段）**：外部生成器接入（美术/音频，P2）；CI 恢复（另立 change）；音频/其他资产存在性按资源校验同模式扩展；新增运行时依赖（无）。

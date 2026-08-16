@@ -101,6 +101,7 @@ export const AUTO_BATTLE_SCHEMAS: readonly TableSchema[] = [
         table: "unit-animations",
         file: `${AUTO_BATTLE_DIR}/unit-animations.json`,
         shape: "array",
+        assets: { bundleDir: "animations", dirField: "dir", prefixField: "prefixByAnim", countField: "frameCount" },
         fields: [
             { key: "id", type: "id", idKey: true },
             { key: "bundle", type: "enum", enum: ["animations"] },

@@ -13,10 +13,10 @@
 - 零新增运行时依赖（`.ai/instructions.md` 第 3 条）。
 
 **Non-Goals:**
-- 配置引用的美术/动画**资源存在性**校验（P0 二期，另立 change）。
 - 外部生成器接入（美术/音频，P2）。
 - CI 恢复（另立 change）。
 - 不新增运行时依赖；不改 framework 核心（只增 `TextRepo` 到 game 公共层）。
+- 资源校验限动画帧（unit-animations/explosion）；音频/其他资产存在性后续按同模式扩展。
 
 ## Decisions
 
@@ -61,6 +61,17 @@
 - `tools/content` devDependency 仅 `@types/node`；生成/校验全用 node:fs 与手写逻辑。
 - 根 `package.json`：`content` script、`test:content` 接入 test 链、`typecheck` 链加 `tools/content/tsconfig.json`。
 - README 门禁命令表增补 `bun run content <command>`。
+
+### D6: 资产引用存在性校验（P0 二期）
+
+`schema.assets` 声明（TableSchema 可选字段）：`{ bundleDir, dirField, prefixField, countField, imageExts? }`。校验器 `validateAssetFiles` 按条目展开期望帧文件 `assets/<bundleDir>/<dir>/<prefix>_<NN>.<ext>`（`NN` 两位补零，0..frameCount-1）：
+
+- bundle 目录缺失 → `asset-bundle-missing`；子目录缺失 → `asset-dir-missing`；单帧缺失 → `asset-frame-missing`（含动画名与期望路径）。
+- `prefixField` 值支持字符串（单前缀）或对象（`prefixByAnim` 式多前缀，遍历对象值）。
+- `skill-effects` 的 `kind=explosion` 走专项 `validateExplosionFrames`：校验 `fx_explosion_00..11.png`（对齐 `view/animUrls.ts` 的 `EXPLOSION_FRAME_URLS` 12 帧约定）；无 explosion 条目给 warning 不阻断。
+- 文件扩展默认 `png`（可扩展）；`assets/` 下与 `.meta` 文件无关（Cocos 的 .meta 不参与帧存在性判断）。
+
+帧 URL 生成语义（`bundle://<bundle>/<dir>/<prefix>_<NN>`，见 animUrls.ts）与文件模板一致，校验即守护配置驱动的帧表与实际资源不漂移。
 
 ## Risks / Trade-offs
 

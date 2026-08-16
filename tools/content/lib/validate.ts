@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { validateAssetFiles, validateExplosionFrames } from "./asset-validation";
 import { isI18nKeyFormat, type I18nState } from "./i18n";
 import { ALL_SCHEMAS, type FieldSpec, type TableSchema, type ContentIssue } from "./schemas";
 
@@ -44,6 +45,15 @@ export function validateContent(projectRoot: string, schemas: readonly TableSche
             continue;
         }
         issues.push(...validateTable(schema, value, i18n, indexes));
+
+        // 资产引用存在性校验（schema.assets 声明的表 + skill-effects 爆炸帧专项）
+        const rows = Array.isArray(value) ? value : [];
+        if (schema.assets !== undefined) {
+            issues.push(...validateAssetFiles(projectRoot, schema, rows, deps));
+        }
+        if (schema.table === "skill-effects") {
+            issues.push(...validateExplosionFrames(projectRoot, rows, deps));
+        }
     }
 
     // 跨表引用解析（依赖全部表 id 索引就绪）
