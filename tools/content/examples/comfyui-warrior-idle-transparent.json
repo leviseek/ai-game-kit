@@ -1,0 +1,53 @@
+{
+  "1": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": { "ckpt_name": "sd_turbo.safetensors" }
+  },
+  "2": {
+    "class_type": "CLIPTextEncode",
+    "inputs": { "text": "fantasy warrior hero portrait, full body standing pose, game character key art, detailed armor, dramatic lighting, solid pure black background #000000, centered composition", "clip": ["1", 1] }
+  },
+  "3": {
+    "class_type": "CLIPTextEncode",
+    "inputs": { "text": "blurry, low quality, watermark, text, extra limbs, deformed, jpeg artifacts, gray background, gradient background", "clip": ["1", 1] }
+  },
+  "4": {
+    "class_type": "EmptyLatentImage",
+    "inputs": { "width": 512, "height": 512, "batch_size": 1 }
+  },
+  "5": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": ["1", 0],
+      "positive": ["2", 0],
+      "negative": ["3", 0],
+      "latent_image": ["4", 0],
+      "seed": 20260816,
+      "steps": 4,
+      "cfg": 2.0,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1.0
+    }
+  },
+  "6": {
+    "class_type": "VAEDecode",
+    "inputs": { "samples": ["5", 0], "vae": ["1", 2] }
+  },
+  "11": {
+    "class_type": "ImageToMask",
+    "inputs": { "image": ["6", 0], "channel": "red" }
+  },
+  "12": {
+    "class_type": "ThresholdMask",
+    "inputs": { "mask": ["11", 0], "value": 0.2 }
+  },
+  "10": {
+    "class_type": "JoinImageWithAlpha",
+    "inputs": { "image": ["6", 0], "alpha": ["12", 0] }
+  },
+  "7": {
+    "class_type": "SaveImage",
+    "inputs": { "filename_prefix": "assetgen", "images": ["10", 0] }
+  }
+}
