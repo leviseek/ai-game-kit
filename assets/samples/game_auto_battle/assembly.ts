@@ -1,5 +1,6 @@
 import type { GameFixture, IModule, IPlatformStorage, UiNavigator } from "../../framework";
 import { createGameFixture, createUiNavigator, createViewModelRenderer, type IViewModelNode } from "../../framework";
+import { text } from "../../game-content/generated/i18n";
 import type {
     AutoBattleBaseAttributes,
     AutoBattleBuff,
@@ -411,7 +412,10 @@ export function createAutoBattleFixture(options: AutoBattleFixtureOptions = {}):
                 // 按当前战斗状态派生 VM，事件日志经单位名解析后格式化；单位绑定
                 // 集随存活单位动态重建（静态标量 + 每单位一组动态绑定）
                 const state = battle.state;
-                const nameOf = (id: string): string => state.units.find((unit) => unit.id === id)?.name ?? id;
+                const nameOf = (id: string): string => {
+                    const unit = state.units.find((candidate) => candidate.id === id);
+                    return unit === undefined ? id : text.getOr(unit.name, unit.name);
+                };
                 const log = battle.events.map((event) => formatAutoBattleEvent(event, nameOf));
                 const vm = createAutoBattleViewModel(state, log, speed);
                 viewModelRenderer.setBindings(buildAutoBattleBindings(autoBattleCommands, vm));

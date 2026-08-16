@@ -25,12 +25,12 @@ export const AUTO_BATTLE_BASE_ATTRIBUTES: readonly AutoBattleBaseAttributes[] = 
 
 /** 2. 武将单位表：静态定义，引用基础属性/技能/动画，不内联技能对象。 */
 export const AUTO_BATTLE_HEROES: readonly Record<string, unknown>[] = [
-    { id: "ally-tank", name: "坦克", position: "front", baseAttributeId: "tank", energyMax: 20, skillId: "ally-tank-skill", animationId: "warrior-f" },
-    { id: "ally-mage", name: "法师", position: "mid", baseAttributeId: "mage", energyMax: 20, skillId: "ally-mage-skill", animationId: "warrior-f" },
-    { id: "ally-priest", name: "牧师", position: "back", baseAttributeId: "priest", energyMax: 20, skillId: "ally-priest-skill", animationId: "warrior-f" },
-    { id: "enemy-tank", name: "骷髅", position: "front", baseAttributeId: "skeleton", energyMax: 20, skillId: "enemy-tank-skill", animationId: "warrior-m" },
-    { id: "enemy-mage", name: "巫妖", position: "mid", baseAttributeId: "lich", energyMax: 20, skillId: "enemy-mage-skill", animationId: "warrior-m" },
-    { id: "enemy-shaman", name: "萨满", position: "back", baseAttributeId: "shaman", energyMax: 20, skillId: "enemy-shaman-skill", animationId: "warrior-m" },
+    { id: "ally-tank", name: "auto_battle.heroes.ally-tank.name", position: "front", baseAttributeId: "tank", energyMax: 20, skillId: "ally-tank-skill", animationId: "warrior-f" },
+    { id: "ally-mage", name: "auto_battle.heroes.ally-mage.name", position: "mid", baseAttributeId: "mage", energyMax: 20, skillId: "ally-mage-skill", animationId: "warrior-f" },
+    { id: "ally-priest", name: "auto_battle.heroes.ally-priest.name", position: "back", baseAttributeId: "priest", energyMax: 20, skillId: "ally-priest-skill", animationId: "warrior-f" },
+    { id: "enemy-tank", name: "auto_battle.heroes.enemy-tank.name", position: "front", baseAttributeId: "skeleton", energyMax: 20, skillId: "enemy-tank-skill", animationId: "warrior-m" },
+    { id: "enemy-mage", name: "auto_battle.heroes.enemy-mage.name", position: "mid", baseAttributeId: "lich", energyMax: 20, skillId: "enemy-mage-skill", animationId: "warrior-m" },
+    { id: "enemy-shaman", name: "auto_battle.heroes.enemy-shaman.name", position: "back", baseAttributeId: "shaman", energyMax: 20, skillId: "enemy-shaman-skill", animationId: "warrior-m" },
 ];
 
 /** 3. 单位动画表：单位 → 动画帧生成参数（替代 animUrls 硬编码映射）。 */
@@ -53,19 +53,19 @@ export const AUTO_BATTLE_UNIT_ANIMATIONS: readonly AutoBattleUnitAnimation[] = [
 
 /** 4. 技能表：多效果（damage/heal/buff）、目标选择、条件/动效引用。 */
 export const AUTO_BATTLE_SKILLS: readonly AutoBattleSkill[] = [
-    { id: "ally-tank-skill", name: "重击", kind: "damage", value: 12, energyCost: 20, target: "enemy-front", effects: [{ kind: "damage", value: 12 }], effectId: "smash-hit" },
-    { id: "ally-mage-skill", name: "火球", kind: "damage", value: 15, energyCost: 20, target: "enemy-front", effects: [{ kind: "damage", value: 15 }], effectId: "fireball-explosion" },
-    { id: "ally-priest-skill", name: "治疗", kind: "heal", value: 10, energyCost: 20, target: "ally-lowest-hp", effects: [{ kind: "heal", value: 10 }] },
-    { id: "enemy-tank-skill", name: "爪击", kind: "damage", value: 12, energyCost: 20, target: "enemy-front", effects: [{ kind: "damage", value: 12 }] },
-    { id: "enemy-mage-skill", name: "暗影", kind: "damage", value: 15, energyCost: 20, target: "enemy-front", effects: [{ kind: "damage", value: 15 }], effectId: "shadow-explosion" },
-    { id: "enemy-shaman-skill", name: "妖术", kind: "damage", value: 8, energyCost: 20, target: "enemy-front", effects: [{ kind: "damage", value: 8 }] },
+    { id: "ally-tank-skill", name: "auto_battle.skills.ally-tank-skill.name", kind: "damage", value: 12, energyCost: 20, target: "enemy-front", effects: [{ kind: "damage", value: 12 }], effectId: "smash-hit" },
+    { id: "ally-mage-skill", name: "auto_battle.skills.ally-mage-skill.name", kind: "damage", value: 15, energyCost: 20, target: "enemy-front", effects: [{ kind: "damage", value: 15 }], effectId: "fireball-explosion" },
+    { id: "ally-priest-skill", name: "auto_battle.skills.ally-priest-skill.name", kind: "heal", value: 10, energyCost: 20, target: "ally-lowest-hp", effects: [{ kind: "heal", value: 10 }] },
+    { id: "enemy-tank-skill", name: "auto_battle.skills.enemy-tank-skill.name", kind: "damage", value: 12, energyCost: 20, target: "enemy-front", effects: [{ kind: "damage", value: 12 }] },
+    { id: "enemy-mage-skill", name: "auto_battle.skills.enemy-mage-skill.name", kind: "damage", value: 15, energyCost: 20, target: "enemy-front", effects: [{ kind: "damage", value: 15 }], effectId: "shadow-explosion" },
+    { id: "enemy-shaman-skill", name: "auto_battle.skills.enemy-shaman-skill.name", kind: "damage", value: 8, energyCost: 20, target: "enemy-front", effects: [{ kind: "damage", value: 8 }] },
 ];
 
 /** 5. buff 表：增益/减益定义（攻击/防御加成、持续伤害、治疗）。 */
 export const AUTO_BATTLE_BUFFS: readonly AutoBattleBuff[] = [
-    { id: "attack-up", name: "攻击强化", kind: "attack-up", value: 2, duration: 2 },
-    { id: "defense-up", name: "防御强化", kind: "defense-up", value: 2, duration: 2 },
-    { id: "poison", name: "中毒", kind: "damage-over-time", value: 2, duration: 3 },
+    { id: "attack-up", name: "auto_battle.buffs.attack-up.name", kind: "attack-up", value: 2, duration: 2 },
+    { id: "defense-up", name: "auto_battle.buffs.defense-up.name", kind: "defense-up", value: 2, duration: 2 },
+    { id: "poison", name: "auto_battle.buffs.poison.name", kind: "damage-over-time", value: 2, duration: 3 },
 ];
 
 /** 6. 技能动效表：技能 → 视觉动效意图（对接 HitFeedbackEffect）。 */

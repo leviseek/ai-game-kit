@@ -1,5 +1,6 @@
 import type { Binding } from "../../../framework";
 import type { AutoBattleEvent, AutoBattleSide, AutoBattleState, AutoBattleUnitState } from "../models";
+import { text } from "../../../game-content/generated/i18n";
 import { LOG_TEXT_NODE, RESTART_BUTTON_NODE, RESULT_PLATE_NODE, RESULT_TEXT_NODE, ROUND_TEXT_NODE, SPEED_BUTTON_NODE } from "./UiNodes";
 
 /** 战场六边形蜂窝晶格（1280×720 画布）：扁六边形（平顶）宽 140、高 80，正确蜂窝
@@ -102,7 +103,7 @@ export interface AutoBattleCommands {
 function toUnitView(unit: AutoBattleUnitState): AutoBattleUnitView {
     return {
         id: unit.id,
-        name: unit.name,
+        name: text.getOr(unit.name, unit.name),
         side: unit.side,
         index: unit.index,
         gridKey: unit.gridKey,

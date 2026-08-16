@@ -1,8 +1,8 @@
 [
-    { "id": "ally-tank-skill", "name": "重击", "kind": "damage", "value": 12, "energyCost": 20, "target": "enemy-front", "effects": [{ "kind": "damage", "value": 12 }], "effectId": "smash-hit" },
+    { "id": "ally-tank-skill", "name": "auto_battle.skills.ally-tank-skill.name", "kind": "damage", "value": 12, "energyCost": 20, "target": "enemy-front", "effects": [{ "kind": "damage", "value": 12 }], "effectId": "smash-hit" },
     {
         "id": "ally-mage-skill",
-        "name": "火球",
+        "name": "auto_battle.skills.ally-mage-skill.name",
         "kind": "damage",
         "value": 15,
         "energyCost": 20,
@@ -10,11 +10,11 @@
         "effects": [{ "kind": "damage", "value": 15 }],
         "effectId": "fireball-explosion"
     },
-    { "id": "ally-priest-skill", "name": "治疗", "kind": "heal", "value": 10, "energyCost": 20, "target": "ally-lowest-hp", "effects": [{ "kind": "heal", "value": 10 }] },
-    { "id": "enemy-tank-skill", "name": "爪击", "kind": "damage", "value": 12, "energyCost": 20, "target": "enemy-front", "effects": [{ "kind": "damage", "value": 12 }] },
+    { "id": "ally-priest-skill", "name": "auto_battle.skills.ally-priest-skill.name", "kind": "heal", "value": 10, "energyCost": 20, "target": "ally-lowest-hp", "effects": [{ "kind": "heal", "value": 10 }] },
+    { "id": "enemy-tank-skill", "name": "auto_battle.skills.enemy-tank-skill.name", "kind": "damage", "value": 12, "energyCost": 20, "target": "enemy-front", "effects": [{ "kind": "damage", "value": 12 }] },
     {
         "id": "enemy-mage-skill",
-        "name": "暗影",
+        "name": "auto_battle.skills.enemy-mage-skill.name",
         "kind": "damage",
         "value": 15,
         "energyCost": 20,
@@ -22,5 +22,5 @@
         "effects": [{ "kind": "damage", "value": 15 }],
         "effectId": "shadow-explosion"
     },
-    { "id": "enemy-shaman-skill", "name": "妖术", "kind": "damage", "value": 8, "energyCost": 20, "target": "enemy-front", "effects": [{ "kind": "damage", "value": 8 }] }
+    { "id": "enemy-shaman-skill", "name": "auto_battle.skills.enemy-shaman-skill.name", "kind": "damage", "value": 8, "energyCost": 20, "target": "enemy-front", "effects": [{ "kind": "damage", "value": 8 }] }
 ]

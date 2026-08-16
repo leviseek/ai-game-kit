@@ -1,0 +1,17 @@
+{
+    "auto_battle.buffs.attack-up.name": "Attack Up",
+    "auto_battle.buffs.defense-up.name": "Defense Up",
+    "auto_battle.buffs.poison.name": "Poison",
+    "auto_battle.heroes.ally-tank.name": "Tank",
+    "auto_battle.heroes.ally-mage.name": "Mage",
+    "auto_battle.heroes.ally-priest.name": "Priest",
+    "auto_battle.heroes.enemy-tank.name": "Skeleton",
+    "auto_battle.heroes.enemy-mage.name": "Lich",
+    "auto_battle.heroes.enemy-shaman.name": "Shaman",
+    "auto_battle.skills.ally-tank-skill.name": "Heavy Strike",
+    "auto_battle.skills.ally-mage-skill.name": "Fireball",
+    "auto_battle.skills.ally-priest-skill.name": "Heal",
+    "auto_battle.skills.enemy-tank-skill.name": "Claw",
+    "auto_battle.skills.enemy-mage-skill.name": "Shadow",
+    "auto_battle.skills.enemy-shaman-skill.name": "Hex"
+}

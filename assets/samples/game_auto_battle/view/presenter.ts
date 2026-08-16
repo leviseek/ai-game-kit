@@ -4,6 +4,7 @@ import type { GameFixture } from "../../../game/fixture/GameFixture";
 import type { GamePresenter } from "../../../game/lobby/presenter";
 import type { AutoBattleFixture } from "../assembly";
 import type { AutoBattleSide } from "../models";
+import { text } from "../../../game-content/generated/i18n";
 import { buildUnitAnimationFrames, WARRIOR_VARIANT_BY_SIDE, type WarriorAnim } from "./animUrls";
 import { projectHitFeedbackEvents } from "./effects";
 import { createEffectAnimator } from "./EffectAnimator";
@@ -122,7 +123,7 @@ export function createAutoBattlePresenter(fixture: GameFixture, node: (name: str
     function leaderOf(side: AutoBattleSide): string {
         const leaders = autoBattle.battle.state.units.filter((unit) => unit.side === side && unit.hp > 0).sort((a, b) => a.index - b.index);
         const leader = leaders[0];
-        return leader === undefined ? "" : leader.name;
+        return leader === undefined ? "" : text.getOr(leader.name, leader.name);
     }
 
     // VS 覆盖层：左右队长名 + VS 大字；时间源注入 GameClock（与阶段状态机同源）。
@@ -181,7 +182,10 @@ export function createAutoBattlePresenter(fixture: GameFixture, node: (name: str
 
     function render(): void {
         const state = autoBattle.battle.state;
-        const nameOf = (id: string): string => state.units.find((unit) => unit.id === id)?.name ?? id;
+        const nameOf = (id: string): string => {
+            const unit = state.units.find((candidate) => candidate.id === id);
+            return unit === undefined ? id : text.getOr(unit.name, unit.name);
+        };
         const log = autoBattle.battle.events.map((event) => formatAutoBattleEvent(event, nameOf));
         const vm = createAutoBattleViewModel(state, log, autoBattle.getSpeed());
         renderer.setBindings(buildAutoBattleBindings(autoBattleCommands, vm));

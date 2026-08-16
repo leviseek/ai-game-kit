@@ -2,6 +2,7 @@ import type { Binding } from "../../../framework";
 import { FORMATION_GRID_SIZE } from "../logic/grid";
 import { MAX_TEAM_SIZE } from "../logic/config";
 import type { AutoBattleHero, AutoBattleLineup } from "../models";
+import { text } from "../../../game-content/generated/i18n";
 
 /** 编队页布阵区格位呈现：占用英雄或空。 */
 export interface LineupSlotView {
@@ -55,12 +56,12 @@ export function createLineupEditorViewModel(heroes: readonly AutoBattleHero[], l
     return {
         candidates: heroes.map((hero) => ({
             heroId: hero.id,
-            heroName: hero.name,
+            heroName: text.getOr(hero.name, hero.name),
             deployed: deployed.has(hero.id),
         })),
         slots: lineup.slots.map((heroId, slot) => {
             const hero = heroId === null ? undefined : heroes.find((h) => h.id === heroId);
-            return { slot, heroId, heroName: hero?.name ?? "" };
+            return { slot, heroId, heroName: hero === undefined ? "" : text.getOr(hero.name, hero.name) };
         }),
         selectedSlot,
         deployedCount,

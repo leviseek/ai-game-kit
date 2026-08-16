@@ -1,5 +1,5 @@
 [
-    { "id": "attack-up", "name": "攻击强化", "kind": "attack-up", "value": 2, "duration": 2 },
-    { "id": "defense-up", "name": "防御强化", "kind": "defense-up", "value": 2, "duration": 2 },
-    { "id": "poison", "name": "中毒", "kind": "damage-over-time", "value": 2, "duration": 3 }
+    { "id": "attack-up", "name": "auto_battle.buffs.attack-up.name", "kind": "attack-up", "value": 2, "duration": 2 },
+    { "id": "defense-up", "name": "auto_battle.buffs.defense-up.name", "kind": "defense-up", "value": 2, "duration": 2 },
+    { "id": "poison", "name": "auto_battle.buffs.poison.name", "kind": "damage-over-time", "value": 2, "duration": 3 }
 ]

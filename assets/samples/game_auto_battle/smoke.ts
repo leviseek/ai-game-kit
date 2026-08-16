@@ -2,6 +2,7 @@ import { createAutoBattleFixture, toViewModelNode } from "./assembly";
 import { buildAutoBattleBindings, createAutoBattleViewModel, formatAutoBattleEvent, type AutoBattleViewModel } from "./view/view";
 import { SPEED_BUTTON_NODE } from "./view/UiNodes";
 import { createViewModelRenderer, type IViewModelNode } from "../../framework";
+import { text } from "../../game-content/generated/i18n";
 
 /**
  * 自动战斗冒烟的宿主接缝：boot 侧 UiHost 的结构性子集（运行时值传入，
@@ -135,7 +136,10 @@ export async function runAutoBattleSmoke(host: AutoBattleSmokeHost, ensureShared
 
     const render = (): void => {
         const state = fixture.battle.state;
-        const nameOf = (id: string): string => state.units.find((unit) => unit.id === id)?.name ?? id;
+        const nameOf = (id: string): string => {
+            const unit = state.units.find((candidate) => candidate.id === id);
+            return unit === undefined ? id : text.getOr(unit.name, unit.name);
+        };
         const log = fixture.battle.events.map((event) => formatAutoBattleEvent(event, nameOf));
         const vm = createAutoBattleViewModel(state, log, fixture.getSpeed());
         renderer.setBindings(

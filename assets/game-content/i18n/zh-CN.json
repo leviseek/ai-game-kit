@@ -1,0 +1,17 @@
+{
+    "auto_battle.buffs.attack-up.name": "攻击强化",
+    "auto_battle.buffs.defense-up.name": "防御强化",
+    "auto_battle.buffs.poison.name": "中毒",
+    "auto_battle.heroes.ally-tank.name": "坦克",
+    "auto_battle.heroes.ally-mage.name": "法师",
+    "auto_battle.heroes.ally-priest.name": "牧师",
+    "auto_battle.heroes.enemy-tank.name": "骷髅",
+    "auto_battle.heroes.enemy-mage.name": "巫妖",
+    "auto_battle.heroes.enemy-shaman.name": "萨满",
+    "auto_battle.skills.ally-tank-skill.name": "重击",
+    "auto_battle.skills.ally-mage-skill.name": "火球",
+    "auto_battle.skills.ally-priest-skill.name": "治疗",
+    "auto_battle.skills.enemy-tank-skill.name": "爪击",
+    "auto_battle.skills.enemy-mage-skill.name": "暗影",
+    "auto_battle.skills.enemy-shaman-skill.name": "妖术"
+}

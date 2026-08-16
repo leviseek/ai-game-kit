@@ -1,4 +1,5 @@
 import type { EffectNode } from "./EffectAnimator";
+import { text } from "../../../game-content/generated/i18n";
 
 /** VS 进场配置：左右双方队长武将名 + 基础坐标 + 动画时长（参数化，供定制）。 */
 export interface VsEntranceConfig {
@@ -81,8 +82,8 @@ export function createVsEntranceTemplate(options: { node: (name: string) => Effe
             fadeStart = playEnd + config.holdMs;
             fadeEnd = fadeStart + config.fadeMs;
 
-            writeText("vs_left", config.left.name);
-            writeText("vs_right", config.right.name);
+            writeText("vs_left", text.getOr(config.left.name, config.left.name));
+            writeText("vs_right", text.getOr(config.right.name, config.right.name));
             writeText("vs_badge", "VS");
             // 起点：从各自 baseXY.x 向屏外偏移、alpha 0（VS 大字淡入、武将随移动入场）
             writeXY("vs_left", config.left.baseXY.x - SIDE_OFFSET, config.left.baseXY.y);

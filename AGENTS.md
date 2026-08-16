@@ -41,3 +41,9 @@
 - **提交前 check**：改动 registry 或 manifest 后，提交前必须 `bun run ai-sync check` 通过（受管文件与 registry 逐字一致；`doctor` 可诊断漂移/空目录）。
 - **模型注册表**：subagent 的模型声明在 `registry/models.json`（角色 → primary/fallback），agent 文件 frontmatter 的 `model:` 由模板占位符渲染，禁止在 agent 正文散落裸模型名。primary 模型不可用时，委派前用 `bun run ai-sync verify-models` 确认可用性，并按 fallback（如有）覆写模型。
 - **UI spec 流程**：FGUI 创建/编辑先产出结构化 spec.json，运行 `bun run fgui spec-check --spec <spec.json>`（硬规则：字号档位、interactive 类型决策、graph/transition 禁令、relation sidePair ≤ 2、语义化命名），通过后才映射 XML（见 `/fgui-create`、`/fgui-edit`）。
+
+## 内容管线（配置 / 本地化）
+
+- **配置纪律**：`assets/game-content/**/*.json` 是内容数据，schema 由 `tools/content/lib/schemas/` 定义（新增表按模板补 schema 模块）。产出/修改配置后必须 `bun run content validate` 通过（schema/跨表引用/id 唯一/内嵌文本禁令 + i18n 完整性 + 生成物 freshness）。
+- **内嵌文本禁令**：用户可见文本（`name`/`description` 等）**禁止内嵌中文或直接文案**，必须引用本地化 key（`auto_battle.<table>.<id>.<field>`，见 `assets/game-content/i18n/`）；新增 key 同时补 `zh-CN.json`（主语言权威）与各翻译表，再 `bun run content gen-i18n`。
+- **文案消费**：游戏侧展示层经 `assets/game-content/generated/i18n.ts` 的 `text.get(key)` 取文案（未知 key fail-fast）；领域层只承载 key 不消费文案。生成物禁止手改（freshness 由 `content validate` 强制）。

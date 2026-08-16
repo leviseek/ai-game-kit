@@ -1,0 +1,13 @@
+{
+    "name": "content",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "description": "内容管线确定性工具：game-content 配置 schema/引用/文本校验与 i18n 生成",
+    "bin": {
+        "content": "cli.ts"
+    },
+    "devDependencies": {
+        "@types/node": "^26.1.2"
+    }
+}

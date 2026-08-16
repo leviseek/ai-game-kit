@@ -39,6 +39,7 @@ bun run test
 | `bun run verify`         | `typecheck` + `lint` + `test`，提交前完整门禁                                                                                        | 是         |
 | `bun run fgui <command>` | FGUI 确定性工具链（资源清单/校验/短 id/spec-check 等）                                                                                          | 否         |
 | `bun run ai-sync <command>` | AI 资产单一来源同步（registry → 各工具目录；check/sync/doctor/verify-models）                                                                                  | 否         |
+| `bun run content <command>` | 内容管线（game-content 配置 schema/引用/文本校验 + i18n 生成：validate/gen-i18n）                                                                                              | 否         |
 | `bun run verify:ui-loop --package <包名>` | FGUI 发布验证闭环：validate → 真实发布 → 三重证据 → 运行时冒烟（需 FGUI 编辑器 + Creator 本地环境；退出码 2 表示环境缺失）                                        | 是         |
 | `bun run ccc <command>`  | Creator 命令行工具（构建/smoke/性能检查等）                                                                                          | 是         |
 | `bun run arch`           | 启动本地架构图谱工作台（`.codegraph` 缺失/过期自动初始化，`--refresh` 强制重建）                                                                                    | 否         |
