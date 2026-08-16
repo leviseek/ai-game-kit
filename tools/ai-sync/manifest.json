@@ -1,0 +1,63 @@
+{
+    "version": 1,
+    "skills": {
+        "openspec-propose": {
+            "targets": [".codex/skills/openspec-propose", ".cursor/skills/openspec-propose", ".opencode/skills/openspec-propose", ".qoder/skills/openspec-propose"]
+        },
+        "openspec-apply-change": {
+            "targets": [".codex/skills/openspec-apply-change", ".cursor/skills/openspec-apply-change", ".opencode/skills/openspec-apply-change", ".qoder/skills/openspec-apply-change"]
+        },
+        "openspec-archive-change": {
+            "targets": [".codex/skills/openspec-archive-change", ".cursor/skills/openspec-archive-change", ".opencode/skills/openspec-archive-change", ".qoder/skills/openspec-archive-change"]
+        },
+        "openspec-explore": {
+            "targets": [".codex/skills/openspec-explore", ".cursor/skills/openspec-explore", ".opencode/skills/openspec-explore", ".qoder/skills/openspec-explore"]
+        },
+        "openspec-sync-specs": {
+            "targets": [".codex/skills/openspec-sync-specs", ".cursor/skills/openspec-sync-specs", ".opencode/skills/openspec-sync-specs", ".qoder/skills/openspec-sync-specs"]
+        },
+        "openspec-update-change": {
+            "targets": [".codex/skills/openspec-update-change", ".cursor/skills/openspec-update-change", ".opencode/skills/openspec-update-change", ".qoder/skills/openspec-update-change"]
+        },
+        "find-skills": {
+            "targets": [".claude/skills/find-skills", ".qoder/skills/find-skills", ".agents/skills/find-skills"]
+        }
+    },
+    "agents": {
+        "fgui-designer": {
+            "targets": [".opencode/agent/fgui-designer.md"]
+        },
+        "fgui-ui-alchemist": {
+            "targets": [".opencode/agent/fgui-ui-alchemist.md"]
+        },
+        "visual-verifier": {
+            "targets": [".opencode/agent/visual-verifier.md"]
+        }
+    },
+    "commands": {
+        "fgui-create": {
+            "targets": [".opencode/commands/fgui-create.md"]
+        },
+        "fgui-edit": {
+            "targets": [".opencode/commands/fgui-edit.md"]
+        },
+        "opsx-propose": {
+            "targets": [".opencode/commands/opsx-propose.md", ".cursor/commands/opsx-propose.md", ".qoder/commands/opsx/propose.md"]
+        },
+        "opsx-apply": {
+            "targets": [".opencode/commands/opsx-apply.md", ".cursor/commands/opsx-apply.md", ".qoder/commands/opsx/apply.md"]
+        },
+        "opsx-archive": {
+            "targets": [".opencode/commands/opsx-archive.md", ".cursor/commands/opsx-archive.md", ".qoder/commands/opsx/archive.md"]
+        },
+        "opsx-explore": {
+            "targets": [".opencode/commands/opsx-explore.md", ".cursor/commands/opsx-explore.md", ".qoder/commands/opsx/explore.md"]
+        },
+        "opsx-sync": {
+            "targets": [".opencode/commands/opsx-sync.md", ".cursor/commands/opsx-sync.md", ".qoder/commands/opsx/sync.md"]
+        },
+        "opsx-update": {
+            "targets": [".opencode/commands/opsx-update.md", ".cursor/commands/opsx-update.md", ".qoder/commands/opsx/update.md"]
+        }
+    }
+}

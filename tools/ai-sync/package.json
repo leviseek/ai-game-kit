@@ -1,0 +1,13 @@
+{
+    "name": "ai-sync",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "description": "AI 协作资产单一来源工具：registry（skills/commands/agents）→ 各工具目录，sync/check/doctor",
+    "bin": {
+        "ai-sync": "cli.ts"
+    },
+    "devDependencies": {
+        "@types/node": "^26.1.2"
+    }
+}

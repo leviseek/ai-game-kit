@@ -2,20 +2,20 @@
 
 ## 1. tools/ai-sync 骨架与资产迁移
 
-- [ ] 1.1 创建 `tools/ai-sync` workspace（package.json/tsconfig.json，devDependency 仅 `@types/node`），根 package.json `workspaces` 登记并新增 `ai-sync` script（`bun ./tools/ai-sync/cli.ts`）
-- [ ] 1.2 创建 registry 目录结构（`registry/skills|commands|agents/`），用 `git mv` 把现有资产迁入单一真源：openspec-* 六个 skill（去重 `.codex/.cursor/.opencode/.qoder` 四处副本）、find-skills（`.claude/.qoder/.agents`）、fgui-designer/fgui-ui-alchemist/visual-verifier（`.opencode/agent`）、fgui-create/fgui-edit（`.opencode/commands`）、opsx-* 系列命令
-- [ ] 1.3 删除 `.claude/skills/magic-ui` 与 `.qoder/skills/magic-ui` 未跟踪空目录（无 SKILL.md 内容可保留，删除并在交付说明记录）
-- [ ] 1.4 编写 `manifest.json`：每个资产 id → 目标工具目录 + 目标文件名映射（含 `.qoder/commands/opsx/<cmd>.md` 与 `.cursor/commands/opsx-<cmd>.md` 的形态差异、`.ai/skills` 显式声明为空）
-- [ ] 1.5 `tools/ai-sync` 接入 `typecheck`/`lint` 门禁（tsconfig include + eslint 覆盖）
+- [x] 1.1 创建 `tools/ai-sync` workspace（package.json/tsconfig.json，devDependency 仅 `@types/node`），根 package.json `workspaces` 登记并新增 `ai-sync` script（`bun ./tools/ai-sync/cli.ts`）
+- [x] 1.2 创建 registry 目录结构（`registry/skills|commands|agents/`），用 `git mv` 把现有资产迁入单一真源：openspec-* 六个 skill（去重 `.codex/.cursor/.opencode/.qoder` 四处副本）、find-skills（`.claude/.qoder/.agents`）、fgui-designer/fgui-ui-alchemist/visual-verifier（`.opencode/agent`）、fgui-create/fgui-edit（`.opencode/commands`）、opsx-* 系列命令
+- [x] 1.3 删除 `.claude/skills/magic-ui` 与 `.qoder/skills/magic-ui` 未跟踪空目录（无 SKILL.md 内容可保留，删除并在交付说明记录）
+- [x] 1.4 编写 `manifest.json`：每个资产 id → 目标工具目录 + 目标文件名映射（含 `.qoder/commands/opsx/<cmd>.md` 与 `.cursor/commands/opsx-<cmd>.md` 的形态差异；`.ai/skills` 当前无资产，不声明即不受管，doctor 不报缺失）
+- [x] 1.5 `tools/ai-sync` 接入 `typecheck`/`lint` 门禁（tsconfig include + eslint 覆盖）
 
 ## 2. sync / check / doctor 实现
 
-- [ ] 2.1 `lib/manifest.ts`：manifest 加载与结构校验（重复资产 id、目标目录不存在、源文件缺失 → 结构化错误）
-- [ ] 2.2 `lib/sync.ts`：按 manifest 重算每个受管文件期望内容；`check` 与磁盘逐字对比（缺失/过期/多余均 error，语义对齐 `checkTypeFreshness`）
-- [ ] 2.3 `commands/check.ts` 与 `commands/sync.ts`：CLI 接线——`check` 非零退出并列出全部差异；`sync` 默认 dry-run 输出差异清单，`--apply` 才落盘
-- [ ] 2.4 `commands/doctor.ts`：union 报告（缺失/过期/多余/未受管空目录/registry 结构错误），每项带严重度与修复建议
-- [ ] 2.5 `test/`：manifest 解析、逐字对比、doctor 汇总、空目录扫描单测；根 `test` 链接入 `bun test ./tools/ai-sync/test`
-- [ ] 2.6 迁移后首次 `bun run ai-sync sync --apply` + `check` 转绿；typecheck/lint 通过
+- [x] 2.1 `lib/manifest.ts`：manifest 加载与结构校验（非法 id、重复 target、源文件缺失 → 结构化错误，`hasStructuralErrors` 短路语义）
+- [x] 2.2 `lib/sync.ts`：按 manifest 重算每个受管文件期望内容；`check` 与磁盘逐字对比（缺失/过期均 error、多余/空目录 warning，语义对齐 `checkTypeFreshness`）
+- [x] 2.3 `commands/check.ts` 与 `commands/sync.ts`：CLI 接线——`check` 非零退出并列出全部差异；`sync` 默认 dry-run 输出差异清单，`--apply` 才落盘
+- [x] 2.4 `commands/doctor.ts`：union 报告（缺失/过期/多余/未受管空目录/registry 结构错误），每项带严重度与修复建议；结构错误短路
+- [x] 2.5 `test/`：manifest 解析、逐字对比、doctor 汇总、空目录扫描单测（fixture 驱动，20 用例）；根 `test` 链接入 `bun test ./tools/ai-sync/test`
+- [x] 2.6 迁移后首次 `bun run ai-sync sync --apply`（50 个受管文件落盘）+ `check` 转绿；typecheck/lint 通过
 
 ## 3. 模型注册表与 verify-models
 
