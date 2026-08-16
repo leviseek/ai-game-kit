@@ -5,5 +5,11 @@
         "generator": "python-wave",
         "paramsHash": "1qunjst",
         "durationSec": 0.3
+    },
+    "battle_splash": {
+        "file": "assets/game-content/generated/battle_splash_0.png",
+        "kind": "png",
+        "generator": "comfyui",
+        "paramsHash": "1cowd0h"
     }
 }
