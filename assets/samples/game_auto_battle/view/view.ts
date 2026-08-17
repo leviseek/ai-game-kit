@@ -63,6 +63,17 @@ export function gridToXY(gridKey: string): { readonly x: number; readonly y: num
     return { x: center.x - UNIT_ANCHOR_X, y: center.y - UNIT_ANCHOR_Y };
 }
 
+export type AutoBattleEffectAnchor = "feet" | "torso" | "upper-body";
+
+/**
+ * UnitSlot 左上角 → UnitHitFeedbackCom 左上角。特效组件中心为 (70,55)，角色脚底
+ * 为 (60,236)；不同视觉语义必须使用身体锚点，禁止再次直接复用槽位原点。
+ */
+export function unitEffectAnchorXY(slotXY: { readonly x: number; readonly y: number }, anchor: AutoBattleEffectAnchor): { readonly x: number; readonly y: number } {
+    const localY = anchor === "feet" ? 236 : anchor === "torso" ? 140 : 116;
+    return { x: slotXY.x - 10, y: slotXY.y + localY - 55 };
+}
+
 /** 单位页面呈现数据：只承载节点需要的字段，不含战斗逻辑。 */
 export interface AutoBattleUnitView {
     readonly id: string;

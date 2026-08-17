@@ -12,7 +12,7 @@ import { createUnitAnimator } from "./UnitAnimator";
 import { createVsEntranceTemplate } from "./VsEntrance";
 import { createPixelHudAnimator } from "./PixelHudAnimator";
 import { BATTLE_SCANLINES_NODE } from "./UiNodes";
-import { buildAutoBattleBindings, createAutoBattleViewModel, formatAutoBattleEvent, gridToXY, type AutoBattleCommands, type AutoBattleViewModel } from "./view";
+import { buildAutoBattleBindings, createAutoBattleViewModel, formatAutoBattleEvent, gridToXY, unitEffectAnchorXY, type AutoBattleCommands, type AutoBattleViewModel } from "./view";
 
 /** VS 阶段子时长（ms）：入场（武将向中心+淡入）→ 定格 → 淡出。 */
 const VS_ENTRANCE_MS = 550;
@@ -108,6 +108,10 @@ export function createAutoBattlePresenter(fixture: GameFixture, node: (name: str
         homeXYOf: (unitId: string) => {
             const unit = autoBattle.battle.state.units.find((candidate) => candidate.id === unitId);
             return unit === undefined ? { x: 0, y: 0 } : gridToXY(unit.gridKey);
+        },
+        effectXYOf: (unitId, anchor) => {
+            const unit = autoBattle.battle.state.units.find((candidate) => candidate.id === unitId);
+            return unitEffectAnchorXY(unit === undefined ? { x: 0, y: 0 } : gridToXY(unit.gridKey), anchor);
         },
         gridXYOf: (gridKey: string) => gridToXY(gridKey),
     });

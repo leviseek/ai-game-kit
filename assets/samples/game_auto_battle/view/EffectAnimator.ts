@@ -1,4 +1,5 @@
 import type { HitFeedbackEffect } from "./effects";
+import type { AutoBattleEffectAnchor } from "./view";
 import { EXPLOSION_FRAME_URLS, FIREBALL_IMPACT_FRAME_URLS, FIREBALL_PROJECTILE_FRAME_URLS, HEAL_AURA_FRAME_URLS, PHYSICAL_HIT_FRAME_URLS, SLASH_ARC_FRAME_URLS } from "./animUrls";
 
 /** 特效节点接缝：动画器只消费 alpha/xy/url 写入，与渲染器绑定分离。 */
@@ -95,10 +96,12 @@ export function createEffectAnimator(options: {
     timeSource: () => number;
     /** 单位绝对坐标来源：presenter 注入从 state 按 unitId 查 gridToXY。 */
     homeXYOf: (unitId: string) => { readonly x: number; readonly y: number };
+    /** 特效语义锚点：脚底、胸腹或上半身；由 UnitSlot 几何统一换算。 */
+    effectXYOf: (unitId: string, anchor: AutoBattleEffectAnchor) => { readonly x: number; readonly y: number };
     /** 网格格 → 屏幕坐标：move/teleport 的 from/to 坐标派生。 */
     gridXYOf: (gridKey: string) => { readonly x: number; readonly y: number };
 }): AutoBattleEffectAnimator {
-    const { node, timeSource, homeXYOf, gridXYOf } = options;
+    const { node, timeSource, homeXYOf, effectXYOf, gridXYOf } = options;
     const activeAnimations: ActiveAnimation[] = [];
 
     function resolve(name: string): EffectNode | undefined {
@@ -170,7 +173,7 @@ export function createEffectAnimator(options: {
                 writeAlpha(`fx_float_${effect.unitId}`, 1);
             } else if (effect.kind === "hit-flash") {
                 // 闪白遮罩定位到目标单位坐标（组件实例初始位于容器原点，须显式定位）
-                const base = homeXYOf(effect.unitId);
+                const base = effectXYOf(effect.unitId, "upper-body");
                 writeXY(`fx_flash_${effect.unitId}`, base.x, base.y);
                 activeAnimations.push({
                     kind: "flash",
@@ -216,7 +219,7 @@ export function createEffectAnimator(options: {
             } else if (effect.kind === "explosion") {
                 // 爆炸：定位到目标单位坐标 + 播放首帧 + 淡入；后续 step 逐帧 setUrl
                 replaceEffectLane(effect.unitId);
-                const base = homeXYOf(effect.unitId);
+                const base = effectXYOf(effect.unitId, "torso");
                 writeXY(`fx_effect_${effect.unitId}`, base.x, base.y);
                 writeUrl(`fx_effect_${effect.unitId}`, EXPLOSION_FRAME_URLS[0]!);
                 writeAlpha(`fx_effect_${effect.unitId}`, 1);
@@ -230,7 +233,7 @@ export function createEffectAnimator(options: {
                 });
             } else if (effect.kind === "effect-sequence") {
                 replaceEffectLane(effect.unitId);
-                const base = homeXYOf(effect.unitId);
+                const base = effectXYOf(effect.unitId, effect.effect === "heal-aura" ? "feet" : "torso");
                 const urls = effect.effect === "physical-impact" ? [...SLASH_ARC_FRAME_URLS, ...PHYSICAL_HIT_FRAME_URLS] : HEAL_AURA_FRAME_URLS;
                 const frameMs = effect.effect === "physical-impact" ? PHYSICAL_IMPACT_FRAME_MS : HEAL_AURA_FRAME_MS;
                 writeXY(`fx_effect_${effect.unitId}`, base.x, base.y);
@@ -239,8 +242,8 @@ export function createEffectAnimator(options: {
                 activeAnimations.push({ kind: "sequence", unitId: effect.unitId, start: now, end: now + urls.length * frameMs, urls, frameMs });
             } else if (effect.kind === "projectile-effect") {
                 replaceEffectLane(effect.unitId);
-                const fromXY = homeXYOf(effect.sourceId);
-                const toXY = homeXYOf(effect.unitId);
+                const fromXY = effectXYOf(effect.sourceId, "upper-body");
+                const toXY = effectXYOf(effect.unitId, "upper-body");
                 const urls = [...FIREBALL_PROJECTILE_FRAME_URLS, ...FIREBALL_IMPACT_FRAME_URLS];
                 const flightMs = FIREBALL_PROJECTILE_FRAME_URLS.length * FIREBALL_PROJECTILE_FRAME_MS;
                 const impactMs = FIREBALL_IMPACT_FRAME_URLS.length * FIREBALL_IMPACT_FRAME_MS;

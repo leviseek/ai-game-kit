@@ -27,7 +27,16 @@ import { computeRate, createAutoBattleIdleRewardsModule, createIdleRewardsHandle
 import { createIdleRewardsStore, createIdleRewardsStoreModule, type IdleRewardStore } from "./logic/IdleRewardsStore";
 import type { IdleOfflineSettlement, IdleRewardState } from "./models";
 import { createAutoBattleUiModule } from "./view/ui";
-import { buildAutoBattleBindings, createAutoBattleViewModel, formatAutoBattleEvent, gridToXY, type AutoBattleCommands, type AutoBattleSpeed, type AutoBattleViewModel } from "./view/view";
+import {
+    buildAutoBattleBindings,
+    createAutoBattleViewModel,
+    formatAutoBattleEvent,
+    gridToXY,
+    unitEffectAnchorXY,
+    type AutoBattleCommands,
+    type AutoBattleSpeed,
+    type AutoBattleViewModel,
+} from "./view/view";
 import { createAutoBattleEffectsModule, projectHitFeedbackEvents, type HitFeedbackEffect } from "./view/effects";
 import { createEffectAnimator, type AutoBattleEffectAnimator } from "./view/EffectAnimator";
 import type { LineupEditorCommands } from "./view/lineup";
@@ -360,6 +369,10 @@ export function createAutoBattleFixture(options: AutoBattleFixtureOptions = {}):
         homeXYOf: (unitId: string) => {
             const unit = battle.state.units.find((candidate) => candidate.id === unitId);
             return unit === undefined ? { x: 0, y: 0 } : gridToXY(unit.gridKey);
+        },
+        effectXYOf: (unitId, anchor) => {
+            const unit = battle.state.units.find((candidate) => candidate.id === unitId);
+            return unitEffectAnchorXY(unit === undefined ? { x: 0, y: 0 } : gridToXY(unit.gridKey), anchor);
         },
         gridXYOf: (gridKey: string) => gridToXY(gridKey),
     });

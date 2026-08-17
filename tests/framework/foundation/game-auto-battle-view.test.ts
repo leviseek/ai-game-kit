@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { buildAutoBattleBindings, gridToXY, type AutoBattleUnitView, type AutoBattleViewModel } from "../../../assets/samples/game_auto_battle/view/view";
+import { buildAutoBattleBindings, gridToXY, unitEffectAnchorXY, type AutoBattleUnitView, type AutoBattleViewModel } from "../../../assets/samples/game_auto_battle/view/view";
 import { createViewModelRenderer, type IViewModelNode } from "../../../assets/framework";
 /** 记录型视图节点：记录 setter 调用，供断言绑定 diff 行为。 */
 interface RecordingNode {
@@ -123,6 +123,20 @@ describe("Auto-battle gridToXY mapping table", () => {
         expect(() => gridToXY("-1:0")).toThrow();
     });
 });
+
+describe("Auto-battle semantic effect anchors", () => {
+    const slot = { x: 400, y: 100 };
+
+    test("heal aura centers on the feet slot", () => {
+        expect(unitEffectAnchorXY(slot, "feet")).toEqual({ x: 390, y: 281 });
+    });
+
+    test("fireball targets upper body while physical impacts target torso", () => {
+        expect(unitEffectAnchorXY(slot, "upper-body")).toEqual({ x: 390, y: 161 });
+        expect(unitEffectAnchorXY(slot, "torso")).toEqual({ x: 390, y: 185 });
+    });
+});
+
 describe("Auto-battle dynamic unit bindings", () => {
     const commands = { restart: () => {}, cycleSpeed: () => {} };
 

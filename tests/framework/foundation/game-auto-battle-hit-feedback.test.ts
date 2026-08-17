@@ -4,6 +4,7 @@ import { createAutoBattleFixture, type AutoBattleFixture } from "../../../assets
 import type { AutoBattleEvent } from "../../../assets/samples/game_auto_battle/models";
 import { projectHitFeedbackEvents } from "../../../assets/samples/game_auto_battle/view/effects";
 import { createEffectAnimator, type EffectNode } from "../../../assets/samples/game_auto_battle/view/EffectAnimator";
+import { unitEffectAnchorXY } from "../../../assets/samples/game_auto_battle/view/view";
 
 /** 构造战斗事件：seq 递增，targetId/value 按需。 */
 function event(seq: number, type: AutoBattleEvent["type"], overrides: Partial<AutoBattleEvent> = {}): AutoBattleEvent {
@@ -141,6 +142,7 @@ describe("Auto-battle effect animator", () => {
             node: (name: string) => nodes.get(name),
             timeSource: time.timeSource,
             homeXYOf: () => ({ x: 840, y: 100 }),
+            effectXYOf: (_unitId, anchor) => unitEffectAnchorXY({ x: 840, y: 100 }, anchor),
             gridXYOf: (gridKey: string) => (gridKey === "0:0" ? { x: 100, y: 100 } : { x: 600, y: 100 }),
         });
         const ensureNode = (name: string): RecordingEffectNode => {
@@ -190,7 +192,7 @@ describe("Auto-battle effect animator", () => {
         const flashNode = ensureNode("fx_flash_a");
         animator.play([{ kind: "hit-flash", unitId: "a", seq: 0 }]);
         // 闪白遮罩定位到单位绝对坐标
-        expect(flashNode.xy).toEqual({ x: 840, y: 100 });
+        expect(flashNode.xy).toEqual({ x: 830, y: 161 });
 
         advance(60);
         animator.step();
@@ -236,6 +238,7 @@ describe("Auto-battle effect animator", () => {
             node: (name: string) => nodes.get(name),
             timeSource: time.timeSource,
             homeXYOf: () => ({ x: 0, y: 0 }),
+            effectXYOf: (_unitId, anchor) => unitEffectAnchorXY({ x: 0, y: 0 }, anchor),
             gridXYOf: () => ({ x: 0, y: 0 }),
         });
         // 节点只实现 setText 不实现 setAlpha：动画器跳过 alpha 写入不中断
@@ -318,7 +321,7 @@ describe("Auto-battle effect animator", () => {
         const fxNode = ensureNode("fx_effect_a");
         animator.play([{ kind: "explosion", unitId: "a", seq: 0 }]);
         // 播放即定位 + 首帧 + alpha=1
-        expect(fxNode.xy).toEqual({ x: 840, y: 100 });
+        expect(fxNode.xy).toEqual({ x: 830, y: 185 });
         expect(fxNode.url).toContain("fx_explosion_00");
         expect(fxNode.alpha).toBe(1);
 
@@ -351,6 +354,14 @@ describe("Auto-battle effect animator", () => {
         expect(animator.active()).toBe(0);
     });
 
+    test("heal aura is centered on the unit feet anchor", () => {
+        const { animator, ensureNode } = makeAnimator();
+        const fxNode = ensureNode("fx_effect_a");
+        animator.play([{ kind: "effect-sequence", unitId: "a", effect: "heal-aura", seq: 0 }]);
+        expect(fxNode.xy).toEqual({ x: 830, y: 281 });
+        expect(fxNode.url).toContain("fx_heal_aura_00");
+    });
+
     test("fireball flies from caster to target before impact frames", () => {
         const nodes = new Map<string, RecordingEffectNode>();
         const time = makeTime();
@@ -360,10 +371,11 @@ describe("Auto-battle effect animator", () => {
             node: (name: string) => nodes.get(name),
             timeSource: time.timeSource,
             homeXYOf: (id: string) => (id === "a" ? { x: 800, y: 100 } : { x: 200, y: 100 }),
+            effectXYOf: (id, anchor) => unitEffectAnchorXY(id === "a" ? { x: 800, y: 100 } : { x: 200, y: 100 }, anchor),
             gridXYOf: () => ({ x: 0, y: 0 }),
         });
         animator.play([{ kind: "projectile-effect", unitId: "e", sourceId: "a", effect: "fireball", seq: 0 }]);
-        expect(fxNode.xy).toEqual({ x: 800, y: 100 });
+        expect(fxNode.xy).toEqual({ x: 790, y: 161 });
         expect(fxNode.url).toContain("fx_fireball_projectile_00");
 
         time.advance(280);
@@ -373,7 +385,7 @@ describe("Auto-battle effect animator", () => {
 
         time.advance(280);
         animator.step();
-        expect(fxNode.xy).toEqual({ x: 200, y: 100 });
+        expect(fxNode.xy).toEqual({ x: 190, y: 161 });
         expect(fxNode.url).toContain("fx_fireball_impact_00");
     });
 
@@ -384,6 +396,7 @@ describe("Auto-battle effect animator", () => {
             node: (name: string) => nodes.get(name),
             timeSource: time.timeSource,
             homeXYOf: () => ({ x: 0, y: 0 }),
+            effectXYOf: (_unitId, anchor) => unitEffectAnchorXY({ x: 0, y: 0 }, anchor),
             gridXYOf: () => ({ x: 0, y: 0 }),
         });
         // 节点只实现 setXY 不实现 setUrl/setAlpha：爆炸写入被跳过不中断
