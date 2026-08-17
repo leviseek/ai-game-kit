@@ -32,11 +32,14 @@ export default tseslint.config(
             "**/*.d.ts",
         ],
     },
+    ...tseslint.configs.recommended,
+    // 自定义规则需放在 recommended 之后，否则会被 recommended 的默认值覆盖。
+    // 未使用变量降级为 warn（不再阻断）：Cocos 组件骨架常含未使用的 Node/property/deltaTime 占位。
     {
         files: ["**/*.ts", "**/*.mjs"],
         rules: {
             "@typescript-eslint/no-unused-vars": [
-                "error",
+                "warn",
                 {
                     argsIgnorePattern: "^_",
                     varsIgnorePattern: "^_",
@@ -45,7 +48,6 @@ export default tseslint.config(
             ],
         },
     },
-    ...tseslint.configs.recommended,
     {
         files: ["**/*.typecheck.ts"],
         rules: {
