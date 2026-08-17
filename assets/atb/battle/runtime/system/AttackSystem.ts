@@ -1,0 +1,38 @@
+import { BattleWorld } from "../BattleWorld";
+import { AttackStartedEvent, BattleEventType } from "../event/BattleEvent";
+import { BattleSystem } from "./BattleSystem";
+import { DamageSystem } from "./DamageSystem";
+
+export class AttackSystem extends BattleSystem {
+    constructor(
+        world: BattleWorld,
+        private damageSystem: DamageSystem,
+    ) {
+        super(world);
+    }
+
+    public attack(attackerId: string, targetId: string) {
+        const { world } = this;
+        const attacker = world.getUnit(attackerId);
+        if (!attacker) return;
+
+        const target = world.getUnit(targetId);
+        if (!target) return;
+
+        if (attacker.isDead() || target.isDead()) return;
+
+        world.events.emit({
+            type: BattleEventType.AttackStarted,
+            time: world.getTime(),
+
+            attackerId,
+            targetId,
+        } as AttackStartedEvent);
+
+        const rawDamage = attacker.calculateDamage();
+
+        this.damageSystem.dealDamage(attackerId, targetId, rawDamage);
+    }
+
+    public update(dt: number): void {}
+}

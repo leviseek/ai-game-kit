@@ -2,6 +2,8 @@ import { _decorator, Component, Node } from "cc";
 import { BattleWorld } from "../runtime/BattleWorld";
 import { BattleEventType, DamageEvent, UnitDiedEvent } from "../runtime/event/BattleEvent";
 import { AttackCommand } from "../runtime/command/AttackCommand";
+import { BattleCampType } from "../runtime/BattleUnit";
+import { TargetRelation, TargetType } from "../runtime/target/TargetQuery";
 const { ccclass } = _decorator;
 
 /**
@@ -11,9 +13,6 @@ const { ccclass } = _decorator;
 export class BattleSandbox extends Component {
     private static readonly TAG = "BattleSandbox";
     private world: BattleWorld = new BattleWorld();
-
-    private heroNode: Node | null = null;
-    private enemyNode: Node | null = null;
 
     start() {
         this.setupEventListeners();
@@ -41,11 +40,12 @@ export class BattleSandbox extends Component {
         });
     }
 
-    private async createBattle() {
+    private createBattle() {
         // 创建 Hero
-        const hero = await this.world.createUnit({
+        const hero = this.world.createUnit({
             id: "hero_001",
             name: "Hero",
+            camp: BattleCampType.Player,
             maxHp: 100,
             attack: 30,
             defense: 5,
@@ -55,29 +55,74 @@ export class BattleSandbox extends Component {
         }
 
         // 创建 Enemy
-        const enemy = await this.world.createUnit({
+        this.world.createUnit({
             id: "enemy_001",
             name: "Enemy",
+            camp: BattleCampType.Enemy,
             maxHp: 120,
             attack: 20,
             defense: 3,
         });
-        if (!enemy) {
-            return;
-        }
+
+        this.world.createUnit({
+            id: "enemy_002",
+            name: "Enemy",
+            camp: BattleCampType.Enemy,
+            maxHp: 90,
+            attack: 20,
+            defense: 3,
+        });
 
         console.log(`[${BattleSandbox.TAG}] Battle created.`);
+
+        // test target select
+        const targets = this.world.targetSelector.select(hero, {
+            relation: TargetRelation.Enemy,
+            type: TargetType.LowestHp,
+        });
+
+        console.log(
+            "[TargetSelector]",
+            targets.map((target) => target.id),
+        );
     }
 
     startBattle() {
         const { scheduler } = this.world;
-        scheduler.schedule(1.0, new AttackCommand(`hero_001`, "enemy_001"));
+        scheduler.schedule(
+            1.0,
+            new AttackCommand(`hero_001`, {
+                relation: TargetRelation.Enemy,
+                type: TargetType.LowestHp,
+                maxCount: 1,
+            }),
+        );
 
-        scheduler.schedule(2.0, new AttackCommand(`enemy_001`, "hero_001"));
+        scheduler.schedule(
+            2.0,
+            new AttackCommand(`enemy_001`, {
+                relation: TargetRelation.Enemy,
+                type: TargetType.LowestHp,
+                maxCount: 1,
+            }),
+        );
 
-        scheduler.schedule(3.0, new AttackCommand(`hero_001`, "enemy_001"));
+        scheduler.schedule(
+            3.0,
+            new AttackCommand(`hero_001`, {
+                relation: TargetRelation.Enemy,
+                type: TargetType.HighestHp,
+                maxCount: 1,
+            }),
+        );
 
-        scheduler.schedule(4.0, new AttackCommand(`hero_001`, "enemy_001"));
+        scheduler.schedule(
+            4.0,
+            new AttackCommand(`hero_001`, {
+                relation: TargetRelation.Enemy,
+                type: TargetType.All,
+            }),
+        );
 
         // test scheduler time scale
         // scheduler.setTimeScale(2);

@@ -1,4 +1,7 @@
-import { _decorator } from "cc";
+export enum BattleCampType {
+    Player = "Player",
+    Enemy = "Enemy",
+}
 
 /**
  * 战斗单位的数据
@@ -6,6 +9,7 @@ import { _decorator } from "cc";
 export interface BattleUnitData {
     id: string;
     name: string;
+    camp: BattleCampType;
 
     maxHp: number;
     attack: number;
@@ -18,6 +22,7 @@ export interface BattleUnitData {
 export class BattleUnit {
     public readonly id: string;
     public readonly name: string;
+    public readonly camp: BattleCampType;
 
     public readonly maxHp: number;
     public hp: number;
@@ -28,6 +33,7 @@ export class BattleUnit {
     constructor(data: BattleUnitData) {
         this.id = data.id;
         this.name = data.name;
+        this.camp = data.camp;
 
         this.maxHp = data.maxHp;
         this.hp = data.maxHp;
