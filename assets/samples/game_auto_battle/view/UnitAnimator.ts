@@ -4,6 +4,20 @@ import { WARRIOR_FRAME_URLS, type WarriorAnim, type WarriorVariant } from "./ani
 
 /** 缺省帧时长；表驱动配置缺失时用于旧资源回退。 */
 const DEATH_HOLD_MS = 900;
+/** 一次性动作末帧停留：让收招姿势可读，避免最后一帧立即跳回 idle。 */
+const END_HOLD_MS: Readonly<Record<WarriorAnim, number>> = {
+    idle: 0,
+    gesture: 120,
+    walk: 0,
+    run: 0,
+    attack: 240,
+    slash: 280,
+    hit: 160,
+    weak: 0,
+    stun: 0,
+    death: DEATH_HOLD_MS,
+    skillRaise: 120,
+};
 
 const DEFAULT_FRAME_MS: Readonly<Record<WarriorAnim, number>> = {
     idle: 80,
@@ -148,6 +162,7 @@ export function createUnitAnimator(options: {
             const elapsed = now - state.start;
             const duration = frameMsOf?.(id, state.anim) ?? DEFAULT_FRAME_MS[state.anim];
             const frame = Math.floor(elapsed / duration);
+            const playbackMs = urls.length * duration;
 
             if (state.anim === "idle" || state.anim === "weak" || state.anim === "stun") {
                 // 常驻循环状态，直到更高优先级意图覆盖。
@@ -156,7 +171,7 @@ export function createUnitAnimator(options: {
                 // death 一次性：播完隐去并移除状态。
                 if (frame < urls.length) {
                     writeFrame(id, urls, frame);
-                } else if (elapsed < urls.length * duration + DEATH_HOLD_MS) {
+                } else if (elapsed < playbackMs + DEATH_HOLD_MS) {
                     // 倒地末帧额外停留，避免逻辑死亡后角色只闪现一瞬。
                     writeFrame(id, urls, urls.length - 1);
                 } else {
@@ -167,6 +182,8 @@ export function createUnitAnimator(options: {
                 // 一次性动作播放一轮后衔接 nextAnim，未声明则回 idle。
                 if (frame < urls.length) {
                     writeFrame(id, urls, frame);
+                } else if (elapsed < playbackMs + END_HOLD_MS[state.anim]) {
+                    writeFrame(id, urls, urls.length - 1);
                 } else if (state.nextAnim !== undefined) {
                     switchTo(id, state.nextAnim, now);
                 } else {

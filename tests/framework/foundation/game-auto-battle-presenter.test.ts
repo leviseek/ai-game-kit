@@ -90,7 +90,7 @@ describe("Auto-battle action presentation window", () => {
     });
 
     test("skills reserve enough time for raise and slash chaining", () => {
-        expect(actionPresentationWindowMs([event("skill-damage")])).toBe(1600);
+        expect(actionPresentationWindowMs([event("skill-damage")])).toBe(2000);
     });
 
     test("death has highest priority even when emitted with attack events", () => {

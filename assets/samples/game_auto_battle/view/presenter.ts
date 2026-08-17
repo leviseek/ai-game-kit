@@ -24,7 +24,7 @@ const VS_PHASE_MS = VS_ENTRANCE_MS + VS_HOLD_MS + VS_FADE_MS;
 const ENTRANCE_PHASE_MS = 750;
 /** 单回合最低表现窗口；技能与死亡按事件类型获得更长的不可覆盖时间。 */
 const ACTION_PRESENTATION_MS = 900;
-const SKILL_PRESENTATION_MS = 1600;
+const SKILL_PRESENTATION_MS = 2000;
 const DEATH_PRESENTATION_MS = 2100;
 
 /** 根据一次逻辑 tick 新增的事件计算下一次行动前必须保留的表现窗口。 */

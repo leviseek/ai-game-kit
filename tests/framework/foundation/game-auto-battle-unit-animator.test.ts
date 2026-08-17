@@ -106,8 +106,13 @@ describe("Auto-battle unit animator", () => {
         animator.step();
         expect(allyNode.url).toBe(WARRIOR_FRAME_URLS.f.attack[1]);
 
-        // 推进足够时长越过 attack 全部 10 帧：回 idle 循环
-        time.advance(50 * 20);
+        // 全部攻击帧播完后保持收招末帧，不立即跳回 idle。
+        time.advance(50 * 9);
+        animator.step();
+        expect(allyNode.url).toBe(WARRIOR_FRAME_URLS.f.attack[9]);
+        expect(animator.active()).toBe(1);
+
+        time.advance(240);
         animator.step();
         expect(allyNode.url).toBe(WARRIOR_FRAME_URLS.f.idle[0]);
         expect(animator.active()).toBe(0);
@@ -122,9 +127,17 @@ describe("Auto-battle unit animator", () => {
 
         time.advance(70 * 10);
         animator.step();
+        expect(allyNode.url).toBe(WARRIOR_FRAME_URLS.f.skillRaise[9]);
+
+        time.advance(120);
+        animator.step();
         expect(allyNode.url).toBe(WARRIOR_FRAME_URLS.f.slash[0]);
 
         time.advance(60 * 10);
+        animator.step();
+        expect(allyNode.url).toBe(WARRIOR_FRAME_URLS.f.slash[9]);
+
+        time.advance(280);
         animator.step();
         expect(allyNode.url).toBe(WARRIOR_FRAME_URLS.f.idle[0]);
     });
