@@ -1,5 +1,7 @@
 import { _decorator, Component, Node } from "cc";
 import { BattleWorld } from "../runtime/BattleWorld";
+import { BattleEventType, DamageEvent, UnitDiedEvent } from "../runtime/event/BattleEvent";
+import { AttackCommand } from "../runtime/command/AttackCommand";
 const { ccclass, property } = _decorator;
 
 /**
@@ -14,10 +16,30 @@ export class BattleSandbox extends Component {
     private enemyNode: Node | null = null;
 
     start() {
+        this.setupEventListeners();
+
         this.createBattle();
+
+        this.startBattle();
     }
 
-    update(deltaTime: number) {}
+    update(dt: number) {
+        this.world.update(dt);
+    }
+
+    private setupEventListeners() {
+        this.world.events.on(BattleEventType.Damage, (evt) => {
+            const damageEvt = evt as DamageEvent;
+            console.log(`[Damage] ${damageEvt.attackerId} -> ${damageEvt.targetId} damage=${damageEvt.finalDamage}`);
+
+            // this.refreshUnitView(damageEvent.targetId);
+        });
+
+        this.world.events.on(BattleEventType.UnitDied, (evt) => {
+            const deathEvt = evt as UnitDiedEvent;
+            console.log(`[Death] ${deathEvt.unitId}`);
+        });
+    }
 
     private async createBattle() {
         // 创建 Hero
@@ -32,9 +54,6 @@ export class BattleSandbox extends Component {
             return;
         }
 
-        this.node.addChild(hero.node);
-        hero.node.setPosition(-150, 0);
-
         // 创建 Enemy
         const enemy = await this.world.createUnit({
             id: "enemy_001",
@@ -47,25 +66,32 @@ export class BattleSandbox extends Component {
             return;
         }
 
-        this.node.addChild(enemy.node);
-        enemy.node.setPosition(150, 0);
-
         console.log(`[${BattleSandbox.TAG}] Battle created.`);
+    }
 
+    startBattle() {
         this.scheduleOnce(() => {
-            this.world.attack(`hero_001`, "enemy_001");
+            const command = new AttackCommand(`hero_001`, "enemy_001");
+
+            command.execute(this.world);
         }, 1);
 
         this.scheduleOnce(() => {
-            this.world.attack(`enemy_001`, "hero_001");
+            const command = new AttackCommand(`enemy_001`, "hero_001");
+
+            command.execute(this.world);
         }, 2);
 
         this.scheduleOnce(() => {
-            this.world.attack(`enemy_001`, "hero_001");
+            const command = new AttackCommand(`hero_001`, "enemy_001");
+
+            command.execute(this.world);
         }, 3);
 
         this.scheduleOnce(() => {
-            this.world.attack(`hero_001`, "enemy_001");
+            const command = new AttackCommand(`hero_001`, "enemy_001");
+
+            command.execute(this.world);
         }, 4);
     }
 }

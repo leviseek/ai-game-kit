@@ -1,5 +1,4 @@
-import { _decorator, Component, Label, Node } from 'cc';
-const { ccclass, property } = _decorator;
+import { _decorator } from "cc";
 
 /**
  * 战斗单位的数据
@@ -16,59 +15,44 @@ export interface BattleUnitData {
 /**
  * 战斗单位
  */
-@ccclass("BattleUnit")
-export class BattleUnit extends Component {
-    public data!: BattleUnitData;
+export class BattleUnit {
+    public readonly id: string;
+    public readonly name: string;
 
-    public hp: number = 0;
+    public readonly maxHp: number;
+    public hp: number;
 
-    @property(Label)
-    nameLabel!: Label;
+    public readonly attack: number;
+    public readonly defense: number;
 
-    @property(Label)
-    hpLabel!: Label;
+    constructor(data: BattleUnitData) {
+        this.id = data.id;
+        this.name = data.name;
 
-    protected start(): void {
-        this.refreshView();
-    }
-
-    public setData(data: BattleUnitData) {
-        this.data = data;
-
+        this.maxHp = data.maxHp;
         this.hp = data.maxHp;
 
-        this.refreshView();
+        this.attack = data.attack;
+        this.defense = data.defense;
     }
 
     public isDead(): boolean {
         return this.hp <= 0;
     }
 
-    public takeDamage(rawDamage: number): number {
-        const damage = Math.max(1, rawDamage - this.data.defense);
+    public calculateDamage(): number {
+        return Math.max(1, this.attack);
+    }
 
+    public takeDamage(rawDamage: number): { before: number; after: number } {
+        const damage = Math.max(1, rawDamage - this.defense);
+
+        const before = this.hp;
         this.hp = Math.max(0, this.hp - damage);
 
-        this.refreshView();
-
-        return damage;
-    }
-
-    public attackTarget(target: BattleUnit) {
-        if (this.isDead() || target.isDead()) {
-            return 0;
-        }
-
-        return target.takeDamage(this.data.attack);
-    }
-
-    private refreshView() {
-        const {name, maxHp} = this.data || {};
-        const { hp } = this;
-
-        this.nameLabel.string = name || "";
-        this.hpLabel.string = `${hp}/${maxHp}`;
+        return {
+            before,
+            after: this.hp,
+        };
     }
 }
-
-

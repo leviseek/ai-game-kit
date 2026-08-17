@@ -1,6 +1,8 @@
 import { _decorator, instantiate } from "cc";
 import { BattleUnit, BattleUnitData } from "./BattleUnit";
 import { ATBUtils } from "../utils/ATBUtils";
+import { BattleEventBus } from "./event/BattleEventBus";
+import { AttackStartedEvent, BattleEventType, DamageEvent, UnitDiedEvent } from "./event/BattleEvent";
 
 /**
  * 战斗世界
@@ -10,21 +12,18 @@ export class BattleWorld {
     private static readonly TAG = "BattleWorld";
     private units: Map<string, BattleUnit> = new Map();
 
+    public readonly events = new BattleEventBus();
+
+    private time = 0;
+
     public async createUnit(data: BattleUnitData): Promise<BattleUnit | undefined> {
         if (this.units.has(data.id)) {
             console.error(`BattleUnit already exists: ${data.id}`);
             return undefined;
         }
 
-        const prefab = await ATBUtils.getPrefabByName("BattleUnit");
+        const unit = new BattleUnit(data);
 
-        if (!prefab) return undefined;
-
-        const node = instantiate(prefab);
-        const unit = node.getComponent(BattleUnit);
-        if (!unit) return undefined;
-
-        unit.setData(data);
         this.units.set(data.id, unit);
 
         return unit;
@@ -38,31 +37,66 @@ export class BattleWorld {
         return Array.from(this.units.values());
     }
 
-    public attack(attackerId: string, targetId: string): number {
+    public executeAttack(attackerId: string, targetId: string) {
         const attacker = this.units.get(attackerId);
         if (!attacker) {
             console.error(`Attacker not found: ${attackerId}`);
-            return 0;
+            return;
         }
 
         const target = this.units.get(targetId);
         if (!target) {
             console.error(`Attacker not found: ${attackerId}`);
-            return 0;
+            return;
         }
 
-        const damage = attacker.attackTarget(target);
+        if (attacker.isDead() || target.isDead()) {
+            return;
+        }
 
-        console.log(`[${BattleWorld.TAG}] ${attacker.name} attacks ${target.name}, damage=${damage}, targetHP=${target.hp}`);
+        const atkStartedEvt: AttackStartedEvent = { type: BattleEventType.AttackStarted, time: this.time, attackerId, targetId };
+
+        this.events.emit(atkStartedEvt);
+
+        const rawDamage = attacker.calculateDamage();
+
+        const finalDamage = Math.max(1, rawDamage - target.defense);
+
+        const result = target.takeDamage(finalDamage);
+
+        const damageEvt: DamageEvent = {
+            type: BattleEventType.Damage,
+            time: this.time,
+            attackerId,
+            targetId,
+            rawDamage,
+            finalDamage,
+            targetHpBefore: result.before,
+            targetHpAfter: result.after,
+        };
+        this.events.emit(damageEvt);
 
         if (target.isDead()) {
-            console.log(`[${BattleWorld.TAG}] ${target.name} is died.`);
+            const diedEvt: UnitDiedEvent = {
+                type: BattleEventType.UnitDied,
+                unitId: targetId,
+                time: this.time,
+            };
+            this.events.emit(diedEvt);
         }
+    }
 
-        return damage;
+    public update(dt: number) {
+        this.time += dt;
+    }
+
+    public getTime(): number {
+        return this.time;
     }
 
     public clear(): void {
         this.units.clear();
+        this.events.clear();
+        this.time = 0;
     }
 }
