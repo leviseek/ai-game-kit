@@ -23,6 +23,10 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)("Auto-battle speed control (clock 
         fixture.clock.advance(50);
         expect(fixture.clock.now()).toBe(450);
 
+        fixture.clock.setTimeScale(0.5);
+        fixture.clock.advance(100);
+        expect(fixture.clock.now()).toBe(500);
+
         await fixture.dispose();
     });
 
@@ -53,7 +57,7 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)("Auto-battle speed control (clock 
 });
 
 describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)("Auto-battle speed control (cycle command)", () => {
-    test("cycleSpeed cycles 1x -> 2x -> 3x -> 1x and syncs the clock", async () => {
+    test("cycleSpeed cycles 1x -> 2x -> 3x -> 0.5x -> 1x and syncs the clock", async () => {
         const createAutoBattleFixture = await loadCreateAutoBattleFixture();
         const fixture = createAutoBattleFixture();
         await fixture.start();
@@ -68,6 +72,10 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)("Auto-battle speed control (cycle 
         fixture.cycleSpeed();
         expect(fixture.getSpeed()).toBe(3);
         expect(fixture.clock.timeScale).toBe(3);
+
+        fixture.cycleSpeed();
+        expect(fixture.getSpeed()).toBe(0.5);
+        expect(fixture.clock.timeScale).toBe(0.5);
 
         fixture.cycleSpeed();
         expect(fixture.getSpeed()).toBe(1);
@@ -91,6 +99,10 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)("Auto-battle speed control (cycle 
         fixture.cycleSpeed();
         fixture.viewModel.render();
         expect(fixture.viewModel.node("btn_speed").text).toBe("x3");
+
+        fixture.cycleSpeed();
+        fixture.viewModel.render();
+        expect(fixture.viewModel.node("btn_speed").text).toBe("x0.5");
 
         await fixture.dispose();
     });
@@ -124,25 +136,30 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)("Auto-battle determinism across sp
         return { state, events };
     };
 
-    test("1x / 2x / 3x produce identical event sequences (except time) and results", async () => {
+    test("0.5x / 1x / 2x / 3x produce identical event sequences (except time) and results", async () => {
+        const half = await runToEnd(0.5);
         const one = await runToEnd(1);
         const two = await runToEnd(2);
         const three = await runToEnd(3);
 
-        // 终局结果一致：三种挡位均自然终局且结果相同（不钉死胜方）
+        // 终局结果一致：全部挡位均自然终局且结果相同（不钉死胜方）
         expect(one.state.result).not.toBeUndefined();
+        expect(half.state.result).toBe(one.state.result);
         expect(two.state.result).toBe(one.state.result);
         expect(three.state.result).toBe(one.state.result);
 
         // 事件数一致（时间戳随挡位变化，其余字段必须一致）
+        expect(half.events.length).toBe(one.events.length);
         expect(two.events.length).toBe(one.events.length);
         expect(three.events.length).toBe(one.events.length);
 
         const withoutTime = (events: readonly AutoBattleEvent[]) => events.map(({ time: _time, ...rest }) => rest);
+        expect(withoutTime(half.events)).toEqual(withoutTime(one.events));
         expect(withoutTime(two.events)).toEqual(withoutTime(one.events));
         expect(withoutTime(three.events)).toEqual(withoutTime(one.events));
 
         // 终局状态逐字段一致（time 只出现在事件，不进入状态）
+        expect(half.state).toEqual(one.state);
         expect(two.state).toEqual(one.state);
         expect(three.state).toEqual(one.state);
     });

@@ -245,10 +245,12 @@ export function createAutoBattlePresenter(fixture: GameFixture, node: (name: str
             return;
         }
         // 战斗阶段：模拟时钟以原始墙钟增量推进（倍率由 AutoBattleClock 内部
-        // 自乘一次），tick 次数随挡位线性匹配节奏，事件时间戳与实际行动一致
+        // 自乘一次）。0.5x 仍每帧检查一次行动条件，但模拟时间只推进一半；
+        // 2x/3x 保留额外 tick 机会，事件时间戳与实际行动一致。
         autoBattle.clock.advance(wallDelta);
         if (autoBattle.battle.state.phase === "fighting") {
-            for (let index = 0; index < autoBattle.getSpeed(); index += 1) {
+            const tickRepeats = Math.max(1, Math.floor(autoBattle.getSpeed()));
+            for (let index = 0; index < tickRepeats; index += 1) {
                 autoBattle.battle.tick();
             }
         }

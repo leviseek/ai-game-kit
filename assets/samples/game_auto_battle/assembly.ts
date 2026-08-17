@@ -33,8 +33,8 @@ import { createEffectAnimator, type AutoBattleEffectAnimator } from "./view/Effe
 import type { LineupEditorCommands } from "./view/lineup";
 import { createDefaultAutoBattleConfigContent } from "./content/autoBattleTables";
 
-/** 挡位循环次序：1x → 2x → 3x → 1x（与 presenter 共用同一循环语义）。 */
-const SPEED_CYCLE: readonly AutoBattleSpeed[] = [1, 2, 3];
+/** 挡位循环次序：保留原三档顺序，并在最高档后提供 0.5x 慢速观察。 */
+const SPEED_CYCLE: readonly AutoBattleSpeed[] = [1, 2, 3, 0.5];
 
 /**
  * 缺省自动战斗配置：由 7 张配置表（baseAttributes/heroes/unitAnimations/skills/
@@ -132,7 +132,7 @@ export interface AutoBattleFixture extends GameFixture {
         readonly skillEffects: readonly AutoBattleSkillEffectDef[];
         readonly skillConditions: readonly AutoBattleSkillCondition[];
     };
-    /** 当前观战加速挡位（1x/2x/3x），只改变驱动节拍。闭包方法而非 getter： */
+    /** 当前观战速度挡位（0.5x/1x/2x/3x），只改变驱动节拍。闭包方法而非 getter： */
     /** Cocos 转译 `...base` 展开时经 Object.assign 固化顶层 getter 为 data 值， */
     /** 方法引用不受影响，跨 Bun/Cocos 语义一致。 */
     getSpeed(): AutoBattleSpeed;

@@ -78,8 +78,8 @@ export interface AutoBattleUnitView {
     readonly energyMax: number;
 }
 
-/** 观战加速挡位：只改变驱动节拍，不改变战斗结果。 */
-export type AutoBattleSpeed = 1 | 2 | 3;
+/** 观战速度挡位：只改变驱动节拍，不改变战斗结果。 */
+export type AutoBattleSpeed = 0.5 | 1 | 2 | 3;
 
 /** 战场页 ViewModel：从战斗状态与事件日志派生的纯呈现数据。 */
 export interface AutoBattleViewModel {
@@ -95,7 +95,7 @@ export interface AutoBattleViewModel {
 /** 战场页绑定命令：重开与挡位切换，由调用方注入战斗/驱动操作。 */
 export interface AutoBattleCommands {
     restart(): void;
-    /** 循环切换加速挡位（1x → 2x → 3x → 1x）。 */
+    /** 循环切换速度挡位（1x → 2x → 3x → 0.5x → 1x）。 */
     cycleSpeed(): void;
 }
 
