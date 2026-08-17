@@ -2,7 +2,8 @@
  * model —— 从配置清单下载模型权重到 installDir（多线程分片，断点续传：已存在同大小跳过）。
  * 用法: comfyui-setup model [--id sd_turbo] [--threads 8]
  */
-import { join } from "node:path";
+import { mkdirSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { downloadFile } from "../lib/download";
 import type { ComfyUiConfig } from "../config";
 
@@ -15,6 +16,8 @@ export async function downloadModel(config: ComfyUiConfig, options: { id?: strin
     let failed = 0;
     for (const spec of specs) {
         const target = join(config.installDir, spec.file);
+        // 新模型类别（如 ipadapter）可能尚无目录，下载器只负责文件内容，不隐式创建父目录。
+        mkdirSync(dirname(target), { recursive: true });
         console.log(`[comfyui-setup] 下载模型 ${spec.id} → ${target}（${(spec.size / 1e6).toFixed(0)}MB，threads=${options.threads ?? 8}）`);
         try {
             const result = await downloadFile(spec.url, target, {

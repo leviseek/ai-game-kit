@@ -1,6 +1,8 @@
 import type { IConfigKey, IModule } from "../../../framework";
 import { configArray, configNumber, configObject, createConfigTable, type IConfigTable } from "../../../framework";
+import { AUTO_BATTLE_ANIM_NAMES } from "../models";
 import type {
+    AutoBattleAnimName,
     AutoBattleBaseAttributes,
     AutoBattleBuff,
     AutoBattleHero,
@@ -285,15 +287,9 @@ function readUnitAnimations(table: IConfigTable): readonly AutoBattleUnitAnimati
             throw new Error(`auto-battle config: unitAnimations entry at index ${index} must be an object`);
         }
         const record = entry as Record<string, unknown>;
-        const prefixByAnim = record.prefixByAnim;
-        const validPrefixes =
-            prefixByAnim !== null &&
-            typeof prefixByAnim === "object" &&
-            typeof (prefixByAnim as Record<string, unknown>).idle === "string" &&
-            typeof (prefixByAnim as Record<string, unknown>).gesture === "string" &&
-            typeof (prefixByAnim as Record<string, unknown>).walk === "string" &&
-            typeof (prefixByAnim as Record<string, unknown>).attack === "string" &&
-            typeof (prefixByAnim as Record<string, unknown>).death === "string";
+        const prefixRaw = record.prefixByAnim;
+        const countRaw = record.frameCountByAnim;
+        const frameMsRaw = record.frameMsByAnim;
         if (
             typeof record.id !== "string" ||
             record.id.length === 0 ||
@@ -304,22 +300,48 @@ function readUnitAnimations(table: IConfigTable): readonly AutoBattleUnitAnimati
             typeof record.frameCount !== "number" ||
             !Number.isFinite(record.frameCount) ||
             record.frameCount <= 0 ||
-            !validPrefixes
+            prefixRaw === null ||
+            typeof prefixRaw !== "object" ||
+            countRaw === null ||
+            typeof countRaw !== "object" ||
+            frameMsRaw === null ||
+            typeof frameMsRaw !== "object"
         ) {
             throw new Error(`auto-battle config: unitAnimations entry at index ${index} has an invalid shape`);
+        }
+        const prefixes = prefixRaw as Record<string, unknown>;
+        const counts = countRaw as Record<string, unknown>;
+        const frameTimes = frameMsRaw as Record<string, unknown>;
+        for (const anim of AUTO_BATTLE_ANIM_NAMES) {
+            if (
+                typeof prefixes[anim] !== "string" ||
+                (prefixes[anim] as string).length === 0 ||
+                typeof counts[anim] !== "number" ||
+                !Number.isFinite(counts[anim]) ||
+                (counts[anim] as number) <= 0 ||
+                typeof frameTimes[anim] !== "number" ||
+                !Number.isFinite(frameTimes[anim]) ||
+                (frameTimes[anim] as number) <= 0
+            ) {
+                throw new Error(`auto-battle config: unitAnimations entry at index ${index} has invalid ${anim} animation metadata`);
+            }
+        }
+        const parsedPrefixes = {} as Record<AutoBattleAnimName, string>;
+        const parsedCounts = {} as Record<AutoBattleAnimName, number>;
+        const parsedFrameTimes = {} as Record<AutoBattleAnimName, number>;
+        for (const anim of AUTO_BATTLE_ANIM_NAMES) {
+            parsedPrefixes[anim] = prefixes[anim] as string;
+            parsedCounts[anim] = counts[anim] as number;
+            parsedFrameTimes[anim] = frameTimes[anim] as number;
         }
         return {
             id: record.id as string,
             bundle: record.bundle as string,
             dir: record.dir as string,
             frameCount: record.frameCount as number,
-            prefixByAnim: {
-                idle: (prefixByAnim as Record<string, unknown>).idle as string,
-                gesture: (prefixByAnim as Record<string, unknown>).gesture as string,
-                walk: (prefixByAnim as Record<string, unknown>).walk as string,
-                attack: (prefixByAnim as Record<string, unknown>).attack as string,
-                death: (prefixByAnim as Record<string, unknown>).death as string,
-            },
+            prefixByAnim: parsedPrefixes,
+            frameCountByAnim: parsedCounts,
+            frameMsByAnim: parsedFrameTimes,
         };
     });
     const seen = new Set<string>();

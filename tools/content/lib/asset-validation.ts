@@ -22,9 +22,11 @@ const EXPLOSION_FRAME_COUNT = 12;
 
 /** 按条目声明的 prefix/count 展开期望帧文件相对路径（资产目录内）。 */
 function expectedFrameFiles(spec: AssetSpec, row: Record<string, unknown>): { readonly anim: string; readonly prefix: string; readonly frame: string }[] {
-    const count = row[spec.countField];
+    const defaultCount = row[spec.countField];
+    const countByAnimValue = spec.countByAnimField === undefined ? undefined : row[spec.countByAnimField];
+    const countByAnim = countByAnimValue !== null && typeof countByAnimValue === "object" ? (countByAnimValue as Record<string, unknown>) : undefined;
     const prefixValue = row[spec.prefixField];
-    if (typeof count !== "number" || !Number.isFinite(count) || count <= 0) return [];
+    if (typeof defaultCount !== "number" || !Number.isFinite(defaultCount) || defaultCount <= 0) return [];
     const exts = spec.imageExts ?? ["png"];
     const ext = exts[0] ?? "png";
     const prefixes: { readonly anim: string; readonly prefix: string }[] =
@@ -35,6 +37,8 @@ function expectedFrameFiles(spec: AssetSpec, row: Record<string, unknown>): { re
               : [];
     const files: { anim: string; prefix: string; frame: string }[] = [];
     for (const { anim, prefix } of prefixes) {
+        const override = anim === "" ? undefined : countByAnim?.[anim];
+        const count = typeof override === "number" && Number.isFinite(override) && override > 0 ? override : defaultCount;
         for (let index = 0; index < count; index++) {
             files.push({ anim, prefix, frame: `${prefix}_${pad2(index)}.${ext}` });
         }

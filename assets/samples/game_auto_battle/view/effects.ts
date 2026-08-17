@@ -1,5 +1,5 @@
 import type { IModule } from "../../../framework";
-import type { AutoBattleEvent, AutoBattleSkillEffectDef } from "../models";
+import type { AutoBattleAnimName, AutoBattleEvent, AutoBattleSkillEffectDef } from "../models";
 
 /**
  * 命中反馈与位移动画意图：由战斗事件投影（event projection）派生，是引擎无关的
@@ -14,7 +14,7 @@ export type HitFeedbackEffect =
     | { readonly kind: "teleport"; readonly unitId: string; readonly toGrid: string; readonly seq: number }
     | { readonly kind: "entrance"; readonly unitId: string; readonly seq: number }
     | { readonly kind: "explosion"; readonly unitId: string; readonly seq: number }
-    | { readonly kind: "unit-anim"; readonly unitId: string; readonly anim: "attack" | "death"; readonly seq: number };
+    | { readonly kind: "unit-anim"; readonly unitId: string; readonly anim: AutoBattleAnimName; readonly nextAnim?: AutoBattleAnimName; readonly seq: number };
 
 /**
  * 事件 → 特效投影：把战斗事件映射为特效意图列表。
@@ -80,6 +80,7 @@ export function projectHitFeedbackEvents(
                     toGrid: event.toGridKey,
                     seq: event.seq,
                 });
+                effects.push({ kind: "unit-anim", unitId: event.sourceId, anim: "walk", seq: event.seq });
             }
             continue;
         }
@@ -117,9 +118,14 @@ export function projectHitFeedbackEvents(
                 unitId: event.targetId,
                 seq: event.seq,
             });
+            effects.push({ kind: "unit-anim", unitId: event.targetId, anim: "hit", seq: event.seq });
             if (event.sourceId !== "") {
-                // 攻击/施法者播放一次攻击帧（播完回 idle）
-                effects.push({ kind: "unit-anim", unitId: event.sourceId, anim: "attack", seq: event.seq });
+                if (event.type === "attack") {
+                    effects.push({ kind: "unit-anim", unitId: event.sourceId, anim: "attack", seq: event.seq });
+                } else {
+                    // 技能先播放抬手，再自动衔接重劈命中段。
+                    effects.push({ kind: "unit-anim", unitId: event.sourceId, anim: "skillRaise", nextAnim: "slash", seq: event.seq });
+                }
             }
             // 技能专属动效：按动效表增量追加（表驱动）
             projectSkillEffect(event, event.targetId);
@@ -131,7 +137,7 @@ export function projectHitFeedbackEvents(
                 seq: event.seq,
             });
             if (event.sourceId !== "") {
-                effects.push({ kind: "unit-anim", unitId: event.sourceId, anim: "attack", seq: event.seq });
+                effects.push({ kind: "unit-anim", unitId: event.sourceId, anim: "skillRaise", seq: event.seq });
             }
             projectSkillEffect(event, event.targetId);
         }

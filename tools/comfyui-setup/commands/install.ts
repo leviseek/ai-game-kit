@@ -9,7 +9,7 @@ import { runCommand, venvPython } from "../lib/exec";
 import type { ComfyUiConfig } from "../config";
 
 export async function installComfyUi(config: ComfyUiConfig, options: { force?: boolean } = {}): Promise<number> {
-    const { installDir, venvName, torchIndexUrl, pipIndexUrl, gitUrl } = config;
+    const { installDir, venvName, torchIndexUrl, pipIndexUrl, gitUrl, customNodes } = config;
     if (options.force === true && existsSync(installDir)) {
         const { rmSync } = await import("node:fs");
         rmSync(installDir, { recursive: true, force: true });
@@ -74,6 +74,30 @@ export async function installComfyUi(config: ComfyUiConfig, options: { force?: b
         }
     } else {
         console.log("[comfyui-setup] requirements 已就绪（aiohttp 可导入）");
+    }
+
+    // 6. 自定义节点：固定部署到 custom_nodes/<id>，并在仓库声明 requirements 时安装依赖。
+    for (const spec of customNodes) {
+        const target = join(installDir, "custom_nodes", spec.id);
+        if (!existsSync(join(target, ".git"))) {
+            console.log(`[comfyui-setup] 克隆自定义节点 ${spec.id} → ${target}`);
+            const clone = runCommand("git", ["clone", "--depth", "1", spec.gitUrl, target], { timeoutMs: 600_000 });
+            if (clone.status !== 0) {
+                console.error(`[comfyui-setup] 自定义节点 ${spec.id} 克隆失败: ${clone.stderr.trim() || clone.stdout.trim()}`);
+                return 1;
+            }
+        } else {
+            console.log(`[comfyui-setup] 自定义节点已存在（跳过 clone）: ${spec.id}`);
+        }
+        const requirements = join(target, "requirements.txt");
+        if (existsSync(requirements)) {
+            console.log(`[comfyui-setup] 安装自定义节点依赖: ${spec.id}`);
+            const req = runCommand(py, ["-m", "pip", "install", "-r", requirements, "-i", pipIndexUrl], { cwd: installDir, timeoutMs: 900_000 });
+            if (req.status !== 0) {
+                console.error(`[comfyui-setup] 自定义节点 ${spec.id} 依赖安装失败: ${req.stderr.trim() || req.stdout.trim()}`);
+                return 1;
+            }
+        }
     }
 
     console.log(`[comfyui-setup] install 完成。下一步: comfyui-setup model（下载模型）→ comfyui-setup start`);

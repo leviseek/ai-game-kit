@@ -3,7 +3,7 @@
  * 单连接常被 CDN 限速（hf-mirror ~0.6MB/s），分片并发可数倍提速。
  * 流程：探测 Content-Range 总大小 → 预分配文件 → 并发分片写入 → 进度报告。
  */
-import { openSync, closeSync, ftruncateSync, statSync, existsSync, writeSync } from "node:fs";
+import { openSync, closeSync, ftruncateSync, statSync, existsSync, writeSync, renameSync, rmSync } from "node:fs";
 
 const CHUNK_BYTES = 16 * 1024 * 1024;
 const DEFAULT_THREADS = 8;
@@ -48,21 +48,19 @@ export interface DownloadResult {
 }
 
 /**
- * 并发分片下载到 outPath；目标已存在且大小一致则跳过。
- * 分片失败自动重试（每片最多 RETRY 次），完成时校验大小——防中断后
- * 空洞文件（truncate 到全大小但部分分片未写入）被误判为完整。
- * onProgress 每完成一批分片回调（节流 ≥1s）。
+ * 并发分片下载到临时文件，全部分片成功后原子改名为 outPath；目标已存在且大小一致则跳过。
+ * 分片失败自动重试（每片最多 RETRY 次）。临时文件不会冒充正式模型，避免预分配产生的
+ * 空洞文件在下次启动时被误判为完整。onProgress 每完成一批分片回调（节流 ≥1s）。
  */
-export async function downloadFile(
-    url: string,
-    outPath: string,
-    options: { threads?: number; onProgress?: (p: DownloadProgress) => void } = {},
-): Promise<DownloadResult> {
+export async function downloadFile(url: string, outPath: string, options: { threads?: number; onProgress?: (p: DownloadProgress) => void } = {}): Promise<DownloadResult> {
     const total = await probeSize(url);
     if (existsSync(outPath) && statSync(outPath).size === total) {
         return { totalBytes: total, skipped: true };
     }
-    const fd = openSync(outPath, "w");
+    const tempPath = `${outPath}.part`;
+    rmSync(tempPath, { force: true });
+    const fd = openSync(tempPath, "w");
+    let completed = false;
     try {
         ftruncateSync(fd, total);
         const threads = options.threads ?? DEFAULT_THREADS;
@@ -104,9 +102,16 @@ export async function downloadFile(
                 });
             }
         }
+        completed = true;
         return { totalBytes: total, skipped: false };
     } finally {
         closeSync(fd);
+        if (completed) {
+            rmSync(outPath, { force: true });
+            renameSync(tempPath, outPath);
+        } else {
+            rmSync(tempPath, { force: true });
+        }
     }
 }
 

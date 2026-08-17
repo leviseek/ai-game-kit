@@ -19,6 +19,9 @@ describe("comfyui-setup config", () => {
         const config = loadConfig(join(workspaceRoot(), "comfyui.config.json"));
         expect(config.installDir).toBe("D:/dev/ComfyUI");
         expect(config.pipIndexUrl).toContain("tuna");
+        expect(config.models.some((model) => model.id === "openpose_xl2")).toBe(true);
+        expect(config.models.some((model) => model.id === "ipadapter_plus_sdxl_vit_h")).toBe(true);
+        expect(config.customNodes.map((node) => node.id)).toEqual(["comfyui_controlnet_aux", "ComfyUI_IPAdapter_plus"]);
     });
 
     it("缺失配置文件时回退内置默认（installDir 用默认值）", () => {

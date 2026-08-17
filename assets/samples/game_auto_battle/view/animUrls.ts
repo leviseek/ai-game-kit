@@ -12,7 +12,7 @@
  * frameUrlsOf 解析器（presenter 从 config 查询）。
  */
 
-import type { AutoBattleAnimName, AutoBattleUnitAnimation } from "../models";
+import { AUTO_BATTLE_ANIM_NAMES, type AutoBattleAnimName, type AutoBattleUnitAnimation } from "../models";
 
 /** 动画专属 bundle 名（assets/animations.meta 的 isBundle 目录名）。 */
 export const ANIM_BUNDLE = "animations";
@@ -35,18 +35,17 @@ export const EXPLOSION_FRAME_URLS: readonly string[] = frames("fx_explosion", 12
 
 /** 按单位动画表条目生成帧 URL 序列：`bundle://<bundle>/<dir>/<prefix>_<两位序号>`。 */
 export function buildUnitAnimationFrames(animation: AutoBattleUnitAnimation): Readonly<Record<AutoBattleAnimName, readonly string[]>> {
-    const build = (prefix: string): readonly string[] => Array.from({ length: animation.frameCount }, (_, index) => `bundle://${animation.bundle}/${animation.dir}/${prefix}_${pad2(index)}`);
-    return {
-        idle: build(animation.prefixByAnim.idle),
-        gesture: build(animation.prefixByAnim.gesture),
-        walk: build(animation.prefixByAnim.walk),
-        attack: build(animation.prefixByAnim.attack),
-        death: build(animation.prefixByAnim.death),
-    };
+    const result = {} as Record<AutoBattleAnimName, readonly string[]>;
+    for (const anim of AUTO_BATTLE_ANIM_NAMES) {
+        const prefix = animation.prefixByAnim[anim];
+        const count = animation.frameCountByAnim[anim] ?? animation.frameCount;
+        result[anim] = Array.from({ length: count }, (_, index) => `bundle://${animation.bundle}/${animation.dir}/${prefix}_${pad2(index)}`);
+    }
+    return result;
 }
 
-/** warrior 动画名集合（精灵表行序：idle/gesture/walk/attack/death）。 */
-export type WarriorAnim = "idle" | "gesture" | "walk" | "attack" | "death";
+/** warrior 动画名与内容配置共用同一联合，避免播放层和资源表漂移。 */
+export type WarriorAnim = AutoBattleAnimName;
 
 /** warrior 变体名（精灵表上下各 5 行；上 f 下 m，外观差异小，可后续按职业细分）。 */
 export type WarriorVariant = "f" | "m";
@@ -63,14 +62,26 @@ export const WARRIOR_FRAME_URLS: Readonly<Record<WarriorVariant, Readonly<Record
         idle: frames("warrior_f_idle", 10),
         gesture: frames("warrior_f_gesture", 10),
         walk: frames("warrior_f_walk", 10),
+        run: frames("warrior_f_walk", 10),
         attack: frames("warrior_f_attack", 10),
+        slash: frames("warrior_f_attack", 10),
+        hit: frames("warrior_f_gesture", 10),
+        weak: frames("warrior_f_idle", 10),
+        stun: frames("warrior_f_gesture", 10),
         death: frames("warrior_f_death", 10),
+        skillRaise: frames("warrior_f_gesture", 10),
     },
     m: {
         idle: frames("warrior_m_idle", 10),
         gesture: frames("warrior_m_gesture", 10),
         walk: frames("warrior_m_walk", 10),
+        run: frames("warrior_m_walk", 10),
         attack: frames("warrior_m_attack", 10),
+        slash: frames("warrior_m_attack", 10),
+        hit: frames("warrior_m_gesture", 10),
+        weak: frames("warrior_m_idle", 10),
+        stun: frames("warrior_m_gesture", 10),
         death: frames("warrior_m_death", 10),
+        skillRaise: frames("warrior_m_gesture", 10),
     },
 };

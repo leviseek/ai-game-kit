@@ -17,6 +17,34 @@
             "url": "https://hf-mirror.com/Lykon/dreamshaper-xl-v2-turbo/resolve/main/DreamShaperXL_Turbo_v2_1.safetensors",
             "size": 6939220250,
             "file": "models/checkpoints/DreamShaperXL_Turbo_v2_1.safetensors"
+        },
+        {
+            "id": "openpose_xl2",
+            "url": "https://hf-mirror.com/thibaud/controlnet-openpose-sdxl-1.0/resolve/main/OpenPoseXL2.safetensors",
+            "size": 5004167829,
+            "file": "models/controlnet/OpenPoseXL2.safetensors"
+        },
+        {
+            "id": "ipadapter_plus_sdxl_vit_h",
+            "url": "https://hf-mirror.com/h94/IP-Adapter/resolve/main/sdxl_models/ip-adapter-plus_sdxl_vit-h.safetensors",
+            "size": 847517512,
+            "file": "models/ipadapter/ip-adapter-plus_sdxl_vit-h.safetensors"
+        },
+        {
+            "id": "clip_vision_vit_h",
+            "url": "https://hf-mirror.com/h94/IP-Adapter/resolve/main/models/image_encoder/model.safetensors",
+            "size": 2528373448,
+            "file": "models/clip_vision/CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors"
+        }
+    ],
+    "customNodes": [
+        {
+            "id": "comfyui_controlnet_aux",
+            "gitUrl": "https://github.com/Fannovel16/comfyui_controlnet_aux.git"
+        },
+        {
+            "id": "ComfyUI_IPAdapter_plus",
+            "gitUrl": "https://github.com/cubiq/ComfyUI_IPAdapter_plus.git"
         }
     ]
 }

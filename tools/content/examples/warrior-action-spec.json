@@ -1,0 +1,15 @@
+{
+    "canvas": { "generateWidth": 512, "generateHeight": 768, "runtimeWidth": 256, "runtimeHeight": 384, "anchor": "bottom-center" },
+    "identity": { "seed": 2026081902, "ipAdapterWeight": 1.15, "ipAdapterEnd": 0.9, "controlNetStrength": 0.85, "controlNetEnd": 0.85 },
+    "actions": {
+        "walk": { "frameCount": 8, "frameMs": 80, "loop": true, "prefix": "warrior_ai_walk" },
+        "run": { "frameCount": 8, "frameMs": 60, "loop": true, "prefix": "warrior_ai_run" },
+        "attack": { "frameCount": 6, "frameMs": 50, "loop": false, "prefix": "warrior_ai_attack" },
+        "slash": { "frameCount": 8, "frameMs": 60, "loop": false, "prefix": "warrior_ai_slash" },
+        "hit": { "frameCount": 4, "frameMs": 80, "loop": false, "prefix": "warrior_ai_hit" },
+        "weak": { "frameCount": 6, "frameMs": 100, "loop": true, "prefix": "warrior_ai_weak" },
+        "stun": { "frameCount": 4, "frameMs": 120, "loop": true, "prefix": "warrior_ai_stun" },
+        "death": { "frameCount": 10, "frameMs": 80, "loop": false, "prefix": "warrior_ai_death", "fallback": "identity-locked deterministic fall transform" },
+        "skillRaise": { "frameCount": 8, "frameMs": 70, "loop": false, "prefix": "warrior_ai_skill_raise" }
+    }
+}

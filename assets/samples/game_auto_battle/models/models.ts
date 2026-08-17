@@ -68,21 +68,26 @@ export interface AutoBattleBaseAttributes {
     readonly movePoints: number;
 }
 
-/** 单位动画表条目：帧 URL 生成参数（bundle://<bundle>/<dir>/<prefix>_<两位序号>）。 */
+/** 单位动画名集合：保留 gesture 兼容旧资源，并扩展完整战斗动作。 */
+export const AUTO_BATTLE_ANIM_NAMES = ["idle", "gesture", "walk", "run", "attack", "slash", "hit", "weak", "stun", "death", "skillRaise"] as const;
+export type AutoBattleAnimName = (typeof AUTO_BATTLE_ANIM_NAMES)[number];
+
+/** 单位动画表条目：帧 URL、独立帧数和帧时长。 */
 export interface AutoBattleUnitAnimation {
     readonly id: string;
     /** 动画专属 bundle 名。 */
     readonly bundle: string;
     /** bundle 内目录前缀。 */
     readonly dir: string;
-    /** 每种动画的帧数（生成帧 URL 序列长度）。 */
+    /** 旧资源的缺省帧数；动作未声明独立帧数时回退该值。 */
     readonly frameCount: number;
+    /** 动画名 → 独立帧数。 */
+    readonly frameCountByAnim: Readonly<Record<AutoBattleAnimName, number>>;
+    /** 动画名 → 单帧展示时长（ms）。 */
+    readonly frameMsByAnim: Readonly<Record<AutoBattleAnimName, number>>;
     /** 动画名 → 帧名前缀（如 warrior_f_idle）。 */
     readonly prefixByAnim: Readonly<Record<AutoBattleAnimName, string>>;
 }
-
-/** 单位动画名集合（精灵表行序：idle/gesture/walk/attack/death）。 */
-export type AutoBattleAnimName = "idle" | "gesture" | "walk" | "attack" | "death";
 
 /** buff 类型：攻击加成 / 防御加成 / 持续伤害 / 持续治疗。 */
 export type AutoBattleBuffKind = "attack-up" | "defense-up" | "damage-over-time" | "heal";

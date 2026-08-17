@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { createServer, type Server } from "node:http";
-import { mkdtempSync, rmSync, statSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, statSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { downloadFile, probeSize } from "../lib/download";
@@ -70,6 +70,7 @@ describe("多线程分片下载", () => {
         expect(result.totalBytes).toBe(payload.length);
         expect(statSync(out).size).toBe(payload.length);
         expect(readFileSync(out)).toEqual(payload);
+        expect(existsSync(`${out}.part`)).toBe(false);
     });
 
     it("已存在且大小一致时跳过下载", async () => {

@@ -32,7 +32,7 @@ export function clampPresentationElapsed(elapsed: number): number {
 export interface AutoBattlePresenterOptions {
     /** 墙钟读数；缺省 Date.now。 */
     readonly now?: () => number;
-    /** 驱动循环；缺省 100ms setInterval。返回释放句柄。 */
+    /** 驱动循环；缺省 50ms setInterval，可完整采样最短 50ms 动作帧。 */
     readonly drive?: (tick: () => void) => { readonly dispose: () => void };
 }
 
@@ -50,11 +50,11 @@ export interface AutoBattlePresenterOptions {
 export function createAutoBattlePresenter(fixture: GameFixture, node: (name: string) => IViewModelNode | undefined, options: AutoBattlePresenterOptions = {}): GamePresenter {
     const autoBattle = fixture as AutoBattleFixture;
     const now = options.now ?? (() => Date.now());
-    // 驱动循环接缝：缺省 100ms setInterval；测试注入手动驱动（对齐 DevOverlay drive 模式）
+    // 驱动循环接缝：缺省 50ms setInterval；测试注入手动驱动（对齐 DevOverlay drive 模式）
     const drive =
         options.drive ??
         ((tick) => {
-            const timer = setInterval(tick, 100);
+            const timer = setInterval(tick, 50);
             return { dispose: () => clearInterval(timer) };
         });
 
@@ -116,6 +116,11 @@ export function createAutoBattlePresenter(fixture: GameFixture, node: (name: str
             }
             const animation = animationsById.get(animationId);
             return animation === undefined ? undefined : buildUnitAnimationFrames(animation);
+        },
+        frameMsOf: (unitId: string, anim: WarriorAnim): number | undefined => {
+            const unit = autoBattle.battle.state.units.find((candidate) => candidate.id === unitId);
+            const animationId = unit?.animationId;
+            return animationId === undefined ? undefined : animationsById.get(animationId)?.frameMsByAnim[anim];
         },
     });
 

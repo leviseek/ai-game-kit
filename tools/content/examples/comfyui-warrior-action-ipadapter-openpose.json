@@ -1,0 +1,57 @@
+{
+    "1": { "class_type": "CheckpointLoaderSimple", "inputs": { "ckpt_name": "DreamShaperXL_Turbo_v2_1.safetensors" } },
+    "2": { "class_type": "LoadImage", "inputs": { "image": "warrior_chibi_reference.png" } },
+    "3": { "class_type": "LoadImage", "inputs": { "image": "warrior_action_pose_00.png" } },
+    "4": { "class_type": "IPAdapterUnifiedLoader", "inputs": { "model": ["1", 0], "preset": "PLUS (high strength)" } },
+    "5": {
+        "class_type": "IPAdapterAdvanced",
+        "inputs": {
+            "model": ["4", 0],
+            "ipadapter": ["4", 1],
+            "image": ["2", 0],
+            "weight": 1.15,
+            "weight_type": "style and composition",
+            "combine_embeds": "concat",
+            "start_at": 0.0,
+            "end_at": 0.9,
+            "embeds_scaling": "K+V w/ C penalty"
+        }
+    },
+    "6": {
+        "class_type": "CLIPTextEncode",
+        "inputs": {
+            "text": "masterpiece, polished Q-version chibi Chinese warrior, same exact round face, same ornate golden lamellar armor, same red feather helmet, same red cape, full body readable game animation pose, holding one complete long silver Chinese dao sword with visible handle full blade and sharp tip, thick clean dark outline, cel shading, flat separated colors, plain deep blue background, isolated game animation frame",
+            "clip": ["1", 1]
+        }
+    },
+    "7": {
+        "class_type": "CLIPTextEncode",
+        "inputs": {
+            "text": "different character, different face, different armor, different helmet, different cape, different weapon, missing weapon, multiple weapons, photorealistic, realistic proportions, cropped, missing hands, missing feet, incomplete sword, fused limbs, extra limbs, scenery, floor, shadow, text, watermark, blur",
+            "clip": ["1", 1]
+        }
+    },
+    "8": { "class_type": "ControlNetLoader", "inputs": { "control_net_name": "OpenPoseXL2.safetensors" } },
+    "9": {
+        "class_type": "ControlNetApplyAdvanced",
+        "inputs": { "positive": ["6", 0], "negative": ["7", 0], "control_net": ["8", 0], "image": ["3", 0], "strength": 0.85, "start_percent": 0.0, "end_percent": 0.85, "vae": ["1", 2] }
+    },
+    "10": { "class_type": "EmptyLatentImage", "inputs": { "width": 512, "height": 768, "batch_size": 1 } },
+    "11": {
+        "class_type": "KSampler",
+        "inputs": {
+            "model": ["5", 0],
+            "seed": 2026081902,
+            "steps": 10,
+            "cfg": 2.5,
+            "sampler_name": "dpmpp_sde",
+            "scheduler": "karras",
+            "positive": ["9", 0],
+            "negative": ["9", 1],
+            "latent_image": ["10", 0],
+            "denoise": 1.0
+        }
+    },
+    "12": { "class_type": "VAEDecode", "inputs": { "samples": ["11", 0], "vae": ["1", 2] } },
+    "13": { "class_type": "SaveImage", "inputs": { "filename_prefix": "warrior_ai_action_00", "images": ["12", 0] } }
+}

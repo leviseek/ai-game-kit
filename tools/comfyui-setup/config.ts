@@ -16,6 +16,12 @@ export interface ModelSpec {
     readonly file: string;
 }
 
+export interface CustomNodeSpec {
+    readonly id: string;
+    /** 自定义节点 git 仓库；部署到 installDir/custom_nodes/<id>。 */
+    readonly gitUrl: string;
+}
+
 export interface ComfyUiConfig {
     /** ComfyUI 安装目录（仓库外；未存在时 install 会 git clone）。 */
     readonly installDir: string;
@@ -28,9 +34,10 @@ export interface ComfyUiConfig {
     /** ComfyUI git 仓库（install 首次克隆）。 */
     readonly gitUrl: string;
     readonly models: readonly ModelSpec[];
+    readonly customNodes: readonly CustomNodeSpec[];
 }
 
-const DEFAULTS: Omit<ComfyUiConfig, "installDir" | "models"> = {
+const DEFAULTS: Omit<ComfyUiConfig, "installDir" | "models" | "customNodes"> = {
     port: 8188,
     venvName: "venv",
     // GPU 优先：cu130 支持 NVIDIA 40 系（cu126 在 40 系上输出恒定灰）；无 GPU 环境可改 cpu index
@@ -65,5 +72,6 @@ export function loadConfig(configPath?: string): ComfyUiConfig {
         pipIndexUrl: user.pipIndexUrl ?? DEFAULTS.pipIndexUrl,
         gitUrl: user.gitUrl ?? DEFAULTS.gitUrl,
         models: user.models ?? DEFAULT_MODELS,
+        customNodes: user.customNodes ?? [],
     };
 }

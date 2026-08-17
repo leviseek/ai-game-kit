@@ -113,6 +113,22 @@ describe("Auto-battle unit animator", () => {
         expect(animator.active()).toBe(0);
     });
 
+    test("skill raise chains into slash before returning to idle", () => {
+        const { animator, ensureNode, time } = makeAnimator();
+        animator.step();
+        animator.play([{ kind: "unit-anim", unitId: "a", anim: "skillRaise", nextAnim: "slash", seq: 0 }]);
+        const allyNode = ensureNode("a");
+        expect(allyNode.url).toBe(WARRIOR_FRAME_URLS.f.skillRaise[0]);
+
+        time.advance(70 * 10);
+        animator.step();
+        expect(allyNode.url).toBe(WARRIOR_FRAME_URLS.f.slash[0]);
+
+        time.advance(60 * 10);
+        animator.step();
+        expect(allyNode.url).toBe(WARRIOR_FRAME_URLS.f.idle[0]);
+    });
+
     test("death anim plays once then hides the node", () => {
         const { animator, ensureNode, time } = makeAnimator();
         animator.step();
@@ -128,15 +144,19 @@ describe("Auto-battle unit animator", () => {
         expect(animator.active()).toBe(0);
     });
 
-    test("dead unit state is reclaimed when unit leaves live set", () => {
-        const { animator, setAlive } = makeAnimator();
+    test("death animation survives live-set removal until its final frame", () => {
+        const { animator, setAlive, time, ensureNode } = makeAnimator();
         animator.step();
         animator.play([{ kind: "unit-anim", unitId: "a", anim: "death", seq: 0 }]);
         expect(animator.active()).toBe(1);
 
-        // 单位从存活集合移除：下一 step 回收其动画状态
+        // 逻辑层移除死亡单位后，表现层仍保留死亡序列。
         setAlive(["e"]);
         animator.step();
+        expect(animator.active()).toBe(1);
+        time.advance(80 * 20);
+        animator.step();
+        expect(ensureNode("a").alpha).toBe(0);
         expect(animator.active()).toBe(0);
     });
 

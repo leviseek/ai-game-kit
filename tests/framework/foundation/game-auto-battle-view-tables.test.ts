@@ -43,7 +43,21 @@ const MINI_ANIM: AutoBattleUnitAnimation = {
     bundle: "animations",
     dir: "auto-battle",
     frameCount: 2,
-    prefixByAnim: { idle: "warrior_x_idle", gesture: "warrior_x_gesture", walk: "warrior_x_walk", attack: "warrior_x_attack", death: "warrior_x_death" },
+    frameCountByAnim: { idle: 2, gesture: 2, walk: 2, run: 2, attack: 2, slash: 2, hit: 2, weak: 2, stun: 2, death: 2, skillRaise: 2 },
+    frameMsByAnim: { idle: 80, gesture: 80, walk: 80, run: 60, attack: 50, slash: 60, hit: 80, weak: 100, stun: 120, death: 80, skillRaise: 70 },
+    prefixByAnim: {
+        idle: "warrior_x_idle",
+        gesture: "warrior_x_gesture",
+        walk: "warrior_x_walk",
+        run: "warrior_x_run",
+        attack: "warrior_x_attack",
+        slash: "warrior_x_slash",
+        hit: "warrior_x_hit",
+        weak: "warrior_x_weak",
+        stun: "warrior_x_stun",
+        death: "warrior_x_death",
+        skillRaise: "warrior_x_skill_raise",
+    },
 };
 
 describe("Auto-battle unit animation table", () => {
@@ -53,27 +67,43 @@ describe("Auto-battle unit animation table", () => {
         expect(frames.attack[0]).toBe("bundle://animations/auto-battle/warrior_x_attack_00");
         expect(frames.death[1]).toBe("bundle://animations/auto-battle/warrior_x_death_01");
         // 全部动画名都覆盖
-        for (const anim of ["idle", "gesture", "walk", "attack", "death"] as const) {
+        for (const anim of ["idle", "gesture", "walk", "run", "attack", "slash", "hit", "weak", "stun", "death", "skillRaise"] as const) {
             expect(frames[anim]).toHaveLength(2);
         }
     });
 
-    test("AI 静态帧条目（frameCount=1）每动画单帧，idle/gesture/walk 同立绘、attack/death 复用占位", () => {
+    test("AI 动画条目按动作独立帧数生成 URL", () => {
         const aiAnim: AutoBattleUnitAnimation = {
             id: "warrior-ai",
             bundle: "animations",
             dir: "auto-battle",
             frameCount: 1,
-            prefixByAnim: { idle: "warrior_ai_idle", gesture: "warrior_ai_idle", walk: "warrior_ai_idle", attack: "warrior_f_attack", death: "warrior_f_death" },
+            frameCountByAnim: { idle: 1, gesture: 1, walk: 8, run: 8, attack: 6, slash: 8, hit: 4, weak: 6, stun: 4, death: 10, skillRaise: 8 },
+            frameMsByAnim: { idle: 80, gesture: 80, walk: 80, run: 60, attack: 50, slash: 60, hit: 80, weak: 100, stun: 120, death: 80, skillRaise: 70 },
+            prefixByAnim: {
+                idle: "warrior_ai_idle",
+                gesture: "warrior_ai_idle",
+                walk: "warrior_ai_walk",
+                run: "warrior_ai_run",
+                attack: "warrior_ai_attack",
+                slash: "warrior_ai_slash",
+                hit: "warrior_ai_hit",
+                weak: "warrior_ai_weak",
+                stun: "warrior_ai_stun",
+                death: "warrior_ai_death",
+                skillRaise: "warrior_ai_skill_raise",
+            },
         };
         const frames = buildUnitAnimationFrames(aiAnim);
         expect(frames.idle).toEqual(["bundle://animations/auto-battle/warrior_ai_idle_00"]);
-        expect(frames.walk[0]).toBe("bundle://animations/auto-battle/warrior_ai_idle_00");
-        expect(frames.attack[0]).toBe("bundle://animations/auto-battle/warrior_f_attack_00");
-        expect(frames.death[0]).toBe("bundle://animations/auto-battle/warrior_f_death_00");
-        for (const anim of ["idle", "gesture", "walk", "attack", "death"] as const) {
-            expect(frames[anim]).toHaveLength(1);
-        }
+        expect(frames.walk[0]).toBe("bundle://animations/auto-battle/warrior_ai_walk_00");
+        expect(frames.attack[0]).toBe("bundle://animations/auto-battle/warrior_ai_attack_00");
+        expect(frames.death[9]).toBe("bundle://animations/auto-battle/warrior_ai_death_09");
+        expect(frames.walk).toHaveLength(8);
+        expect(frames.attack).toHaveLength(6);
+        expect(frames.hit).toHaveLength(4);
+        expect(frames.death).toHaveLength(10);
+        expect(frames.skillRaise).toHaveLength(8);
     });
 
     test("unit animator plays frames from the injected animation table", () => {
@@ -93,6 +123,7 @@ describe("Auto-battle unit animation table", () => {
             liveUnitIds: () => ["a"],
             // 表驱动帧解析：单位 a 使用迷你动画表
             frameUrlsOf: () => buildUnitAnimationFrames(MINI_ANIM),
+            frameMsOf: (_unitId, anim) => MINI_ANIM.frameMsByAnim[anim],
         });
 
         animator.step();

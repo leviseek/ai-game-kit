@@ -53,6 +53,7 @@ describe("Auto-battle hit feedback projection", () => {
         expect(effects).toEqual([
             { kind: "damage-float", unitId: "e", value: 12, seq: 0 },
             { kind: "hit-flash", unitId: "e", seq: 0 },
+            { kind: "unit-anim", unitId: "e", anim: "hit", seq: 0 },
             { kind: "unit-anim", unitId: "a", anim: "attack", seq: 0 },
         ]);
     });
@@ -62,7 +63,8 @@ describe("Auto-battle hit feedback projection", () => {
         expect(effects).toEqual([
             { kind: "damage-float", unitId: "e", value: 40, seq: 1 },
             { kind: "hit-flash", unitId: "e", seq: 1 },
-            { kind: "unit-anim", unitId: "a", anim: "attack", seq: 1 },
+            { kind: "unit-anim", unitId: "e", anim: "hit", seq: 1 },
+            { kind: "unit-anim", unitId: "a", anim: "skillRaise", nextAnim: "slash", seq: 1 },
         ]);
     });
 
@@ -70,7 +72,7 @@ describe("Auto-battle hit feedback projection", () => {
         const { effects } = projectHitFeedbackEvents([event(2, "skill-heal", { sourceId: "a", targetId: "a", value: 30 })], -1);
         expect(effects).toEqual([
             { kind: "heal-float", unitId: "a", value: 30, seq: 2 },
-            { kind: "unit-anim", unitId: "a", anim: "attack", seq: 2 },
+            { kind: "unit-anim", unitId: "a", anim: "skillRaise", seq: 2 },
         ]);
     });
 
@@ -91,7 +93,7 @@ describe("Auto-battle hit feedback projection", () => {
         const events = [event(0, "attack", { targetId: "e", value: 5 }), event(1, "skill-heal", { targetId: "a", value: 8 })];
         // 首次投影消费全部
         const first = projectHitFeedbackEvents(events, -1);
-        expect(first.effects).toHaveLength(3);
+        expect(first.effects).toHaveLength(4);
         // 游标推进后重复投影不再产出（幂等）
         const second = projectHitFeedbackEvents(events, first.cursor);
         expect(second.effects).toEqual([]);

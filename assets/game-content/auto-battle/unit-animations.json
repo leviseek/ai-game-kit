@@ -4,20 +4,62 @@
         "bundle": "animations",
         "dir": "auto-battle",
         "frameCount": 10,
-        "prefixByAnim": { "idle": "warrior_f_idle", "gesture": "warrior_f_gesture", "walk": "warrior_f_walk", "attack": "warrior_f_attack", "death": "warrior_f_death" }
+        "frameCountByAnim": { "idle": 10, "gesture": 10, "walk": 10, "run": 10, "attack": 10, "slash": 10, "hit": 10, "weak": 10, "stun": 10, "death": 10, "skillRaise": 10 },
+        "frameMsByAnim": { "idle": 80, "gesture": 80, "walk": 80, "run": 60, "attack": 50, "slash": 60, "hit": 80, "weak": 100, "stun": 120, "death": 80, "skillRaise": 70 },
+        "prefixByAnim": {
+            "idle": "warrior_f_idle",
+            "gesture": "warrior_f_gesture",
+            "walk": "warrior_f_walk",
+            "run": "warrior_f_walk",
+            "attack": "warrior_f_attack",
+            "slash": "warrior_f_attack",
+            "hit": "warrior_f_gesture",
+            "weak": "warrior_f_idle",
+            "stun": "warrior_f_gesture",
+            "death": "warrior_f_death",
+            "skillRaise": "warrior_f_gesture"
+        }
     },
     {
         "id": "warrior-m",
         "bundle": "animations",
         "dir": "auto-battle",
         "frameCount": 10,
-        "prefixByAnim": { "idle": "warrior_m_idle", "gesture": "warrior_m_gesture", "walk": "warrior_m_walk", "attack": "warrior_m_attack", "death": "warrior_m_death" }
+        "frameCountByAnim": { "idle": 10, "gesture": 10, "walk": 10, "run": 10, "attack": 10, "slash": 10, "hit": 10, "weak": 10, "stun": 10, "death": 10, "skillRaise": 10 },
+        "frameMsByAnim": { "idle": 80, "gesture": 80, "walk": 80, "run": 60, "attack": 50, "slash": 60, "hit": 80, "weak": 100, "stun": 120, "death": 80, "skillRaise": 70 },
+        "prefixByAnim": {
+            "idle": "warrior_m_idle",
+            "gesture": "warrior_m_gesture",
+            "walk": "warrior_m_walk",
+            "run": "warrior_m_walk",
+            "attack": "warrior_m_attack",
+            "slash": "warrior_m_attack",
+            "hit": "warrior_m_gesture",
+            "weak": "warrior_m_idle",
+            "stun": "warrior_m_gesture",
+            "death": "warrior_m_death",
+            "skillRaise": "warrior_m_gesture"
+        }
     },
     {
         "id": "warrior-ai",
         "bundle": "animations",
         "dir": "auto-battle",
         "frameCount": 1,
-        "prefixByAnim": { "idle": "warrior_ai_idle", "gesture": "warrior_ai_idle", "walk": "warrior_ai_idle", "attack": "warrior_f_attack", "death": "warrior_f_death" }
+        "frameCountByAnim": { "idle": 1, "gesture": 1, "walk": 8, "run": 8, "attack": 6, "slash": 8, "hit": 4, "weak": 6, "stun": 4, "death": 10, "skillRaise": 8 },
+        "frameMsByAnim": { "idle": 80, "gesture": 80, "walk": 80, "run": 60, "attack": 50, "slash": 60, "hit": 80, "weak": 100, "stun": 120, "death": 80, "skillRaise": 70 },
+        "prefixByAnim": {
+            "idle": "warrior_ai_idle",
+            "gesture": "warrior_ai_idle",
+            "walk": "warrior_ai_walk",
+            "run": "warrior_ai_run",
+            "attack": "warrior_ai_attack",
+            "slash": "warrior_ai_slash",
+            "hit": "warrior_ai_hit",
+            "weak": "warrior_ai_weak",
+            "stun": "warrior_ai_stun",
+            "death": "warrior_ai_death",
+            "skillRaise": "warrior_ai_skill_raise"
+        }
     }
 ]

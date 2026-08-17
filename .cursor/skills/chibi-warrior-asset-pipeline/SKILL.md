@@ -159,6 +159,33 @@ bun run content validate
 
 如果替换已有资源，必须确认 `generated-assets.json` 的登记仍指向目标文件，并检查 Cocos `.png.meta` 的尺寸与 PNG 一致。源图只进入美术资产目录，游戏运行时只加载派生图。
 
+## 帧动画扩展
+
+角色动作不能只依赖普通 img2img：低 denoise 无法改变站姿，高 denoise 会导致脸、盔甲、披风和武器逐帧漂移。推荐使用：
+
+```text
+同一角色参考图
++ IPAdapter Plus SDXL ViT-H（身份/配色/装备）
++ OpenPoseXL2（离散关键姿势）
++ 全序列固定 seed
+```
+
+项目参考文件：
+
+- `tools/content/examples/comfyui-warrior-action-ipadapter-openpose.json`：单帧身份 + 姿态约束工作流；
+- `tools/content/examples/warrior-action-spec.json`：动作帧数、帧时长、循环策略和命名契约。
+
+帧动画约束：
+
+- 生成画布固定 `512x768`，游戏运行时透明帧派生为 `256x384`；
+- 全动作固定脚底中心锚点，行走/跑动的逻辑位移不得烘焙进帧；
+- 同一动作和跨动作优先固定 seed，仅替换 OpenPose 图与动作提示词；
+- IPAdapter 权重过低会改变脸和武器，过高会压制姿态变化；当前参考值为 `1.15`，`end_at=0.9`；
+- ControlNet 当前参考强度为 `0.85`；横躺、翻滚等大角度姿势若仍被模型忽略，使用同一 RGBA 角色帧做确定性旋转/缩放/位移，禁止接受凭空新增盾牌或第二把武器的结果；
+- 抠图、Alpha 检查、运行时缩放和每帧登记仍必须走 `assetgen validate → ingest`。
+
+推荐首套动作契约为：walk 8、run 8、attack 6、slash 8、hit 4、weak 6、stun 4、death 10、skillRaise 8。Cocos 配置必须支持每动作独立 `frameCountByAnim` 与 `frameMsByAnim`，不能继续让全部动作共用一个帧数。
+
 ## 常见失败与修复
 
 | 现象 | 根因 | 修复 |

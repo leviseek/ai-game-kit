@@ -37,8 +37,10 @@ export interface AssetSpec {
     readonly dirField: string;
     /** 配置字段：文件前缀（字符串或 Record<动画名, 前缀>，如 unit-animations 的 "prefixByAnim"） */
     readonly prefixField: string;
-    /** 配置字段：帧数（如 unit-animations 的 "frameCount"） */
+    /** 配置字段：缺省帧数（如 unit-animations 的 "frameCount"） */
     readonly countField: string;
+    /** 可选：动画名 → 独立帧数；存在时优先于 countField。 */
+    readonly countByAnimField?: string;
     /** 允许的图片扩展名（不含点，默认 ["png"]） */
     readonly imageExts?: readonly string[];
 }

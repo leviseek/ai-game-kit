@@ -10,7 +10,7 @@ const ANIM_SCHEMA: TableSchema = {
     table: "unit-animations",
     file: "game-content/unit-animations.json",
     shape: "array",
-    assets: { bundleDir: "animations", dirField: "dir", prefixField: "prefixByAnim", countField: "frameCount" },
+    assets: { bundleDir: "animations", dirField: "dir", prefixField: "prefixByAnim", countField: "frameCount", countByAnimField: "frameCountByAnim" },
     fields: [],
 };
 
@@ -45,6 +45,22 @@ describe("validateAssetFiles", () => {
         const hit = issues.find((i) => i.code === "asset-frame-missing");
         expect(hit).toBeDefined();
         expect(hit?.message).toContain("idle warrior_f_idle_01.png");
+    });
+
+    it("按动画独立帧数展开文件", () => {
+        writeFrame(root, "assets/animations/auto-battle/walk_00.png");
+        writeFrame(root, "assets/animations/auto-battle/walk_01.png");
+        writeFrame(root, "assets/animations/auto-battle/hit_00.png");
+        const rows = [
+            {
+                id: "w",
+                dir: "auto-battle",
+                frameCount: 9,
+                frameCountByAnim: { walk: 2, hit: 1 },
+                prefixByAnim: { walk: "walk", hit: "hit" },
+            },
+        ];
+        expect(validateAssetFiles(root, ANIM_SCHEMA, rows)).toHaveLength(0);
     });
 
     it("子目录缺失报 asset-dir-missing", () => {
