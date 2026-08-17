@@ -7,16 +7,22 @@ import type { AutoBattleAnimName, AutoBattleEvent, AutoBattleSkillEffectDef } fr
  * 不进入逻辑层。
  */
 export type HitFeedbackEffect =
-    | { readonly kind: "damage-float"; readonly unitId: string; readonly value: number; readonly seq: number }
-    | { readonly kind: "heal-float"; readonly unitId: string; readonly value: number; readonly seq: number }
-    | { readonly kind: "hit-flash"; readonly unitId: string; readonly seq: number }
+    | { readonly kind: "damage-float"; readonly unitId: string; readonly value: number; readonly delayMs?: number; readonly seq: number }
+    | { readonly kind: "heal-float"; readonly unitId: string; readonly value: number; readonly delayMs?: number; readonly seq: number }
+    | { readonly kind: "hit-flash"; readonly unitId: string; readonly delayMs?: number; readonly seq: number }
     | { readonly kind: "move"; readonly unitId: string; readonly fromGrid: string; readonly toGrid: string; readonly seq: number }
     | { readonly kind: "teleport"; readonly unitId: string; readonly toGrid: string; readonly seq: number }
     | { readonly kind: "entrance"; readonly unitId: string; readonly seq: number }
     | { readonly kind: "explosion"; readonly unitId: string; readonly seq: number }
     | { readonly kind: "effect-sequence"; readonly unitId: string; readonly effect: "physical-impact" | "heal-aura"; readonly seq: number }
-    | { readonly kind: "projectile-effect"; readonly unitId: string; readonly sourceId: string; readonly effect: "fireball"; readonly seq: number }
-    | { readonly kind: "unit-anim"; readonly unitId: string; readonly anim: AutoBattleAnimName; readonly nextAnim?: AutoBattleAnimName; readonly seq: number };
+    | {
+          readonly kind: "projectile-effect";
+          readonly unitId: string;
+          readonly sourceId: string;
+          readonly effect: "fireball" | "arcane-bolt" | "shadow-bolt" | "holy-bolt" | "totem-bolt";
+          readonly seq: number;
+      }
+    | { readonly kind: "unit-anim"; readonly unitId: string; readonly anim: AutoBattleAnimName; readonly nextAnim?: AutoBattleAnimName; readonly delayMs?: number; readonly seq: number };
 
 /**
  * 事件 → 特效投影：把战斗事件映射为特效意图列表。
@@ -36,9 +42,13 @@ export function projectHitFeedbackEvents(
     events: readonly AutoBattleEvent[],
     cursor: number,
     resolveSkillEffect?: (effectId: string) => AutoBattleSkillEffectDef | undefined,
+    resolveBasicAttackEffect?: (unitId: string) => AutoBattleSkillEffectDef | undefined,
 ): { readonly effects: readonly HitFeedbackEffect[]; readonly cursor: number } {
     const effects: HitFeedbackEffect[] = [];
     let next = cursor;
+    const projectileDelayMs = 560;
+    const isProjectile = (kind: AutoBattleSkillEffectDef["kind"] | undefined): kind is "fireball" | "arcane-bolt" | "shadow-bolt" | "holy-bolt" | "totem-bolt" =>
+        kind === "fireball" || kind === "arcane-bolt" || kind === "shadow-bolt" || kind === "holy-bolt" || kind === "totem-bolt";
 
     /** 技能专属动效投影：按动效表条目向目标追加视觉意图。 */
     function projectSkillEffect(event: AutoBattleEvent, targetId: string): void {
@@ -57,8 +67,8 @@ export function projectHitFeedbackEvents(
             effects.push({ kind: "damage-float", unitId: targetId, value: event.value ?? 0, seq: event.seq });
         } else if (effectDef.kind === "physical-impact") {
             effects.push({ kind: "effect-sequence", unitId: targetId, effect: "physical-impact", seq: event.seq });
-        } else if (effectDef.kind === "fireball" && event.sourceId !== "") {
-            effects.push({ kind: "projectile-effect", unitId: targetId, sourceId: event.sourceId, effect: "fireball", seq: event.seq });
+        } else if (isProjectile(effectDef.kind) && event.sourceId !== "") {
+            effects.push({ kind: "projectile-effect", unitId: targetId, sourceId: event.sourceId, effect: effectDef.kind, seq: event.seq });
         } else if (effectDef.kind === "heal-aura") {
             effects.push({ kind: "effect-sequence", unitId: targetId, effect: "heal-aura", seq: event.seq });
         }
@@ -115,21 +125,29 @@ export function projectHitFeedbackEvents(
             continue;
         }
         if (event.type === "attack" || event.type === "skill-damage") {
+            const attackEffect = event.type === "attack" ? resolveBasicAttackEffect?.(event.sourceId) : event.effectId === undefined ? undefined : resolveSkillEffect?.(event.effectId);
+            const delayMs = isProjectile(attackEffect?.kind) ? projectileDelayMs : 0;
             effects.push({
                 kind: "damage-float",
                 unitId: event.targetId,
                 value: event.value ?? 0,
+                ...(delayMs > 0 ? { delayMs } : {}),
                 seq: event.seq,
             });
             effects.push({
                 kind: "hit-flash",
                 unitId: event.targetId,
+                ...(delayMs > 0 ? { delayMs } : {}),
                 seq: event.seq,
             });
-            effects.push({ kind: "unit-anim", unitId: event.targetId, anim: "hit", seq: event.seq });
+            effects.push({ kind: "unit-anim", unitId: event.targetId, anim: "hit", ...(delayMs > 0 ? { delayMs } : {}), seq: event.seq });
             if (event.sourceId !== "") {
                 if (event.type === "attack") {
-                    effects.push({ kind: "effect-sequence", unitId: event.targetId, effect: "physical-impact", seq: event.seq });
+                    if (isProjectile(attackEffect?.kind)) {
+                        effects.push({ kind: "projectile-effect", unitId: event.targetId, sourceId: event.sourceId, effect: attackEffect.kind, seq: event.seq });
+                    } else {
+                        effects.push({ kind: "effect-sequence", unitId: event.targetId, effect: "physical-impact", seq: event.seq });
+                    }
                     effects.push({ kind: "unit-anim", unitId: event.sourceId, anim: "attack", seq: event.seq });
                 } else {
                     // 技能先播放抬手，再自动衔接重劈命中段。

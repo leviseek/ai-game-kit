@@ -2,5 +2,9 @@
     { "id": "smash-hit", "kind": "physical-impact" },
     { "id": "fireball-explosion", "kind": "fireball" },
     { "id": "shadow-explosion", "kind": "explosion" },
-    { "id": "heal-aura", "kind": "heal-aura" }
+    { "id": "heal-aura", "kind": "heal-aura" },
+    { "id": "arcane-bolt", "kind": "arcane-bolt" },
+    { "id": "shadow-bolt", "kind": "shadow-bolt" },
+    { "id": "holy-bolt", "kind": "holy-bolt" },
+    { "id": "totem-bolt", "kind": "totem-bolt" }
 ]

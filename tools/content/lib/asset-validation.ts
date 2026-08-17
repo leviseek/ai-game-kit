@@ -105,6 +105,34 @@ export function validateExplosionFrames(projectRoot: string, rows: readonly unkn
             ],
         },
         { kind: "heal-aura", sequences: [{ prefix: "fx_heal_aura", count: 10, label: "治疗光环" }] },
+        {
+            kind: "arcane-bolt",
+            sequences: [
+                { prefix: "fx_arcane_projectile", count: 8, label: "奥术弹道" },
+                { prefix: "fx_arcane_impact", count: 8, label: "奥术命中" },
+            ],
+        },
+        {
+            kind: "shadow-bolt",
+            sequences: [
+                { prefix: "fx_shadow_projectile", count: 8, label: "暗影弹道" },
+                { prefix: "fx_shadow_impact", count: 8, label: "暗影命中" },
+            ],
+        },
+        {
+            kind: "holy-bolt",
+            sequences: [
+                { prefix: "fx_holy_projectile", count: 8, label: "圣光弹道" },
+                { prefix: "fx_holy_impact", count: 8, label: "圣光命中" },
+            ],
+        },
+        {
+            kind: "totem-bolt",
+            sequences: [
+                { prefix: "fx_totem_projectile", count: 8, label: "图腾弹道" },
+                { prefix: "fx_totem_impact", count: 8, label: "图腾命中" },
+            ],
+        },
     ];
     for (const spec of specs) {
         if (!usedKinds.has(spec.kind)) continue;

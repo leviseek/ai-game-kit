@@ -44,6 +44,13 @@ describe("Auto-battle table-driven config", () => {
         expect(tank?.skill.kind).toBe("damage");
         // 动画 id 引用保留（ally-tank 走 AI 静态帧条目）
         expect(tank?.animationId).toBe("warrior-ai");
+        expect(tank?.weaponType).toBe("dao");
+        expect(tank?.attackDelivery).toBe("melee");
+
+        const mage = config.heroes.find((h) => h.id === "ally-mage");
+        expect(mage?.weaponType).toBe("crystal-staff");
+        expect(mage?.attackDelivery).toBe("projectile");
+        expect(mage?.basicAttackEffectId).toBe("arcane-bolt");
     });
 
     test("multi-effect skills keep the full effects list", () => {

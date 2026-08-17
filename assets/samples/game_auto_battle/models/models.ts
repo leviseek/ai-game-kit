@@ -111,7 +111,7 @@ export interface AutoBattleBuffInstance {
 export interface AutoBattleSkillEffectDef {
     readonly id: string;
     /** 视觉意图类型：兼容旧反馈，并支持物理命中、火球飞行和治疗光环。 */
-    readonly kind: "explosion" | "flash" | "float" | "physical-impact" | "fireball" | "heal-aura";
+    readonly kind: "explosion" | "flash" | "float" | "physical-impact" | "fireball" | "heal-aura" | "arcane-bolt" | "shadow-bolt" | "holy-bolt" | "totem-bolt";
 }
 
 /** 技能条件表条目：释放/目标选择判定规则。 */
@@ -126,6 +126,9 @@ export interface AutoBattleSkillCondition {
     readonly kind: "self-hp-ratio" | "target-position" | "always";
     readonly value?: number | string;
 }
+
+export type AutoBattleWeaponType = "dao" | "sword-shield" | "crystal-staff" | "soul-staff" | "holy-scepter" | "totem-staff";
+export type AutoBattleAttackDelivery = "melee" | "projectile";
 
 /** 单位静态配置：属性与技能来自配置表，side/index 由配置读取器推导。 */
 export interface AutoBattleUnit {
@@ -144,6 +147,10 @@ export interface AutoBattleUnit {
     readonly movePoints: number;
     readonly energyMax: number;
     readonly skill: AutoBattleSkill;
+    /** 职业武器与普攻表现配置：远程职业据 effectId 选择弹道并延迟命中反馈。 */
+    readonly weaponType?: AutoBattleWeaponType;
+    readonly attackDelivery?: AutoBattleAttackDelivery;
+    readonly basicAttackEffectId?: string;
     /** 单位动画表 id：视图层按此查 unitAnimations 表生成帧 URL（缺省走变体回退）。 */
     readonly animationId?: string;
 }
@@ -162,6 +169,10 @@ export interface AutoBattleHero {
     readonly movePoints: number;
     readonly energyMax: number;
     readonly skill: AutoBattleSkill;
+    /** 职业武器与普攻表现配置：远程职业据 effectId 选择弹道并延迟命中反馈。 */
+    readonly weaponType?: AutoBattleWeaponType;
+    readonly attackDelivery?: AutoBattleAttackDelivery;
+    readonly basicAttackEffectId?: string;
     /** 单位动画表 id：视图层按此查 unitAnimations 表生成帧 URL（缺省走变体回退）。 */
     readonly animationId?: string;
 }

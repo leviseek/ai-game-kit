@@ -1,6 +1,21 @@
 import type { HitFeedbackEffect } from "./effects";
 import type { AutoBattleEffectAnchor } from "./view";
-import { EXPLOSION_FRAME_URLS, FIREBALL_IMPACT_FRAME_URLS, FIREBALL_PROJECTILE_FRAME_URLS, HEAL_AURA_FRAME_URLS, PHYSICAL_HIT_FRAME_URLS, SLASH_ARC_FRAME_URLS } from "./animUrls";
+import {
+    ARCANE_IMPACT_FRAME_URLS,
+    ARCANE_PROJECTILE_FRAME_URLS,
+    EXPLOSION_FRAME_URLS,
+    FIREBALL_IMPACT_FRAME_URLS,
+    FIREBALL_PROJECTILE_FRAME_URLS,
+    HEAL_AURA_FRAME_URLS,
+    HOLY_IMPACT_FRAME_URLS,
+    HOLY_PROJECTILE_FRAME_URLS,
+    PHYSICAL_HIT_FRAME_URLS,
+    SHADOW_IMPACT_FRAME_URLS,
+    SHADOW_PROJECTILE_FRAME_URLS,
+    SLASH_ARC_FRAME_URLS,
+    TOTEM_IMPACT_FRAME_URLS,
+    TOTEM_PROJECTILE_FRAME_URLS,
+} from "./animUrls";
 
 /** 特效节点接缝：动画器只消费 alpha/xy/url 写入，与渲染器绑定分离。 */
 export interface EffectNode {
@@ -154,32 +169,43 @@ export function createEffectAnimator(options: {
         }
     }
 
+    function projectileUrls(effect: "fireball" | "arcane-bolt" | "shadow-bolt" | "holy-bolt" | "totem-bolt"): { readonly flight: readonly string[]; readonly impact: readonly string[] } {
+        if (effect === "arcane-bolt") return { flight: ARCANE_PROJECTILE_FRAME_URLS, impact: ARCANE_IMPACT_FRAME_URLS };
+        if (effect === "shadow-bolt") return { flight: SHADOW_PROJECTILE_FRAME_URLS, impact: SHADOW_IMPACT_FRAME_URLS };
+        if (effect === "holy-bolt") return { flight: HOLY_PROJECTILE_FRAME_URLS, impact: HOLY_IMPACT_FRAME_URLS };
+        if (effect === "totem-bolt") return { flight: TOTEM_PROJECTILE_FRAME_URLS, impact: TOTEM_IMPACT_FRAME_URLS };
+        return { flight: FIREBALL_PROJECTILE_FRAME_URLS, impact: FIREBALL_IMPACT_FRAME_URLS };
+    }
+
     function play(effects: readonly HitFeedbackEffect[]): void {
         const now = timeSource();
         for (const effect of effects) {
             if (effect.kind === "damage-float" || effect.kind === "heal-float") {
                 // 新飘字覆盖同单位旧动画：终止旧的 float，从新时间开始
                 replace(effect.unitId, "float");
+                const start = now + (effect.delayMs ?? 0);
                 activeAnimations.push({
                     kind: "float",
                     unitId: effect.unitId,
-                    start: now,
-                    end: now + FLOAT_DURATION_MS,
+                    start,
+                    end: start + FLOAT_DURATION_MS,
                     value: effect.value,
                 });
                 const base = homeXYOf(effect.unitId);
                 writeText(`fx_float_${effect.unitId}`, floatText(effect.kind === "damage-float" ? "damage" : "heal", effect.value));
                 writeXY(`fx_float_${effect.unitId}`, base.x, base.y);
-                writeAlpha(`fx_float_${effect.unitId}`, 1);
+                writeAlpha(`fx_float_${effect.unitId}`, effect.delayMs === undefined ? 1 : 0);
             } else if (effect.kind === "hit-flash") {
                 // 闪白遮罩定位到目标单位坐标（组件实例初始位于容器原点，须显式定位）
                 const base = effectXYOf(effect.unitId, "upper-body");
                 writeXY(`fx_flash_${effect.unitId}`, base.x, base.y);
+                const start = now + (effect.delayMs ?? 0);
+                writeAlpha(`fx_flash_${effect.unitId}`, 0);
                 activeAnimations.push({
                     kind: "flash",
                     unitId: effect.unitId,
-                    start: now,
-                    end: now + FLASH_DURATION_MS,
+                    start,
+                    end: start + FLASH_DURATION_MS,
                 });
             } else if (effect.kind === "move") {
                 // 位移：from→to 网格坐标插值；play 时先定位到 from
@@ -244,9 +270,10 @@ export function createEffectAnimator(options: {
                 replaceEffectLane(effect.unitId);
                 const fromXY = effectXYOf(effect.sourceId, "upper-body");
                 const toXY = effectXYOf(effect.unitId, "upper-body");
-                const urls = [...FIREBALL_PROJECTILE_FRAME_URLS, ...FIREBALL_IMPACT_FRAME_URLS];
-                const flightMs = FIREBALL_PROJECTILE_FRAME_URLS.length * FIREBALL_PROJECTILE_FRAME_MS;
-                const impactMs = FIREBALL_IMPACT_FRAME_URLS.length * FIREBALL_IMPACT_FRAME_MS;
+                const sequence = projectileUrls(effect.effect);
+                const urls = [...sequence.flight, ...sequence.impact];
+                const flightMs = sequence.flight.length * FIREBALL_PROJECTILE_FRAME_MS;
+                const impactMs = sequence.impact.length * FIREBALL_IMPACT_FRAME_MS;
                 writeXY(`fx_effect_${effect.unitId}`, fromXY.x, fromXY.y);
                 writeUrl(`fx_effect_${effect.unitId}`, urls[0]!);
                 writeAlpha(`fx_effect_${effect.unitId}`, 1);
@@ -258,7 +285,7 @@ export function createEffectAnimator(options: {
                     urls,
                     fromXY,
                     toXY,
-                    projectileFrames: FIREBALL_PROJECTILE_FRAME_URLS.length,
+                    projectileFrames: sequence.flight.length,
                 });
             }
         }
@@ -268,6 +295,9 @@ export function createEffectAnimator(options: {
         const now = timeSource();
         for (let index = activeAnimations.length - 1; index >= 0; index -= 1) {
             const anim = activeAnimations[index]!;
+            if (now < anim.start) {
+                continue;
+            }
             const progress = clamp01((now - anim.start) / (anim.end - anim.start));
 
             if (anim.kind === "float") {

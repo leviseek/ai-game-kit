@@ -222,8 +222,13 @@ export function createAutoBattlePresenter(fixture: GameFixture, node: (name: str
     function stepEffects(): void {
         // 技能专属动效表：effectId → 动效定义（表驱动投影，缺省表为空则回退旧投影）
         const skillEffectsById = new Map(autoBattle.config.skillEffects.map((entry) => [entry.id, entry]));
+        const heroesById = new Map(autoBattle.config.heroes.map((entry) => [entry.id, entry]));
         const resolveSkillEffect = (effectId: string) => skillEffectsById.get(effectId);
-        const { effects, cursor } = projectHitFeedbackEvents(autoBattle.battle.events, effectCursor, resolveSkillEffect);
+        const resolveBasicAttackEffect = (unitId: string) => {
+            const effectId = heroesById.get(unitId)?.basicAttackEffectId;
+            return effectId === undefined ? undefined : skillEffectsById.get(effectId);
+        };
+        const { effects, cursor } = projectHitFeedbackEvents(autoBattle.battle.events, effectCursor, resolveSkillEffect, resolveBasicAttackEffect);
         effectCursor = cursor;
         // 一次性反馈特效（飘字/闪白/爆炸）走 EffectAnimator；单位形象动画意图
         // 经 UnitAnimator 消费（idle 由 step 持续循环，attack/death 一次性切换）

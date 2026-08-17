@@ -38,6 +38,14 @@ export const SLASH_ARC_FRAME_URLS: readonly string[] = frames("fx_slash_arc", 6)
 export const FIREBALL_PROJECTILE_FRAME_URLS: readonly string[] = frames("fx_fireball_projectile", 8);
 export const FIREBALL_IMPACT_FRAME_URLS: readonly string[] = frames("fx_fireball_impact", 10);
 export const HEAL_AURA_FRAME_URLS: readonly string[] = frames("fx_heal_aura", 10);
+export const ARCANE_PROJECTILE_FRAME_URLS: readonly string[] = frames("fx_arcane_projectile", 8);
+export const ARCANE_IMPACT_FRAME_URLS: readonly string[] = frames("fx_arcane_impact", 8);
+export const SHADOW_PROJECTILE_FRAME_URLS: readonly string[] = frames("fx_shadow_projectile", 8);
+export const SHADOW_IMPACT_FRAME_URLS: readonly string[] = frames("fx_shadow_impact", 8);
+export const HOLY_PROJECTILE_FRAME_URLS: readonly string[] = frames("fx_holy_projectile", 8);
+export const HOLY_IMPACT_FRAME_URLS: readonly string[] = frames("fx_holy_impact", 8);
+export const TOTEM_PROJECTILE_FRAME_URLS: readonly string[] = frames("fx_totem_projectile", 8);
+export const TOTEM_IMPACT_FRAME_URLS: readonly string[] = frames("fx_totem_impact", 8);
 
 /** 按单位动画表条目生成帧 URL 序列：`bundle://<bundle>/<dir>/<prefix>_<两位序号>`。 */
 export function buildUnitAnimationFrames(animation: AutoBattleUnitAnimation): Readonly<Record<AutoBattleAnimName, readonly string[]>> {

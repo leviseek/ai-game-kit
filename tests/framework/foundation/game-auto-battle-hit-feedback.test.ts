@@ -60,6 +60,15 @@ describe("Auto-battle hit feedback projection", () => {
         ]);
     });
 
+    test("ranged basic attack projects its class projectile and delays target feedback until impact", () => {
+        const { effects } = projectHitFeedbackEvents([event(5, "attack", { sourceId: "ally-mage", targetId: "e", value: 9 })], -1, undefined, () => ({ id: "arcane-bolt", kind: "arcane-bolt" }));
+        expect(effects).toContainEqual({ kind: "projectile-effect", unitId: "e", sourceId: "ally-mage", effect: "arcane-bolt", seq: 5 });
+        expect(effects).toContainEqual({ kind: "damage-float", unitId: "e", value: 9, delayMs: 560, seq: 5 });
+        expect(effects).toContainEqual({ kind: "hit-flash", unitId: "e", delayMs: 560, seq: 5 });
+        expect(effects).toContainEqual({ kind: "unit-anim", unitId: "e", anim: "hit", delayMs: 560, seq: 5 });
+        expect(effects.some((effect) => effect.kind === "effect-sequence")).toBe(false);
+    });
+
     test("skill-damage event projects damage float and hit flash", () => {
         const { effects } = projectHitFeedbackEvents([event(1, "skill-damage", { sourceId: "a", targetId: "e", value: 40 })], -1);
         expect(effects).toEqual([
@@ -176,6 +185,27 @@ describe("Auto-battle effect animator", () => {
         animator.step();
         expect(floatNode.alpha).toBe(0);
         expect(animator.active()).toBe(0);
+    });
+
+    test("delayed ranged feedback stays hidden until projectile impact", () => {
+        const { animator, ensureNode, advance } = makeAnimator();
+        const floatNode = ensureNode("fx_float_a");
+        const flashNode = ensureNode("fx_flash_a");
+        animator.play([
+            { kind: "damage-float", unitId: "a", value: 9, delayMs: 560, seq: 0 },
+            { kind: "hit-flash", unitId: "a", delayMs: 560, seq: 0 },
+        ]);
+        expect(floatNode.alpha).toBe(0);
+        expect(flashNode.alpha).toBe(0);
+
+        advance(500);
+        animator.step();
+        expect(floatNode.alpha).toBe(0);
+        expect(flashNode.alpha).toBe(0);
+
+        advance(60);
+        animator.step();
+        expect(floatNode.alpha).toBe(1);
     });
 
     test("heal float uses green color text", () => {
@@ -387,6 +417,21 @@ describe("Auto-battle effect animator", () => {
         animator.step();
         expect(fxNode.xy).toEqual({ x: 190, y: 161 });
         expect(fxNode.url).toContain("fx_fireball_impact_00");
+    });
+
+    test("class projectiles resolve to distinct frame families", () => {
+        const families = [
+            ["arcane-bolt", "fx_arcane_projectile_00"],
+            ["shadow-bolt", "fx_shadow_projectile_00"],
+            ["holy-bolt", "fx_holy_projectile_00"],
+            ["totem-bolt", "fx_totem_projectile_00"],
+        ] as const;
+        for (const [effect, prefix] of families) {
+            const { animator, ensureNode } = makeAnimator();
+            const fxNode = ensureNode("fx_effect_a");
+            animator.play([{ kind: "projectile-effect", unitId: "a", sourceId: "e", effect, seq: 0 }]);
+            expect(fxNode.url).toContain(prefix);
+        }
     });
 
     test("explosion without setUrl node is skipped without interrupting", () => {

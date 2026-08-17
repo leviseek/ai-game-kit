@@ -75,6 +75,9 @@ export interface AutoBattleHeroDefinition {
     readonly skillId?: string;
     readonly baseAttributeId?: string;
     readonly animationId?: string;
+    readonly weaponType?: AutoBattleHero["weaponType"];
+    readonly attackDelivery?: AutoBattleHero["attackDelivery"];
+    readonly basicAttackEffectId?: string;
 }
 
 /** 类型守卫：校验技能效果条目（damage/heal/buff）。 */
@@ -362,7 +365,11 @@ function readSkillEffects(table: IConfigTable): readonly AutoBattleSkillEffectDe
             throw new Error(`auto-battle config: skillEffects entry at index ${index} must be an object`);
         }
         const record = entry as Record<string, unknown>;
-        if (typeof record.id !== "string" || record.id.length === 0 || ["explosion", "flash", "float", "physical-impact", "fireball", "heal-aura"].indexOf(String(record.kind)) < 0) {
+        if (
+            typeof record.id !== "string" ||
+            record.id.length === 0 ||
+            ["explosion", "flash", "float", "physical-impact", "fireball", "heal-aura", "arcane-bolt", "shadow-bolt", "holy-bolt", "totem-bolt"].indexOf(String(record.kind)) < 0
+        ) {
             throw new Error(`auto-battle config: skillEffects entry at index ${index} has an invalid shape`);
         }
         return { id: record.id as string, kind: record.kind as AutoBattleSkillEffectDef["kind"] };
@@ -463,6 +470,9 @@ function expandHero(definition: AutoBattleHeroDefinition, baseAttributes: readon
             energyMax: definition.energyMax,
             skill,
             animationId: definition.animationId,
+            weaponType: definition.weaponType,
+            attackDelivery: definition.attackDelivery,
+            basicAttackEffectId: definition.basicAttackEffectId,
         };
     }
     // 旧内联格式：技能/属性随条目携带
@@ -478,6 +488,9 @@ function expandHero(definition: AutoBattleHeroDefinition, baseAttributes: readon
         energyMax: definition.energyMax,
         skill: definition.skill!,
         animationId: definition.animationId,
+        weaponType: definition.weaponType,
+        attackDelivery: definition.attackDelivery,
+        basicAttackEffectId: definition.basicAttackEffectId,
     };
 }
 
@@ -511,6 +524,9 @@ function readHeroes(
                 baseAttributeId: (record.baseAttributeId as string) ?? "",
                 skillId: (record.skillId as string) ?? "",
                 animationId: typeof record.animationId === "string" && record.animationId.length > 0 ? (record.animationId as string) : undefined,
+                weaponType: typeof record.weaponType === "string" ? (record.weaponType as AutoBattleHero["weaponType"]) : undefined,
+                attackDelivery: record.attackDelivery === "melee" || record.attackDelivery === "projectile" ? (record.attackDelivery as AutoBattleHero["attackDelivery"]) : undefined,
+                basicAttackEffectId: typeof record.basicAttackEffectId === "string" && record.basicAttackEffectId.length > 0 ? record.basicAttackEffectId : undefined,
             };
         }
         if (!isHeroInlineConfig(entry)) {
@@ -651,6 +667,9 @@ export function createAutoBattleConfig(content: Record<string, unknown>): AutoBa
         energyMax: unit.energyMax,
         skill: unit.skill,
         animationId: unit.animationId,
+        weaponType: unit.weaponType,
+        attackDelivery: unit.attackDelivery,
+        basicAttackEffectId: unit.basicAttackEffectId,
     }));
     assertUniqueHeroIds(heroes);
 

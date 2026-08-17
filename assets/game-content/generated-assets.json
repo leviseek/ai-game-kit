@@ -835,5 +835,517 @@
         "paramsHash": "1824x6b",
         "width": 128,
         "height": 128
+    },
+    "fx_arcane_projectile_00": {
+        "file": "assets/animations/auto-battle/fx_arcane_projectile_00.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "1w9tegh",
+        "width": 128,
+        "height": 128
+    },
+    "fx_arcane_projectile_01": {
+        "file": "assets/animations/auto-battle/fx_arcane_projectile_01.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "1fwatcj",
+        "width": 128,
+        "height": 128
+    },
+    "fx_arcane_projectile_02": {
+        "file": "assets/animations/auto-battle/fx_arcane_projectile_02.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "zis88l",
+        "width": 128,
+        "height": 128
+    },
+    "fx_arcane_projectile_03": {
+        "file": "assets/animations/auto-battle/fx_arcane_projectile_03.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "j59n4n",
+        "width": 128,
+        "height": 128
+    },
+    "fx_arcane_projectile_04": {
+        "file": "assets/animations/auto-battle/fx_arcane_projectile_04.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "2rr20p",
+        "width": 128,
+        "height": 128
+    },
+    "fx_arcane_projectile_05": {
+        "file": "assets/animations/auto-battle/fx_arcane_projectile_05.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "1lfcivv",
+        "width": 128,
+        "height": 128
+    },
+    "fx_arcane_projectile_06": {
+        "file": "assets/animations/auto-battle/fx_arcane_projectile_06.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "151txrx",
+        "width": 128,
+        "height": 128
+    },
+    "fx_arcane_projectile_07": {
+        "file": "assets/animations/auto-battle/fx_arcane_projectile_07.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "oobcnz",
+        "width": 128,
+        "height": 128
+    },
+    "fx_arcane_impact_00": {
+        "file": "assets/animations/auto-battle/fx_arcane_impact_00.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "1vj14ej",
+        "width": 128,
+        "height": 128
+    },
+    "fx_arcane_impact_01": {
+        "file": "assets/animations/auto-battle/fx_arcane_impact_01.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "1hqnuzx",
+        "width": 128,
+        "height": 128
+    },
+    "fx_arcane_impact_02": {
+        "file": "assets/animations/auto-battle/fx_arcane_impact_02.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "13yallb",
+        "width": 128,
+        "height": 128
+    },
+    "fx_arcane_impact_03": {
+        "file": "assets/animations/auto-battle/fx_arcane_impact_03.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "q5xc6p",
+        "width": 128,
+        "height": 128
+    },
+    "fx_arcane_impact_04": {
+        "file": "assets/animations/auto-battle/fx_arcane_impact_04.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "cdk2s3",
+        "width": 128,
+        "height": 128
+    },
+    "fx_arcane_impact_05": {
+        "file": "assets/animations/auto-battle/fx_arcane_impact_05.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "1xmavcl",
+        "width": 128,
+        "height": 128
+    },
+    "fx_arcane_impact_06": {
+        "file": "assets/animations/auto-battle/fx_arcane_impact_06.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "1jtxlxz",
+        "width": 128,
+        "height": 128
+    },
+    "fx_arcane_impact_07": {
+        "file": "assets/animations/auto-battle/fx_arcane_impact_07.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "161kcjd",
+        "width": 128,
+        "height": 128
+    },
+    "fx_shadow_projectile_00": {
+        "file": "assets/animations/auto-battle/fx_shadow_projectile_00.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "aorsyx",
+        "width": 128,
+        "height": 128
+    },
+    "fx_shadow_projectile_01": {
+        "file": "assets/animations/auto-battle/fx_shadow_projectile_01.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "1tcd9u3",
+        "width": 128,
+        "height": 128
+    },
+    "fx_shadow_projectile_02": {
+        "file": "assets/animations/auto-battle/fx_shadow_projectile_02.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "1cyuoq5",
+        "width": 128,
+        "height": 128
+    },
+    "fx_shadow_projectile_03": {
+        "file": "assets/animations/auto-battle/fx_shadow_projectile_03.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "wlc3m7",
+        "width": 128,
+        "height": 128
+    },
+    "fx_shadow_projectile_04": {
+        "file": "assets/animations/auto-battle/fx_shadow_projectile_04.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "g7tii9",
+        "width": 128,
+        "height": 128
+    },
+    "fx_shadow_projectile_05": {
+        "file": "assets/animations/auto-battle/fx_shadow_projectile_05.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "1yvezdf",
+        "width": 128,
+        "height": 128
+    },
+    "fx_shadow_projectile_06": {
+        "file": "assets/animations/auto-battle/fx_shadow_projectile_06.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "1ihwe9h",
+        "width": 128,
+        "height": 128
+    },
+    "fx_shadow_projectile_07": {
+        "file": "assets/animations/auto-battle/fx_shadow_projectile_07.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "124dt5j",
+        "width": 128,
+        "height": 128
+    },
+    "fx_shadow_impact_00": {
+        "file": "assets/animations/auto-battle/fx_shadow_impact_00.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "hsrc03",
+        "width": 128,
+        "height": 128
+    },
+    "fx_shadow_impact_01": {
+        "file": "assets/animations/auto-battle/fx_shadow_impact_01.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "40e2lh",
+        "width": 128,
+        "height": 128
+    },
+    "fx_shadow_impact_02": {
+        "file": "assets/animations/auto-battle/fx_shadow_impact_02.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "1p94v5z",
+        "width": 128,
+        "height": 128
+    },
+    "fx_shadow_impact_03": {
+        "file": "assets/animations/auto-battle/fx_shadow_impact_03.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "1bgrlrd",
+        "width": 128,
+        "height": 128
+    },
+    "fx_shadow_impact_04": {
+        "file": "assets/animations/auto-battle/fx_shadow_impact_04.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "xoeccr",
+        "width": 128,
+        "height": 128
+    },
+    "fx_shadow_impact_05": {
+        "file": "assets/animations/auto-battle/fx_shadow_impact_05.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "jw12y5",
+        "width": 128,
+        "height": 128
+    },
+    "fx_shadow_impact_06": {
+        "file": "assets/animations/auto-battle/fx_shadow_impact_06.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "63ntjj",
+        "width": 128,
+        "height": 128
+    },
+    "fx_shadow_impact_07": {
+        "file": "assets/animations/auto-battle/fx_shadow_impact_07.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "1rcem41",
+        "width": 128,
+        "height": 128
+    },
+    "fx_holy_projectile_00": {
+        "file": "assets/animations/auto-battle/fx_holy_projectile_00.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "11xvc7p",
+        "width": 128,
+        "height": 128
+    },
+    "fx_holy_projectile_01": {
+        "file": "assets/animations/auto-battle/fx_holy_projectile_01.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "iocruf",
+        "width": 128,
+        "height": 128
+    },
+    "fx_holy_projectile_02": {
+        "file": "assets/animations/auto-battle/fx_holy_projectile_02.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "1yfy9g9",
+        "width": 128,
+        "height": 128
+    },
+    "fx_holy_projectile_03": {
+        "file": "assets/animations/auto-battle/fx_holy_projectile_03.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "1f6fp2z",
+        "width": 128,
+        "height": 128
+    },
+    "fx_holy_projectile_04": {
+        "file": "assets/animations/auto-battle/fx_holy_projectile_04.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "vwx4pp",
+        "width": 128,
+        "height": 128
+    },
+    "fx_holy_projectile_05": {
+        "file": "assets/animations/auto-battle/fx_holy_projectile_05.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "cnekcf",
+        "width": 128,
+        "height": 128
+    },
+    "fx_holy_projectile_06": {
+        "file": "assets/animations/auto-battle/fx_holy_projectile_06.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "1sf01y9",
+        "width": 128,
+        "height": 128
+    },
+    "fx_holy_projectile_07": {
+        "file": "assets/animations/auto-battle/fx_holy_projectile_07.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "195hhkz",
+        "width": 128,
+        "height": 128
+    },
+    "fx_holy_impact_00": {
+        "file": "assets/animations/auto-battle/fx_holy_impact_00.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "1kl6lbj",
+        "width": 128,
+        "height": 128
+    },
+    "fx_holy_impact_01": {
+        "file": "assets/animations/auto-battle/fx_holy_impact_01.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "1tb3m1d",
+        "width": 128,
+        "height": 128
+    },
+    "fx_holy_impact_02": {
+        "file": "assets/animations/auto-battle/fx_holy_impact_02.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "2zwks3",
+        "width": 128,
+        "height": 128
+    },
+    "fx_holy_impact_03": {
+        "file": "assets/animations/auto-battle/fx_holy_impact_03.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "bptlhx",
+        "width": 128,
+        "height": 128
+    },
+    "fx_holy_impact_04": {
+        "file": "assets/animations/auto-battle/fx_holy_impact_04.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "kfqm7r",
+        "width": 128,
+        "height": 128
+    },
+    "fx_holy_impact_05": {
+        "file": "assets/animations/auto-battle/fx_holy_impact_05.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "t5nmxl",
+        "width": 128,
+        "height": 128
+    },
+    "fx_holy_impact_06": {
+        "file": "assets/animations/auto-battle/fx_holy_impact_06.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "11vknnf",
+        "width": 128,
+        "height": 128
+    },
+    "fx_holy_impact_07": {
+        "file": "assets/animations/auto-battle/fx_holy_impact_07.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "1alhod9",
+        "width": 128,
+        "height": 128
+    },
+    "fx_totem_projectile_00": {
+        "file": "assets/animations/auto-battle/fx_totem_projectile_00.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "5d7a1b",
+        "width": 128,
+        "height": 128
+    },
+    "fx_totem_projectile_01": {
+        "file": "assets/animations/auto-battle/fx_totem_projectile_01.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "16le61d",
+        "width": 128,
+        "height": 128
+    },
+    "fx_totem_projectile_02": {
+        "file": "assets/animations/auto-battle/fx_totem_projectile_02.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "8sh02b",
+        "width": 128,
+        "height": 128
+    },
+    "fx_totem_projectile_03": {
+        "file": "assets/animations/auto-battle/fx_totem_projectile_03.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "1a0nw2d",
+        "width": 128,
+        "height": 128
+    },
+    "fx_totem_projectile_04": {
+        "file": "assets/animations/auto-battle/fx_totem_projectile_04.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "c7qq3b",
+        "width": 128,
+        "height": 128
+    },
+    "fx_totem_projectile_05": {
+        "file": "assets/animations/auto-battle/fx_totem_projectile_05.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "1dfxm3d",
+        "width": 128,
+        "height": 128
+    },
+    "fx_totem_projectile_06": {
+        "file": "assets/animations/auto-battle/fx_totem_projectile_06.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "fn0g4b",
+        "width": 128,
+        "height": 128
+    },
+    "fx_totem_projectile_07": {
+        "file": "assets/animations/auto-battle/fx_totem_projectile_07.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "1gv7c4d",
+        "width": 128,
+        "height": 128
+    },
+    "fx_totem_impact_00": {
+        "file": "assets/animations/auto-battle/fx_totem_impact_00.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "qapr49",
+        "width": 128,
+        "height": 128
+    },
+    "fx_totem_impact_01": {
+        "file": "assets/animations/auto-battle/fx_totem_impact_01.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "1rlq9aj",
+        "width": 128,
+        "height": 128
+    },
+    "fx_totem_impact_02": {
+        "file": "assets/animations/auto-battle/fx_totem_impact_02.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "tvmphp",
+        "width": 128,
+        "height": 128
+    },
+    "fx_totem_impact_03": {
+        "file": "assets/animations/auto-battle/fx_totem_impact_03.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "1v6n7nz",
+        "width": 128,
+        "height": 128
+    },
+    "fx_totem_impact_04": {
+        "file": "assets/animations/auto-battle/fx_totem_impact_04.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "xgjnv5",
+        "width": 128,
+        "height": 128
+    },
+    "fx_totem_impact_05": {
+        "file": "assets/animations/auto-battle/fx_totem_impact_05.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "1yrk61f",
+        "width": 128,
+        "height": 128
+    },
+    "fx_totem_impact_06": {
+        "file": "assets/animations/auto-battle/fx_totem_impact_06.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "111gm8l",
+        "width": 128,
+        "height": 128
+    },
+    "fx_totem_impact_07": {
+        "file": "assets/animations/auto-battle/fx_totem_impact_07.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "3bd2fr",
+        "width": 128,
+        "height": 128
     }
 }

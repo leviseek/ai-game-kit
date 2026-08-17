@@ -8,6 +8,14 @@ const EFFECT_COUNTS = {
     fireball_projectile: 8,
     fireball_impact: 10,
     heal_aura: 10,
+    arcane_projectile: 8,
+    arcane_impact: 8,
+    shadow_projectile: 8,
+    shadow_impact: 8,
+    holy_projectile: 8,
+    holy_impact: 8,
+    totem_projectile: 8,
+    totem_impact: 8,
 } as const;
 
 type EffectName = keyof typeof EFFECT_COUNTS;

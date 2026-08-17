@@ -61,6 +61,9 @@ export const AUTO_BATTLE_SCHEMAS: readonly TableSchema[] = [
             { key: "energyMax", type: "number", min: 1, max: 10000 },
             { key: "skillId", type: "id", refTable: "skills" },
             { key: "animationId", type: "id", refTable: "unit-animations" },
+            { key: "weaponType", type: "enum", enum: ["dao", "sword-shield", "crystal-staff", "soul-staff", "holy-scepter", "totem-staff"] },
+            { key: "attackDelivery", type: "enum", enum: ["melee", "projectile"] },
+            { key: "basicAttackEffectId", type: "id", refTable: "skill-effects" },
         ],
     },
     {
@@ -79,7 +82,7 @@ export const AUTO_BATTLE_SCHEMAS: readonly TableSchema[] = [
         shape: "array",
         fields: [
             { key: "id", type: "id", idKey: true },
-            { key: "kind", type: "enum", enum: ["explosion", "flash", "float", "physical-impact", "fireball", "heal-aura"] },
+            { key: "kind", type: "enum", enum: ["explosion", "flash", "float", "physical-impact", "fireball", "heal-aura", "arcane-bolt", "shadow-bolt", "holy-bolt", "totem-bolt"] },
         ],
     },
     {

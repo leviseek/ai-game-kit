@@ -179,6 +179,21 @@ describe("Auto-battle unit animator", () => {
         expect(animator.active()).toBe(0);
     });
 
+    test("ranged target hit animation starts only after projectile delay", () => {
+        const { animator, ensureNode, time } = makeAnimator();
+        animator.step();
+        const allyNode = ensureNode("a");
+        animator.play([{ kind: "unit-anim", unitId: "a", anim: "hit", delayMs: 560, seq: 0 }]);
+
+        time.advance(500);
+        animator.step();
+        expect(allyNode.url).toBe(WARRIOR_FRAME_URLS.f.idle[0]);
+
+        time.advance(60);
+        animator.step();
+        expect(allyNode.url).toBe(WARRIOR_FRAME_URLS.f.hit[0]);
+    });
+
     test("non unit-anim effects are ignored", () => {
         const { animator, ensureNode } = makeAnimator();
         animator.step();

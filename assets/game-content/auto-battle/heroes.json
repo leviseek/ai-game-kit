@@ -1,8 +1,74 @@
 [
-    { "id": "ally-tank", "name": "auto_battle.heroes.ally-tank.name", "position": "front", "baseAttributeId": "tank", "energyMax": 20, "skillId": "ally-tank-skill", "animationId": "warrior-ai" },
-    { "id": "ally-mage", "name": "auto_battle.heroes.ally-mage.name", "position": "mid", "baseAttributeId": "mage", "energyMax": 20, "skillId": "ally-mage-skill", "animationId": "warrior-f" },
-    { "id": "ally-priest", "name": "auto_battle.heroes.ally-priest.name", "position": "back", "baseAttributeId": "priest", "energyMax": 20, "skillId": "ally-priest-skill", "animationId": "warrior-f" },
-    { "id": "enemy-tank", "name": "auto_battle.heroes.enemy-tank.name", "position": "front", "baseAttributeId": "skeleton", "energyMax": 20, "skillId": "enemy-tank-skill", "animationId": "warrior-m" },
-    { "id": "enemy-mage", "name": "auto_battle.heroes.enemy-mage.name", "position": "mid", "baseAttributeId": "lich", "energyMax": 20, "skillId": "enemy-mage-skill", "animationId": "warrior-m" },
-    { "id": "enemy-shaman", "name": "auto_battle.heroes.enemy-shaman.name", "position": "back", "baseAttributeId": "shaman", "energyMax": 20, "skillId": "enemy-shaman-skill", "animationId": "warrior-m" }
+    {
+        "id": "ally-tank",
+        "name": "auto_battle.heroes.ally-tank.name",
+        "position": "front",
+        "baseAttributeId": "tank",
+        "energyMax": 20,
+        "skillId": "ally-tank-skill",
+        "animationId": "warrior-ai",
+        "weaponType": "dao",
+        "attackDelivery": "melee",
+        "basicAttackEffectId": "smash-hit"
+    },
+    {
+        "id": "ally-mage",
+        "name": "auto_battle.heroes.ally-mage.name",
+        "position": "mid",
+        "baseAttributeId": "mage",
+        "energyMax": 20,
+        "skillId": "ally-mage-skill",
+        "animationId": "warrior-f",
+        "weaponType": "crystal-staff",
+        "attackDelivery": "projectile",
+        "basicAttackEffectId": "arcane-bolt"
+    },
+    {
+        "id": "ally-priest",
+        "name": "auto_battle.heroes.ally-priest.name",
+        "position": "back",
+        "baseAttributeId": "priest",
+        "energyMax": 20,
+        "skillId": "ally-priest-skill",
+        "animationId": "warrior-f",
+        "weaponType": "holy-scepter",
+        "attackDelivery": "projectile",
+        "basicAttackEffectId": "holy-bolt"
+    },
+    {
+        "id": "enemy-tank",
+        "name": "auto_battle.heroes.enemy-tank.name",
+        "position": "front",
+        "baseAttributeId": "skeleton",
+        "energyMax": 20,
+        "skillId": "enemy-tank-skill",
+        "animationId": "warrior-m",
+        "weaponType": "sword-shield",
+        "attackDelivery": "melee",
+        "basicAttackEffectId": "smash-hit"
+    },
+    {
+        "id": "enemy-mage",
+        "name": "auto_battle.heroes.enemy-mage.name",
+        "position": "mid",
+        "baseAttributeId": "lich",
+        "energyMax": 20,
+        "skillId": "enemy-mage-skill",
+        "animationId": "warrior-m",
+        "weaponType": "soul-staff",
+        "attackDelivery": "projectile",
+        "basicAttackEffectId": "shadow-bolt"
+    },
+    {
+        "id": "enemy-shaman",
+        "name": "auto_battle.heroes.enemy-shaman.name",
+        "position": "back",
+        "baseAttributeId": "shaman",
+        "energyMax": 20,
+        "skillId": "enemy-shaman-skill",
+        "animationId": "warrior-m",
+        "weaponType": "totem-staff",
+        "attackDelivery": "projectile",
+        "basicAttackEffectId": "totem-bolt"
+    }
 ]

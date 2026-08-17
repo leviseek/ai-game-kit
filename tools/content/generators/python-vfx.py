@@ -98,6 +98,37 @@ def render_heal(draw, size, index, count):
         ellipse(draw, x, y, size * (0.018 + 0.008 * pulse), rgba("a7ffbf", int(230 * (1 - t))))
 
 
+def render_magic_projectile(draw, size, index, count, palette):
+    phase = index / count * math.tau
+    cx, cy = size * 0.55, size * 0.50
+    outer, middle, core = palette
+    ellipse(draw, cx, cy, size * 0.22, rgba(outer, 190))
+    ellipse(draw, cx + math.sin(phase) * size * 0.01, cy, size * 0.145, rgba(middle, 245))
+    ellipse(draw, cx, cy, size * 0.065, rgba(core, 255))
+    for trail in range(4):
+        y = cy + math.sin(phase + trail * 1.4) * size * 0.065
+        line(draw, [(cx - size * 0.12, y), (cx - size * (0.24 + trail * 0.055), y + math.cos(phase + trail) * size * 0.05)], rgba(outer, 175 - trail * 22), size * (0.06 - trail * 0.009))
+    for particle in range(3):
+        angle = phase + particle * math.tau / 3
+        ellipse(draw, cx + math.cos(angle) * size * 0.25, cy + math.sin(angle) * size * 0.16, size * 0.018, rgba(core, 210))
+
+
+def render_magic_impact(draw, size, index, count, palette, rng):
+    t = index / (count - 1)
+    cx, cy = size * 0.5, size * 0.5
+    outer, middle, core = palette
+    bloom = math.sin(min(1, t * 1.2) * math.pi)
+    ellipse(draw, cx, cy, size * 0.34 * bloom, rgba(outer, max(14, int(180 * (1 - t)))))
+    ellipse(draw, cx, cy, size * 0.22 * bloom, rgba(middle, max(18, int(225 * (1 - t)))))
+    ellipse(draw, cx, cy, size * 0.09 * bloom, rgba(core, max(20, int(255 * (1 - t)))))
+    ring = size * (0.12 + 0.3 * t)
+    draw.ellipse((cx - ring, cy - ring, cx + ring, cy + ring), outline=rgba(core, max(12, int(220 * (1 - t)))), width=max(2, int(size * 0.025)))
+    for p in range(8):
+        angle = p * math.tau / 8 + rng.uniform(-0.12, 0.12)
+        dist = size * (0.1 + 0.34 * t)
+        ellipse(draw, cx + math.cos(angle) * dist, cy + math.sin(angle) * dist, size * 0.014, rgba(middle, max(12, int(210 * (1 - t)))))
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--out", required=True)
@@ -115,7 +146,7 @@ def main():
     glow_draw = ImageDraw.Draw(glow)
     rng = random.Random(20260819 + args.index * 97 + sum(ord(c) for c in args.effect))
 
-    target = glow_draw if args.effect in {"fireball_projectile", "fireball_impact", "heal_aura"} else draw
+    target = glow_draw if args.effect in {"fireball_projectile", "fireball_impact", "heal_aura", "arcane_projectile", "arcane_impact", "shadow_projectile", "shadow_impact", "holy_projectile", "holy_impact", "totem_projectile", "totem_impact"} else draw
     if args.effect == "hit_physical":
         render_hit(draw, size, args.index, args.count, rng)
     elif args.effect == "slash_arc":
@@ -126,6 +157,22 @@ def main():
         render_fireball_impact(target, size, args.index, args.count, rng)
     elif args.effect == "heal_aura":
         render_heal(target, size, args.index, args.count)
+    elif args.effect.endswith("_projectile"):
+        palettes = {
+            "arcane_projectile": ("3b82f6", "67e8f9", "ffffff"),
+            "shadow_projectile": ("4c1d95", "a855f7", "d8b4fe"),
+            "holy_projectile": ("f59e0b", "fde68a", "ffffff"),
+            "totem_projectile": ("047857", "34d399", "d1fae5"),
+        }
+        render_magic_projectile(target, size, args.index, args.count, palettes[args.effect])
+    elif args.effect.endswith("_impact"):
+        palettes = {
+            "arcane_impact": ("2563eb", "22d3ee", "ffffff"),
+            "shadow_impact": ("312e81", "9333ea", "e9d5ff"),
+            "holy_impact": ("d97706", "fcd34d", "ffffff"),
+            "totem_impact": ("065f46", "10b981", "a7f3d0"),
+        }
+        render_magic_impact(target, size, args.index, args.count, palettes[args.effect], rng)
     else:
         raise ValueError(args.effect)
 

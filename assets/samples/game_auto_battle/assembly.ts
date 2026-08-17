@@ -436,7 +436,19 @@ export function createAutoBattleFixture(options: AutoBattleFixtureOptions = {}):
             },
         },
         effects: {
-            project: (events: readonly AutoBattleEvent[]) => projectHitFeedbackEvents(events, -1).effects,
+            project: (events: readonly AutoBattleEvent[]) => {
+                const effectById = new Map(config.skillEffects.map((entry) => [entry.id, entry]));
+                const heroById = new Map(config.heroes.map((entry) => [entry.id, entry]));
+                return projectHitFeedbackEvents(
+                    events,
+                    -1,
+                    (effectId) => effectById.get(effectId),
+                    (unitId) => {
+                        const effectId = heroById.get(unitId)?.basicAttackEffectId;
+                        return effectId === undefined ? undefined : effectById.get(effectId);
+                    },
+                ).effects;
+            },
             animator: effectAnimator,
         },
         lineup: {

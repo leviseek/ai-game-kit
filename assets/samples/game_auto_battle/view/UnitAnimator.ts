@@ -130,7 +130,12 @@ export function createUnitAnimator(options: {
                 // 未激活单位（非存活/未初始化）忽略：idle 由 step 统一初始化
                 continue;
             }
-            switchTo(effect.unitId, effect.anim, now, effect.nextAnim);
+            const start = now + (effect.delayMs ?? 0);
+            if (start > now) {
+                states.set(effect.unitId, { anim: effect.anim, variant: variantOf(effect.unitId), start, frame: -1, nextAnim: effect.nextAnim });
+            } else {
+                switchTo(effect.unitId, effect.anim, now, effect.nextAnim);
+            }
         }
     }
 
@@ -160,6 +165,12 @@ export function createUnitAnimator(options: {
             }
             const urls = urlsOf(id, state.anim);
             const elapsed = now - state.start;
+            if (elapsed < 0) {
+                continue;
+            }
+            if (state.frame < 0) {
+                writeAlpha(id, 1);
+            }
             const duration = frameMsOf?.(id, state.anim) ?? DEFAULT_FRAME_MS[state.anim];
             const frame = Math.floor(elapsed / duration);
             const playbackMs = urls.length * duration;
