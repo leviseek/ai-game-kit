@@ -14,11 +14,13 @@ export function createPythonCharacterActionsGenerator(): GeneratorAdapter {
             const reference = String(params.reference ?? "");
             const rawManifest = String(params.rawManifest ?? "");
             const weaponOverlay = String(params.weaponOverlay ?? "");
+            const subjectScale = Number(params.subjectScale ?? 1);
             if (!/^[a-z][a-z0-9-]*$/.test(character)) throw new Error(`python-character-actions character 非法: ${character}`);
             if (reference.length === 0 || rawManifest.length === 0) throw new Error("python-character-actions 需要 reference 与 rawManifest");
             const script = join(import.meta.dirname, "python-character-actions.py");
             if (weaponOverlay !== "" && weaponOverlay !== "golden-hammer-left") throw new Error(`python-character-actions weaponOverlay 非法: ${weaponOverlay}`);
-            const args = [script, "--out-dir", stagingDir, "--character", character, "--reference", reference, "--raw-manifest", rawManifest];
+            if (!Number.isFinite(subjectScale) || subjectScale < 0.5 || subjectScale > 1) throw new Error(`python-character-actions subjectScale 非法: ${subjectScale}`);
+            const args = [script, "--out-dir", stagingDir, "--character", character, "--reference", reference, "--raw-manifest", rawManifest, "--subject-scale", String(subjectScale)];
             if (weaponOverlay !== "") args.push("--weapon-overlay", weaponOverlay);
             const result = spawnSync("python", args, {
                 encoding: "utf8",

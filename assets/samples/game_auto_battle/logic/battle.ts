@@ -31,8 +31,7 @@ export interface AutoBattleLineupPair {
  * 显式构造 placement，不经此转换。
  */
 export function toLineupPair(lineups: { readonly ally: readonly string[]; readonly enemy: readonly string[] }): AutoBattleLineupPair {
-    const toPlacement = (side: AutoBattleSide, ids: readonly string[]): readonly AutoBattlePlacedUnit[] =>
-        ids.map((heroId, index) => ({ slot: defaultDeploymentSlot(side, index), heroId }));
+    const toPlacement = (side: AutoBattleSide, ids: readonly string[]): readonly AutoBattlePlacedUnit[] => ids.map((heroId, index) => ({ slot: defaultDeploymentSlot(side, index), heroId }));
     return {
         ally: toPlacement("ally", lineups.ally),
         enemy: toPlacement("enemy", lineups.enemy),
@@ -84,6 +83,9 @@ export function createAutoBattleBattle(options: AutoBattleBattleOptions): AutoBa
     let result: "win" | "lose" | undefined;
     let order: string[] = [];
     let actionIndex = 0;
+    /** 距离不足时同一单位跨 tick 延续行动，并锁定首次决定的攻击类型。 */
+    let continuingActorId: string | null = null;
+    let continuingActionKind: "attack" | "skill" | null = null;
     let seq = 0;
     let units: MutableUnit[] = [];
     // 战场网格（占用表 + 单位当前位置）：逻辑层持有并更新（坐标真源），
@@ -168,6 +170,8 @@ export function createAutoBattleBattle(options: AutoBattleBattleOptions): AutoBa
         }
         order = sortAutoBattleOrder(snapshotUnits(units).filter(isAutoBattleAlive)).map((unit) => unit.id);
         actionIndex = 0;
+        continuingActorId = null;
+        continuingActionKind = null;
         emit({
             type: "round-start",
             sourceId: "",
@@ -281,19 +285,21 @@ export function createAutoBattleBattle(options: AutoBattleBattleOptions): AutoBa
     }
 
     /** 普攻：对锁定目标（无锁定时前排优先）造成自身攻击力伤害（含攻击/防御 buff 修正），双方按配置增长能量。 */
-    function basicAttack(actor: MutableUnit): void {
+    function basicAttack(actor: MutableUnit): boolean {
         const opposingSide: AutoBattleSide = actor.side === "ally" ? "enemy" : "ally";
         const target = resolveAutoBattleTarget(sideUnits(opposingSide), actor.lockedTargetId) as MutableUnit | undefined;
         // 锁定目标死亡后该行动即重选新目标并锁定（"目标死亡后顺延"在一个行动内完成）
         actor.lockedTargetId = target?.id ?? null;
         if (target === undefined) {
             // 对侧全灭：终局已由前一次行动判定，此处防御性 no-op
-            return;
+            return true;
         }
 
-        // 移动 + 普攻两阶段：超射程向最近敌方前移再结算（移动不改变行动次序，
-        // 移动目标与攻击目标（前排优先）解耦，见 nearestEnemyOf）
-        moveTowardTarget(actor, nearestEnemyOf(actor) ?? target);
+        // 移动与攻击分属两个表现阶段：本 tick 只广播移动，下一 tick 仍由同一单位
+        // 继续行动，避免角色尚未到位就同时播放攻击和目标受击。
+        if (moveTowardTarget(actor, nearestEnemyOf(actor) ?? target)) {
+            return false;
+        }
 
         // 攻击 buff 加成施法者攻击、防御 buff 减免受击伤害（下限 0）
         const attack = actor.def.attack + autoBattleBuffAttackBonus(actor.buffs);
@@ -320,6 +326,7 @@ export function createAutoBattleBattle(options: AutoBattleBattleOptions): AutoBa
             emit({ type: "unit-dead", sourceId: actor.id, targetId: target.id, round });
             checkGameOver();
         }
+        return true;
     }
 
     /** 技能目标解析：按技能 target 字段选择目标；缺省按主效果 kind 推导（damage → 敌方前排、heal → 己方最低 HP）。 */
@@ -343,25 +350,24 @@ export function createAutoBattleBattle(options: AutoBattleBattleOptions): AutoBa
      * 技能可携带 conditionId（条件不满足时退化为普攻）、target（目标选择）、
      * effects（多效果：伤害/治疗/buff 挂载）与 effectId（视图动效引用）。
      */
-    function castSkill(actor: MutableUnit): void {
+    function castSkill(actor: MutableUnit): boolean {
         const skill = actor.def.skill;
 
         // 条件判定：引用 skillConditions 表，不满足则本行动退化为普攻（不消耗能量）
         if (skill.conditionId !== undefined) {
             const condition = config.skillConditions.find((entry) => entry.id === skill.conditionId);
             if (condition === undefined || !resolveAutoBattleSkillCondition(condition, actor)) {
-                basicAttack(actor);
-                return;
+                return basicAttack(actor);
             }
         }
 
         const target = resolveSkillTarget(actor, skill.target, skill.kind);
         if (target === undefined) {
-            return;
+            return true;
         }
-        if (target !== actor) {
-            // 技能也受射程约束：超射程先移动再结算（与普攻两阶段一致）；自目标不移动
-            moveTowardTarget(actor, target);
+        if (target !== actor && moveTowardTarget(actor, target)) {
+            // 技能也受射程约束：只完成移动阶段；移动表现结束后由同一单位继续施法。
+            return false;
         }
 
         // 多效果结算：逐条结算伤害/治疗/buff，HP 累积到目标
@@ -423,16 +429,17 @@ export function createAutoBattleBattle(options: AutoBattleBattleOptions): AutoBa
         if (skill.teleportTo !== undefined && target !== actor) {
             teleportTarget(target, skill.teleportTo);
         }
+        return true;
     }
 
-    function act(actor: MutableUnit): void {
-        // 武将自身回合开始时恢复固定能量（能量经济规则 1）
-        actor.energy = growAutoBattleEnergy(actor.energy, actor.def.energyMax, config.energyGainAttacker);
-        if (actor.energy >= actor.def.skill.energyCost) {
-            castSkill(actor);
-            return;
+    function act(actor: MutableUnit, continuingKind: "attack" | "skill" | null): "attack" | "skill" | null {
+        // 同一回合的移动续段不重复恢复能量，且不能因移动耗能而把已决定的技能降级为普攻。
+        if (continuingKind === null) {
+            actor.energy = growAutoBattleEnergy(actor.energy, actor.def.energyMax, config.energyGainAttacker);
         }
-        basicAttack(actor);
+        const kind = continuingKind ?? (actor.energy >= actor.def.skill.energyCost ? "skill" : "attack");
+        const completed = kind === "skill" ? castSkill(actor) : basicAttack(actor);
+        return completed ? null : kind;
     }
 
     // 构造即就绪：从配置初始化单位阵列并开启第 1 回合（广播 round-start），
@@ -465,12 +472,18 @@ export function createAutoBattleBattle(options: AutoBattleBattleOptions): AutoBa
                 beginRound(round + 1);
             }
             const actor = unitById(order[actionIndex]);
-            // 行动中阵亡的单位跳过：不重排序列，保证该轮次序固定
-            if (actor !== undefined && actor.hp > 0) {
-                act(actor);
-            }
+            // 行动中阵亡的单位跳过；距离不足的存活单位保留 actionIndex，下一次 tick
+            // 继续同一回合，直到攻击/技能实际结算完成。
+            const nextKind = actor === undefined || actor.hp <= 0 ? null : act(actor, continuingActorId === actor.id ? continuingActionKind : null);
             if (!isOver()) {
-                actionIndex += 1;
+                if (nextKind === null) {
+                    continuingActorId = null;
+                    continuingActionKind = null;
+                    actionIndex += 1;
+                } else {
+                    continuingActorId = actor?.id ?? null;
+                    continuingActionKind = nextKind;
+                }
             }
         },
         restart(): void {
@@ -483,6 +496,8 @@ export function createAutoBattleBattle(options: AutoBattleBattleOptions): AutoBa
             result = undefined;
             order = [];
             actionIndex = 0;
+            continuingActorId = null;
+            continuingActionKind = null;
             // 重开即新对局：清空事件日志与序号，避免旧对局日志残留
             events.length = 0;
             seq = 0;

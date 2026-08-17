@@ -103,9 +103,8 @@ describe("Auto-battle target lock", () => {
             energyGainAttacker: 10,
             energyGainTarget: 5,
         });
-        // tick1: a 行动秒杀 ef（锁定 ef）；tick2: ef 阵亡跳过；tick3: eb 行动；
-        // tick4: 轮次+1；tick5: a 行动时 ef 已死 → 顺延锁定 eb
-        for (let i = 0; i < 5; i += 1) {
+        // 移动阶段可跨多个 tick；推进到 a 在后续行动中完成对 eb 的重新锁定。
+        for (let guard = 0; guard < 30 && battle.state().units.find((unit) => unit.side === "ally")?.lockedTargetId !== "eb"; guard += 1) {
             battle.tick();
         }
         expect(battle.events().some((e) => e.type === "unit-dead")).toBe(true);
@@ -328,7 +327,9 @@ describe("Auto-battle determinism and lineup decoupling", () => {
 
         const lineupsBefore = JSON.stringify(battle.config.lineups);
         const heroesBefore = JSON.stringify(battle.config.heroes);
-        battle.tick();
+        for (let guard = 0; guard < 10 && battle.state().units.find((unit) => unit.side === "enemy")?.hp === 100; guard += 1) {
+            battle.tick();
+        }
 
         // 战斗单位掉血，但配置/编队数据保持不可变
         const enemy = battle.state().units.find((u) => u.side === "enemy");

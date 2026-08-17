@@ -12048,13 +12048,18 @@ class GLoader extends GObject {
         this.updateLayout();
     }
     loadContent() {
-        this.clearContent();
-        if (!this._url)
+        if (!this._url) {
+            this.clearContent();
             return;
-        if (this._url.startsWith("ui://"))
+        }
+        if (this._url.startsWith("ui://")) {
+            this.clearContent();
             this.loadFromPackage(this._url);
-        else
+        }
+        else {
+            // 外部逐帧动画保留上一张纹理，等异步加载完成后再替换，避免中间透明空帧。
             this.loadExternal();
+        }
     }
     loadFromPackage(itemURL) {
         let contentItem = UIPackage.getItemByURL(itemURL);
@@ -12524,13 +12529,18 @@ class GLoader3D extends GObject {
         return this._content;
     }
     loadContent() {
-        this.clearContent();
-        if (!this._url)
+        if (!this._url) {
+            this.clearContent();
             return;
-        if (this._url.startsWith("ui://"))
+        }
+        if (this._url.startsWith("ui://")) {
+            this.clearContent();
             this.loadFromPackage(this._url);
-        else
+        }
+        else {
+            // 外部逐帧动画保留上一张纹理，等异步加载完成后再替换，避免中间透明空帧。
             this.loadExternal();
+        }
     }
     loadFromPackage(itemURL) {
         this._contentItem = UIPackage.getItemByURL(itemURL);

@@ -4,6 +4,7 @@ import cv2
 import numpy as np
 
 COUNTS={"idle":10,"walk":8,"run":8,"attack":6,"slash":8,"hit":4,"weak":6,"stun":4,"death":10,"skillRaise":8}
+NORMALIZE_SUBJECT_SCALE=1.0
 
 def cutout(path):
     source=cv2.imread(str(path),cv2.IMREAD_UNCHANGED)
@@ -68,6 +69,13 @@ def alpha_over(foreground,background):
     return np.dstack([np.clip(rgb,0,255),np.clip(oa[:,:,0]*255,0,255)]).astype(np.uint8)
 
 
+def scale_frame_subject(img):
+    if NORMALIZE_SUBJECT_SCALE>=0.999: return img
+    s=NORMALIZE_SUBJECT_SCALE
+    m=np.array([[s,0,128-128*s],[0,s,382-382*s]],dtype=np.float32)
+    return cv2.warpAffine(img,m,(256,384),flags=cv2.INTER_LANCZOS4,borderMode=cv2.BORDER_CONSTANT,borderValue=(0,0,0,0))
+
+
 def overlay_golden_hammer_left(img):
     weapon=np.zeros_like(img); outline=(18,46,72,255); gold=(43,158,221,255); light=(102,222,255,255); dark=(20,91,145,255); green=(61,126,51,255)
     cv2.rectangle(weapon,(152,56),(255,112),outline,-1,cv2.LINE_AA);cv2.rectangle(weapon,(157,61),(252,107),gold,-1,cv2.LINE_AA)
@@ -83,18 +91,22 @@ def save(path,img):
     if not cv2.imwrite(str(path),img): raise IOError(path)
 
 def main():
-    p=argparse.ArgumentParser(); p.add_argument('--out-dir',required=True); p.add_argument('--character',required=True); p.add_argument('--reference',required=True); p.add_argument('--raw-manifest',required=True); p.add_argument('--weapon-overlay',default=''); a=p.parse_args()
+    p=argparse.ArgumentParser(); p.add_argument('--out-dir',required=True); p.add_argument('--character',required=True); p.add_argument('--reference',required=True); p.add_argument('--raw-manifest',required=True); p.add_argument('--weapon-overlay',default=''); p.add_argument('--subject-scale',type=float,default=1.0); a=p.parse_args()
+    global NORMALIZE_SUBJECT_SCALE
+    NORMALIZE_SUBJECT_SCALE=a.subject_scale
     out=Path(a.out_dir); out.mkdir(parents=True,exist_ok=True)
     records=json.loads(Path(a.raw_manifest).read_text(encoding='utf-8'))
     raw={(r['character'],r['action'],int(r['index'])):Path(r['raw']) for r in records}
     idle=cutout(a.reference)
     if a.weapon_overlay=='golden-hammer-left': idle=overlay_golden_hammer_left(idle)
+    idle=scale_frame_subject(idle)
     generated={}
     bounce=[0,-1,-2,-1,0,1,0,-1,0,0]
     generated['idle']=[transform(idle,dy=v) for v in bounce]
     for action,count in [('walk',8),('attack',6),('hit',4),('skill_raise',8)]:
         generated[action]=[cutout(raw[(a.character,action,i)]) for i in range(count)]
         if a.weapon_overlay=='golden-hammer-left': generated[action]=[overlay_golden_hammer_left(img) for img in generated[action]]
+        generated[action]=[scale_frame_subject(img) for img in generated[action]]
     generated['run']=[transform(img,dx=(-2 if i%2==0 else 2),dy=-2,scale=1.02) for i,img in enumerate(generated['walk'])]
     generated['slash']=[transform(generated['attack'][round(i*5/7)],angle=(-3+6*i/7),dx=int(-2+4*i/7)) for i in range(8)]
     generated['weak']=[transform(idle,angle=4,dy=7+abs(2-i),scale=.97) for i in range(6)]

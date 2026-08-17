@@ -247,8 +247,13 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)("Auto-battle presenter drive timin
         driver?.();
         expect(fixture.battle.events).toHaveLength(eventCountAfterAction);
 
-        // 2x 下 500ms 墙钟对应 1000ms 表现时间，超过普通行动的 900ms 窗口后才推进下一人。
+        // 即使最低窗口已到，上一行动动画仍在当前驱动末尾完成；不能提前推进下一单位。
         wallTime += 400;
+        driver?.();
+        expect(fixture.battle.events).toHaveLength(eventCountAfterAction);
+
+        // 下一次驱动确认 EffectAnimator/UnitAnimator 都空闲后，才开始后续行动。
+        wallTime += 50;
         driver?.();
         expect(fixture.battle.events.length).toBeGreaterThan(eventCountAfterAction);
 

@@ -141,9 +141,10 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)("Auto-battle fixture composition",
         const fixture = createAutoBattleFixture({ configContent: configContent() });
         await fixture.start();
 
-        // 造成伤害并积累能量
-        fixture.battle.tick();
-        fixture.battle.tick();
+        // 移动阶段可独占 tick，推进到首次完成攻击并积累能量。
+        for (let guard = 0; guard < 20 && !fixture.battle.events.some((event) => event.type === "attack" || event.type === "skill-damage"); guard += 1) {
+            fixture.battle.tick();
+        }
         expect(fixture.battle.state.units.some((u) => u.energy > 0)).toBe(true);
         expect(fixture.battle.events.length).toBeGreaterThan(0);
 
@@ -204,8 +205,10 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)("Auto-battle fixture composition",
         const fixture = createAutoBattleFixture({ configContent: configContent() });
         await fixture.start();
 
-        fixture.battle.tick();
-        expect(fixture.battle.state.units[1]?.hp).toBeLessThan(100);
+        for (let guard = 0; guard < 20 && fixture.battle.state.units.every((unit) => unit.hp === unit.maxHp); guard += 1) {
+            fixture.battle.tick();
+        }
+        expect(fixture.battle.state.units.some((unit) => unit.hp < unit.maxHp)).toBe(true);
 
         fixture.viewModel.render();
         fixture.viewModel.node("btn_restart").clickHandler?.();

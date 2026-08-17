@@ -172,13 +172,43 @@ describe("Auto-battle move in battle", () => {
         };
         const battle = createAutoBattleBattle({ clock, config, lineups: () => pair });
         battle.tick();
+        // 第一阶段只移动；行动序号保持，不能在到位前同时结算伤害。
+        expect(battle.events.map((e) => e.type)).toContain("move");
+        expect(battle.events.map((e) => e.type)).not.toContain("attack");
+        expect(battle.state.actionIndex).toBe(0);
+
+        for (let guard = 0; guard < 10 && !battle.events.some((event) => event.type === "attack"); guard += 1) {
+            battle.tick();
+        }
         const types = battle.events.map((e) => e.type);
-        // 1v1 跨半场：move 到距离 ≤1 再攻击
-        expect(types).toContain("move");
+        // movePoints 较小时可分多段移动；必须全部到位后才攻击并推进下一行动者。
         expect(types).toContain("attack");
-        const moveIndex = types.indexOf("move");
-        const attackIndex = types.indexOf("attack");
-        expect(moveIndex).toBeLessThan(attackIndex);
+        expect(types.indexOf("move")).toBeLessThan(types.indexOf("attack"));
+        expect(battle.state.actionIndex).toBe(1);
+        battle.dispose();
+    });
+
+    test("out-of-range skill waits for movement before damage and turn completion", () => {
+        const config = createAutoBattleConfig({
+            heroes: [hero("a", "a", { attackRange: 1, skill: { id: "holy", name: "Holy", kind: "damage", value: 10, energyCost: 1 } }), hero("x", "x")],
+            lineups: { ally: ["a"], enemy: ["x"] },
+            energyGainAttacker: 10,
+            energyGainTarget: 5,
+        });
+        const clock = createAutoBattleClock();
+        const pair: AutoBattleLineupPair = { ally: [{ slot: 0, heroId: "a" }], enemy: [{ slot: 0, heroId: "x" }] };
+        const battle = createAutoBattleBattle({ clock, config, lineups: () => pair });
+
+        battle.tick();
+        expect(battle.events.map((event) => event.type)).toContain("move");
+        expect(battle.events.map((event) => event.type)).not.toContain("skill-damage");
+        expect(battle.state.actionIndex).toBe(0);
+
+        for (let guard = 0; guard < 10 && !battle.events.some((event) => event.type === "skill-damage"); guard += 1) {
+            battle.tick();
+        }
+        expect(battle.events.map((event) => event.type)).toContain("skill-damage");
+        expect(battle.state.actionIndex).toBe(1);
         battle.dispose();
     });
 

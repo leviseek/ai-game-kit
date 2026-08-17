@@ -13,7 +13,9 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)("Auto-battle terminal states and d
         });
         await fixture.start();
 
-        fixture.battle.tick(); // a 一击击杀 x
+        for (let guard = 0; guard < 10 && fixture.battle.state.phase === "fighting"; guard += 1) {
+            fixture.battle.tick();
+        }
 
         const state = fixture.battle.state;
         expect(state.phase).toBe("over");
@@ -32,7 +34,9 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)("Auto-battle terminal states and d
         });
         await fixture.start();
 
-        fixture.battle.tick(); // x 一击击杀 a
+        for (let guard = 0; guard < 10 && fixture.battle.state.phase === "fighting"; guard += 1) {
+            fixture.battle.tick();
+        }
 
         const state = fixture.battle.state;
         expect(state.phase).toBe("over");
@@ -50,7 +54,9 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)("Auto-battle terminal states and d
         });
         await fixture.start();
 
-        fixture.battle.tick(); // a 一击击杀 x → 终局
+        for (let guard = 0; guard < 10 && fixture.battle.state.phase === "fighting"; guard += 1) {
+            fixture.battle.tick();
+        }
         expect(fixture.battle.state.result).toBe("win");
 
         const before = fixture.battle.events.length;

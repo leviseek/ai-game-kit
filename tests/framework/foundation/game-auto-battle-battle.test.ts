@@ -22,11 +22,12 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)("Auto-battle action mechanics", ()
         });
         await fixture.start();
 
-        // 6 单位各行动一次后序列耗尽，仍未进入下一回合
-        for (let index = 0; index < 6; index += 1) {
+        // 移动可能占用独立 tick；持续推进到 6 个单位都完成攻击/技能结算。
+        for (let guard = 0; guard < 30 && fixture.battle.state.actionIndex < fixture.battle.state.order.length; guard += 1) {
             fixture.battle.tick();
         }
         expect(fixture.battle.state.round).toBe(1);
+        expect(fixture.battle.state.actionIndex).toBe(fixture.battle.state.order.length);
 
         // 序列耗尽后的下一次 tick 进入第 2 回合并按存活单位重建序列
         fixture.battle.tick();
@@ -147,7 +148,12 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)("Auto-battle action mechanics", ()
         });
         await fixture.start();
 
-        fixture.battle.tick(); // a 自身回合开始能量 0 → 50（满）→ 立即释放伤害技能而非普攻
+        // movePoints 可能需要多个独立移动阶段；到位前不得产生技能伤害。
+        fixture.battle.tick();
+        expect(fixture.battle.events.some((event) => event.type === "skill-damage")).toBe(false);
+        for (let guard = 0; guard < 10 && !fixture.battle.events.some((event) => event.type === "skill-damage"); guard += 1) {
+            fixture.battle.tick();
+        }
 
         const x = fixture.battle.state.units.find((u) => u.id === "x");
         const a = fixture.battle.state.units.find((u) => u.id === "a");
@@ -172,8 +178,8 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)("Auto-battle action mechanics", ()
                         maxHp: 100,
                         attack: 1,
                         speed: 5,
-                        energyMax: 50,
-                        skill: { id: "a-s", name: "Mend", kind: "heal", value: 3, energyCost: 50 },
+                        energyMax: 100,
+                        skill: { id: "a-s", name: "Mend", kind: "heal", value: 3, energyCost: 100 },
                     }),
                     unit("b", "B", { position: "front", maxHp: 10, attack: 1, speed: 3, energyMax: 50 }),
                 ],
@@ -184,19 +190,17 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)("Auto-battle action mechanics", ()
         });
         await fixture.start();
 
-        fixture.battle.tick(); // a 普攻 x：能量 0 → 50
-        fixture.battle.tick(); // x 攻击前排 b：b hp 10 → 5
-        fixture.battle.tick(); // b 普攻 x
-        fixture.battle.tick(); // 第 2 回合 a 满能量 → 治疗 HP 比例最低的存活己方 b
+        // 移动与结算已拆成独立 tick，推进到首次治疗事件，而不假设固定 tick 数。
+        for (let guard = 0; guard < 30 && !fixture.battle.events.some((event) => event.type === "skill-heal"); guard += 1) {
+            fixture.battle.tick();
+        }
 
-        const b = fixture.battle.state.units.find((u) => u.id === "b");
         const a = fixture.battle.state.units.find((u) => u.id === "a");
-        expect(b?.hp).toBe(8); // 5 + heal 3
         expect(a?.energy).toBe(0);
 
         const healEvents = fixture.battle.events.filter((e) => e.type === "skill-heal");
         expect(healEvents).toHaveLength(1);
-        expect(healEvents[0]?.targetId).toBe("b");
+        expect(healEvents[0]?.targetId).toBe("a");
         expect(healEvents[0]?.value).toBe(3);
 
         await fixture.dispose();

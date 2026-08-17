@@ -274,7 +274,8 @@ export function createAutoBattlePresenter(fixture: GameFixture, node: (name: str
         // 逻辑 tick。窗口使用 GameClock 时间，因此 0.5x/2x/3x 会线性缩放等待，
         // 不再通过每个 50ms 驱动连续覆盖攻击、受击与死亡动画。
         autoBattle.clock.advance(wallDelta);
-        if (autoBattle.battle.state.phase === "fighting" && gameNow >= nextBattleActionAt) {
+        const presentationBusy = effectAnimator.active() > 0 || unitAnimator.active() > 0;
+        if (autoBattle.battle.state.phase === "fighting" && gameNow >= nextBattleActionAt && !presentationBusy) {
             const previousEventCount = autoBattle.battle.events.length;
             autoBattle.battle.tick();
             const emitted = autoBattle.battle.events.slice(previousEventCount);
