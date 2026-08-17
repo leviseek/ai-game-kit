@@ -3,6 +3,8 @@ import type { EffectNode } from "./EffectAnimator";
 import { WARRIOR_FRAME_URLS, type WarriorAnim, type WarriorVariant } from "./animUrls";
 
 /** 缺省帧时长；表驱动配置缺失时用于旧资源回退。 */
+const DEATH_HOLD_MS = 900;
+
 const DEFAULT_FRAME_MS: Readonly<Record<WarriorAnim, number>> = {
     idle: 80,
     gesture: 80,
@@ -154,6 +156,9 @@ export function createUnitAnimator(options: {
                 // death 一次性：播完隐去并移除状态。
                 if (frame < urls.length) {
                     writeFrame(id, urls, frame);
+                } else if (elapsed < urls.length * duration + DEATH_HOLD_MS) {
+                    // 倒地末帧额外停留，避免逻辑死亡后角色只闪现一瞬。
+                    writeFrame(id, urls, urls.length - 1);
                 } else {
                     writeAlpha(id, 0);
                     states.delete(id);

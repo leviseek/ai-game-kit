@@ -137,8 +137,14 @@ describe("Auto-battle unit animator", () => {
         expect(enemyNode.url).toBe(WARRIOR_FRAME_URLS.m.death[0]);
         expect(animator.active()).toBe(1);
 
-        // 推进越过 death 全部 10 帧（80ms/帧）：alpha=0（隐藏）
-        time.advance(80 * 20);
+        // 10 帧播完后保持倒地末帧，避免刚死亡就消失。
+        time.advance(80 * 10);
+        animator.step();
+        expect(enemyNode.url).toBe(WARRIOR_FRAME_URLS.m.death[9]);
+        expect(enemyNode.alpha).toBe(1);
+        expect(animator.active()).toBe(1);
+
+        time.advance(900);
         animator.step();
         expect(enemyNode.alpha).toBe(0);
         expect(animator.active()).toBe(0);
@@ -154,7 +160,7 @@ describe("Auto-battle unit animator", () => {
         setAlive(["e"]);
         animator.step();
         expect(animator.active()).toBe(1);
-        time.advance(80 * 20);
+        time.advance(80 * 30);
         animator.step();
         expect(ensureNode("a").alpha).toBe(0);
         expect(animator.active()).toBe(0);

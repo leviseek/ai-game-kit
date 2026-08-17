@@ -84,7 +84,7 @@ export const AUTO_BATTLE_UNIT_ANIMATIONS: readonly AutoBattleUnitAnimation[] = [
         dir: "auto-battle",
         frameCount: 1,
         frameCountByAnim: { idle: 1, gesture: 1, walk: 8, run: 8, attack: 6, slash: 8, hit: 4, weak: 6, stun: 4, death: 10, skillRaise: 8 },
-        frameMsByAnim: { idle: 80, gesture: 80, walk: 80, run: 60, attack: 50, slash: 60, hit: 80, weak: 100, stun: 120, death: 80, skillRaise: 70 },
+        frameMsByAnim: { idle: 100, gesture: 100, walk: 100, run: 80, attack: 90, slash: 90, hit: 120, weak: 140, stun: 160, death: 120, skillRaise: 100 },
         prefixByAnim: {
             idle: "warrior_ai_idle",
             gesture: "warrior_ai_idle",
