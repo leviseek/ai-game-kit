@@ -23,7 +23,22 @@
             "targets": [".claude/skills/find-skills", ".qoder/skills/find-skills", ".agents/skills/find-skills"]
         },
         "chibi-warrior-asset-pipeline": {
-            "targets": [".codex/skills/chibi-warrior-asset-pipeline", ".cursor/skills/chibi-warrior-asset-pipeline", ".opencode/skills/chibi-warrior-asset-pipeline", ".qoder/skills/chibi-warrior-asset-pipeline", ".agents/skills/chibi-warrior-asset-pipeline"]
+            "targets": [
+                ".codex/skills/chibi-warrior-asset-pipeline",
+                ".cursor/skills/chibi-warrior-asset-pipeline",
+                ".opencode/skills/chibi-warrior-asset-pipeline",
+                ".qoder/skills/chibi-warrior-asset-pipeline",
+                ".agents/skills/chibi-warrior-asset-pipeline"
+            ]
+        },
+        "character-animation-asset-pipeline": {
+            "targets": [
+                ".codex/skills/character-animation-asset-pipeline",
+                ".cursor/skills/character-animation-asset-pipeline",
+                ".opencode/skills/character-animation-asset-pipeline",
+                ".qoder/skills/character-animation-asset-pipeline",
+                ".agents/skills/character-animation-asset-pipeline"
+            ]
         }
     },
     "agents": {

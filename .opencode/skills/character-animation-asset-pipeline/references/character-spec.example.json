@@ -1,0 +1,40 @@
+{
+    "animationId": "flame-priest",
+    "displayRole": "cute chibi flame priestess",
+    "body": "three-head-tall proportions, big head, short torso, short legs",
+    "face": "cute round fair-skinned face, amber eyes, white short hair",
+    "headwear": "small matte golden crown with one red gem",
+    "outfit": "red and matte-gold priest robes with white inner sleeves",
+    "weapon": "complete tall dark-red staff with a single opaque ruby head",
+    "palette": ["deep red", "matte gold", "white", "amber"],
+    "teamReadability": "friendly ranged caster",
+    "required": ["same white short hair in every frame", "same small golden crown in every frame", "exactly one complete staff", "both hands and both feet visible"],
+    "forbidden": ["fire particles", "glow", "floor shadow", "sword", "shield", "extra staff"],
+    "source": {
+        "checkpoint": "animagine-xl-3.1.safetensors",
+        "width": 1024,
+        "height": 1536,
+        "candidateCount": 3,
+        "steps": 20,
+        "cfg": 5,
+        "sampler": "dpmpp_2m_sde",
+        "scheduler": "karras"
+    },
+    "actionGeneration": {
+        "width": 512,
+        "height": 768,
+        "denoise": 0.5,
+        "ipAdapterWeight": 0.45,
+        "ipAdapterWeightType": "composition",
+        "ipAdapterEnd": 0.65,
+        "openPoseStrength": 0.42,
+        "openPoseEnd": 0.72,
+        "steps": 20,
+        "cfg": 5
+    },
+    "output": {
+        "width": 256,
+        "height": 384,
+        "target": "assets/animations/auto-battle"
+    }
+}
