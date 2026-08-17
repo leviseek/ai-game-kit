@@ -16,12 +16,14 @@ import { validateArtifacts } from "../lib/artifact-validation";
 import { getGenerator, listGenerators, registerGenerator, type GeneratedArtifact, type GeneratorParams } from "../lib/generator";
 import { repoRoot } from "../lib/project";
 import { createPythonWaveGenerator } from "../generators/python-wave";
+import { createPythonVfxGenerator } from "../generators/python-vfx";
 import { createComfyUiGenerator } from "../generators/comfyui";
 import { createFguiSpriteGenerator } from "../generators/fgui-sprite";
 
 /** 内置生成器注册（命令入口统一注入；测试可自建注册表）。 */
 export function registerBuiltinGenerators(): void {
     registerGenerator(createPythonWaveGenerator());
+    registerGenerator(createPythonVfxGenerator());
     registerGenerator(createComfyUiGenerator());
     registerGenerator(createFguiSpriteGenerator());
 }
@@ -74,12 +76,22 @@ function runGenerate(argv: readonly string[]): Promise<number> {
     const parsed = parseArgs(argv);
     const generatorId = parsed.positionals[0];
     if (generatorId === undefined) {
-        console.error("[content:assetgen] generate 需要生成器 id（可用: " + listGenerators().map((g) => g.id).join(", ") + "）");
+        console.error(
+            "[content:assetgen] generate 需要生成器 id（可用: " +
+                listGenerators()
+                    .map((g) => g.id)
+                    .join(", ") +
+                "）",
+        );
         return Promise.resolve(2);
     }
     const adapter = getGenerator(generatorId);
     if (adapter === undefined) {
-        console.error(`[content:assetgen] 未知生成器: ${generatorId}（已注册: ${listGenerators().map((g) => g.id).join(", ")}）`);
+        console.error(
+            `[content:assetgen] 未知生成器: ${generatorId}（已注册: ${listGenerators()
+                .map((g) => g.id)
+                .join(", ")}）`,
+        );
         return Promise.resolve(2);
     }
     const params: Record<string, string | number | boolean> = {};
@@ -97,7 +109,9 @@ function runGenerate(argv: readonly string[]): Promise<number> {
             writeFileSync(join(stagingDir, MANIFEST_NAME), JSON.stringify(manifest, null, 2));
             console.log(`[content:assetgen] 生成完成: ${generatorId} → ${stagingDir}`);
             for (const artifact of generateResult.artifacts) {
-                console.log(`  - ${artifact.relPath} (${artifact.kind}${artifact.width !== undefined ? ` ${artifact.width}x${artifact.height}` : ""}${artifact.durationSec !== undefined ? ` ${artifact.durationSec}s` : ""})`);
+                console.log(
+                    `  - ${artifact.relPath} (${artifact.kind}${artifact.width !== undefined ? ` ${artifact.width}x${artifact.height}` : ""}${artifact.durationSec !== undefined ? ` ${artifact.durationSec}s` : ""})`,
+                );
             }
             console.log(`[content:assetgen] 下一步: assetgen validate "${stagingDir}"`);
             return 0;

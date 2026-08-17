@@ -1,7 +1,7 @@
 /**
  * 资产帧文件存在性校验：配置条目声明的动画帧（assets/<bundleDir>/<dir>/<prefix>_<NN>.<ext>）
  * 必须真实存在；缺失帧报 error。数据源：unit-animations 表（schema.assets 声明）。
- * 另含 skill-effects kind=explosion 的爆炸帧专项（对应 animUrls 的 EXPLOSION_FRAME_URLS 12 帧约定）。
+ * 另含 skill-effects 各视觉类型的序列帧专项（与 view/animUrls.ts 的帧数约定一致）。
  */
 import { existsSync } from "node:fs";
 import { join } from "node:path";
@@ -83,24 +83,41 @@ export function validateAssetFiles(projectRoot: string, schema: TableSchema, row
     return issues;
 }
 
-/** skill-effects kind=explosion → 爆炸序列帧存在性（代码约定 EXPLOSION_FRAME_URLS 12 帧）。 */
+/** skill-effects 视觉类型 → 运行时约定的透明序列帧存在性。 */
 export function validateExplosionFrames(projectRoot: string, rows: readonly unknown[], deps: AssetDeps = realAssetDeps): ContentIssue[] {
     const issues: ContentIssue[] = [];
     const dir = join(projectRoot, "assets", "animations", "auto-battle");
-    let checked = false;
-    for (const row of rows) {
-        if (row === null || typeof row !== "object" || Array.isArray(row)) continue;
-        if ((row as Record<string, unknown>).kind !== "explosion") continue;
-        for (let index = 0; index < EXPLOSION_FRAME_COUNT; index++) {
-            const frame = `fx_explosion_${pad2(index)}.png`;
-            if (!deps.exists(join(dir, frame))) {
-                issues.push({ severity: "error", code: "asset-frame-missing", message: `爆炸序列帧缺失: animations/auto-battle/${frame}` });
+    const usedKinds = new Set(rows.filter((row): row is Record<string, unknown> => row !== null && typeof row === "object" && !Array.isArray(row)).map((row) => String(row.kind)));
+    const specs: readonly { readonly kind: string; readonly sequences: readonly { readonly prefix: string; readonly count: number; readonly label: string }[] }[] = [
+        { kind: "explosion", sequences: [{ prefix: "fx_explosion", count: EXPLOSION_FRAME_COUNT, label: "爆炸" }] },
+        {
+            kind: "physical-impact",
+            sequences: [
+                { prefix: "fx_slash_arc", count: 6, label: "刀光" },
+                { prefix: "fx_hit_physical", count: 6, label: "物理命中" },
+            ],
+        },
+        {
+            kind: "fireball",
+            sequences: [
+                { prefix: "fx_fireball_projectile", count: 8, label: "火球飞行" },
+                { prefix: "fx_fireball_impact", count: 10, label: "火球命中" },
+            ],
+        },
+        { kind: "heal-aura", sequences: [{ prefix: "fx_heal_aura", count: 10, label: "治疗光环" }] },
+    ];
+    for (const spec of specs) {
+        if (!usedKinds.has(spec.kind)) continue;
+        for (const sequence of spec.sequences) {
+            for (let index = 0; index < sequence.count; index++) {
+                const frame = `${sequence.prefix}_${pad2(index)}.png`;
+                if (!deps.exists(join(dir, frame))) {
+                    issues.push({ severity: "error", code: "asset-frame-missing", message: `${sequence.label}序列帧缺失: animations/auto-battle/${frame}` });
+                }
             }
         }
-        checked = true;
-        break;
     }
-    if (!checked) {
+    if (!usedKinds.has("explosion")) {
         issues.push({ severity: "warning", code: "asset-kind-unused", message: "skill-effects 无 kind=explosion 条目（爆炸帧校验跳过）" });
     }
     return issues;

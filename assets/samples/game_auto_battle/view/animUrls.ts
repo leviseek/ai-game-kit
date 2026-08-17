@@ -32,6 +32,12 @@ function frames(namePrefix: string, count: number): readonly string[] {
 
 /** 爆炸序列帧 URL（12 帧 × 96x96，资源 fx_explosion_00..11）。 */
 export const EXPLOSION_FRAME_URLS: readonly string[] = frames("fx_explosion", 12);
+/** P0 通用战斗反馈序列：全部为 128×128 透明 PNG。 */
+export const PHYSICAL_HIT_FRAME_URLS: readonly string[] = frames("fx_hit_physical", 6);
+export const SLASH_ARC_FRAME_URLS: readonly string[] = frames("fx_slash_arc", 6);
+export const FIREBALL_PROJECTILE_FRAME_URLS: readonly string[] = frames("fx_fireball_projectile", 8);
+export const FIREBALL_IMPACT_FRAME_URLS: readonly string[] = frames("fx_fireball_impact", 10);
+export const HEAL_AURA_FRAME_URLS: readonly string[] = frames("fx_heal_aura", 10);
 
 /** 按单位动画表条目生成帧 URL 序列：`bundle://<bundle>/<dir>/<prefix>_<两位序号>`。 */
 export function buildUnitAnimationFrames(animation: AutoBattleUnitAnimation): Readonly<Record<AutoBattleAnimName, readonly string[]>> {

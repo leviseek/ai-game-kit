@@ -14,6 +14,8 @@ export type HitFeedbackEffect =
     | { readonly kind: "teleport"; readonly unitId: string; readonly toGrid: string; readonly seq: number }
     | { readonly kind: "entrance"; readonly unitId: string; readonly seq: number }
     | { readonly kind: "explosion"; readonly unitId: string; readonly seq: number }
+    | { readonly kind: "effect-sequence"; readonly unitId: string; readonly effect: "physical-impact" | "heal-aura"; readonly seq: number }
+    | { readonly kind: "projectile-effect"; readonly unitId: string; readonly sourceId: string; readonly effect: "fireball"; readonly seq: number }
     | { readonly kind: "unit-anim"; readonly unitId: string; readonly anim: AutoBattleAnimName; readonly nextAnim?: AutoBattleAnimName; readonly seq: number };
 
 /**
@@ -53,6 +55,12 @@ export function projectHitFeedbackEvents(
             effects.push({ kind: "hit-flash", unitId: targetId, seq: event.seq });
         } else if (effectDef.kind === "float") {
             effects.push({ kind: "damage-float", unitId: targetId, value: event.value ?? 0, seq: event.seq });
+        } else if (effectDef.kind === "physical-impact") {
+            effects.push({ kind: "effect-sequence", unitId: targetId, effect: "physical-impact", seq: event.seq });
+        } else if (effectDef.kind === "fireball" && event.sourceId !== "") {
+            effects.push({ kind: "projectile-effect", unitId: targetId, sourceId: event.sourceId, effect: "fireball", seq: event.seq });
+        } else if (effectDef.kind === "heal-aura") {
+            effects.push({ kind: "effect-sequence", unitId: targetId, effect: "heal-aura", seq: event.seq });
         }
     }
 
@@ -121,6 +129,7 @@ export function projectHitFeedbackEvents(
             effects.push({ kind: "unit-anim", unitId: event.targetId, anim: "hit", seq: event.seq });
             if (event.sourceId !== "") {
                 if (event.type === "attack") {
+                    effects.push({ kind: "effect-sequence", unitId: event.targetId, effect: "physical-impact", seq: event.seq });
                     effects.push({ kind: "unit-anim", unitId: event.sourceId, anim: "attack", seq: event.seq });
                 } else {
                     // 技能先播放抬手，再自动衔接重劈命中段。

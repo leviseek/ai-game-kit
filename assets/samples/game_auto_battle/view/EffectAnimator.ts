@@ -1,5 +1,5 @@
 import type { HitFeedbackEffect } from "./effects";
-import { EXPLOSION_FRAME_URLS } from "./animUrls";
+import { EXPLOSION_FRAME_URLS, FIREBALL_IMPACT_FRAME_URLS, FIREBALL_PROJECTILE_FRAME_URLS, HEAL_AURA_FRAME_URLS, PHYSICAL_HIT_FRAME_URLS, SLASH_ARC_FRAME_URLS } from "./animUrls";
 
 /** 特效节点接缝：动画器只消费 alpha/xy/url 写入，与渲染器绑定分离。 */
 export interface EffectNode {
@@ -28,10 +28,14 @@ const SCREEN_CENTER_X = 640;
 const ENTRANCE_FROM_EDGE = 160;
 /** 爆炸序列帧参数：每帧展示时长（12 帧总时长约 480ms，短促爆炸）。 */
 const EXPLOSION_FRAME_MS = 40;
+const PHYSICAL_IMPACT_FRAME_MS = 60;
+const HEAL_AURA_FRAME_MS = 80;
+const FIREBALL_PROJECTILE_FRAME_MS = 70;
+const FIREBALL_IMPACT_FRAME_MS = 60;
 
 /** 进行中的单个动画：按开始时间与时长插值 alpha/xy。 */
 interface ActiveAnimation {
-    readonly kind: "float" | "flash" | "shake" | "move" | "teleport" | "entrance" | "explosion";
+    readonly kind: "float" | "flash" | "shake" | "move" | "teleport" | "entrance" | "explosion" | "sequence" | "projectile";
     readonly unitId: string;
     readonly start: number;
     readonly end: number;
@@ -42,8 +46,11 @@ interface ActiveAnimation {
     /** 位移起点/终点坐标（move 用）：from→to 插值。 */
     readonly fromXY?: { readonly x: number; readonly y: number };
     readonly toXY?: { readonly x: number; readonly y: number };
-    /** 爆炸帧 URL 序列（explosion 用）：逐帧 setUrl。 */
+    /** 特效帧 URL 序列：逐帧 setUrl。 */
     readonly urls?: readonly string[];
+    readonly frameMs?: number;
+    /** 投射物飞行阶段帧数；后续帧固定在目标位置播放命中爆发。 */
+    readonly projectileFrames?: number;
 }
 
 /** 动画器句柄：消费特效意图并驱动节点；时间源注入保证测试可控。 */
@@ -134,6 +141,16 @@ export function createEffectAnimator(options: {
         }
     }
 
+    /** 每个目标只有一个 loader_effect；新序列统一替换该目标正在播放的旧序列。 */
+    function replaceEffectLane(unitId: string): void {
+        for (let index = activeAnimations.length - 1; index >= 0; index -= 1) {
+            const anim = activeAnimations[index]!;
+            if (anim.unitId === unitId && (anim.kind === "explosion" || anim.kind === "sequence" || anim.kind === "projectile")) {
+                activeAnimations.splice(index, 1);
+            }
+        }
+    }
+
     function play(effects: readonly HitFeedbackEffect[]): void {
         const now = timeSource();
         for (const effect of effects) {
@@ -198,7 +215,7 @@ export function createEffectAnimator(options: {
                 });
             } else if (effect.kind === "explosion") {
                 // 爆炸：定位到目标单位坐标 + 播放首帧 + 淡入；后续 step 逐帧 setUrl
-                replace(effect.unitId, "explosion");
+                replaceEffectLane(effect.unitId);
                 const base = homeXYOf(effect.unitId);
                 writeXY(`fx_effect_${effect.unitId}`, base.x, base.y);
                 writeUrl(`fx_effect_${effect.unitId}`, EXPLOSION_FRAME_URLS[0]!);
@@ -209,6 +226,36 @@ export function createEffectAnimator(options: {
                     start: now,
                     end: now + EXPLOSION_FRAME_URLS.length * EXPLOSION_FRAME_MS,
                     urls: EXPLOSION_FRAME_URLS,
+                    frameMs: EXPLOSION_FRAME_MS,
+                });
+            } else if (effect.kind === "effect-sequence") {
+                replaceEffectLane(effect.unitId);
+                const base = homeXYOf(effect.unitId);
+                const urls = effect.effect === "physical-impact" ? [...SLASH_ARC_FRAME_URLS, ...PHYSICAL_HIT_FRAME_URLS] : HEAL_AURA_FRAME_URLS;
+                const frameMs = effect.effect === "physical-impact" ? PHYSICAL_IMPACT_FRAME_MS : HEAL_AURA_FRAME_MS;
+                writeXY(`fx_effect_${effect.unitId}`, base.x, base.y);
+                writeUrl(`fx_effect_${effect.unitId}`, urls[0]!);
+                writeAlpha(`fx_effect_${effect.unitId}`, 1);
+                activeAnimations.push({ kind: "sequence", unitId: effect.unitId, start: now, end: now + urls.length * frameMs, urls, frameMs });
+            } else if (effect.kind === "projectile-effect") {
+                replaceEffectLane(effect.unitId);
+                const fromXY = homeXYOf(effect.sourceId);
+                const toXY = homeXYOf(effect.unitId);
+                const urls = [...FIREBALL_PROJECTILE_FRAME_URLS, ...FIREBALL_IMPACT_FRAME_URLS];
+                const flightMs = FIREBALL_PROJECTILE_FRAME_URLS.length * FIREBALL_PROJECTILE_FRAME_MS;
+                const impactMs = FIREBALL_IMPACT_FRAME_URLS.length * FIREBALL_IMPACT_FRAME_MS;
+                writeXY(`fx_effect_${effect.unitId}`, fromXY.x, fromXY.y);
+                writeUrl(`fx_effect_${effect.unitId}`, urls[0]!);
+                writeAlpha(`fx_effect_${effect.unitId}`, 1);
+                activeAnimations.push({
+                    kind: "projectile",
+                    unitId: effect.unitId,
+                    start: now,
+                    end: now + flightMs + impactMs,
+                    urls,
+                    fromXY,
+                    toXY,
+                    projectileFrames: FIREBALL_PROJECTILE_FRAME_URLS.length,
                 });
             }
         }
@@ -249,18 +296,36 @@ export function createEffectAnimator(options: {
                 const to = anim.base ?? homeXYOf(anim.unitId);
                 writeXY(`unit_${anim.unitId}`, lerp(from.x, to.x, progress), to.y);
                 writeAlpha(`unit_${anim.unitId}`, progress);
-            } else if (anim.kind === "explosion") {
-                // 爆炸：按进度推进帧索引逐帧 setUrl（帧索引取 clamp 防越界）
+            } else if (anim.kind === "explosion" || anim.kind === "sequence") {
                 const urls = anim.urls ?? EXPLOSION_FRAME_URLS;
-                const frame = Math.min(urls.length - 1, Math.floor(progress * urls.length));
+                const frameMs = anim.frameMs ?? EXPLOSION_FRAME_MS;
+                const frame = Math.min(urls.length - 1, Math.floor((now - anim.start) / frameMs));
                 writeUrl(`fx_effect_${anim.unitId}`, urls[frame]!);
+            } else if (anim.kind === "projectile") {
+                const urls = anim.urls ?? [];
+                const projectileFrames = anim.projectileFrames ?? 0;
+                const flightMs = projectileFrames * FIREBALL_PROJECTILE_FRAME_MS;
+                const elapsed = now - anim.start;
+                if (elapsed < flightMs) {
+                    const from = anim.fromXY ?? homeXYOf(anim.unitId);
+                    const to = anim.toXY ?? homeXYOf(anim.unitId);
+                    const flightProgress = clamp01(elapsed / flightMs);
+                    writeXY(`fx_effect_${anim.unitId}`, lerp(from.x, to.x, flightProgress), lerp(from.y, to.y, flightProgress));
+                    const frame = Math.min(projectileFrames - 1, Math.floor(elapsed / FIREBALL_PROJECTILE_FRAME_MS));
+                    writeUrl(`fx_effect_${anim.unitId}`, urls[frame]!);
+                } else {
+                    const to = anim.toXY ?? homeXYOf(anim.unitId);
+                    writeXY(`fx_effect_${anim.unitId}`, to.x, to.y);
+                    const impactFrame = Math.min(urls.length - projectileFrames - 1, Math.floor((elapsed - flightMs) / FIREBALL_IMPACT_FRAME_MS));
+                    writeUrl(`fx_effect_${anim.unitId}`, urls[projectileFrames + impactFrame]!);
+                }
             }
 
             if (now >= anim.end) {
                 // 终态回位：飘字/闪白/爆炸 alpha=0；位移/入场对齐 state 坐标与 alpha=1
                 if (anim.kind === "float" || anim.kind === "flash") {
                     writeAlpha(anim.kind === "float" ? `fx_float_${anim.unitId}` : `fx_flash_${anim.unitId}`, 0);
-                } else if (anim.kind === "explosion") {
+                } else if (anim.kind === "explosion" || anim.kind === "sequence" || anim.kind === "projectile") {
                     writeAlpha(`fx_effect_${anim.unitId}`, 0);
                 } else if (anim.kind === "shake") {
                     const base = anim.base ?? homeXYOf(anim.unitId);
@@ -280,7 +345,7 @@ export function createEffectAnimator(options: {
         for (const anim of activeAnimations) {
             if (anim.kind === "float" || anim.kind === "flash") {
                 writeAlpha(anim.kind === "float" ? `fx_float_${anim.unitId}` : `fx_flash_${anim.unitId}`, 0);
-            } else if (anim.kind === "explosion") {
+            } else if (anim.kind === "explosion" || anim.kind === "sequence" || anim.kind === "projectile") {
                 writeAlpha(`fx_effect_${anim.unitId}`, 0);
             } else if (anim.kind === "shake") {
                 const base = anim.base ?? homeXYOf(anim.unitId);

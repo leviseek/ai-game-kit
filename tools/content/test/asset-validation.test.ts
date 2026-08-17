@@ -99,6 +99,15 @@ describe("validateExplosionFrames", () => {
         expect(issues.some((i) => i.code === "asset-frame-missing" && i.message.includes("fx_explosion_11.png"))).toBe(true);
     });
 
+    it("物理命中同时校验刀光与火花序列", () => {
+        for (let i = 0; i < 6; i++) {
+            writeFrame(root, `assets/animations/auto-battle/fx_slash_arc_${String(i).padStart(2, "0")}.png`);
+            if (i < 5) writeFrame(root, `assets/animations/auto-battle/fx_hit_physical_${String(i).padStart(2, "0")}.png`);
+        }
+        const issues = validateExplosionFrames(root, [{ id: "hit", kind: "physical-impact" }]);
+        expect(issues.some((i) => i.code === "asset-frame-missing" && i.message.includes("fx_hit_physical_05.png"))).toBe(true);
+    });
+
     it("无 explosion 条目给 warning（不阻断）", () => {
         const issues = validateExplosionFrames(root, [{ id: "x", kind: "heal" }]);
         expect(issues.some((i) => i.code === "asset-kind-unused" && i.severity === "warning")).toBe(true);

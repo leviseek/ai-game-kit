@@ -1,5 +1,6 @@
 [
-    { "id": "smash-hit", "kind": "explosion" },
-    { "id": "fireball-explosion", "kind": "explosion" },
-    { "id": "shadow-explosion", "kind": "explosion" }
+    { "id": "smash-hit", "kind": "physical-impact" },
+    { "id": "fireball-explosion", "kind": "fireball" },
+    { "id": "shadow-explosion", "kind": "explosion" },
+    { "id": "heal-aura", "kind": "heal-aura" }
 ]

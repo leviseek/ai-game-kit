@@ -362,7 +362,7 @@ function readSkillEffects(table: IConfigTable): readonly AutoBattleSkillEffectDe
             throw new Error(`auto-battle config: skillEffects entry at index ${index} must be an object`);
         }
         const record = entry as Record<string, unknown>;
-        if (typeof record.id !== "string" || record.id.length === 0 || (record.kind !== "explosion" && record.kind !== "flash" && record.kind !== "float")) {
+        if (typeof record.id !== "string" || record.id.length === 0 || ["explosion", "flash", "float", "physical-impact", "fireball", "heal-aura"].indexOf(String(record.kind)) < 0) {
             throw new Error(`auto-battle config: skillEffects entry at index ${index} has an invalid shape`);
         }
         return { id: record.id as string, kind: record.kind as AutoBattleSkillEffectDef["kind"] };

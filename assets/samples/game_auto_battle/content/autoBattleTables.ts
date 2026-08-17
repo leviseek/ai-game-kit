@@ -123,8 +123,26 @@ export const AUTO_BATTLE_SKILLS: readonly AutoBattleSkill[] = [
         effects: [{ kind: "damage", value: 15 }],
         effectId: "fireball-explosion",
     },
-    { id: "ally-priest-skill", name: "auto_battle.skills.ally-priest-skill.name", kind: "heal", value: 10, energyCost: 20, target: "ally-lowest-hp", effects: [{ kind: "heal", value: 10 }] },
-    { id: "enemy-tank-skill", name: "auto_battle.skills.enemy-tank-skill.name", kind: "damage", value: 12, energyCost: 20, target: "enemy-front", effects: [{ kind: "damage", value: 12 }] },
+    {
+        id: "ally-priest-skill",
+        name: "auto_battle.skills.ally-priest-skill.name",
+        kind: "heal",
+        value: 10,
+        energyCost: 20,
+        target: "ally-lowest-hp",
+        effects: [{ kind: "heal", value: 10 }],
+        effectId: "heal-aura",
+    },
+    {
+        id: "enemy-tank-skill",
+        name: "auto_battle.skills.enemy-tank-skill.name",
+        kind: "damage",
+        value: 12,
+        energyCost: 20,
+        target: "enemy-front",
+        effects: [{ kind: "damage", value: 12 }],
+        effectId: "smash-hit",
+    },
     {
         id: "enemy-mage-skill",
         name: "auto_battle.skills.enemy-mage-skill.name",
@@ -147,9 +165,10 @@ export const AUTO_BATTLE_BUFFS: readonly AutoBattleBuff[] = [
 
 /** 6. 技能动效表：技能 → 视觉动效意图（对接 HitFeedbackEffect）。 */
 export const AUTO_BATTLE_SKILL_EFFECTS: readonly AutoBattleSkillEffectDef[] = [
-    { id: "smash-hit", kind: "explosion" },
-    { id: "fireball-explosion", kind: "explosion" },
+    { id: "smash-hit", kind: "physical-impact" },
+    { id: "fireball-explosion", kind: "fireball" },
     { id: "shadow-explosion", kind: "explosion" },
+    { id: "heal-aura", kind: "heal-aura" },
 ];
 
 /** 7. 技能条件表：释放/目标选择条件。 */

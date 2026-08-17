@@ -79,7 +79,7 @@ export const AUTO_BATTLE_SCHEMAS: readonly TableSchema[] = [
         shape: "array",
         fields: [
             { key: "id", type: "id", idKey: true },
-            { key: "kind", type: "enum", enum: ["explosion"] },
+            { key: "kind", type: "enum", enum: ["explosion", "flash", "float", "physical-impact", "fireball", "heal-aura"] },
         ],
     },
     {

@@ -110,8 +110,8 @@ export interface AutoBattleBuffInstance {
 /** 技能动效表条目：对接视图层 HitFeedbackEffect 的视觉意图类型。 */
 export interface AutoBattleSkillEffectDef {
     readonly id: string;
-    /** 视觉意图类型：爆炸（explosion）/ 闪白（flash）/ 飘字（float）。 */
-    readonly kind: "explosion" | "flash" | "float";
+    /** 视觉意图类型：兼容旧反馈，并支持物理命中、火球飞行和治疗光环。 */
+    readonly kind: "explosion" | "flash" | "float" | "physical-impact" | "fireball" | "heal-aura";
 }
 
 /** 技能条件表条目：释放/目标选择判定规则。 */

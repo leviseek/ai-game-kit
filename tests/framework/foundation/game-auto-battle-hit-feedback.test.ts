@@ -54,6 +54,7 @@ describe("Auto-battle hit feedback projection", () => {
             { kind: "damage-float", unitId: "e", value: 12, seq: 0 },
             { kind: "hit-flash", unitId: "e", seq: 0 },
             { kind: "unit-anim", unitId: "e", anim: "hit", seq: 0 },
+            { kind: "effect-sequence", unitId: "e", effect: "physical-impact", seq: 0 },
             { kind: "unit-anim", unitId: "a", anim: "attack", seq: 0 },
         ]);
     });
@@ -74,6 +75,15 @@ describe("Auto-battle hit feedback projection", () => {
             { kind: "heal-float", unitId: "a", value: 30, seq: 2 },
             { kind: "unit-anim", unitId: "a", anim: "skillRaise", seq: 2 },
         ]);
+    });
+
+    test("skill effect table projects fireball flight and heal aura", () => {
+        const resolve = (id: string) => (id === "fireball-explosion" ? ({ id, kind: "fireball" } as const) : id === "heal-aura" ? ({ id, kind: "heal-aura" } as const) : undefined);
+        const damage = projectHitFeedbackEvents([event(3, "skill-damage", { sourceId: "a", targetId: "e", value: 20, effectId: "fireball-explosion" })], -1, resolve);
+        expect(damage.effects).toContainEqual({ kind: "projectile-effect", unitId: "e", sourceId: "a", effect: "fireball", seq: 3 });
+
+        const heal = projectHitFeedbackEvents([event(4, "skill-heal", { sourceId: "a", targetId: "a", value: 10, effectId: "heal-aura" })], -1, resolve);
+        expect(heal.effects).toContainEqual({ kind: "effect-sequence", unitId: "a", effect: "heal-aura", seq: 4 });
     });
 
     test("unit-dead projects death explosion and target death anim", () => {
@@ -323,6 +333,48 @@ describe("Auto-battle effect animator", () => {
         animator.step();
         expect(fxNode.alpha).toBe(0);
         expect(animator.active()).toBe(0);
+    });
+
+    test("physical impact plays slash frames before hit spark frames", () => {
+        const { animator, ensureNode, advance } = makeAnimator();
+        const fxNode = ensureNode("fx_effect_a");
+        animator.play([{ kind: "effect-sequence", unitId: "a", effect: "physical-impact", seq: 0 }]);
+        expect(fxNode.url).toContain("fx_slash_arc_00");
+
+        advance(360);
+        animator.step();
+        expect(fxNode.url).toContain("fx_hit_physical_00");
+
+        advance(360);
+        animator.step();
+        expect(fxNode.alpha).toBe(0);
+        expect(animator.active()).toBe(0);
+    });
+
+    test("fireball flies from caster to target before impact frames", () => {
+        const nodes = new Map<string, RecordingEffectNode>();
+        const time = makeTime();
+        const fxNode = recordNode();
+        nodes.set("fx_effect_e", fxNode);
+        const animator = createEffectAnimator({
+            node: (name: string) => nodes.get(name),
+            timeSource: time.timeSource,
+            homeXYOf: (id: string) => (id === "a" ? { x: 800, y: 100 } : { x: 200, y: 100 }),
+            gridXYOf: () => ({ x: 0, y: 0 }),
+        });
+        animator.play([{ kind: "projectile-effect", unitId: "e", sourceId: "a", effect: "fireball", seq: 0 }]);
+        expect(fxNode.xy).toEqual({ x: 800, y: 100 });
+        expect(fxNode.url).toContain("fx_fireball_projectile_00");
+
+        time.advance(280);
+        animator.step();
+        expect(fxNode.xy!.x).toBeLessThan(800);
+        expect(fxNode.xy!.x).toBeGreaterThan(200);
+
+        time.advance(280);
+        animator.step();
+        expect(fxNode.xy).toEqual({ x: 200, y: 100 });
+        expect(fxNode.url).toContain("fx_fireball_impact_00");
     });
 
     test("explosion without setUrl node is skipped without interrupting", () => {

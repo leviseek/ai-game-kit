@@ -515,5 +515,325 @@
         "paramsHash": "gzc7j",
         "width": 256,
         "height": 384
+    },
+    "fx_hit_physical_00": {
+        "file": "assets/animations/auto-battle/fx_hit_physical_00.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "1bh3w9r",
+        "width": 128,
+        "height": 128
+    },
+    "fx_hit_physical_01": {
+        "file": "assets/animations/auto-battle/fx_hit_physical_01.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "dr0cgx",
+        "width": 128,
+        "height": 128
+    },
+    "fx_hit_physical_02": {
+        "file": "assets/animations/auto-battle/fx_hit_physical_02.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "1f20un7",
+        "width": 128,
+        "height": 128
+    },
+    "fx_hit_physical_03": {
+        "file": "assets/animations/auto-battle/fx_hit_physical_03.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "hbxaud",
+        "width": 128,
+        "height": 128
+    },
+    "fx_hit_physical_04": {
+        "file": "assets/animations/auto-battle/fx_hit_physical_04.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "1imxt0n",
+        "width": 128,
+        "height": 128
+    },
+    "fx_hit_physical_05": {
+        "file": "assets/animations/auto-battle/fx_hit_physical_05.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "kwu97t",
+        "width": 128,
+        "height": 128
+    },
+    "fx_slash_arc_00": {
+        "file": "assets/animations/auto-battle/fx_slash_arc_00.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "1uftza5",
+        "width": 128,
+        "height": 128
+    },
+    "fx_slash_arc_01": {
+        "file": "assets/animations/auto-battle/fx_slash_arc_01.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "1gm1hmn",
+        "width": 128,
+        "height": 128
+    },
+    "fx_slash_arc_02": {
+        "file": "assets/animations/auto-battle/fx_slash_arc_02.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "12s8zz5",
+        "width": 128,
+        "height": 128
+    },
+    "fx_slash_arc_03": {
+        "file": "assets/animations/auto-battle/fx_slash_arc_03.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "oygibn",
+        "width": 128,
+        "height": 128
+    },
+    "fx_slash_arc_04": {
+        "file": "assets/animations/auto-battle/fx_slash_arc_04.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "b4o0o5",
+        "width": 128,
+        "height": 128
+    },
+    "fx_slash_arc_05": {
+        "file": "assets/animations/auto-battle/fx_slash_arc_05.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "1wbzkzr",
+        "width": 128,
+        "height": 128
+    },
+    "fx_fireball_projectile_00": {
+        "file": "assets/animations/auto-battle/fx_fireball_projectile_00.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "2jblen",
+        "width": 128,
+        "height": 128
+    },
+    "fx_fireball_projectile_01": {
+        "file": "assets/animations/auto-battle/fx_fireball_projectile_01.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "6s86pt",
+        "width": 128,
+        "height": 128
+    },
+    "fx_fireball_projectile_02": {
+        "file": "assets/animations/auto-battle/fx_fireball_projectile_02.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "b14s0z",
+        "width": 128,
+        "height": 128
+    },
+    "fx_fireball_projectile_03": {
+        "file": "assets/animations/auto-battle/fx_fireball_projectile_03.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "fa1dc5",
+        "width": 128,
+        "height": 128
+    },
+    "fx_fireball_projectile_04": {
+        "file": "assets/animations/auto-battle/fx_fireball_projectile_04.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "jixynb",
+        "width": 128,
+        "height": 128
+    },
+    "fx_fireball_projectile_05": {
+        "file": "assets/animations/auto-battle/fx_fireball_projectile_05.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "nrujyh",
+        "width": 128,
+        "height": 128
+    },
+    "fx_fireball_projectile_06": {
+        "file": "assets/animations/auto-battle/fx_fireball_projectile_06.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "s0r59n",
+        "width": 128,
+        "height": 128
+    },
+    "fx_fireball_projectile_07": {
+        "file": "assets/animations/auto-battle/fx_fireball_projectile_07.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "w9nqkt",
+        "width": 128,
+        "height": 128
+    },
+    "fx_fireball_impact_00": {
+        "file": "assets/animations/auto-battle/fx_fireball_impact_00.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "18hmgah",
+        "width": 128,
+        "height": 128
+    },
+    "fx_fireball_impact_01": {
+        "file": "assets/animations/auto-battle/fx_fireball_impact_01.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "p83vx7",
+        "width": 128,
+        "height": 128
+    },
+    "fx_fireball_impact_02": {
+        "file": "assets/animations/auto-battle/fx_fireball_impact_02.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "5ylbjx",
+        "width": 128,
+        "height": 128
+    },
+    "fx_fireball_impact_03": {
+        "file": "assets/animations/auto-battle/fx_fireball_impact_03.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "1lq6t5r",
+        "width": 128,
+        "height": 128
+    },
+    "fx_fireball_impact_04": {
+        "file": "assets/animations/auto-battle/fx_fireball_impact_04.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "12go8sh",
+        "width": 128,
+        "height": 128
+    },
+    "fx_fireball_impact_05": {
+        "file": "assets/animations/auto-battle/fx_fireball_impact_05.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "j75of7",
+        "width": 128,
+        "height": 128
+    },
+    "fx_fireball_impact_06": {
+        "file": "assets/animations/auto-battle/fx_fireball_impact_06.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "1yyr611",
+        "width": 128,
+        "height": 128
+    },
+    "fx_fireball_impact_07": {
+        "file": "assets/animations/auto-battle/fx_fireball_impact_07.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "1fp8lnr",
+        "width": 128,
+        "height": 128
+    },
+    "fx_fireball_impact_08": {
+        "file": "assets/animations/auto-battle/fx_fireball_impact_08.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "wfq1ah",
+        "width": 128,
+        "height": 128
+    },
+    "fx_fireball_impact_09": {
+        "file": "assets/animations/auto-battle/fx_fireball_impact_09.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "d67gx7",
+        "width": 128,
+        "height": 128
+    },
+    "fx_heal_aura_00": {
+        "file": "assets/animations/auto-battle/fx_heal_aura_00.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "qg183l",
+        "width": 128,
+        "height": 128
+    },
+    "fx_heal_aura_01": {
+        "file": "assets/animations/auto-battle/fx_heal_aura_01.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "cm8qg3",
+        "width": 128,
+        "height": 128
+    },
+    "fx_heal_aura_02": {
+        "file": "assets/animations/auto-battle/fx_heal_aura_02.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "1xtkarp",
+        "width": 128,
+        "height": 128
+    },
+    "fx_heal_aura_03": {
+        "file": "assets/animations/auto-battle/fx_heal_aura_03.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "1jzrt47",
+        "width": 128,
+        "height": 128
+    },
+    "fx_heal_aura_04": {
+        "file": "assets/animations/auto-battle/fx_heal_aura_04.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "165zbgp",
+        "width": 128,
+        "height": 128
+    },
+    "fx_heal_aura_05": {
+        "file": "assets/animations/auto-battle/fx_heal_aura_05.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "sc6tt7",
+        "width": 128,
+        "height": 128
+    },
+    "fx_heal_aura_06": {
+        "file": "assets/animations/auto-battle/fx_heal_aura_06.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "eiec5p",
+        "width": 128,
+        "height": 128
+    },
+    "fx_heal_aura_07": {
+        "file": "assets/animations/auto-battle/fx_heal_aura_07.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "olui7",
+        "width": 128,
+        "height": 128
+    },
+    "fx_heal_aura_08": {
+        "file": "assets/animations/auto-battle/fx_heal_aura_08.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "1lvxett",
+        "width": 128,
+        "height": 128
+    },
+    "fx_heal_aura_09": {
+        "file": "assets/animations/auto-battle/fx_heal_aura_09.png",
+        "kind": "png",
+        "generator": "python-vfx",
+        "paramsHash": "1824x6b",
+        "width": 128,
+        "height": 128
     }
 }
