@@ -13,10 +13,14 @@ export function createPythonCharacterActionsGenerator(): GeneratorAdapter {
             const character = String(params.character ?? "");
             const reference = String(params.reference ?? "");
             const rawManifest = String(params.rawManifest ?? "");
+            const weaponOverlay = String(params.weaponOverlay ?? "");
             if (!/^[a-z][a-z0-9-]*$/.test(character)) throw new Error(`python-character-actions character 非法: ${character}`);
             if (reference.length === 0 || rawManifest.length === 0) throw new Error("python-character-actions 需要 reference 与 rawManifest");
             const script = join(import.meta.dirname, "python-character-actions.py");
-            const result = spawnSync("python", [script, "--out-dir", stagingDir, "--character", character, "--reference", reference, "--raw-manifest", rawManifest], {
+            if (weaponOverlay !== "" && weaponOverlay !== "golden-hammer-left") throw new Error(`python-character-actions weaponOverlay 非法: ${weaponOverlay}`);
+            const args = [script, "--out-dir", stagingDir, "--character", character, "--reference", reference, "--raw-manifest", rawManifest];
+            if (weaponOverlay !== "") args.push("--weapon-overlay", weaponOverlay);
+            const result = spawnSync("python", args, {
                 encoding: "utf8",
             });
             if (result.error !== undefined && (result.error as NodeJS.ErrnoException).code === "ENOENT") {

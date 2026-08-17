@@ -127,7 +127,7 @@ export interface AutoBattleSkillCondition {
     readonly value?: number | string;
 }
 
-export type AutoBattleWeaponType = "dao" | "sword-shield" | "crystal-staff" | "soul-staff" | "holy-scepter" | "totem-staff";
+export type AutoBattleWeaponType = "dao" | "sword-shield" | "crystal-staff" | "soul-staff" | "holy-scepter" | "totem-staff" | "golden-warhammer";
 export type AutoBattleAttackDelivery = "melee" | "projectile";
 
 /** 单位静态配置：属性与技能来自配置表，side/index 由配置读取器推导。 */

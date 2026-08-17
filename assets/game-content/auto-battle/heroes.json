@@ -30,8 +30,8 @@
         "baseAttributeId": "priest",
         "energyMax": 20,
         "skillId": "ally-priest-skill",
-        "animationId": "warrior-f",
-        "weaponType": "holy-scepter",
+        "animationId": "priest",
+        "weaponType": "golden-warhammer",
         "attackDelivery": "projectile",
         "basicAttackEffectId": "holy-bolt"
     },

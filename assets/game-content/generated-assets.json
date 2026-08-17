@@ -2499,5 +2499,581 @@
         "paramsHash": "fkkzpc",
         "width": 256,
         "height": 384
+    },
+    "priest_ai_attack_00": {
+        "file": "assets/animations/auto-battle/priest_ai_attack_00.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_attack_01": {
+        "file": "assets/animations/auto-battle/priest_ai_attack_01.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_attack_02": {
+        "file": "assets/animations/auto-battle/priest_ai_attack_02.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_attack_03": {
+        "file": "assets/animations/auto-battle/priest_ai_attack_03.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_attack_04": {
+        "file": "assets/animations/auto-battle/priest_ai_attack_04.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_attack_05": {
+        "file": "assets/animations/auto-battle/priest_ai_attack_05.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_death_00": {
+        "file": "assets/animations/auto-battle/priest_ai_death_00.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_death_01": {
+        "file": "assets/animations/auto-battle/priest_ai_death_01.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_death_02": {
+        "file": "assets/animations/auto-battle/priest_ai_death_02.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_death_03": {
+        "file": "assets/animations/auto-battle/priest_ai_death_03.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_death_04": {
+        "file": "assets/animations/auto-battle/priest_ai_death_04.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_death_05": {
+        "file": "assets/animations/auto-battle/priest_ai_death_05.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_death_06": {
+        "file": "assets/animations/auto-battle/priest_ai_death_06.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_death_07": {
+        "file": "assets/animations/auto-battle/priest_ai_death_07.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_death_08": {
+        "file": "assets/animations/auto-battle/priest_ai_death_08.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_death_09": {
+        "file": "assets/animations/auto-battle/priest_ai_death_09.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_hit_00": {
+        "file": "assets/animations/auto-battle/priest_ai_hit_00.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_hit_01": {
+        "file": "assets/animations/auto-battle/priest_ai_hit_01.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_hit_02": {
+        "file": "assets/animations/auto-battle/priest_ai_hit_02.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_hit_03": {
+        "file": "assets/animations/auto-battle/priest_ai_hit_03.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_idle_00": {
+        "file": "assets/animations/auto-battle/priest_ai_idle_00.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_idle_01": {
+        "file": "assets/animations/auto-battle/priest_ai_idle_01.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_idle_02": {
+        "file": "assets/animations/auto-battle/priest_ai_idle_02.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_idle_03": {
+        "file": "assets/animations/auto-battle/priest_ai_idle_03.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_idle_04": {
+        "file": "assets/animations/auto-battle/priest_ai_idle_04.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_idle_05": {
+        "file": "assets/animations/auto-battle/priest_ai_idle_05.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_idle_06": {
+        "file": "assets/animations/auto-battle/priest_ai_idle_06.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_idle_07": {
+        "file": "assets/animations/auto-battle/priest_ai_idle_07.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_idle_08": {
+        "file": "assets/animations/auto-battle/priest_ai_idle_08.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_idle_09": {
+        "file": "assets/animations/auto-battle/priest_ai_idle_09.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_run_00": {
+        "file": "assets/animations/auto-battle/priest_ai_run_00.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_run_01": {
+        "file": "assets/animations/auto-battle/priest_ai_run_01.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_run_02": {
+        "file": "assets/animations/auto-battle/priest_ai_run_02.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_run_03": {
+        "file": "assets/animations/auto-battle/priest_ai_run_03.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_run_04": {
+        "file": "assets/animations/auto-battle/priest_ai_run_04.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_run_05": {
+        "file": "assets/animations/auto-battle/priest_ai_run_05.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_run_06": {
+        "file": "assets/animations/auto-battle/priest_ai_run_06.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_run_07": {
+        "file": "assets/animations/auto-battle/priest_ai_run_07.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_skill_raise_00": {
+        "file": "assets/animations/auto-battle/priest_ai_skill_raise_00.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_skill_raise_01": {
+        "file": "assets/animations/auto-battle/priest_ai_skill_raise_01.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_skill_raise_02": {
+        "file": "assets/animations/auto-battle/priest_ai_skill_raise_02.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_skill_raise_03": {
+        "file": "assets/animations/auto-battle/priest_ai_skill_raise_03.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_skill_raise_04": {
+        "file": "assets/animations/auto-battle/priest_ai_skill_raise_04.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_skill_raise_05": {
+        "file": "assets/animations/auto-battle/priest_ai_skill_raise_05.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_skill_raise_06": {
+        "file": "assets/animations/auto-battle/priest_ai_skill_raise_06.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_skill_raise_07": {
+        "file": "assets/animations/auto-battle/priest_ai_skill_raise_07.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_slash_00": {
+        "file": "assets/animations/auto-battle/priest_ai_slash_00.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_slash_01": {
+        "file": "assets/animations/auto-battle/priest_ai_slash_01.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_slash_02": {
+        "file": "assets/animations/auto-battle/priest_ai_slash_02.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_slash_03": {
+        "file": "assets/animations/auto-battle/priest_ai_slash_03.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_slash_04": {
+        "file": "assets/animations/auto-battle/priest_ai_slash_04.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_slash_05": {
+        "file": "assets/animations/auto-battle/priest_ai_slash_05.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_slash_06": {
+        "file": "assets/animations/auto-battle/priest_ai_slash_06.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_slash_07": {
+        "file": "assets/animations/auto-battle/priest_ai_slash_07.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_stun_00": {
+        "file": "assets/animations/auto-battle/priest_ai_stun_00.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_stun_01": {
+        "file": "assets/animations/auto-battle/priest_ai_stun_01.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_stun_02": {
+        "file": "assets/animations/auto-battle/priest_ai_stun_02.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_stun_03": {
+        "file": "assets/animations/auto-battle/priest_ai_stun_03.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_walk_00": {
+        "file": "assets/animations/auto-battle/priest_ai_walk_00.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_walk_01": {
+        "file": "assets/animations/auto-battle/priest_ai_walk_01.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_walk_02": {
+        "file": "assets/animations/auto-battle/priest_ai_walk_02.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_walk_03": {
+        "file": "assets/animations/auto-battle/priest_ai_walk_03.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_walk_04": {
+        "file": "assets/animations/auto-battle/priest_ai_walk_04.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_walk_05": {
+        "file": "assets/animations/auto-battle/priest_ai_walk_05.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_walk_06": {
+        "file": "assets/animations/auto-battle/priest_ai_walk_06.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_walk_07": {
+        "file": "assets/animations/auto-battle/priest_ai_walk_07.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_weak_00": {
+        "file": "assets/animations/auto-battle/priest_ai_weak_00.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_weak_01": {
+        "file": "assets/animations/auto-battle/priest_ai_weak_01.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_weak_02": {
+        "file": "assets/animations/auto-battle/priest_ai_weak_02.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_weak_03": {
+        "file": "assets/animations/auto-battle/priest_ai_weak_03.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_weak_04": {
+        "file": "assets/animations/auto-battle/priest_ai_weak_04.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
+    },
+    "priest_ai_weak_05": {
+        "file": "assets/animations/auto-battle/priest_ai_weak_05.png",
+        "kind": "png",
+        "generator": "python-character-actions",
+        "paramsHash": "sfnfuo",
+        "width": 256,
+        "height": 384
     }
 }

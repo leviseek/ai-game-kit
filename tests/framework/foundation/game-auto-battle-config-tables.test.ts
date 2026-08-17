@@ -53,6 +53,12 @@ describe("Auto-battle table-driven config", () => {
         expect(mage?.attackDelivery).toBe("projectile");
         expect(mage?.basicAttackEffectId).toBe("arcane-bolt");
 
+        const priest = config.heroes.find((h) => h.id === "ally-priest");
+        expect(priest?.animationId).toBe("priest");
+        expect(priest?.weaponType).toBe("golden-warhammer");
+        expect(priest?.attackDelivery).toBe("projectile");
+        expect(priest?.basicAttackEffectId).toBe("holy-bolt");
+
         const lich = config.heroes.find((h) => h.id === "enemy-mage");
         expect(lich?.animationId).toBe("lich-ai");
         expect(lich?.weaponType).toBe("soul-staff");

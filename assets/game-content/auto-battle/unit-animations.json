@@ -84,6 +84,27 @@
         }
     },
     {
+        "id": "priest",
+        "bundle": "animations",
+        "dir": "auto-battle",
+        "frameCount": 10,
+        "frameCountByAnim": { "idle": 10, "gesture": 10, "walk": 8, "run": 8, "attack": 6, "slash": 8, "hit": 4, "weak": 6, "stun": 4, "death": 10, "skillRaise": 8 },
+        "frameMsByAnim": { "idle": 100, "gesture": 100, "walk": 100, "run": 80, "attack": 90, "slash": 90, "hit": 120, "weak": 140, "stun": 160, "death": 120, "skillRaise": 100 },
+        "prefixByAnim": {
+            "idle": "priest_ai_idle",
+            "gesture": "priest_ai_idle",
+            "walk": "priest_ai_walk",
+            "run": "priest_ai_run",
+            "attack": "priest_ai_attack",
+            "slash": "priest_ai_slash",
+            "hit": "priest_ai_hit",
+            "weak": "priest_ai_weak",
+            "stun": "priest_ai_stun",
+            "death": "priest_ai_death",
+            "skillRaise": "priest_ai_skill_raise"
+        }
+    },
+    {
         "id": "lich-ai",
         "bundle": "animations",
         "dir": "auto-battle",
