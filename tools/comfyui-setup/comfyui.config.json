@@ -19,6 +19,12 @@
             "file": "models/checkpoints/DreamShaperXL_Turbo_v2_1.safetensors"
         },
         {
+            "id": "animagine_xl_3_1",
+            "url": "https://hf-mirror.com/cagliostrolab/animagine-xl-3.1/resolve/main/animagine-xl-3.1.safetensors",
+            "size": 6938325776,
+            "file": "models/checkpoints/animagine-xl-3.1.safetensors"
+        },
+        {
             "id": "openpose_xl2",
             "url": "https://hf-mirror.com/thibaud/controlnet-openpose-sdxl-1.0/resolve/main/OpenPoseXL2.safetensors",
             "size": 5004167829,

@@ -27,6 +27,7 @@ describe("生成器注册表", () => {
         const ids = listGenerators().map((g) => g.id);
         expect(ids).toContain("python-wave");
         expect(ids).toContain("python-vfx");
+        expect(ids).toContain("python-character-actions");
         expect(ids).toContain("comfyui");
         expect(ids).toContain("fgui-sprite");
     });

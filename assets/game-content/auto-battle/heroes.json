@@ -18,7 +18,7 @@
         "baseAttributeId": "mage",
         "energyMax": 20,
         "skillId": "ally-mage-skill",
-        "animationId": "warrior-f",
+        "animationId": "mage-ai",
         "weaponType": "crystal-staff",
         "attackDelivery": "projectile",
         "basicAttackEffectId": "arcane-bolt"
@@ -54,7 +54,7 @@
         "baseAttributeId": "lich",
         "energyMax": 20,
         "skillId": "enemy-mage-skill",
-        "animationId": "warrior-m",
+        "animationId": "lich-ai",
         "weaponType": "soul-staff",
         "attackDelivery": "projectile",
         "basicAttackEffectId": "shadow-bolt"

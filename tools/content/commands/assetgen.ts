@@ -17,6 +17,7 @@ import { getGenerator, listGenerators, registerGenerator, type GeneratedArtifact
 import { repoRoot } from "../lib/project";
 import { createPythonWaveGenerator } from "../generators/python-wave";
 import { createPythonVfxGenerator } from "../generators/python-vfx";
+import { createPythonCharacterActionsGenerator } from "../generators/python-character-actions";
 import { createComfyUiGenerator } from "../generators/comfyui";
 import { createFguiSpriteGenerator } from "../generators/fgui-sprite";
 
@@ -24,6 +25,7 @@ import { createFguiSpriteGenerator } from "../generators/fgui-sprite";
 export function registerBuiltinGenerators(): void {
     registerGenerator(createPythonWaveGenerator());
     registerGenerator(createPythonVfxGenerator());
+    registerGenerator(createPythonCharacterActionsGenerator());
     registerGenerator(createComfyUiGenerator());
     registerGenerator(createFguiSpriteGenerator());
 }

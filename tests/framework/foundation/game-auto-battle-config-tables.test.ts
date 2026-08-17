@@ -48,9 +48,14 @@ describe("Auto-battle table-driven config", () => {
         expect(tank?.attackDelivery).toBe("melee");
 
         const mage = config.heroes.find((h) => h.id === "ally-mage");
+        expect(mage?.animationId).toBe("mage-ai");
         expect(mage?.weaponType).toBe("crystal-staff");
         expect(mage?.attackDelivery).toBe("projectile");
         expect(mage?.basicAttackEffectId).toBe("arcane-bolt");
+
+        const lich = config.heroes.find((h) => h.id === "enemy-mage");
+        expect(lich?.animationId).toBe("lich-ai");
+        expect(lich?.weaponType).toBe("soul-staff");
     });
 
     test("multi-effect skills keep the full effects list", () => {
