@@ -236,11 +236,21 @@ describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)("Auto-battle presenter drive timin
         driver?.();
         expect(fixture.clock.now()).toBe(2000);
 
-        // 战斗已按挡位推进（每驱动 2 次 tick），事件时间戳与模拟时钟一致
+        // 战斗按表现窗口逐行动推进，事件时间戳与模拟时钟一致
         expect(fixture.battle.events.length).toBeGreaterThan(0);
         for (const event of fixture.battle.events) {
             expect(event.time).toBeLessThanOrEqual(fixture.clock.now());
         }
+
+        const eventCountAfterAction = fixture.battle.events.length;
+        wallTime += 100;
+        driver?.();
+        expect(fixture.battle.events).toHaveLength(eventCountAfterAction);
+
+        // 2x 下 500ms 墙钟对应 1000ms 表现时间，超过普通行动的 900ms 窗口后才推进下一人。
+        wallTime += 400;
+        driver?.();
+        expect(fixture.battle.events.length).toBeGreaterThan(eventCountAfterAction);
 
         presenter.dispose();
         await fixture.dispose();

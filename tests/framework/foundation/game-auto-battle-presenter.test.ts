@@ -1,7 +1,8 @@
 import { describe, expect, test } from "bun:test";
 
 import type { IViewModelNode } from "../../../assets/framework";
-import { createAutoBattlePresenter } from "../../../assets/samples/game_auto_battle/view/presenter";
+import { actionPresentationWindowMs, createAutoBattlePresenter } from "../../../assets/samples/game_auto_battle/view/presenter";
+import type { AutoBattleEvent } from "../../../assets/samples/game_auto_battle/models";
 import { AUTO_BATTLE_ASSEMBLY_EXISTS, loadCreateAutoBattleFixture } from "../support/auto-battle-fixture";
 
 /** 记录型视图节点：记录 setter 与点击回调。 */
@@ -78,6 +79,24 @@ function battleContent(): Record<string, unknown> {
         energyGainTarget: 5,
     };
 }
+
+function event(type: AutoBattleEvent["type"]): AutoBattleEvent {
+    return { seq: 0, type, time: 0, sourceId: "a", targetId: "e" };
+}
+
+describe("Auto-battle action presentation window", () => {
+    test("normal actions reserve a readable minimum window", () => {
+        expect(actionPresentationWindowMs([event("attack")])).toBe(900);
+    });
+
+    test("skills reserve enough time for raise and slash chaining", () => {
+        expect(actionPresentationWindowMs([event("skill-damage")])).toBe(1600);
+    });
+
+    test("death has highest priority even when emitted with attack events", () => {
+        expect(actionPresentationWindowMs([event("attack"), event("unit-dead")])).toBe(2100);
+    });
+});
 
 describe.skipIf(!AUTO_BATTLE_ASSEMBLY_EXISTS)("Auto-battle battle presenter", () => {
     test("renders static HUD and dynamic unit bindings", async () => {

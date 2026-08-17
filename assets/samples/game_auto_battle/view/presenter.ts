@@ -3,7 +3,7 @@ import { createViewModelRenderer, GameClock } from "../../../framework";
 import type { GameFixture } from "../../../game/fixture/GameFixture";
 import type { GamePresenter } from "../../../game/lobby/presenter";
 import type { AutoBattleFixture } from "../assembly";
-import type { AutoBattleSide } from "../models";
+import type { AutoBattleEvent, AutoBattleSide } from "../models";
 import { text } from "../../../game-content/generated/i18n";
 import { buildUnitAnimationFrames, WARRIOR_VARIANT_BY_SIDE, type WarriorAnim } from "./animUrls";
 import { projectHitFeedbackEvents } from "./effects";
@@ -22,6 +22,21 @@ const VS_FADE_MS = 150;
 const VS_PHASE_MS = VS_ENTRANCE_MS + VS_HOLD_MS + VS_FADE_MS;
 /** 入场阶段时长（ms）：战斗开始后先展示单位入场，期间不推进战斗。 */
 const ENTRANCE_PHASE_MS = 750;
+/** 单回合最低表现窗口；技能与死亡按事件类型获得更长的不可覆盖时间。 */
+const ACTION_PRESENTATION_MS = 900;
+const SKILL_PRESENTATION_MS = 1600;
+const DEATH_PRESENTATION_MS = 2100;
+
+/** 根据一次逻辑 tick 新增的事件计算下一次行动前必须保留的表现窗口。 */
+export function actionPresentationWindowMs(events: readonly AutoBattleEvent[]): number {
+    if (events.some((event) => event.type === "unit-dead")) {
+        return DEATH_PRESENTATION_MS;
+    }
+    if (events.some((event) => event.type === "skill-damage" || event.type === "skill-heal")) {
+        return SKILL_PRESENTATION_MS;
+    }
+    return ACTION_PRESENTATION_MS;
+}
 
 /** 墙钟回拨时不向表现时钟传入负增量，下一 tick 仍以新的墙钟为基准恢复。 */
 export function clampPresentationElapsed(elapsed: number): number {
@@ -75,12 +90,14 @@ export function createAutoBattlePresenter(fixture: GameFixture, node: (name: str
     let phase: PresenterPhase = "vs";
     let vsEnd = 0;
     let entranceEnd = 0;
+    let nextBattleActionAt = 0;
 
     /** 重置阶段时间戳到当前时刻：创建与 restart 共用，保证 restart 重演完整 VS 阶段。 */
     function beginVsPhase(): void {
         const now = gameClock.now();
         vsEnd = now + VS_PHASE_MS;
         entranceEnd = vsEnd + ENTRANCE_PHASE_MS;
+        nextBattleActionAt = entranceEnd;
     }
     beginVsPhase();
     // 命中反馈动画器：节点解析复用渲染器节点，时间源注入 GameClock（表现时间，
@@ -244,15 +261,15 @@ export function createAutoBattlePresenter(fixture: GameFixture, node: (name: str
             }
             return;
         }
-        // 战斗阶段：模拟时钟以原始墙钟增量推进（倍率由 AutoBattleClock 内部
-        // 自乘一次）。0.5x 仍每帧检查一次行动条件，但模拟时间只推进一半；
-        // 2x/3x 保留额外 tick 机会，事件时间戳与实际行动一致。
+        // 战斗阶段持续推进模拟时钟，但只有上一行动的表现窗口结束后才执行下一次
+        // 逻辑 tick。窗口使用 GameClock 时间，因此 0.5x/2x/3x 会线性缩放等待，
+        // 不再通过每个 50ms 驱动连续覆盖攻击、受击与死亡动画。
         autoBattle.clock.advance(wallDelta);
-        if (autoBattle.battle.state.phase === "fighting") {
-            const tickRepeats = Math.max(1, Math.floor(autoBattle.getSpeed()));
-            for (let index = 0; index < tickRepeats; index += 1) {
-                autoBattle.battle.tick();
-            }
+        if (autoBattle.battle.state.phase === "fighting" && gameNow >= nextBattleActionAt) {
+            const previousEventCount = autoBattle.battle.events.length;
+            autoBattle.battle.tick();
+            const emitted = autoBattle.battle.events.slice(previousEventCount);
+            nextBattleActionAt = gameNow + actionPresentationWindowMs(emitted);
         }
         render();
         stepEffects();
