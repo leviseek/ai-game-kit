@@ -2,7 +2,7 @@ import { _decorator, Component, Node } from "cc";
 import { BattleWorld } from "../runtime/BattleWorld";
 import { BattleEventType, DamageEvent, UnitDiedEvent } from "../runtime/event/BattleEvent";
 import { AttackCommand } from "../runtime/command/AttackCommand";
-const { ccclass, property } = _decorator;
+const { ccclass } = _decorator;
 
 /**
  * 战斗沙盒
@@ -70,28 +70,27 @@ export class BattleSandbox extends Component {
     }
 
     startBattle() {
-        this.scheduleOnce(() => {
-            const command = new AttackCommand(`hero_001`, "enemy_001");
+        const { scheduler } = this.world;
+        scheduler.schedule(1.0, new AttackCommand(`hero_001`, "enemy_001"));
 
-            command.execute(this.world);
-        }, 1);
+        scheduler.schedule(2.0, new AttackCommand(`enemy_001`, "hero_001"));
 
-        this.scheduleOnce(() => {
-            const command = new AttackCommand(`enemy_001`, "hero_001");
+        scheduler.schedule(3.0, new AttackCommand(`hero_001`, "enemy_001"));
 
-            command.execute(this.world);
-        }, 2);
+        scheduler.schedule(4.0, new AttackCommand(`hero_001`, "enemy_001"));
 
-        this.scheduleOnce(() => {
-            const command = new AttackCommand(`hero_001`, "enemy_001");
+        // test scheduler time scale
+        // scheduler.setTimeScale(2);
 
-            command.execute(this.world);
-        }, 3);
+        scheduler.start();
 
-        this.scheduleOnce(() => {
-            const command = new AttackCommand(`hero_001`, "enemy_001");
+        // test scheduler pause
+        // setTimeout(() => {
+        //     scheduler.pause();
+        // }, 1500);
 
-            command.execute(this.world);
-        }, 4);
+        // setTimeout(() => {
+        //     scheduler.start();
+        // }, 5000);
     }
 }

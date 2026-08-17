@@ -1,8 +1,8 @@
-import { _decorator, instantiate } from "cc";
+import { _decorator } from "cc";
 import { BattleUnit, BattleUnitData } from "./BattleUnit";
-import { ATBUtils } from "../utils/ATBUtils";
 import { BattleEventBus } from "./event/BattleEventBus";
 import { AttackStartedEvent, BattleEventType, DamageEvent, UnitDiedEvent } from "./event/BattleEvent";
+import { BattleScheduler } from "./BattleScheduler";
 
 /**
  * 战斗世界
@@ -13,8 +13,7 @@ export class BattleWorld {
     private units: Map<string, BattleUnit> = new Map();
 
     public readonly events = new BattleEventBus();
-
-    private time = 0;
+    public readonly scheduler = new BattleScheduler();
 
     public async createUnit(data: BattleUnitData): Promise<BattleUnit | undefined> {
         if (this.units.has(data.id)) {
@@ -54,9 +53,12 @@ export class BattleWorld {
             return;
         }
 
-        const atkStartedEvt: AttackStartedEvent = { type: BattleEventType.AttackStarted, time: this.time, attackerId, targetId };
-
-        this.events.emit(atkStartedEvt);
+        this.events.emit({
+            type: BattleEventType.AttackStarted,
+            time: this.getTime(),
+            attackerId,
+            targetId,
+        } as AttackStartedEvent);
 
         const rawDamage = attacker.calculateDamage();
 
@@ -64,39 +66,37 @@ export class BattleWorld {
 
         const result = target.takeDamage(finalDamage);
 
-        const damageEvt: DamageEvent = {
+        this.events.emit({
             type: BattleEventType.Damage,
-            time: this.time,
+            time: this.getTime(),
             attackerId,
             targetId,
             rawDamage,
             finalDamage,
             targetHpBefore: result.before,
             targetHpAfter: result.after,
-        };
-        this.events.emit(damageEvt);
+        } as DamageEvent);
 
         if (target.isDead()) {
-            const diedEvt: UnitDiedEvent = {
+            this.events.emit({
                 type: BattleEventType.UnitDied,
                 unitId: targetId,
-                time: this.time,
-            };
-            this.events.emit(diedEvt);
+                time: this.getTime(),
+            } as UnitDiedEvent);
         }
     }
 
     public update(dt: number) {
-        this.time += dt;
+        this.scheduler.update(dt, this);
     }
 
     public getTime(): number {
-        return this.time;
+        return this.scheduler.getCurrentTime();
     }
 
     public clear(): void {
         this.units.clear();
         this.events.clear();
-        this.time = 0;
+        this.scheduler.reset();
     }
 }
