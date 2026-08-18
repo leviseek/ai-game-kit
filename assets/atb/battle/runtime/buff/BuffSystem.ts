@@ -40,7 +40,7 @@ export class BuffSystem extends BattleSystem {
                 targetId: target.id,
                 buffId,
                 stacks: existing.stacks,
-                duration: existing.reamining,
+                duration: existing.remaining,
             } as BuffStackChangedEvent);
             return;
         }
@@ -54,7 +54,7 @@ export class BuffSystem extends BattleSystem {
             targetId: target.id,
             buffId,
             stacks: instance.stacks,
-            duration: instance.reamining,
+            duration: instance.remaining,
         } as BuffAddedEvent);
     }
 
@@ -102,7 +102,7 @@ export class BuffSystem extends BattleSystem {
                     }
                 }
 
-                if (buff.reamining <= 0) {
+                if (buff.remaining <= 0) {
                     buffs.delete(buffId);
 
                     this.world.events.emit({

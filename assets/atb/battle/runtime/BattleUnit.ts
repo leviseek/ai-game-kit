@@ -81,7 +81,7 @@ export class BattleUnit {
 
         const before = this.hp;
 
-        this.hp = Math.min(this.maxHp, amount + Math.max(0, amount));
+        this.hp = Math.min(this.maxHp, this.hp + Math.max(0, amount));
 
         return {
             before,

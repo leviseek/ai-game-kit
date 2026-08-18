@@ -4,7 +4,7 @@ import { BuffModifier } from "./BuffModifier";
 export class BuffInstance {
     public readonly data: BuffData;
 
-    public reamining: number;
+    public remaining: number;
     public stacks: number;
 
     public periodicTimer = 0;
@@ -12,7 +12,7 @@ export class BuffInstance {
     constructor(data: BuffData) {
         this.data = data;
 
-        this.reamining = data.duration;
+        this.remaining = data.duration;
 
         this.stacks = 1;
     }
@@ -20,7 +20,7 @@ export class BuffInstance {
     public addStack() {
         this.stacks = Math.min(this.data.maxStacks, this.stacks + 1);
 
-        this.reamining = this.data.duration;
+        this.remaining = this.data.duration;
     }
 
     public getModifiers(): BuffModifier[] {
@@ -47,12 +47,12 @@ export class BuffInstance {
     }
 
     public update(dt: number): boolean {
-        this.reamining -= dt;
+        this.remaining -= dt;
 
         if (this.data.periodic) {
             this.periodicTimer += dt;
         }
 
-        return this.reamining <= 0;
+        return this.remaining <= 0;
     }
 }
