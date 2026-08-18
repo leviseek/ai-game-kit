@@ -2,6 +2,10 @@ export enum BattleEventType {
     BattleStarted = "BattleStarted",
 
     AttackStarted = "AttackStarted",
+
+    SkillStarted = "SkillStarted",
+    SkillFinished = "SkillFinished",
+
     Damage = "Damage",
     UnitDied = "UnitDied",
 
@@ -22,6 +26,20 @@ export interface AttackStartedEvent extends BattleEvent {
 
     attackerId: string;
     targetId: string;
+}
+
+export interface SkillStartedEvent extends BattleEvent {
+    type: BattleEventType.SkillStarted;
+
+    casterId: string;
+    skillId: string;
+}
+
+export interface SkillFinishedEvent extends BattleEvent {
+    type: BattleEventType.SkillFinished;
+
+    casterId: string;
+    skillId: string;
 }
 
 export interface DamageEvent extends BattleEvent {

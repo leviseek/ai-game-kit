@@ -5,6 +5,8 @@ import { BattleScheduler } from "./BattleScheduler";
 import { DamageSystem } from "./system/DamageSystem";
 import { AttackSystem } from "./system/AttackSystem";
 import { TargetSelector } from "./target/TargetSelector";
+import { SkillSystem } from "./skill/SkillSystem";
+import { EffectSystem } from "./effect/EffectSystem";
 
 /**
  * 战斗世界
@@ -17,13 +19,17 @@ export class BattleWorld {
     public readonly events = new BattleEventBus();
     public readonly scheduler = new BattleScheduler();
 
-    public readonly targetSelector: TargetSelector;
     public readonly damageSystem: DamageSystem;
+    public readonly effectSystem: EffectSystem;
+    public readonly targetSelector: TargetSelector;
+    public readonly skillSystem: SkillSystem;
     public readonly attackSystem: AttackSystem;
 
     constructor() {
-        this.targetSelector = new TargetSelector(this);
         this.damageSystem = new DamageSystem(this);
+        this.effectSystem = new EffectSystem(this, this.damageSystem);
+        this.targetSelector = new TargetSelector(this);
+        this.skillSystem = new SkillSystem(this);
         this.attackSystem = new AttackSystem(this, this.damageSystem);
     }
 
@@ -49,10 +55,11 @@ export class BattleWorld {
     }
 
     public update(dt: number) {
-        this.scheduler.update(dt, this);
+        const scaleDt = this.scheduler.update(dt, this);
 
-        this.attackSystem.update(dt);
-        this.damageSystem.update(dt);
+        this.attackSystem.update(scaleDt);
+        this.damageSystem.update(scaleDt);
+        this.skillSystem.update(scaleDt);
     }
 
     public getTime(): number {

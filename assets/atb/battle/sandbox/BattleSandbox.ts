@@ -4,6 +4,9 @@ import { BattleEventType, DamageEvent, UnitDiedEvent } from "../runtime/event/Ba
 import { AttackCommand } from "../runtime/command/AttackCommand";
 import { BattleCampType } from "../runtime/BattleUnit";
 import { TargetRelation, TargetType } from "../runtime/target/TargetQuery";
+import { SkillData } from "../runtime/skill/SkillData";
+import { EffectType } from "../runtime/effect/EffectData";
+import { SkillCommand } from "../runtime/skill/SkilCommand";
 const { ccclass } = _decorator;
 
 /**
@@ -30,8 +33,6 @@ export class BattleSandbox extends Component {
         this.world.events.on(BattleEventType.Damage, (evt) => {
             const damageEvt = evt as DamageEvent;
             console.log(`[Damage] ${damageEvt.attackerId} -> ${damageEvt.targetId} damage=${damageEvt.finalDamage}`);
-
-            // this.refreshUnitView(damageEvent.targetId);
         });
 
         this.world.events.on(BattleEventType.UnitDied, (evt) => {
@@ -74,17 +75,6 @@ export class BattleSandbox extends Component {
         });
 
         console.log(`[${BattleSandbox.TAG}] Battle created.`);
-
-        // test target select
-        const targets = this.world.targetSelector.select(hero, {
-            relation: TargetRelation.Enemy,
-            type: TargetType.LowestHp,
-        });
-
-        console.log(
-            "[TargetSelector]",
-            targets.map((target) => target.id),
-        );
     }
 
     startBattle() {
@@ -98,6 +88,43 @@ export class BattleSandbox extends Component {
             }),
         );
 
+        // test multi times damage
+        // this.multiDamage();
+
+        // test scheduler time scale
+        // this.scaleTime();
+
+        // test scheduler pause
+        // this.pauseAndResume();
+
+        // test target select
+        // this.selectTarget();
+
+        // test fireball
+        this.testFireball();
+
+        // scheduler start
+        scheduler.start();
+    }
+
+    private testPauseAndResume() {
+        const { scheduler } = this.world;
+        setTimeout(() => {
+            scheduler.pause();
+        }, 1500);
+
+        setTimeout(() => {
+            scheduler.start();
+        }, 5000);
+    }
+
+    private testScaleTime() {
+        const { scheduler } = this.world;
+        scheduler.setTimeScale(2.0);
+    }
+
+    private testMultiDamage() {
+        const { scheduler } = this.world;
         scheduler.schedule(
             2.0,
             new AttackCommand(`enemy_001`, {
@@ -123,19 +150,54 @@ export class BattleSandbox extends Component {
                 type: TargetType.All,
             }),
         );
+    }
 
-        // test scheduler time scale
-        // scheduler.setTimeScale(2);
+    private testSelectTarget() {
+        const hero = this.world.getUnit("hero_001");
+        if (!hero) {
+            return;
+        }
 
-        scheduler.start();
+        const targets = this.world.targetSelector.select(hero, {
+            relation: TargetRelation.Enemy,
+            type: TargetType.LowestHp,
+        });
 
-        // test scheduler pause
-        // setTimeout(() => {
-        //     scheduler.pause();
-        // }, 1500);
+        console.log(
+            "[TargetSelector]",
+            targets.map((target) => target.id),
+        );
+    }
 
-        // setTimeout(() => {
-        //     scheduler.start();
-        // }, 5000);
+    private testFireball() {
+        const { scheduler } = this.world;
+
+        const fireball = this.createFireball();
+        scheduler.schedule(1.0, new SkillCommand("hero_001", fireball));
+
+        scheduler.schedule(2.0, new SkillCommand("hero_001", fireball));
+
+        scheduler.schedule(5.0, new SkillCommand("hero_001", fireball));
+
+        scheduler.schedule(10, new SkillCommand("hero_001", fireball));
+    }
+
+    private createFireball(): SkillData {
+        return {
+            id: "fireball",
+            name: "Fireball",
+            cooldown: 5,
+            cost: 20,
+            target: {
+                relation: TargetRelation.Enemy,
+                type: TargetType.All,
+            },
+            effects: [
+                {
+                    type: EffectType.Damage,
+                    value: 50,
+                },
+            ],
+        };
     }
 }

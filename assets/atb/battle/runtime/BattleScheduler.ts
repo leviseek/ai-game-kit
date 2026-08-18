@@ -53,9 +53,9 @@ export class BattleScheduler {
         this.currentTime = Math.max(0, time);
     }
 
-    public update(dt: number, world: BattleWorld) {
+    public update(dt: number, world: BattleWorld): number {
         if (!this.playing) {
-            return;
+            return 0;
         }
 
         const scaleDt = dt * this.timeScale;
@@ -63,6 +63,8 @@ export class BattleScheduler {
         this.currentTime += scaleDt;
 
         this.queue.executeDueCommands(world, this.currentTime);
+
+        return scaleDt;
     }
 
     public reset() {
