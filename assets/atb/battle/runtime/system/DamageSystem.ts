@@ -1,4 +1,5 @@
 import { BattleEventType, DamageEvent, UnitDiedEvent } from "../event/BattleEvent";
+import { StatType } from "../stat/StatType";
 import { BattleSystem } from "./BattleSystem";
 
 export class DamageSystem extends BattleSystem {
@@ -19,12 +20,19 @@ export class DamageSystem extends BattleSystem {
             return 0;
         }
 
+        const { world } = this;
+
         const targetHpBefore = target.hp;
-        const finalDamage = Math.max(1, rawDamage - target.defense);
+        const defense = world.stats.getValue(target, StatType.Defense);
+        let finalDamage = Math.max(1, rawDamage - defense);
+
+        const damageTaken = world.stats.getValue(target, StatType.DamageTaken);
+
+        finalDamage *= damageTaken;
+
+        finalDamage = Math.max(1, finalDamage);
 
         const result = target.takeDamage(finalDamage);
-
-        const { world } = this;
 
         world.events.emit({
             type: BattleEventType.Damage,

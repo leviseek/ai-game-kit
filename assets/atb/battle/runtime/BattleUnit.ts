@@ -46,6 +46,10 @@ export class BattleUnit {
         return this.hp <= 0;
     }
 
+    /**
+     *
+     * @deprecated
+     */
     public calculateDamage(): number {
         return Math.max(1, this.attack);
     }

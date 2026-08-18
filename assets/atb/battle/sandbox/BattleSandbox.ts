@@ -7,6 +7,9 @@ import { TargetRelation, TargetType } from "../runtime/target/TargetQuery";
 import { SkillData } from "../runtime/skill/SkillData";
 import { EffectType } from "../runtime/effect/EffectData";
 import { SkillCommand } from "../runtime/skill/SkilCommand";
+import { StatType } from "../runtime/stat/StatType";
+import { ModifierType } from "../runtime/buff/BuffModifier";
+import { BuffData } from "../runtime/buff/BuffData";
 const { ccclass } = _decorator;
 
 /**
@@ -79,14 +82,14 @@ export class BattleSandbox extends Component {
 
     startBattle() {
         const { scheduler } = this.world;
-        scheduler.schedule(
-            1.0,
-            new AttackCommand(`hero_001`, {
-                relation: TargetRelation.Enemy,
-                type: TargetType.LowestHp,
-                maxCount: 1,
-            }),
-        );
+        // scheduler.schedule(
+        //     1.0,
+        //     new AttackCommand(`hero_001`, {
+        //         relation: TargetRelation.Enemy,
+        //         type: TargetType.LowestHp,
+        //         maxCount: 1,
+        //     }),
+        // );
 
         // test multi times damage
         // this.multiDamage();
@@ -214,14 +217,68 @@ export class BattleSandbox extends Component {
             name: "Burning",
             duration: 5,
             maxStacks: 3,
+            periodic: {
+                interval: 1,
+                effects: [
+                    {
+                        type: EffectType.Damage,
+                        value: 10,
+                    },
+                ],
+            },
         });
+
+        buffSystem.register({
+            id: "rage",
+            name: "Rage",
+            duration: 5,
+            maxStacks: 1,
+            modifiers: [
+                {
+                    stat: StatType.Attack,
+                    type: ModifierType.Percent,
+                    value: 0.2,
+                },
+            ],
+        });
+
+        buffSystem.register({
+            id: "weakness",
+            name: "Weakness",
+            duration: 5,
+            maxStacks: 1,
+            modifiers: [
+                {
+                    stat: StatType.DamageTaken,
+                    type: ModifierType.Percent,
+                    value: 0.3,
+                },
+            ],
+        });
+
+        const regeneration: BuffData = {
+            id: "regeneration",
+            name: "Regeneration",
+            duration: 5,
+            maxStacks: 1,
+            periodic: {
+                interval: 1,
+                effects: [
+                    {
+                        type: EffectType.Heal,
+                        value: 20,
+                    },
+                ],
+            },
+        };
+        buffSystem.register(regeneration);
     }
 
     private createMeteor(): SkillData {
         return {
             id: "meteor",
             name: "Meteor",
-            cooldown: 5,
+            cooldown: 2,
             cost: 20,
             target: {
                 relation: TargetRelation.Enemy,

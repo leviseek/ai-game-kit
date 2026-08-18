@@ -9,6 +9,7 @@ import { SkillSystem } from "./skill/SkillSystem";
 import { EffectSystem } from "./effect/EffectSystem";
 import { BuffSystem } from "./buff/BuffSystem";
 import { EffectPipeline } from "./effect/EffectPipeline";
+import { StatCalculator } from "./stat/StatCalculator";
 
 /**
  * 战斗世界
@@ -23,6 +24,7 @@ export class BattleWorld {
 
     public readonly damageSystem: DamageSystem;
     public readonly buffSystem: BuffSystem;
+    public readonly stats: StatCalculator;
     public readonly effectSystem: EffectSystem;
     public readonly effectPipeline: EffectPipeline;
     public readonly targetSelector: TargetSelector;
@@ -32,6 +34,7 @@ export class BattleWorld {
     constructor() {
         this.damageSystem = new DamageSystem(this);
         this.buffSystem = new BuffSystem(this);
+        this.stats = new StatCalculator(this);
         this.effectSystem = new EffectSystem(this, this.damageSystem);
         this.effectPipeline = new EffectPipeline(this);
         this.targetSelector = new TargetSelector(this);

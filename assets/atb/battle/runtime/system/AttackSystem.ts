@@ -1,5 +1,6 @@
 import { BattleWorld } from "../BattleWorld";
 import { AttackStartedEvent, BattleEventType } from "../event/BattleEvent";
+import { StatType } from "../stat/StatType";
 import { BattleSystem } from "./BattleSystem";
 import { DamageSystem } from "./DamageSystem";
 
@@ -31,7 +32,7 @@ export class AttackSystem extends BattleSystem {
             targetId,
         } as AttackStartedEvent);
 
-        const rawDamage = attacker.calculateDamage();
+        const rawDamage = this.world.stats.getValue(attacker, StatType.Attack);
 
         this.damageSystem.dealDamage(attackerId, targetId, rawDamage);
     }
