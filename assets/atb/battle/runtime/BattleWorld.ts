@@ -11,6 +11,7 @@ import { BuffSystem } from "./buff/BuffSystem";
 import { EffectPipeline } from "./effect/EffectPipeline";
 import { StatCalculator } from "./stat/StatCalculator";
 import { BattleClock } from "./BattleClock";
+import { BattleRecorder } from "./replay/BattleRecorder";
 
 /**
  * 战斗世界
@@ -22,6 +23,7 @@ export class BattleWorld {
 
     public readonly clock: BattleClock;
     public readonly events = new BattleEventBus();
+    public readonly recorder: BattleRecorder;
     public readonly scheduler = new BattleScheduler();
 
     public readonly damageSystem: DamageSystem;
@@ -35,7 +37,7 @@ export class BattleWorld {
 
     constructor() {
         this.clock = new BattleClock();
-
+        this.recorder = new BattleRecorder();
         this.damageSystem = new DamageSystem(this);
         this.buffSystem = new BuffSystem(this);
         this.stats = new StatCalculator(this);
@@ -44,6 +46,8 @@ export class BattleWorld {
         this.targetSelector = new TargetSelector(this);
         this.skillSystem = new SkillSystem(this);
         this.attackSystem = new AttackSystem(this, this.damageSystem);
+
+        this.events.onAny((event) => this.recorder.record(event));
     }
 
     public createUnit(data: BattleUnitData): BattleUnit | undefined {

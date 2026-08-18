@@ -112,6 +112,9 @@ export class BattleSandbox extends Component {
         // test meteor
         this.testMeteor();
 
+        // test record
+        this.testRecorder();
+
         // scheduler start
         scheduler.start();
     }
@@ -305,5 +308,13 @@ export class BattleSandbox extends Component {
         scheduler.schedule(3, new SkillCommand("hero_001", meteor));
 
         scheduler.schedule(6, new SkillCommand("hero_001", meteor));
+    }
+
+    private testRecorder() {
+        const { recorder } = this.world;
+
+        setTimeout(() => {
+            console.debug(recorder.getRecords());
+        }, 15000);
     }
 }
