@@ -30,7 +30,7 @@ export class BuffSystem extends BattleSystem {
     public addBuff(target: BattleUnit, buffId: string, context?: EffectContext): boolean {
         const data = this.definitions.get(buffId);
         if (!data) {
-            console.warn(`[${this.TAG}] Unkown buff: ${buffId}`);
+            console.warn(`[${this.TAG}] Unknown buff: ${buffId}`);
             return false;
         }
 
