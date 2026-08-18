@@ -1,45 +1,36 @@
-export enum BattleCampType {
-    Player = "Player",
-    Enemy = "Enemy",
-}
-
-/**
- * 战斗单位的数据
- */
-export interface BattleUnitData {
-    id: string;
-    name: string;
-    camp: BattleCampType;
-
-    maxHp: number;
-    attack: number;
-    defense: number;
-}
+import { SkillData } from "../data/skills/SkillData";
+import { SkillRuntimeState } from "./skill/SkillRuntimeState";
 
 /**
  * 战斗单位
  */
 export class BattleUnit {
     public readonly id: string;
-    public readonly name: string;
-    public readonly camp: BattleCampType;
+    public readonly team: number;
 
-    public readonly maxHp: number;
-    public hp: number;
+    public name: string = "";
+    public maxHp: number = 0;
+    public hp: number = 0;
 
-    public readonly attack: number;
-    public readonly defense: number;
+    public energy = 0;
+    public maxEnergy = 100;
+    public energyRegen = 10;
 
-    constructor(data: BattleUnitData) {
-        this.id = data.id;
-        this.name = data.name;
-        this.camp = data.camp;
+    public attack: number = 0;
+    public defense: number = 0;
 
-        this.maxHp = data.maxHp;
-        this.hp = data.maxHp;
+    private _skills: SkillData[] = [];
+    private skillState: Map<string, SkillRuntimeState> = new Map();
 
-        this.attack = data.attack;
-        this.defense = data.defense;
+    public autoBattle = false;
+
+    constructor(id: string, team: number) {
+        this.id = id;
+        this.team = team;
+    }
+
+    public get skills(): SkillData[] {
+        return this._skills;
     }
 
     public isDead(): boolean {
@@ -89,5 +80,48 @@ export class BattleUnit {
             after: this.hp,
             actual: this.hp - before,
         };
+    }
+
+    public addEnergy(amount: number): number {
+        if (amount <= 0) {
+            return 0;
+        }
+
+        const before = this.energy;
+
+        this.energy = Math.min(this.maxEnergy, this.energy + amount);
+
+        return this.energy - before;
+    }
+
+    public consumeEnergy(amount: number): boolean {
+        if (amount <= 0) {
+            return true;
+        }
+
+        if (this.energy < amount) {
+            return false;
+        }
+
+        this.energy -= amount;
+
+        return true;
+    }
+
+    public setSkills(skills: SkillData[]) {
+        this._skills = [...skills];
+
+        this.skillState.clear();
+
+        for (const skill of this._skills) {
+            this.skillState.set(skill.id, {
+                skillId: skill.id,
+                cooldownRemaining: 0,
+            });
+        }
+    }
+
+    public getSkillState(skillId: string): SkillRuntimeState | undefined {
+        return this.skillState.get(skillId);
     }
 }

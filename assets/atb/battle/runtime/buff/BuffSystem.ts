@@ -1,34 +1,18 @@
 import { BattleUnit } from "../BattleUnit";
 import { EffectContext } from "../effect/EffectContext";
-import { EffectData } from "../effect/EffectData";
 import { BattleEventType, BuffAddedEvent, BuffRemovedEvent, BuffStackChangedEvent } from "../event/BattleEvent";
 import { StatType } from "../stat/StatType";
 import { BattleSystem } from "../system/BattleSystem";
-import { BuffData } from "./BuffData";
 import { BuffInstance } from "./BuffInstance";
 import { BuffModifier } from "./BuffModifier";
 
 export class BuffSystem extends BattleSystem {
     protected readonly TAG: string = "BuffSystem";
 
-    private definitions: Map<string, BuffData> = new Map();
-
     private instances: Map<string, Map<string, BuffInstance>> = new Map();
 
-    public register(data: BuffData) {
-        if (this.definitions.has(data.id)) {
-            console.warn(`[${this.TAG}] Buff already registered: ${data.id}`);
-        }
-
-        this.definitions.set(data.id, data);
-    }
-
-    public getDefinition(buffId: string): BuffData | undefined {
-        return this.definitions.get(buffId);
-    }
-
     public addBuff(target: BattleUnit, buffId: string, context?: EffectContext): boolean {
-        const data = this.definitions.get(buffId);
+        const data = this.world.buffReg.get(buffId);
         if (!data) {
             console.warn(`[${this.TAG}] Unknown buff: ${buffId}`);
             return false;

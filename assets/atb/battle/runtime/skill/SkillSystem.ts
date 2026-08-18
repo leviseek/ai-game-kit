@@ -1,39 +1,49 @@
+import { BattleUnit } from "../BattleUnit";
 import { BattleEventType, SkillFinishedEvent, SkillStartedEvent } from "../event/BattleEvent";
 import { BattleSystem } from "../system/BattleSystem";
-import { SkillData } from "./SkillData";
+import { SkillData } from "../../data/skills/SkillData";
 
 export class SkillSystem extends BattleSystem {
     protected readonly TAG: string = "SkillSystem";
 
-    private coldowns: Map<string, number> = new Map();
-
     public update(dt: number): void {
-        for (const [key, remaining] of this.coldowns) {
-            const next = Math.max(0, remaining - dt);
+        for (const unit of this.world.getAllUnits()) {
+            for (const skill of unit.skills) {
+                const state = unit.getSkillState(skill.id);
+                if (!state) {
+                    continue;
+                }
 
-            if (next <= 0) {
-                this.coldowns.delete(key);
-            } else {
-                this.coldowns.set(key, next);
+                state.cooldownRemaining = Math.max(0, state.cooldownRemaining - dt);
             }
         }
     }
 
-    public cast(casterId: string, skill: SkillData): boolean {
+    public canCast(caster: BattleUnit, skill: SkillData): boolean {
+        if (caster.isDead()) return false;
+
+        if (caster.energy < skill.cost) return false;
+
+        if (this.isOnCooldown(caster, skill.id)) return false;
+
+        return true;
+    }
+
+    public cast(casterId: string, skillId: string, targetIds: string[]): boolean {
         const caster = this.world.getUnit(casterId);
         if (!caster) return false;
 
-        if (caster.isDead()) return false;
+        const skill = caster.skills.find((skill) => skill.id === skillId);
 
-        const key = this.getColdownKey(casterId, skill.id);
-        const colddown = this.coldowns.get(key) ?? 0;
-        if (colddown > 0) {
-            return false;
-        }
+        if (!skill) return false;
 
-        const targets = this.world.targetSelector.select(caster, skill.target);
-        if (targets.length == 0) {
-            return false;
+        if (!this.canCast(caster, skill)) return false;
+
+        if (!caster.consumeEnergy(skill.cost)) return false;
+
+        const state = caster.getSkillState(skill.id);
+        if (state) {
+            state.cooldownRemaining = skill.cooldown;
         }
 
         this.world.events.emit({
@@ -43,11 +53,11 @@ export class SkillSystem extends BattleSystem {
             skillId: skill.id,
         } as SkillStartedEvent);
 
-        for (const target of targets) {
+        for (const targetId of targetIds) {
             this.world.effectPipeline.apply(
                 {
                     sourceId: caster.id,
-                    targetId: target.id,
+                    targetId,
                     skillId: skill.id,
                     time: this.world.getTime(),
                     tags: ["skill"],
@@ -63,12 +73,16 @@ export class SkillSystem extends BattleSystem {
             skillId: skill.id,
         } as SkillFinishedEvent);
 
-        this.coldowns.set(key, skill.cooldown);
-
         return true;
     }
 
-    private getColdownKey(casterId: string, skillId: string): string {
-        return `${casterId}:${skillId}`;
+    private isOnCooldown(caster: BattleUnit, skillId: string): boolean {
+        const state = caster.getSkillState(skillId);
+
+        if (!state) {
+            return false;
+        }
+
+        return state.cooldownRemaining > 0;
     }
 }

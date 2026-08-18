@@ -5,7 +5,11 @@
     "compilerOptions": {
         "strict": true,
         "skipLibCheck": true,
+        "target": "esnext",
+        "module": "esnext",
         "moduleResolution": "bundler"
     },
-    "include": ["assets/**/*.ts"]
+    "include": [
+        "assets/**/*.ts"
+    ]
 }

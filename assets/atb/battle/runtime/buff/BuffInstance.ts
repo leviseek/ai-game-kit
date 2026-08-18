@@ -1,4 +1,4 @@
-import { BuffData } from "./BuffData";
+import { BuffData } from "../../data/buffs/BuffData";
 import { BuffModifier } from "./BuffModifier";
 
 export class BuffInstance {

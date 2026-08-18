@@ -32,8 +32,6 @@ export class BattleEventBus {
     }
 
     public emit(event: BattleEvent) {
-        console.debug(`[${BattleEventBus.TAG}] ${event.type}: `, event);
-
         const listeners = this.listeners.get(event.type);
         if (listeners) {
             for (const listener of listeners) {

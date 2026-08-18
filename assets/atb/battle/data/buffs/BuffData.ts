@@ -1,5 +1,5 @@
-import { EffectData } from "../effect/EffectData";
-import { BuffModifier } from "./BuffModifier";
+import { EffectData } from "../../runtime/effect/EffectData";
+import { BuffModifier } from "../../runtime/buff/BuffModifier";
 
 export interface BuffPeriodicEffect {
     interval: number;

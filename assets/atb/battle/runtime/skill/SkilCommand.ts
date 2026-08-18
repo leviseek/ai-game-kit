@@ -1,14 +1,18 @@
 import { BattleWorld } from "../BattleWorld";
 import { BattleCommand } from "../command/BattleCommand";
-import { SkillData } from "./SkillData";
+
+export interface SkillCommandData {
+    casterId: string;
+    skillId: string;
+    targetIds: string[];
+}
 
 export class SkillCommand implements BattleCommand {
-    constructor(
-        public readonly casterId: string,
-        public readonly skill: SkillData,
-    ) {}
+    constructor(public readonly data: SkillCommandData) {}
 
     execute(world: BattleWorld): void {
-        world.skillSystem.cast(this.casterId, this.skill);
+        const { casterId, skillId, targetIds } = this.data;
+
+        world.skillSystem.cast(casterId, skillId, targetIds);
     }
 }

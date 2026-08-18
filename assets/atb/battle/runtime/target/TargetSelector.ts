@@ -21,9 +21,9 @@ export class TargetSelector {
                 case TargetRelation.Self:
                     return unit === caster;
                 case TargetRelation.Ally:
-                    return unit.camp === caster.camp && unit !== caster;
+                    return unit.team === caster.team && unit !== caster;
                 case TargetRelation.Enemy:
-                    return unit.camp !== caster.camp;
+                    return unit.team !== caster.team;
                 default:
                     return false;
             }

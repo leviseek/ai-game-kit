@@ -1,56 +1,49 @@
-import { BattleWorld } from "../BattleWorld";
 import { BattleCommand } from "./BattleCommand";
 
-export interface QueueCommand {
-    executeTime: number;
-    order: number;
+interface ScheduledCommand {
+    executeAt: number;
+
+    sequence: number;
+
     command: BattleCommand;
 }
 
 export class CommandQueue {
-    private commands: QueueCommand[] = [];
+    private commands: ScheduledCommand[] = [];
 
-    private orderCounter = 0;
+    private sequence = 0;
 
-    public enqueue(executeTime: number, command: BattleCommand) {
-        this.commands.push({
-            executeTime,
-            order: this.orderCounter++,
-            command,
-        });
+    public push(executeAt: number, command: BattleCommand) {
+        this.commands.push({ executeAt, sequence: this.sequence++, command });
 
         this.sort();
     }
 
-    private sort() {
-        this.commands.sort((a, b) => {
-            if (a.executeTime !== b.executeTime) {
-                return a.executeTime - b.executeTime;
-            }
-            return a.order - b.order;
-        });
-    }
-
-    public executeDueCommands(world: BattleWorld, currentTime: number) {
+    public popDue(time: number): ScheduledCommand[] {
+        const result: ScheduledCommand[] = [];
         while (this.commands.length > 0) {
-            const item = this.commands[0];
+            const first = this.commands[0];
 
-            if (item.executeTime > currentTime) {
+            if (first.executeAt > time) {
                 break;
             }
 
-            this.commands.shift();
-
-            item.command.execute(world);
+            result.push(this.commands.shift()!);
         }
+
+        return result;
+    }
+
+    private sort() {
+        this.commands.sort((a, b) => {
+            if (a.executeAt !== b.executeAt) {
+                return a.executeAt - b.executeAt;
+            }
+            return a.sequence - b.sequence;
+        });
     }
 
     public clear() {
         this.commands.length = 0;
-        this.orderCounter = 0;
-    }
-
-    public getSize(): number {
-        return this.commands.length;
     }
 }

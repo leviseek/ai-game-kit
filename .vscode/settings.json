@@ -13,5 +13,9 @@
     },
     "[json]": {
         "editor.defaultFormatter": "vscode.json-language-features"
-    }
+    },
+    "js/ts.tsdk.promptToUseWorkspaceVersion": true,
+    "github.copilot.chat.completionsFetcher": "",
+    "github.copilot.completions.chat.enabled": true,
+    "js/ts.tsserver.web.projectWideIntellisense.enabled": false
 }

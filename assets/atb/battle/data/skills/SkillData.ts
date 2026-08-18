@@ -1,5 +1,5 @@
-import { EffectData } from "../effect/EffectData";
-import { TargetQuery } from "../target/TargetQuery";
+import { EffectData } from "../../runtime/effect/EffectData";
+import { TargetQuery } from "../../runtime/target/TargetQuery";
 
 export interface SkillData {
     id: string;

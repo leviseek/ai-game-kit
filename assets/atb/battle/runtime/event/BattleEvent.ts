@@ -3,6 +3,8 @@ import { EffectContext } from "../effect/EffectContext";
 export enum BattleEventType {
     BattleStarted = "BattleStarted",
 
+    DecisionMade = "DecisionMade",
+
     AttackStarted = "AttackStarted",
 
     SkillStarted = "SkillStarted",
@@ -14,6 +16,7 @@ export enum BattleEventType {
 
     Damage = "Damage",
     Heal = "Heal",
+    EnergyChanged = "EnergyChanged",
 
     UnitDied = "UnitDied",
 
@@ -27,6 +30,16 @@ export interface BattleEvent {
 
 export interface BattleStartedEvent extends BattleEvent {
     type: BattleEventType.BattleStarted;
+}
+
+export interface DecisionMadeEvent extends BattleEvent {
+    type: BattleEventType.DecisionMade;
+
+    unitId: string;
+
+    skillId: string;
+
+    targetIds: string[];
 }
 
 export interface AttackStartedEvent extends BattleEvent {
@@ -111,6 +124,14 @@ export interface HealEvent extends BattleEvent {
     targetHpAfter: number;
 
     context?: EffectContext;
+}
+
+export interface EnergyChangedEvent extends BattleEvent {
+    type: BattleEventType.EnergyChanged;
+
+    unitId: string;
+    delta: number;
+    energy: number;
 }
 
 export interface UnitDiedEvent extends BattleEvent {

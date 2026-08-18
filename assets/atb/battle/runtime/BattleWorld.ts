@@ -1,5 +1,5 @@
 import { _decorator } from "cc";
-import { BattleUnit, BattleUnitData } from "./BattleUnit";
+import { BattleUnit } from "./BattleUnit";
 import { BattleEventBus } from "./event/BattleEventBus";
 import { BattleScheduler } from "./BattleScheduler";
 import { DamageSystem } from "./system/DamageSystem";
@@ -12,6 +12,11 @@ import { EffectPipeline } from "./effect/EffectPipeline";
 import { StatCalculator } from "./stat/StatCalculator";
 import { BattleClock } from "./BattleClock";
 import { BattleRecorder } from "./replay/BattleRecorder";
+import { EnergySystem } from "./energy/EnergySystem";
+import { BuffRegistry } from "./registry/BuffRegistry";
+import { SkillRegistry } from "./registry/SkillRegistry";
+import { UnitRegistry } from "./registry/UnitRegistry";
+import { DecisionSystem } from "./ai/DecisionSystem";
 
 /**
  * 战斗世界
@@ -19,13 +24,22 @@ import { BattleRecorder } from "./replay/BattleRecorder";
 
 export class BattleWorld {
     private static readonly TAG = "BattleWorld";
-    private units: Map<string, BattleUnit> = new Map();
+
+    // ===== Definition =====
+    public readonly unitReg: UnitRegistry;
+    public readonly skillReg: SkillRegistry;
+    public readonly buffReg: BuffRegistry;
+
+    // ===== Runtime =====
+    private readonly units: Map<string, BattleUnit> = new Map();
 
     public readonly clock: BattleClock;
     public readonly events = new BattleEventBus();
     public readonly recorder: BattleRecorder;
-    public readonly scheduler = new BattleScheduler();
+    public readonly scheduler: BattleScheduler;
 
+    // ===== Systems =====
+    public readonly decisionSystem: DecisionSystem;
     public readonly damageSystem: DamageSystem;
     public readonly buffSystem: BuffSystem;
     public readonly stats: StatCalculator;
@@ -34,10 +48,18 @@ export class BattleWorld {
     public readonly targetSelector: TargetSelector;
     public readonly skillSystem: SkillSystem;
     public readonly attackSystem: AttackSystem;
+    public readonly energySystem: EnergySystem;
 
     constructor() {
+        this.unitReg = new UnitRegistry();
+        this.skillReg = new SkillRegistry();
+        this.buffReg = new BuffRegistry();
+
         this.clock = new BattleClock();
+        this.scheduler = new BattleScheduler(this);
         this.recorder = new BattleRecorder();
+
+        this.decisionSystem = new DecisionSystem(this);
         this.damageSystem = new DamageSystem(this);
         this.buffSystem = new BuffSystem(this);
         this.stats = new StatCalculator(this);
@@ -46,21 +68,19 @@ export class BattleWorld {
         this.targetSelector = new TargetSelector(this);
         this.skillSystem = new SkillSystem(this);
         this.attackSystem = new AttackSystem(this, this.damageSystem);
+        this.energySystem = new EnergySystem(this);
 
         this.events.onAny((event) => this.recorder.record(event));
     }
 
-    public createUnit(data: BattleUnitData): BattleUnit | undefined {
-        if (this.units.has(data.id)) {
-            console.error(`BattleUnit already exists: ${data.id}`);
-            return undefined;
+    public addUnit(unit: BattleUnit): boolean {
+        if (this.units.has(unit.id)) {
+            console.error(`BattleUnit already exists: ${unit.id}`);
+            return false;
         }
+        this.units.set(unit.id, unit);
 
-        const unit = new BattleUnit(data);
-
-        this.units.set(data.id, unit);
-
-        return unit;
+        return true;
     }
 
     public getUnit(id: string): BattleUnit | undefined {
@@ -74,10 +94,17 @@ export class BattleWorld {
     public update(dt: number) {
         const battleDt = this.scheduler.update(dt, this);
 
+        if (battleDt <= 0) {
+            return;
+        }
+
+        this.energySystem.update(battleDt);
+        this.decisionSystem.update(battleDt);
+        this.buffSystem.update(battleDt);
+
         this.attackSystem.update(battleDt);
         this.damageSystem.update(battleDt);
         this.skillSystem.update(battleDt);
-        this.buffSystem.update(battleDt);
     }
 
     public getTime(): number {

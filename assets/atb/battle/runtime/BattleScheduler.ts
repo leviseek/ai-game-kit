@@ -9,6 +9,8 @@ export class BattleScheduler {
 
     private timeScale = 1;
 
+    constructor(private readonly world: BattleWorld) {}
+
     public start() {
         this.playing = true;
     }
@@ -29,8 +31,13 @@ export class BattleScheduler {
         return this.timeScale;
     }
 
-    public schedule(executeTime: number, command: BattleCommand) {
-        this.queue.enqueue(executeTime, command);
+    public schedule(delay: number, command: BattleCommand) {
+        const executeAt = this.world.getTime() + Math.max(0, delay);
+        this.queue.push(executeAt, command);
+    }
+
+    public scheduleAt(executeAt: number, command: BattleCommand) {
+        this.queue.push(executeAt, command);
     }
 
     public step(dt: number, world: BattleWorld) {
@@ -52,7 +59,11 @@ export class BattleScheduler {
 
         world.clock.advance(battleDt);
 
-        this.queue.executeDueCommands(world, world.getTime());
+        const commands = this.queue.popDue(world.getTime());
+
+        for (const entry of commands) {
+            entry.command.execute(world);
+        }
 
         return battleDt;
     }
@@ -61,9 +72,5 @@ export class BattleScheduler {
         this.playing = false;
         this.timeScale = 1;
         this.queue.clear();
-    }
-
-    public getPendingCommandCount(): number {
-        return this.queue.getSize();
     }
 }
