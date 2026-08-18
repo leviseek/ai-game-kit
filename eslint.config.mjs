@@ -46,6 +46,7 @@ export default tseslint.config(
                     caughtErrorsIgnorePattern: "^_",
                 },
             ],
+            "prefer-const": "warn"
         },
     },
     {

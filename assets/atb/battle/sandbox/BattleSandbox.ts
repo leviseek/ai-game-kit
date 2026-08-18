@@ -35,7 +35,7 @@ export class BattleSandbox extends Component {
     private setupEventListeners() {
         this.world.events.on(BattleEventType.Damage, (evt) => {
             const damageEvt = evt as DamageEvent;
-            console.log(`[Damage] ${damageEvt.attackerId} -> ${damageEvt.targetId} damage=${damageEvt.finalDamage}`);
+            console.log(`[Damage] ${damageEvt.sourceId} -> ${damageEvt.targetId} damage=${damageEvt.finalDamage}`);
         });
 
         this.world.events.on(BattleEventType.UnitDied, (evt) => {

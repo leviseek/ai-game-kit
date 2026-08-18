@@ -1,4 +1,6 @@
 import { BattleUnit } from "../BattleUnit";
+import { EffectContext } from "../effect/EffectContext";
+import { EffectData } from "../effect/EffectData";
 import { BattleEventType, BuffAddedEvent, BuffRemovedEvent, BuffStackChangedEvent } from "../event/BattleEvent";
 import { StatType } from "../stat/StatType";
 import { BattleSystem } from "../system/BattleSystem";
@@ -14,48 +16,62 @@ export class BuffSystem extends BattleSystem {
     private instances: Map<string, Map<string, BuffInstance>> = new Map();
 
     public register(data: BuffData) {
+        if (this.definitions.has(data.id)) {
+            console.warn(`[${this.TAG}] Buff already registered: ${data.id}`);
+        }
+
         this.definitions.set(data.id, data);
     }
 
-    public addBuff(target: BattleUnit, buffId: string) {
+    public getDefinition(buffId: string): BuffData | undefined {
+        return this.definitions.get(buffId);
+    }
+
+    public addBuff(target: BattleUnit, buffId: string, context?: EffectContext): boolean {
         const data = this.definitions.get(buffId);
         if (!data) {
-            console.log(`[${this.TAG}] Buff not found: ${buffId}`);
-            return;
+            console.warn(`[${this.TAG}] Unkown buff: ${buffId}`);
+            return false;
         }
 
-        let unitBuffs = this.instances.get(target.id);
-        if (!unitBuffs) {
-            unitBuffs = new Map();
-            this.instances.set(target.id, unitBuffs);
+        let buffs = this.instances.get(target.id);
+        if (!buffs) {
+            buffs = new Map();
+            this.instances.set(target.id, buffs);
         }
 
-        const existing = unitBuffs.get(buffId);
+        const existing = buffs.get(buffId);
         if (existing) {
             existing.addStack();
 
-            this.world.events.emit({
+            const changedEvt: BuffStackChangedEvent = {
                 type: BattleEventType.BuffStackChanged,
                 time: this.world.getTime(),
                 targetId: target.id,
                 buffId,
                 stacks: existing.stacks,
                 duration: existing.remaining,
-            } as BuffStackChangedEvent);
-            return;
+                sourceId: existing.sourceId,
+            };
+            this.world.events.emit(changedEvt);
+            return true;
         }
 
-        const instance = new BuffInstance(data);
-        unitBuffs.set(buffId, instance);
+        const instance = new BuffInstance(data, context?.sourceId ?? target.id);
+        buffs.set(buffId, instance);
 
-        this.world.events.emit({
+        const addedEvt: BuffAddedEvent = {
             type: BattleEventType.BuffAdded,
             time: this.world.getTime(),
+            sourceId: context?.sourceId,
             targetId: target.id,
             buffId,
             stacks: instance.stacks,
             duration: instance.remaining,
-        } as BuffAddedEvent);
+        };
+        this.world.events.emit(addedEvt);
+
+        return true;
     }
 
     public getBuff(targetId: string, buffId: string): BuffInstance | undefined {
@@ -96,10 +112,23 @@ export class BuffSystem extends BattleSystem {
 
                 if (ticks > 0 && buff.data.periodic) {
                     for (let i = 0; i < ticks; i++) {
+                        const context: EffectContext = {
+                            sourceId: buff.sourceId,
+                            targetId: unit.id,
+                            buffId: buff.data.id,
+                            effectIndex: i,
+                            tickIndex: buff.tickCount + i,
+
+                            time: world.getTime(),
+                            tags: ["periodic", "dot"],
+                        };
                         for (const effect of buff.data.periodic.effects) {
-                            world.effectSystem.apply(unit, unit, effect);
+                            world.effectSystem.apply(context, effect);
                         }
                     }
+
+                    // 每消耗一个 periodic tick，tickCount 自增 1（0 起始，供 tickIndex 递增）
+                    buff.tickCount += ticks;
                 }
 
                 if (buff.remaining <= 0) {

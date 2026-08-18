@@ -31,6 +31,11 @@ export class SkillSystem extends BattleSystem {
             return false;
         }
 
+        const targets = this.world.targetSelector.select(caster, skill.target);
+        if (targets.length == 0) {
+            return false;
+        }
+
         this.world.events.emit({
             type: BattleEventType.SkillStarted,
             time: this.world.getTime(),
@@ -38,13 +43,17 @@ export class SkillSystem extends BattleSystem {
             skillId: skill.id,
         } as SkillStartedEvent);
 
-        const targets = this.world.targetSelector.select(caster, skill.target);
-        if (targets.length == 0) {
-            return false;
-        }
-
         for (const target of targets) {
-            this.world.effectPipeline.apply(caster, target, skill.effects);
+            this.world.effectPipeline.apply(
+                {
+                    sourceId: caster.id,
+                    targetId: target.id,
+                    skillId: skill.id,
+                    time: this.world.getTime(),
+                    tags: ["skill"],
+                },
+                skill.effects,
+            );
         }
 
         this.world.events.emit({

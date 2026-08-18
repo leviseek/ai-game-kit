@@ -10,6 +10,7 @@ import { EffectSystem } from "./effect/EffectSystem";
 import { BuffSystem } from "./buff/BuffSystem";
 import { EffectPipeline } from "./effect/EffectPipeline";
 import { StatCalculator } from "./stat/StatCalculator";
+import { BattleClock } from "./BattleClock";
 
 /**
  * 战斗世界
@@ -19,6 +20,7 @@ export class BattleWorld {
     private static readonly TAG = "BattleWorld";
     private units: Map<string, BattleUnit> = new Map();
 
+    public readonly clock: BattleClock;
     public readonly events = new BattleEventBus();
     public readonly scheduler = new BattleScheduler();
 
@@ -32,6 +34,8 @@ export class BattleWorld {
     public readonly attackSystem: AttackSystem;
 
     constructor() {
+        this.clock = new BattleClock();
+
         this.damageSystem = new DamageSystem(this);
         this.buffSystem = new BuffSystem(this);
         this.stats = new StatCalculator(this);
@@ -73,7 +77,7 @@ export class BattleWorld {
     }
 
     public getTime(): number {
-        return this.scheduler.getCurrentTime();
+        return this.clock.getTime();
     }
 
     public clear(): void {

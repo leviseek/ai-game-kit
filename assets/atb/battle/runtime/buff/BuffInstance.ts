@@ -8,8 +8,12 @@ export class BuffInstance {
     public stacks: number;
 
     public periodicTimer = 0;
+    public tickCount = 0;
 
-    constructor(data: BuffData) {
+    constructor(
+        data: BuffData,
+        public readonly sourceId: string,
+    ) {
         this.data = data;
 
         this.remaining = data.duration;

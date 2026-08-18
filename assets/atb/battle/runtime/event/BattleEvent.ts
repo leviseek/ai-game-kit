@@ -1,3 +1,5 @@
+import { EffectContext } from "../effect/EffectContext";
+
 export enum BattleEventType {
     BattleStarted = "BattleStarted",
 
@@ -51,6 +53,7 @@ export interface SkillFinishedEvent extends BattleEvent {
 export interface BuffAddedEvent extends BattleEvent {
     type: BattleEventType.BuffAdded;
 
+    sourceId?: string;
     targetId: string;
     buffId: string;
     stacks: number;
@@ -62,6 +65,12 @@ export interface BuffStackChangedEvent extends BattleEvent {
 
     targetId: string;
     buffId: string;
+    stacks?: number;
+    duration?: number;
+
+    sourceId: string;
+
+    context?: EffectContext;
 }
 
 export interface BuffRemovedEvent extends BattleEvent {
@@ -69,21 +78,24 @@ export interface BuffRemovedEvent extends BattleEvent {
 
     targetId: string;
     buffId: string;
-    stacks: number;
-    duration: number;
 }
 
 export interface DamageEvent extends BattleEvent {
     type: BattleEventType.Damage;
 
-    attackerId: string;
+    sourceId: string;
     targetId: string;
 
     rawDamage: number;
     finalDamage: number;
+    actualDamage: number;
 
     targetHpBefore: number;
     targetHpAfter: number;
+
+    killed: boolean;
+
+    context?: EffectContext;
 }
 
 export interface HealEvent extends BattleEvent {
@@ -97,10 +109,14 @@ export interface HealEvent extends BattleEvent {
 
     targetHpBefore: number;
     targetHpAfter: number;
+
+    context?: EffectContext;
 }
 
 export interface UnitDiedEvent extends BattleEvent {
     type: BattleEventType.UnitDied;
 
     unitId: string;
+
+    killerId: string;
 }

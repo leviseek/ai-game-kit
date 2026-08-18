@@ -1,63 +1,82 @@
+import { EffectContext } from "../effect/EffectContext";
 import { BattleEventType, DamageEvent, UnitDiedEvent } from "../event/BattleEvent";
 import { StatType } from "../stat/StatType";
 import { BattleSystem } from "./BattleSystem";
+import { DamageResult } from "./DamageResult";
 
 export class DamageSystem extends BattleSystem {
     protected readonly TAG: string = "DamageSystem";
 
-    public dealDamage(attackerId: string, targetId: string, rawDamage: number) {
-        const attacker = this.world.getUnit(attackerId);
-        if (!attacker) {
-            return 0;
-        }
-
-        const target = this.world.getUnit(targetId);
-        if (!target) {
-            return 0;
-        }
-
-        if (target.isDead()) {
-            return 0;
-        }
-
+    public dealDamage(sourceId: string, targetId: string, rawDamage: number, context?: EffectContext): DamageResult {
         const { world } = this;
 
+        const source = world.getUnit(sourceId);
+        const target = world.getUnit(targetId);
+        if (!source || !target || target.isDead()) {
+            return {
+                rawDamage,
+                finalDamage: 0,
+                actualDamage: 0,
+                targetHpBefore: 0,
+                targetHpAfter: 0,
+                killed: false,
+            };
+        }
+
+        const { stats, events } = world;
+
         const targetHpBefore = target.hp;
-        const defense = world.stats.getValue(target, StatType.Defense);
+        const defense = stats.getValue(target, StatType.Defense);
+
         let finalDamage = Math.max(1, rawDamage - defense);
 
-        const damageTaken = world.stats.getValue(target, StatType.DamageTaken);
+        const dealtMultiplier = stats.getValue(source, StatType.DamageDealt);
+        const takenMultiplier = stats.getValue(target, StatType.DamageTaken);
 
-        finalDamage *= damageTaken;
+        finalDamage *= dealtMultiplier;
+        finalDamage *= takenMultiplier;
 
         finalDamage = Math.max(1, finalDamage);
 
-        const result = target.takeDamage(finalDamage);
+        const damageResult = target.takeDamage(finalDamage);
 
-        world.events.emit({
-            type: BattleEventType.Damage,
-            time: world.getTime(),
+        const killed = target.isDead();
 
-            attackerId,
-            targetId,
-
+        const result: DamageResult = {
             rawDamage,
             finalDamage,
-
+            actualDamage: damageResult.actual,
             targetHpBefore,
-            targetHpAfter: result.after,
-        } as DamageEvent);
+            targetHpAfter: target.hp,
+            killed,
+        };
 
-        if (target.isDead()) {
-            world.events.emit({
+        const damageEvt: DamageEvent = {
+            type: BattleEventType.Damage,
+            time: world.getTime(),
+            sourceId,
+            targetId,
+            rawDamage,
+            finalDamage,
+            actualDamage: result.actualDamage,
+            targetHpBefore,
+            targetHpAfter: target.hp,
+            killed,
+            context,
+        };
+        events.emit(damageEvt);
+
+        if (killed) {
+            const deathEvt: UnitDiedEvent = {
                 type: BattleEventType.UnitDied,
                 time: world.getTime(),
-
                 unitId: target.id,
-            } as UnitDiedEvent);
+                killerId: sourceId,
+            };
+            events.emit(deathEvt);
         }
 
-        return finalDamage;
+        return result;
     }
 
     public update(dt: number): void {}

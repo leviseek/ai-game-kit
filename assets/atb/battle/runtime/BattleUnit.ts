@@ -54,7 +54,7 @@ export class BattleUnit {
         return Math.max(1, this.attack);
     }
 
-    public takeDamage(rawDamage: number): { before: number; after: number } {
+    public takeDamage(rawDamage: number): { before: number; after: number; actual: number } {
         const damage = Math.max(1, rawDamage - this.defense);
 
         const before = this.hp;
@@ -63,6 +63,7 @@ export class BattleUnit {
         return {
             before,
             after: this.hp,
+            actual: this.hp - before,
         };
     }
 

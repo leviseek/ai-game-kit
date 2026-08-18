@@ -5,8 +5,6 @@ import { CommandQueue } from "./command/CommandQueue";
 export class BattleScheduler {
     private queue = new CommandQueue();
 
-    private currentTime = 0;
-
     private playing = false;
 
     private timeScale = 1;
@@ -31,10 +29,6 @@ export class BattleScheduler {
         return this.timeScale;
     }
 
-    public getCurrentTime(): number {
-        return this.currentTime;
-    }
-
     public schedule(executeTime: number, command: BattleCommand) {
         this.queue.enqueue(executeTime, command);
     }
@@ -49,26 +43,21 @@ export class BattleScheduler {
         this.playing = previousPlaying;
     }
 
-    public setCurrentTime(time: number) {
-        this.currentTime = Math.max(0, time);
-    }
-
     public update(dt: number, world: BattleWorld): number {
         if (!this.playing) {
             return 0;
         }
 
-        const scaleDt = dt * this.timeScale;
+        const battleDt = dt * this.timeScale;
 
-        this.currentTime += scaleDt;
+        world.clock.advance(battleDt);
 
-        this.queue.executeDueCommands(world, this.currentTime);
+        this.queue.executeDueCommands(world, world.getTime());
 
-        return scaleDt;
+        return battleDt;
     }
 
     public reset() {
-        this.currentTime = 0;
         this.playing = false;
         this.timeScale = 1;
         this.queue.clear();
