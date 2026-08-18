@@ -3,6 +3,8 @@ import { BattleEvent, BattleEventType } from "./BattleEvent";
 type BattleEventListener = (event: BattleEvent) => void;
 
 export class BattleEventBus {
+    private static readonly TAG: string = "BattleEventBus";
+
     private listeners: Map<BattleEventType, BattleEventListener[]> = new Map();
 
     public on(type: BattleEventType, listener: BattleEventListener) {
@@ -25,6 +27,8 @@ export class BattleEventBus {
     }
 
     public emit(event: BattleEvent) {
+        console.debug(`[${BattleEventBus.TAG}] ${event.type}: `, event);
+
         const list = this.listeners.get(event.type);
         if (!list) {
             return;

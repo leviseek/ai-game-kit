@@ -6,7 +6,13 @@ export enum BattleEventType {
     SkillStarted = "SkillStarted",
     SkillFinished = "SkillFinished",
 
+    BuffAdded = "BuffAdded",
+    BuffRemoved = "BuffRemoved",
+    BuffStackChanged = "BuffStackChanged",
+
     Damage = "Damage",
+    Heal = "Heal",
+
     UnitDied = "UnitDied",
 
     BattleEnded = "BattleEnded",
@@ -42,6 +48,31 @@ export interface SkillFinishedEvent extends BattleEvent {
     skillId: string;
 }
 
+export interface BuffAddedEvent extends BattleEvent {
+    type: BattleEventType.BuffAdded;
+
+    targetId: string;
+    buffId: string;
+    stacks: number;
+    duration: number;
+}
+
+export interface BuffStackChangedEvent extends BattleEvent {
+    type: BattleEventType.BuffStackChanged;
+
+    targetId: string;
+    buffId: string;
+}
+
+export interface BuffRemovedEvent extends BattleEvent {
+    type: BattleEventType.BuffRemoved;
+
+    targetId: string;
+    buffId: string;
+    stacks: number;
+    duration: number;
+}
+
 export interface DamageEvent extends BattleEvent {
     type: BattleEventType.Damage;
 
@@ -50,6 +81,19 @@ export interface DamageEvent extends BattleEvent {
 
     rawDamage: number;
     finalDamage: number;
+
+    targetHpBefore: number;
+    targetHpAfter: number;
+}
+
+export interface HealEvent extends BattleEvent {
+    type: BattleEventType.Heal;
+
+    casterId: string;
+    targetId: string;
+
+    rawHeal: number;
+    actualHeal: number;
 
     targetHpBefore: number;
     targetHpAfter: number;

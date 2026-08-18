@@ -3,6 +3,8 @@ import { BattleSystem } from "../system/BattleSystem";
 import { SkillData } from "./SkillData";
 
 export class SkillSystem extends BattleSystem {
+    protected readonly TAG: string = "SkillSystem";
+
     private coldowns: Map<string, number> = new Map();
 
     public update(dt: number): void {
@@ -42,9 +44,7 @@ export class SkillSystem extends BattleSystem {
         }
 
         for (const target of targets) {
-            for (const effet of skill.effects) {
-                this.world.effectSystem.apply(caster, target, effet);
-            }
+            this.world.effectPipeline.apply(caster, target, skill.effects);
         }
 
         this.world.events.emit({

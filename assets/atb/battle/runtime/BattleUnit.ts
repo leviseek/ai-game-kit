@@ -61,4 +61,28 @@ export class BattleUnit {
             after: this.hp,
         };
     }
+
+    public heal(amount: number): {
+        before: number;
+        after: number;
+        actual: number;
+    } {
+        if (this.isDead()) {
+            return {
+                before: this.hp,
+                after: this.hp,
+                actual: 0,
+            };
+        }
+
+        const before = this.hp;
+
+        this.hp = Math.min(this.maxHp, amount + Math.max(0, amount));
+
+        return {
+            before,
+            after: this.hp,
+            actual: this.hp - before,
+        };
+    }
 }

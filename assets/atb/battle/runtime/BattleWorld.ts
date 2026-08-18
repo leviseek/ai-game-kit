@@ -7,6 +7,8 @@ import { AttackSystem } from "./system/AttackSystem";
 import { TargetSelector } from "./target/TargetSelector";
 import { SkillSystem } from "./skill/SkillSystem";
 import { EffectSystem } from "./effect/EffectSystem";
+import { BuffSystem } from "./buff/BuffSystem";
+import { EffectPipeline } from "./effect/EffectPipeline";
 
 /**
  * 战斗世界
@@ -20,14 +22,18 @@ export class BattleWorld {
     public readonly scheduler = new BattleScheduler();
 
     public readonly damageSystem: DamageSystem;
+    public readonly buffSystem: BuffSystem;
     public readonly effectSystem: EffectSystem;
+    public readonly effectPipeline: EffectPipeline;
     public readonly targetSelector: TargetSelector;
     public readonly skillSystem: SkillSystem;
     public readonly attackSystem: AttackSystem;
 
     constructor() {
         this.damageSystem = new DamageSystem(this);
+        this.buffSystem = new BuffSystem(this);
         this.effectSystem = new EffectSystem(this, this.damageSystem);
+        this.effectPipeline = new EffectPipeline(this);
         this.targetSelector = new TargetSelector(this);
         this.skillSystem = new SkillSystem(this);
         this.attackSystem = new AttackSystem(this, this.damageSystem);
@@ -55,11 +61,12 @@ export class BattleWorld {
     }
 
     public update(dt: number) {
-        const scaleDt = this.scheduler.update(dt, this);
+        const battleDt = this.scheduler.update(dt, this);
 
-        this.attackSystem.update(scaleDt);
-        this.damageSystem.update(scaleDt);
-        this.skillSystem.update(scaleDt);
+        this.attackSystem.update(battleDt);
+        this.damageSystem.update(battleDt);
+        this.skillSystem.update(battleDt);
+        this.buffSystem.update(battleDt);
     }
 
     public getTime(): number {

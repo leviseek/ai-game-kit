@@ -2,6 +2,8 @@ import { BattleEventType, DamageEvent, UnitDiedEvent } from "../event/BattleEven
 import { BattleSystem } from "./BattleSystem";
 
 export class DamageSystem extends BattleSystem {
+    protected readonly TAG: string = "DamageSystem";
+
     public dealDamage(attackerId: string, targetId: string, rawDamage: number) {
         const attacker = this.world.getUnit(attackerId);
         if (!attacker) {

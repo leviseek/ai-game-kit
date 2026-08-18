@@ -101,7 +101,13 @@ export class BattleSandbox extends Component {
         // this.selectTarget();
 
         // test fireball
-        this.testFireball();
+        // this.testFireball();
+
+        // test buff
+        this.testBuff();
+
+        // test meteor
+        this.testMeteor();
 
         // scheduler start
         scheduler.start();
@@ -169,19 +175,6 @@ export class BattleSandbox extends Component {
         );
     }
 
-    private testFireball() {
-        const { scheduler } = this.world;
-
-        const fireball = this.createFireball();
-        scheduler.schedule(1.0, new SkillCommand("hero_001", fireball));
-
-        scheduler.schedule(2.0, new SkillCommand("hero_001", fireball));
-
-        scheduler.schedule(5.0, new SkillCommand("hero_001", fireball));
-
-        scheduler.schedule(10, new SkillCommand("hero_001", fireball));
-    }
-
     private createFireball(): SkillData {
         return {
             id: "fireball",
@@ -199,5 +192,61 @@ export class BattleSandbox extends Component {
                 },
             ],
         };
+    }
+
+    private testFireball() {
+        const { scheduler } = this.world;
+
+        const fireball = this.createFireball();
+        scheduler.schedule(1.0, new SkillCommand("hero_001", fireball));
+
+        scheduler.schedule(2.0, new SkillCommand("hero_001", fireball));
+
+        scheduler.schedule(5.0, new SkillCommand("hero_001", fireball));
+
+        scheduler.schedule(10, new SkillCommand("hero_001", fireball));
+    }
+
+    private testBuff() {
+        const { buffSystem } = this.world;
+        buffSystem.register({
+            id: "burning",
+            name: "Burning",
+            duration: 5,
+            maxStacks: 3,
+        });
+    }
+
+    private createMeteor(): SkillData {
+        return {
+            id: "meteor",
+            name: "Meteor",
+            cooldown: 5,
+            cost: 20,
+            target: {
+                relation: TargetRelation.Enemy,
+                type: TargetType.All,
+            },
+            effects: [
+                {
+                    type: EffectType.Damage,
+                    value: 50,
+                },
+                {
+                    type: EffectType.AddBuff,
+                    buffId: "burning",
+                },
+            ],
+        };
+    }
+
+    private testMeteor() {
+        const { scheduler } = this.world;
+        const meteor = this.createMeteor();
+        scheduler.schedule(1, new SkillCommand("hero_001", meteor));
+
+        scheduler.schedule(3, new SkillCommand("hero_001", meteor));
+
+        scheduler.schedule(6, new SkillCommand("hero_001", meteor));
     }
 }

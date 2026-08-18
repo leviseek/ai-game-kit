@@ -4,6 +4,8 @@ import { BattleSystem } from "./BattleSystem";
 import { DamageSystem } from "./DamageSystem";
 
 export class AttackSystem extends BattleSystem {
+    protected readonly TAG: string = "AttackSystem";
+
     constructor(
         world: BattleWorld,
         private damageSystem: DamageSystem,
