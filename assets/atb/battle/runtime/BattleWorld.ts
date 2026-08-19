@@ -1,4 +1,3 @@
-import { _decorator } from "cc";
 import { BattleUnit } from "./BattleUnit";
 import { BattleEventBus } from "./event/BattleEventBus";
 import { BattleScheduler } from "./BattleScheduler";
@@ -98,10 +97,18 @@ export class BattleWorld {
             return;
         }
 
+        this.runSystems(battleDt);
+    }
+
+    public step(dt: number) {
+        this.runSystems(this.scheduler.update(dt, this, true));
+    }
+
+    private runSystems(battleDt: number) {
+        if (battleDt <= 0) return;
         this.energySystem.update(battleDt);
         this.decisionSystem.update(battleDt);
         this.buffSystem.update(battleDt);
-
         this.attackSystem.update(battleDt);
         this.damageSystem.update(battleDt);
         this.skillSystem.update(battleDt);

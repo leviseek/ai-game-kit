@@ -1,5 +1,4 @@
-import { _decorator, Component, Label, RichText, Touch } from "cc";
-import { BattleWorld } from "../runtime/BattleWorld";
+import { _decorator, Component, RichText, Touch } from "cc";
 import { TestBattle } from "../data/battles/TestBattleData";
 import { BattleFactory } from "../factory/BattleFactory";
 import { BattleSandboxController } from "./BattleSandboxController";
@@ -27,8 +26,6 @@ export class BattleSandbox extends Component {
     @property(BattleUnitInspector)
     unitInspector: BattleUnitInspector | null = null;
 
-    private world: BattleWorld | undefined;
-
     private controller: BattleSandboxController | null = null;
     private eventLog: BattleSandboxEventLog | null = null;
 
@@ -53,33 +50,37 @@ export class BattleSandbox extends Component {
     }
 
     update(dt: number) {
-        this.world?.update(dt);
         if (!this.controller) return;
 
         const state = this.controller.state;
-        if (state.paused) return;
+        if (!state.paused) {
+            const scaleDt = dt * state.speed;
+            this.controller.world.update(scaleDt);
+            state.currentTime = this.controller.world.getTime();
+        }
 
-        const scaleDt = dt * state.speed;
-        this.controller.world.update(scaleDt);
-        state.currentTime = this.controller.world.getTime();
-
+        // 暂停只挡推进、不挡刷新：单步（step）产生的事件在暂停态下也能同步到视图
         if (this._upTime < this._upInterval) {
             this._upTime += dt;
             return;
         }
 
-        if (this._logDirty) {
-            // refresh log
+        if (!this._logDirty) return;
+        this._logDirty = false;
+        this._upTime = 0;
 
-            this.refreshUnitViews();
-            this.refreshUnitInspector();
-            this.refreshLogs();
-        }
+        this.syncViews();
     }
 
     createWorld() {
         const world = BattleFactory.create(TestBattle);
         return world;
+    }
+
+    private syncViews() {
+        this.refreshUnitViews();
+        this.refreshUnitInspector();
+        this.refreshLogs();
     }
 
     private refreshUnitViews(): void {
@@ -125,7 +126,9 @@ export class BattleSandbox extends Component {
     }
 
     public onClickStepBtn() {
-        this.controller?.step(1);
+        this.controller?.step(0.1);
+
+        this.syncViews();
     }
 
     public onClickSpeedBtn(event: Event, edata: string) {

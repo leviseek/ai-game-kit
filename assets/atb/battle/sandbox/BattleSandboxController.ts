@@ -18,7 +18,7 @@ export class BattleSandboxController {
     }
 
     public step(dt: number) {
-        this.world.update(dt);
+        this.world.step(dt);
         this.state.currentTime = this.world.getTime();
     }
 

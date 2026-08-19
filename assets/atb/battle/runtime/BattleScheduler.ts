@@ -6,7 +6,6 @@ export class BattleScheduler {
     private queue = new CommandQueue();
 
     private playing = false;
-
     private timeScale = 1;
 
     constructor(private readonly world: BattleWorld) {}
@@ -40,27 +39,13 @@ export class BattleScheduler {
         this.queue.push(executeAt, command);
     }
 
-    public step(dt: number, world: BattleWorld) {
-        const previousPlaying = this.playing;
-
-        this.playing = true;
-
-        this.update(dt, world);
-
-        this.playing = previousPlaying;
-    }
-
-    public update(dt: number, world: BattleWorld): number {
-        if (!this.playing) {
-            return 0;
-        }
+    public update(dt: number, world: BattleWorld, force = false): number {
+        if (!this.playing && !force) return 0;
 
         const battleDt = dt * this.timeScale;
-
         world.clock.advance(battleDt);
 
         const commands = this.queue.popDue(world.getTime());
-
         for (const entry of commands) {
             entry.command.execute(world);
         }
