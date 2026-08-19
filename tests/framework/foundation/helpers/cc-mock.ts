@@ -24,14 +24,43 @@ export function createCcMock(): Record<string, unknown> {
             ccclass(_name: string) {
                 return <TFunction extends (...args: unknown[]) => unknown>(target: TFunction): TFunction => target;
             },
+            // ListView/ListViewItem 字段装饰器桩：裸 @property 与 @property(type/options)
+            // 两种调用形态都吞掉，编辑器元数据测试不需要
+            property(...args: unknown[]) {
+                if (typeof args[1] === "string") {
+                    return;
+                }
+                return () => {};
+            },
         },
         Component: class {},
         Node: class {
-            static EventType: Record<string, string> = {};
+            static EventType: Record<string, string> = {
+                TOUCH_END: "touch-end",
+            };
         },
         EventTouch: class {},
         Touch: class {},
         Vec3: class {},
+        Vec2: class {
+            x: number;
+            y: number;
+            constructor(x = 0, y = 0) {
+                this.x = x;
+                this.y = y;
+            }
+        },
+        // instantiate 桩：测试经 ListView.createItemNode 接缝覆写，此处恒等即可
+        instantiate: (node: unknown) => node,
+        // Enum 桩：cc Enum 在编辑器里生成枚举元数据，测试恒等即可
+        Enum: (obj: unknown) => obj,
+        ScrollView: class {
+            static EventType: Record<string, string> = {
+                SCROLLING: "scrolling",
+                SCROLL_ENDED: "scroll-ended",
+            };
+        },
+        UITransform: class {},
         profiler: { stats: null },
         sys: {
             isNative: false,

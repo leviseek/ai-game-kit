@@ -21,6 +21,10 @@ export class BattleUnitView extends Component {
 
     _unitId: string = "";
 
+    public get unitId(): string {
+        return this._unitId;
+    }
+
     public bind(controller: BattleSandboxController, unit: BattleUnit): void {
         if (this._controller) return;
 

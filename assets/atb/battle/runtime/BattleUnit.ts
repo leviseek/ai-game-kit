@@ -1,4 +1,5 @@
 import { SkillData } from "../data/skills/SkillData";
+import { BattleUnitSnapshot } from "../sandbox/BattleUnitSnapshot";
 import { SkillRuntimeState } from "./skill/SkillRuntimeState";
 
 /**
@@ -123,5 +124,27 @@ export class BattleUnit {
 
     public getSkillState(skillId: string): SkillRuntimeState | undefined {
         return this.skillState.get(skillId);
+    }
+
+    public createSnapshot(): BattleUnitSnapshot {
+        return {
+            id: this.id,
+
+            name: this.name,
+
+            hp: this.hp,
+
+            maxHp: this.maxHp,
+
+            energy: this.energy,
+
+            maxEnergy: this.maxEnergy,
+
+            attack: this.attack,
+
+            defense: this.defense,
+
+            dead: this.isDead(),
+        };
     }
 }

@@ -1,5 +1,6 @@
 import { BattleWorld } from "../runtime/BattleWorld";
 import { BattleSandboxState, DEFAULT_SANDBOX_STATE } from "./BattleSandboxState";
+import { BattleUnitSnapshot } from "./BattleUnitSnapshot";
 
 export class BattleSandboxController {
     public readonly state: BattleSandboxState;
@@ -31,5 +32,9 @@ export class BattleSandboxController {
 
     public selectUnit(unitId: string | null) {
         this.state.selectedUnitId = unitId;
+    }
+
+    public getUnitInspector(unitId: string): BattleUnitSnapshot | undefined {
+        return this.world.getUnit(unitId)?.createSnapshot();
     }
 }

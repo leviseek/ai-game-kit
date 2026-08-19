@@ -1,10 +1,11 @@
-import { _decorator, Component, Label, RichText } from "cc";
+import { _decorator, Component, Label, RichText, Touch } from "cc";
 import { BattleWorld } from "../runtime/BattleWorld";
 import { TestBattle } from "../data/battles/TestBattleData";
 import { BattleFactory } from "../factory/BattleFactory";
 import { BattleSandboxController } from "./BattleSandboxController";
 import { BattleSandboxEventLog } from "./BattleSandboxEventLog";
 import { BattleUnitView } from "./BattleUnitView";
+import { BattleUnitInspector } from "./BattleUnitInspector";
 const { ccclass, property } = _decorator;
 
 /**
@@ -17,10 +18,14 @@ export class BattleSandbox extends Component {
     @property(RichText)
     logLabel: RichText | null = null;
 
-    @property({
-        type: [BattleUnitView],
-    })
-    units: BattleUnitView[] = [];
+    @property(BattleUnitView)
+    heroUnit: BattleUnitView | null = null;
+
+    @property(BattleUnitView)
+    enemyUnit: BattleUnitView | null = null;
+
+    @property(BattleUnitInspector)
+    unitInspector: BattleUnitInspector | null = null;
 
     private world: BattleWorld | undefined;
 
@@ -30,6 +35,8 @@ export class BattleSandbox extends Component {
     private _upInterval = 1;
     private _upTime = 0;
     private _logDirty = false;
+
+    private _selectUnitId: string = "";
 
     start() {
         const world = this.createWorld();
@@ -65,6 +72,7 @@ export class BattleSandbox extends Component {
             // refresh log
 
             this.refreshUnitViews();
+            this.refreshUnitInspector();
             this.refreshLogs();
         }
     }
@@ -77,21 +85,28 @@ export class BattleSandbox extends Component {
     private refreshUnitViews(): void {
         if (!this.controller) return;
 
+        if (!this.heroUnit || !this.enemyUnit) return;
+
         const units = this.controller?.world.getAllUnits();
         if (!units || units.length === 0) {
             return;
         }
 
-        for (let i = 0; i < units.length; i++) {
-            const unit = units[i];
-            const view = this.units[i];
-            if (!view) {
-                continue;
-            }
+        this.heroUnit.bind(this.controller, units[0]);
+        this.enemyUnit.bind(this.controller, units[1]);
 
-            view.bind(this.controller, unit);
-            view.refresh(unit);
-        }
+        this.heroUnit.refresh(units[0]);
+        this.enemyUnit.refresh(units[1]);
+    }
+
+    private refreshUnitInspector() {
+        if (!this.controller) return;
+        if (!this.enemyUnit || !this.heroUnit) return;
+        if (this._selectUnitId === "") return;
+
+        const unit = this.controller.getUnitInspector(this._selectUnitId);
+        if (!unit) return;
+        this.unitInspector?.refreshInspector(unit);
     }
 
     private refreshLogs() {
@@ -113,11 +128,18 @@ export class BattleSandbox extends Component {
         this.controller?.step(1);
     }
 
-    public onClickSpeedBtn(speed: number) {
+    public onClickSpeedBtn(event: Event, edata: string) {
+        const speed = Number(edata);
         this.controller?.setSpeed(speed);
     }
 
-    public onClickUnit(unitId: string) {
-        this.controller?.selectUnit(unitId);
+    public onClickUnit(evt: Touch, edata: string) {
+        if (!this.controller) return;
+        if (!this.enemyUnit || !this.heroUnit) return;
+
+        const unitView = edata === "enemy" ? this.enemyUnit : this.heroUnit;
+
+        this.controller.selectUnit(unitView.unitId);
+        this._selectUnitId = unitView.unitId;
     }
 }
