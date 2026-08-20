@@ -24,13 +24,15 @@ export class AttackSystem extends BattleSystem {
 
         if (attacker.isDead() || target.isDead()) return;
 
-        world.emitEvent({
+        const startedEvt: AttackStartedEvent = {
             type: BattleEventType.AttackStarted,
             time: world.getTime(),
 
             attackerId,
             targetId,
-        } as AttackStartedEvent);
+            sequence: 0,
+        };
+        world.emitEvent(startedEvt);
 
         const rawDamage = this.world.stats.getValue(attacker, StatType.Attack);
 

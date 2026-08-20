@@ -17,5 +17,7 @@ export class BattleReplayController {
 
         state.replaying = false;
         state.currentTime = world.getTime();
+
+        this.sandbox.pause();
     }
 }

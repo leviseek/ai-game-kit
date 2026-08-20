@@ -63,6 +63,7 @@ export class DamageSystem extends BattleSystem {
             targetHpAfter: target.hp,
             killed,
             context,
+            sequence: 0,
         };
         events.emit(damageEvt);
 
@@ -72,6 +73,7 @@ export class DamageSystem extends BattleSystem {
                 time: world.getTime(),
                 unitId: target.id,
                 killerId: sourceId,
+                sequence: 0,
             };
             events.emit(deathEvt);
         }

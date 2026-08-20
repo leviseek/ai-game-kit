@@ -27,6 +27,7 @@ export class EnergySystem extends BattleSystem {
                     delta: gained,
                     energy: unit.energy,
                     time: world.getTime(),
+                    sequence: 0,
                 };
                 world.emitEvent(changedEvt);
             }

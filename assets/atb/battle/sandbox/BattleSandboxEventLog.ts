@@ -10,7 +10,7 @@ export class BattleSandboxEventLog {
         const log = this.formatEvent(event);
         if (log !== "") {
             this.logs.push(log);
-            if (this.logs.length > 10) {
+            if (this.logs.length > 20) {
                 this.logs.shift();
             }
         }

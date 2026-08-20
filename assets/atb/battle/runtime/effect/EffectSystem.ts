@@ -77,6 +77,7 @@ export class EffectSystem extends BattleSystem {
             targetHpBefore: result.before,
             targetHpAfter: result.after,
             context,
+            sequence: 0,
         };
         this.world.emitEvent(evt);
 

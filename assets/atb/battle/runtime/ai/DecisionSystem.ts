@@ -28,9 +28,11 @@ export class DecisionSystem extends BattleSystem {
                 skillId: decision.skillId,
 
                 targetIds: decision.targetIds,
+
+                sequence: 0,
             };
 
-            this.emitEvent(madeEvt);
+            this.world.emitEvent(madeEvt);
 
             this.submit(decision);
         }

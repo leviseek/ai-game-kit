@@ -46,12 +46,14 @@ export class SkillSystem extends BattleSystem {
             state.cooldownRemaining = skill.cooldown;
         }
 
-        this.world.emitEvent({
+        const startedEvt: SkillStartedEvent = {
             type: BattleEventType.SkillStarted,
             time: this.world.getTime(),
             casterId: casterId,
             skillId: skill.id,
-        } as SkillStartedEvent);
+            sequence: 0,
+        };
+        this.world.emitEvent(startedEvt);
 
         for (const targetId of targetIds) {
             this.world.effectPipeline.apply(
@@ -66,12 +68,14 @@ export class SkillSystem extends BattleSystem {
             );
         }
 
-        this.world.emitEvent({
+        const finishedEvt: SkillFinishedEvent = {
             type: BattleEventType.SkillFinished,
             time: this.world.getTime(),
             casterId: casterId,
             skillId: skill.id,
-        } as SkillFinishedEvent);
+            sequence: 0,
+        };
+        this.world.emitEvent(finishedEvt);
 
         return true;
     }

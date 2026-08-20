@@ -5,6 +5,10 @@ import { BattleSandboxController } from "./BattleSandboxController";
 import { BattleSandboxEventLog } from "./BattleSandboxEventLog";
 import { BattleUnitView } from "./BattleUnitView";
 import { BattleUnitInspector } from "./BattleUnitInspector";
+import { BattleTimeline } from "./BattleTimeline";
+import { BattleTimelineView } from "./timeline/BattleTimelineView";
+import { BattleReplayController } from "./BattleReplayController";
+import { BattleTimelineItem } from "./BattleTimelineItem";
 const { ccclass, property } = _decorator;
 
 /**
@@ -26,14 +30,19 @@ export class BattleSandbox extends Component {
     @property(BattleUnitInspector)
     unitInspector: BattleUnitInspector | null = null;
 
+    @property(BattleTimelineView)
+    timelineView: BattleTimelineView | null = null;
+
     private controller: BattleSandboxController | null = null;
+    private replayController: BattleReplayController | null = null;
     private eventLog: BattleSandboxEventLog | null = null;
 
     private accumulator = 0;
-
     private readonly FIXED_DT = 0.02;
 
-    private _upInterval = 1;
+    private timeline: BattleTimeline = new BattleTimeline();
+
+    private _upInterval = 0.1;
     private _upTime = 0;
     private _logDirty = false;
 
@@ -49,6 +58,13 @@ export class BattleSandbox extends Component {
         });
 
         this.controller = new BattleSandboxController(world);
+        this.replayController = new BattleReplayController(this.controller);
+
+        this.timelineView?.bind(this.timeline);
+
+        this.timelineView?.setClickHandler((item) => {
+            this.onTimelineEventClick(item);
+        });
 
         world.scheduler.start();
     }
@@ -63,7 +79,6 @@ export class BattleSandbox extends Component {
 
         while (this.accumulator >= this.FIXED_DT) {
             this.controller.world.step(this.FIXED_DT);
-            state.currentTime = this.controller.world.getTime();
 
             this.accumulator -= this.FIXED_DT;
         }
@@ -79,12 +94,20 @@ export class BattleSandbox extends Component {
         this._logDirty = false;
         this._upTime = 0;
 
+        this.timelineView?.setCurrentTime(this.controller.state.currentTime);
         this.syncViews();
     }
 
-    createWorld() {
+    public createWorld() {
         const world = BattleFactory.create(TestBattle);
         return world;
+    }
+
+    private refreshTimeline() {
+        const events = this.controller?.world.recorder.getRecords();
+        this.timeline.build(events || []);
+
+        this.timelineView?.bind(this.timeline);
     }
 
     private syncViews() {
@@ -133,6 +156,8 @@ export class BattleSandbox extends Component {
 
     public onClickPause() {
         this.controller?.pause();
+
+        this.refreshTimeline();
     }
 
     public onClickStep() {
@@ -143,6 +168,8 @@ export class BattleSandbox extends Component {
 
     public onClickReset() {
         this.controller?.reset();
+
+        this.refreshTimeline();
     }
 
     public onClickRestart() {
@@ -162,5 +189,13 @@ export class BattleSandbox extends Component {
 
         this.controller.selectUnit(unitView.unitId);
         this._selectUnitId = unitView.unitId;
+    }
+
+    private onTimelineEventClick(item: BattleTimelineItem) {
+        if (!this.replayController) return;
+
+        this.replayController.replayTo(item.time);
+
+        this.refreshTimeline();
     }
 }

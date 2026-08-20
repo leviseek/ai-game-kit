@@ -36,6 +36,7 @@ export class BuffSystem extends BattleSystem {
                 stacks: existing.stacks,
                 duration: existing.remaining,
                 sourceId: existing.sourceId,
+                sequence: 0,
             };
             this.world.emitEvent(changedEvt);
             return true;
@@ -52,6 +53,7 @@ export class BuffSystem extends BattleSystem {
             buffId,
             stacks: instance.stacks,
             duration: instance.remaining,
+            sequence: 0,
         };
         this.world.emitEvent(addedEvt);
 
