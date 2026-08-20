@@ -46,7 +46,7 @@ export class SkillSystem extends BattleSystem {
             state.cooldownRemaining = skill.cooldown;
         }
 
-        this.world.events.emit({
+        this.world.emitEvent({
             type: BattleEventType.SkillStarted,
             time: this.world.getTime(),
             casterId: casterId,
@@ -66,7 +66,7 @@ export class SkillSystem extends BattleSystem {
             );
         }
 
-        this.world.events.emit({
+        this.world.emitEvent({
             type: BattleEventType.SkillFinished,
             time: this.world.getTime(),
             casterId: casterId,
@@ -84,5 +84,11 @@ export class SkillSystem extends BattleSystem {
         }
 
         return state.cooldownRemaining > 0;
+    }
+
+    public reset() {
+        for (const unit of this.world.getAllUnits()) {
+            unit.clearCooldowns();
+        }
     }
 }

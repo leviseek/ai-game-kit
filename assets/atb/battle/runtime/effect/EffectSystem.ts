@@ -78,7 +78,7 @@ export class EffectSystem extends BattleSystem {
             targetHpAfter: result.after,
             context,
         };
-        this.world.events.emit(evt);
+        this.world.emitEvent(evt);
 
         return {
             type: EffectResultType.Heal,

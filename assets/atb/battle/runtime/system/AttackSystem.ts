@@ -24,7 +24,7 @@ export class AttackSystem extends BattleSystem {
 
         if (attacker.isDead() || target.isDead()) return;
 
-        world.events.emit({
+        world.emitEvent({
             type: BattleEventType.AttackStarted,
             time: world.getTime(),
 

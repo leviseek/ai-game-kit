@@ -26,6 +26,7 @@ export enum BattleEventType {
 export interface BattleEvent {
     type: BattleEventType;
     time: number;
+    sequence?: number;
 }
 
 export interface BattleStartedEvent extends BattleEvent {

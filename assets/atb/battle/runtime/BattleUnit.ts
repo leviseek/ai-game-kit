@@ -1,5 +1,6 @@
 import { SkillData } from "../data/skills/SkillData";
 import { BattleUnitSnapshot } from "../sandbox/BattleUnitSnapshot";
+import { BattleInitialUnitState } from "./replay/BattleInitialState";
 import { SkillRuntimeState } from "./skill/SkillRuntimeState";
 
 /**
@@ -19,6 +20,8 @@ export class BattleUnit {
 
     public attack: number = 0;
     public defense: number = 0;
+
+    public position: { x: number; y: number } = { x: 0, y: 0 };
 
     private _skills: SkillData[] = [];
     private skillState: Map<string, SkillRuntimeState> = new Map();
@@ -124,6 +127,72 @@ export class BattleUnit {
 
     public getSkillState(skillId: string): SkillRuntimeState | undefined {
         return this.skillState.get(skillId);
+    }
+
+    public clearCooldowns() {
+        this.skillState.forEach((state) => {
+            state.cooldownRemaining = 0;
+        });
+    }
+
+    public createInitialState(): BattleInitialUnitState {
+        return {
+            id: this.id,
+
+            name: this.name,
+
+            team: this.team,
+
+            hp: this.hp,
+
+            maxHp: this.maxHp,
+
+            energy: this.energy,
+
+            maxEnergy: this.maxEnergy,
+
+            energyRegen: this.energyRegen,
+
+            x: this.position.x,
+
+            y: this.position.y,
+
+            autoBattle: this.autoBattle,
+        };
+    }
+
+    public restoreInitialState(state: BattleInitialUnitState): void {
+        this.hp = state.hp;
+
+        this.maxHp = state.maxHp;
+
+        this.energy = state.energy;
+
+        this.maxEnergy = state.maxEnergy;
+
+        this.energyRegen = state.energyRegen;
+
+        this.autoBattle = state.autoBattle;
+
+        this.restorePosition(state.x, state.y);
+
+        this.clearRuntimeState();
+    }
+
+    private restorePosition(x: number, y: number) {
+        //todo by levi
+    }
+
+    private clearRuntimeState(): void {
+        //todo by levi
+        // this.targetId = null;
+        // this.currentAction = null;
+        // this.cooldowns.clear();
+        // this.buffs.clear();
+        // this.isCasting = false;
+        // this.stunTime = 0;
+        // this.silenceTime = 0;
+        // this.pendingCommands.clear();
     }
 
     public createSnapshot(): BattleUnitSnapshot {

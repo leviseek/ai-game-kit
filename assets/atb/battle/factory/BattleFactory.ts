@@ -3,6 +3,9 @@ import { TestBuffs, TestSkills, TestUnits } from "../data/battles/TestBattleData
 import { BattleWorld } from "../runtime/BattleWorld";
 import { UnitFactory } from "./UnitFactory";
 
+/**
+ *
+ */
 export class BattleFactory {
     public static create(definition: BattleDefinition): BattleWorld {
         const world = new BattleWorld();
@@ -22,6 +25,8 @@ export class BattleFactory {
 
             unitFactory.create(data);
         }
+
+        world.captureInitialState();
 
         return world;
     }

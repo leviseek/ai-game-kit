@@ -37,7 +37,7 @@ export class BuffSystem extends BattleSystem {
                 duration: existing.remaining,
                 sourceId: existing.sourceId,
             };
-            this.world.events.emit(changedEvt);
+            this.world.emitEvent(changedEvt);
             return true;
         }
 
@@ -53,7 +53,7 @@ export class BuffSystem extends BattleSystem {
             stacks: instance.stacks,
             duration: instance.remaining,
         };
-        this.world.events.emit(addedEvt);
+        this.world.emitEvent(addedEvt);
 
         return true;
     }
@@ -79,6 +79,16 @@ export class BuffSystem extends BattleSystem {
         }
 
         return result;
+    }
+
+    private clearUnitBuffs(unit: BattleUnit) {
+        //todo by levi
+    }
+
+    public reset(): void {
+        for (const unit of this.world.getAllUnits()) {
+            this.clearUnitBuffs(unit);
+        }
     }
 
     public update(dt: number) {
@@ -118,7 +128,7 @@ export class BuffSystem extends BattleSystem {
                 if (buff.remaining <= 0) {
                     buffs.delete(buffId);
 
-                    this.world.events.emit({
+                    this.world.emitEvent({
                         type: BattleEventType.BuffRemoved,
                         time: this.world.getTime(),
                         targetId: unitId,

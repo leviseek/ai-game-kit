@@ -1,25 +1,28 @@
 import { BattleWorld } from "../runtime/BattleWorld";
-import { BattleSandboxState, DEFAULT_SANDBOX_STATE } from "./BattleSandboxState";
+import { BattleSandboxState } from "./BattleSandboxState";
 import { BattleUnitSnapshot } from "./BattleUnitSnapshot";
 
 export class BattleSandboxController {
     public readonly state: BattleSandboxState;
 
     constructor(public readonly world: BattleWorld) {
-        this.state = DEFAULT_SANDBOX_STATE;
+        this.state = new BattleSandboxState();
+    }
+
+    public getUnitInspector(unitId: string): BattleUnitSnapshot | undefined {
+        return this.world.getUnit(unitId)?.createSnapshot();
+    }
+
+    public play() {
+        this.state.paused = false;
     }
 
     public pause() {
         this.state.paused = true;
     }
 
-    public resume() {
-        this.state.paused = false;
-    }
-
     public step(dt: number) {
         this.world.step(dt);
-        this.state.currentTime = this.world.getTime();
     }
 
     public togglePause() {
@@ -34,7 +37,12 @@ export class BattleSandboxController {
         this.state.selectedUnitId = unitId;
     }
 
-    public getUnitInspector(unitId: string): BattleUnitSnapshot | undefined {
-        return this.world.getUnit(unitId)?.createSnapshot();
+    public restart() {}
+
+    public reset() {
+        this.world.reset();
+        this.state.selectedUnitId = null;
+
+        this.state.paused = true;
     }
 }

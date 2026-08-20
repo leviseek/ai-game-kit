@@ -30,7 +30,7 @@ export class DecisionSystem extends BattleSystem {
                 targetIds: decision.targetIds,
             };
 
-            this.world.events.emit(madeEvt);
+            this.emitEvent(madeEvt);
 
             this.submit(decision);
         }
@@ -68,5 +68,10 @@ export class DecisionSystem extends BattleSystem {
         };
         const command = new SkillCommand(data);
         this.world.scheduler.schedule(0, command);
+    }
+
+    public reset() {
+        //todo by levi
+        // this.pendingCommands.clear();
     }
 }

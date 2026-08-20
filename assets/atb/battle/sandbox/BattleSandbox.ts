@@ -29,6 +29,10 @@ export class BattleSandbox extends Component {
     private controller: BattleSandboxController | null = null;
     private eventLog: BattleSandboxEventLog | null = null;
 
+    private accumulator = 0;
+
+    private readonly FIXED_DT = 0.02;
+
     private _upInterval = 1;
     private _upTime = 0;
     private _logDirty = false;
@@ -53,10 +57,15 @@ export class BattleSandbox extends Component {
         if (!this.controller) return;
 
         const state = this.controller.state;
-        if (!state.paused) {
-            const scaleDt = dt * state.speed;
-            this.controller.world.update(scaleDt);
+        if (state.paused) return;
+
+        this.accumulator += dt * this.controller.state.speed;
+
+        while (this.accumulator >= this.FIXED_DT) {
+            this.controller.world.step(this.FIXED_DT);
             state.currentTime = this.controller.world.getTime();
+
+            this.accumulator -= this.FIXED_DT;
         }
 
         // 暂停只挡推进、不挡刷新：单步（step）产生的事件在暂停态下也能同步到视图
@@ -66,6 +75,7 @@ export class BattleSandbox extends Component {
         }
 
         if (!this._logDirty) return;
+
         this._logDirty = false;
         this._upTime = 0;
 
@@ -117,21 +127,29 @@ export class BattleSandbox extends Component {
         }
     }
 
-    public onClickPauseBtn() {
+    public onClickPlay() {
+        this.controller?.play();
+    }
+
+    public onClickPause() {
         this.controller?.pause();
     }
 
-    public onClickResumeBtn() {
-        this.controller?.resume();
-    }
-
-    public onClickStepBtn() {
+    public onClickStep() {
         this.controller?.step(0.1);
 
         this.syncViews();
     }
 
-    public onClickSpeedBtn(event: Event, edata: string) {
+    public onClickReset() {
+        this.controller?.reset();
+    }
+
+    public onClickRestart() {
+        this.controller?.restart();
+    }
+
+    public onClickSpeed(event: Event, edata: string) {
         const speed = Number(edata);
         this.controller?.setSpeed(speed);
     }

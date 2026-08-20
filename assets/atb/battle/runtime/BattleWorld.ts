@@ -16,6 +16,8 @@ import { BuffRegistry } from "./registry/BuffRegistry";
 import { SkillRegistry } from "./registry/SkillRegistry";
 import { UnitRegistry } from "./registry/UnitRegistry";
 import { DecisionSystem } from "./ai/DecisionSystem";
+import { BattleInitialState } from "./replay/BattleInitialState";
+import { BattleEvent } from "./event/BattleEvent";
 
 /**
  * 战斗世界
@@ -29,9 +31,7 @@ export class BattleWorld {
     public readonly skillReg: SkillRegistry;
     public readonly buffReg: BuffRegistry;
 
-    // ===== Runtime =====
-    private readonly units: Map<string, BattleUnit> = new Map();
-
+    // ===== Tools =====
     public readonly clock: BattleClock;
     public readonly events = new BattleEventBus();
     public readonly recorder: BattleRecorder;
@@ -48,6 +48,11 @@ export class BattleWorld {
     public readonly skillSystem: SkillSystem;
     public readonly attackSystem: AttackSystem;
     public readonly energySystem: EnergySystem;
+
+    // ===== Runtime =====
+    private readonly units: Map<string, BattleUnit> = new Map();
+    private initialState: BattleInitialState | null = null;
+    private eventSequence = 0;
 
     constructor() {
         this.unitReg = new UnitRegistry();
@@ -114,13 +119,61 @@ export class BattleWorld {
         this.skillSystem.update(battleDt);
     }
 
+    public emitEvent(event: BattleEvent) {
+        event.sequence = this.eventSequence++;
+
+        this.events.emit(event);
+    }
+
     public getTime(): number {
         return this.clock.getTime();
+    }
+
+    public captureInitialState(): void {
+        this.initialState = {
+            units: this.getAllUnits().map((unit) => unit.createInitialState()),
+        };
+    }
+
+    private restoreInitialState(state: BattleInitialState): void {
+        for (const initialUnit of state.units) {
+            const unit = this.getUnit(initialUnit.id);
+
+            if (!unit) {
+                continue;
+            }
+
+            unit.restoreInitialState(initialUnit);
+        }
+    }
+
+    public reset() {
+        if (!this.initialState) {
+            throw new Error("BattleWorld initial state has not been captured.");
+        }
+
+        this.clock.reset();
+
+        this.scheduler.reset();
+
+        this.decisionSystem.reset();
+        this.buffSystem.reset();
+        this.skillSystem.reset();
+
+        this.recorder.clear();
+
+        // this.events.clear();
+
+        this.eventSequence = 0;
+
+        this.restoreInitialState(this.initialState);
     }
 
     public clear(): void {
         this.units.clear();
         this.events.clear();
         this.scheduler.reset();
+
+        this.eventSequence = 0;
     }
 }

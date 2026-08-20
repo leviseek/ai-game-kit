@@ -1,13 +1,8 @@
-export interface BattleSandboxState {
-    paused: boolean;
-    speed: number;
-    selectedUnitId: string | null;
-    currentTime: number;
+export class BattleSandboxState {
+    paused: boolean = false;
+    replaying: boolean = false;
+    speed: number = 1;
+    selectedUnitId: string | null = null;
+    currentTime: number = 0;
+    replayTargetTime: number = 0;
 }
-
-export const DEFAULT_SANDBOX_STATE: BattleSandboxState = {
-    paused: false,
-    speed: 1,
-    selectedUnitId: null,
-    currentTime: 0,
-};
